@@ -10,7 +10,8 @@ import {
   FileText, 
   HardDrive, 
   User,
-  Settings
+  Settings,
+  Shield
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
@@ -19,6 +20,9 @@ export const MobileBottomNav: React.FC = () => {
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const product = stripeConfig.products[0];
+  
+  // Vérifier si l'utilisateur est super admin
+  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path);
@@ -28,9 +32,10 @@ export const MobileBottomNav: React.FC = () => {
   const visibleItems = user ? [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
     { path: '/forms', icon: FileText, label: 'Formulaires', show: true },
-    { path: '/pdf/templates', icon: FileText, label: 'Templates', show: true },
+    { path: '/pdf/templates', icon: FileText, label: 'Templates', show: !isSuperAdmin },
     { path: '/pdf/manager', icon: HardDrive, label: 'PDFs', show: true },
-    { path: '/settings', icon: Settings, label: 'Paramètres', show: true }
+    { path: '/admin', icon: Shield, label: 'Admin', show: isSuperAdmin },
+    { path: '/settings', icon: Settings, label: 'Paramètres', show: !isSuperAdmin }
   ] : [
     { path: '/', icon: Home, label: 'Accueil', show: true },
     { path: '/pdf/manager', icon: HardDrive, label: 'PDFs', show: true },
@@ -43,6 +48,8 @@ export const MobileBottomNav: React.FC = () => {
         {visibleItems.map((item, index) => {
           const Icon = item.icon;
           const active = !item.isButton && isActive(item.path);
+          
+          if (!item.show) return null;
           
           return item.isButton ? (
             <button

@@ -21,6 +21,7 @@ import { PDFManager } from './pages/PDFManager';
 import { Subscription } from './pages/Subscription';
 import { SuccessPage } from './pages/SuccessPage';
 import { Settings } from './pages/Settings';
+import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -120,6 +121,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <SuccessPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <SuperAdminDashboard />
               </ProtectedRoute>
             }
           />

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
-import { FormInput, LogOut, LayoutDashboard, Moon, Sun, FileText, HardDrive, Crown, Settings } from 'lucide-react';
+import { FormInput, LogOut, LayoutDashboard, Moon, Sun, FileText, HardDrive, Crown, Settings, Shield } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
 
 export const Navbar: React.FC = () => {
@@ -13,6 +13,9 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const product = stripeConfig.products[0];
+  
+  // Vérifier si l'utilisateur est super admin
+  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
   const handleSignOut = async () => {
     await signOut();
@@ -65,6 +68,14 @@ export const Navbar: React.FC = () => {
                     <span>PDFs sauvegardés</span>
                   </Button>
                 </Link>
+                {isSuperAdmin && (
+                  <Link to="/admin">
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-red-600 hover:text-red-700">
+                      <Shield className="h-4 w-4" />
+                      <span>Admin</span>
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/settings">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <Settings className="h-4 w-4" />
