@@ -41,7 +41,7 @@ export const NewForm: React.FC = () => {
           allowMultiple: true,
           requireAuth: false,
           collectEmail: false,
-          generatePdf: false,
+          generatePdf: true,
           emailPdf: false,
           savePdfToServer: false,
         },
