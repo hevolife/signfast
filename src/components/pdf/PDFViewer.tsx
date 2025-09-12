@@ -25,6 +25,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const renderTasksRef = useRef<(any | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
 
@@ -36,6 +37,11 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     if (file) {
       loadPDF();
     }
+    
+    // Cleanup function to cancel all render tasks on unmount
+    return () => {
+      cancelAllRenderTasks();
+    };
   }, [file]);
 
   useEffect(() => {
@@ -44,12 +50,24 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     }
   }, [pdfDoc, numPages, scale]);
 
+  const cancelAllRenderTasks = () => {
+    renderTasksRef.current.forEach((task, index) => {
+      if (task) {
+        task.cancel();
+        renderTasksRef.current[index] = null;
+      }
+    });
+  };
+
   const loadPDF = async () => {
     if (!file) return;
 
     try {
       setLoading(true);
       setError(null);
+      
+      // Cancel any existing render tasks before loading new PDF
+      cancelAllRenderTasks();
       
       const workerUrl = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
       const pdfjsLib = await import('pdfjs-dist');
@@ -67,6 +85,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
       setPdfDoc(pdf);
       setNumPages(pdf.numPages);
       canvasRefs.current = new Array(pdf.numPages).fill(null);
+      renderTasksRef.current = new Array(pdf.numPages).fill(null);
       setLoading(false);
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -78,11 +97,20 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
   const renderAllPages = async () => {
     if (!pdfDoc) return;
 
+    // Cancel all existing render tasks before starting new ones
+    cancelAllRenderTasks();
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
       const canvas = canvasRefs.current[pageNum - 1];
       if (!canvas) continue;
 
       try {
+        // Cancel existing render task for this page if any
+        const existingTask = renderTasksRef.current[pageNum - 1];
+        if (existingTask) {
+          existingTask.cancel();
+          renderTasksRef.current[pageNum - 1] = null;
+        }
+
         const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale });
         
@@ -96,9 +124,19 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
           viewport: viewport,
         };
 
-        await page.render(renderContext).promise;
+        const renderTask = page.render(renderContext);
+        renderTasksRef.current[pageNum - 1] = renderTask;
+        
+        await renderTask.promise;
+        
+        // Clear the render task reference once completed
+        renderTasksRef.current[pageNum - 1] = null;
       } catch (error) {
-        console.error(`Error rendering page ${pageNum}:`, error);
+        // Only log error if it's not a cancellation
+        if (error.name !== 'RenderingCancelledException') {
+          console.error(`Error rendering page ${pageNum}:`, error);
+        }
+        renderTasksRef.current[pageNum - 1] = null;
       }
     }
   };
