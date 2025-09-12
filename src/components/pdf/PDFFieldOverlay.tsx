@@ -22,59 +22,78 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onDelete,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isResizing, setIsResizing] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    console.log('🖱️ MouseDown sur champ:', field.variable);
-    e.stopPropagation();
     e.preventDefault();
+    e.stopPropagation();
     
+    console.log('🖱️ MouseDown sur champ:', field.variable);
     onSelect();
+    
+    if (isResizing) return; // Ne pas démarrer le drag si on redimensionne
+    
     setIsDragging(true);
     
-    // Enregistrer la position de départ
-    setDragStart({
-      x: e.clientX,
-      y: e.clientY
-    });
-
+    const startX = e.clientX;
+    const startY = e.clientY;
     const startFieldX = field.x;
     const startFieldY = field.y;
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
       e.preventDefault();
-      e.stopPropagation();
       
-      // Calculer le déplacement
-      const deltaX = (e.clientX - dragStart.x) / scale;
-      const deltaY = (e.clientY - dragStart.y) / scale;
+      const deltaX = (e.clientX - startX) / scale;
+      const deltaY = (e.clientY - startY) / scale;
       
-      // Nouvelle position
       const newX = Math.max(0, startFieldX + deltaX);
       const newY = Math.max(0, startFieldY + deltaY);
       
-      console.log(`🖱️ Drag: delta(${deltaX.toFixed(1)}, ${deltaY.toFixed(1)}) -> position(${newX.toFixed(1)}, ${newY.toFixed(1)})`);
-      
-      // Mettre à jour immédiatement
       onUpdate({ x: newX, y: newY });
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
-      console.log('🖱️ MouseUp - fin du drag');
-      e.preventDefault();
-      e.stopPropagation();
-      
+    const handleMouseUp = () => {
       setIsDragging(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
-    // Attacher les événements au document pour capturer même si la souris sort du champ
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsResizing(true);
+    
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = field.width;
+    const startHeight = field.height;
+
+    const handleResizeMove = (e: MouseEvent) => {
+      e.preventDefault();
+      
+      const deltaX = (e.clientX - startX) / scale;
+      const deltaY = (e.clientY - startY) / scale;
+      
+      const newWidth = Math.max(20, startWidth + deltaX);
+      const newHeight = Math.max(15, startHeight + deltaY);
+      
+      onUpdate({ width: newWidth, height: newHeight });
+    };
+
+    const handleResizeUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeUp);
+    };
+
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeUp);
   };
 
   const getFieldIcon = () => {
@@ -92,11 +111,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   return (
     <div
       ref={fieldRef}
-      className={`absolute border-2 cursor-move select-none transition-all ${
+      className={`absolute border-2 cursor-move select-none transition-all pointer-events-auto ${
         isSelected 
-          ? 'border-blue-500 bg-blue-100/70 shadow-lg' 
-          : 'border-gray-400 bg-gray-100/50 hover:border-blue-400'
-      } ${isDragging ? 'opacity-75 shadow-xl z-50' : 'z-10'}`}
+          ? 'border-blue-500 bg-blue-100/70 shadow-lg z-20' 
+          : 'border-gray-400 bg-gray-100/50 hover:border-blue-400 z-10'
+      } ${isDragging ? 'opacity-75 shadow-xl z-30' : ''}`}
       style={{
         left: field.x * scale,
         top: field.y * scale,
@@ -104,15 +123,10 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         height: field.height * scale,
         minWidth: '40px',
         minHeight: '20px',
-        pointerEvents: 'auto', // IMPORTANT: Permettre les interactions
         userSelect: 'none',
         transform: isDragging ? 'scale(1.05)' : 'scale(1)',
       }}
       onMouseDown={handleMouseDown}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect();
-      }}
     >
       {/* Contenu du champ */}
       <div className="flex items-center justify-center h-full text-xs font-medium text-gray-700 px-1 pointer-events-none">
@@ -130,50 +144,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
             e.preventDefault();
             onDelete();
           }}
-          className="absolute -top-8 -right-2 bg-red-500 text-white hover:bg-red-600 text-xs px-2 py-1 shadow-lg z-10"
-          style={{ pointerEvents: 'auto' }}
+          className="absolute -top-8 -right-2 bg-red-500 text-white hover:bg-red-600 text-xs px-2 py-1 shadow-lg z-10 pointer-events-auto"
         >
           <Trash2 className="h-3 w-3" />
         </Button>
       )}
 
-      {/* Indicateurs de redimensionnement */}
+      {/* Coin de redimensionnement */}
       {isSelected && (
-        <>
-          {/* Coin bas-droite pour redimensionner */}
-          <div
-            className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-se-resize"
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              
-              const startX = e.clientX;
-              const startY = e.clientY;
-              const startWidth = field.width;
-              const startHeight = field.height;
-
-              const handleResizeMove = (e: MouseEvent) => {
-                e.preventDefault();
-                
-                const deltaX = (e.clientX - startX) / scale;
-                const deltaY = (e.clientY - startY) / scale;
-                
-                const newWidth = Math.max(20, startWidth + deltaX);
-                const newHeight = Math.max(15, startHeight + deltaY);
-                
-                onUpdate({ width: newWidth, height: newHeight });
-              };
-
-              const handleResizeUp = () => {
-                document.removeEventListener('mousemove', handleResizeMove);
-                document.removeEventListener('mouseup', handleResizeUp);
-              };
-
-              document.addEventListener('mousemove', handleResizeMove);
-              document.addEventListener('mouseup', handleResizeUp);
-            }}
-          />
-        </>
+        <div
+          className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-se-resize pointer-events-auto"
+          onMouseDown={handleResizeMouseDown}
+        />
       )}
     </div>
   );
