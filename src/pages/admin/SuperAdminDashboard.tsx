@@ -100,13 +100,10 @@ export const SuperAdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      // Récupérer les profils utilisateurs avec leurs statistiques
+      // Récupérer uniquement les profils utilisateurs (pas les données auth)
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
-        .select(`
-          *,
-          user_id
-        `);
+        .select('*');
 
       if (profilesError) {
         console.error('Erreur récupération profils:', profilesError);
@@ -115,12 +112,16 @@ export const SuperAdminDashboard: React.FC = () => {
       }
 
       // Récupérer les abonnements
-      const { data: subscriptions } = await supabase
+      const { data: subscriptions, error: subscriptionsError } = await supabase
         .from('stripe_user_subscriptions')
         .select('*');
 
+      if (subscriptionsError) {
+        console.warn('Erreur récupération abonnements:', subscriptionsError);
+      }
+
       // Récupérer les codes secrets actifs
-      const { data: secretCodes } = await supabase
+      const { data: secretCodes, error: secretCodesError } = await supabase
         .from('user_secret_codes')
         .select(`
           user_id,
@@ -129,33 +130,58 @@ export const SuperAdminDashboard: React.FC = () => {
         `)
         .or('expires_at.is.null,expires_at.gt.now()');
 
+      if (secretCodesError) {
+        console.warn('Erreur récupération codes secrets:', secretCodesError);
+      }
+
       // Récupérer les statistiques pour chaque utilisateur
-      const { data: formsStats } = await supabase
+      const { data: formsStats, error: formsError } = await supabase
         .from('forms')
         .select('user_id');
 
-      const { data: templatesStats } = await supabase
+      if (formsError) {
+        console.warn('Erreur récupération formulaires:', formsError);
+      }
+
+      const { data: templatesStats, error: templatesError } = await supabase
         .from('pdf_templates')
         .select('user_id');
 
-      const { count: pdfsCount } = await supabase
+      if (templatesError) {
+        console.warn('Erreur récupération templates:', templatesError);
+      }
+
+      const { count: pdfsCount, error: pdfsError } = await supabase
         .from('pdf_storage')
         .select('id', { count: 'exact' });
 
-      const { count: responsesCount } = await supabase
+      if (pdfsError) {
+        console.warn('Erreur récupération PDFs:', pdfsError);
+      }
+
+      const { count: responsesCount, error: responsesError } = await supabase
         .from('responses')
         .select('id', { count: 'exact' });
 
+      if (responsesError) {
+        console.warn('Erreur récupération réponses:', responsesError);
+      }
+
       // Construire les données utilisateurs
       const usersData = profiles?.map(profile => {
-        const subscription = subscriptions?.find(sub => sub.customer_id === profile.user_id);
+        const subscription = subscriptions?.find(sub => 
+          sub.customer_id === profile.user_id || 
+          sub.user_id === profile.user_id
+        );
         const secretCode = secretCodes?.find(code => code.user_id === profile.user_id);
         const userForms = formsStats?.filter(form => form.user_id === profile.user_id) || [];
         const userTemplates = templatesStats?.filter(template => template.user_id === profile.user_id) || [];
 
         return {
           id: profile.user_id,
-          email: `user-${profile.user_id.slice(0, 8)}@example.com`, // Email simulé
+          email: profile.first_name && profile.last_name 
+            ? `${profile.first_name.toLowerCase()}.${profile.last_name.toLowerCase()}@example.com`
+            : `user-${profile.user_id.slice(0, 8)}@example.com`,
           created_at: profile.created_at,
           last_sign_in_at: profile.updated_at,
           email_confirmed_at: profile.created_at,
@@ -176,16 +202,17 @@ export const SuperAdminDashboard: React.FC = () => {
           stats: {
             forms_count: userForms.length,
             templates_count: userTemplates.length,
-            pdfs_count: Math.floor(Math.random() * 10), // Simulé
-            responses_count: Math.floor(Math.random() * 50), // Simulé
+            pdfs_count: pdfsCount || 0,
+            responses_count: responsesCount || 0,
           }
         };
       }) || [];
 
       setUsers(usersData);
+      console.log('✅ Utilisateurs chargés:', usersData.length);
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
-      toast.error('Erreur lors du chargement des utilisateurs');
+      toast.error('Erreur lors du chargement des utilisateurs: ' + error.message);
     } finally {
       setLoading(false);
     }
