@@ -11,10 +11,11 @@ import {
   HardDrive, 
   User,
   Settings,
-  Shield
+  Shield,
   LogIn,
   UserPlus,
   Info
+} from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
   const { user } = useAuth();
