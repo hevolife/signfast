@@ -478,6 +478,37 @@ export class PDFService {
     }
   }
 
+  // RÉCUPÉRER L'ID DE L'UTILISATEUR CIBLE (avec gestion impersonation)
+  private static async getTargetUserId(): Promise<string | null> {
+    try {
+      // Récupérer l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.warn('💾 Utilisateur non connecté');
+        return null;
+      }
+
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          console.log('💾 🎭 Mode impersonation détecté, target_user_id:', data.target_user_id);
+          return data.target_user_id;
+        } catch (error) {
+          console.error('Erreur parsing impersonation data:', error);
+        }
+      }
+
+      // Mode normal
+      return user.id;
+    } catch (error) {
+      console.error('💾 Erreur récupération target user ID:', error);
+      return null;
+    }
+  }
+
   // UTILITAIRES PRIVÉS
   private static getLocalPDFs(): Record<string, any> {
     try {
