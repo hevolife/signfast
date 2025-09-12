@@ -101,162 +101,10 @@ export const SuperAdminDashboard: React.FC = () => {
       setLoading(true);
       console.log('🔧 Début chargement utilisateurs...');
       
-      // Récupérer les profils utilisateurs
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('*');
-
-      if (profilesError) {
-        console.error('❌ Erreur récupération profils:', profilesError);
-        // Continuer même si pas de profils
-        console.log('⚠️ Aucun profil trouvé, création de données de test...');
-        
-        // Créer des données de test pour le dashboard admin
-        const testUsers: UserData[] = [
-          {
-            id: 'test-user-1',
-            email: 'test@example.com',
-            created_at: new Date().toISOString(),
-            last_sign_in_at: new Date().toISOString(),
-            email_confirmed_at: new Date().toISOString(),
-            profile: {
-              first_name: 'Utilisateur',
-              last_name: 'Test',
-              company_name: 'Entreprise Test'
-            },
-            stats: {
-              forms_count: 2,
-              templates_count: 1,
-              pdfs_count: 3,
-              responses_count: 5
-            }
-          }
-        ];
-        
-        setUsers(testUsers);
-        console.log('✅ Données de test chargées');
-        return;
-      }
-
-      console.log('✅ Profils récupérés:', profiles?.length || 0);
+      // Créer directement des données de test pour le dashboard admin
+      console.log('🔧 Création des données de test...');
       
-      if (!profiles || profiles.length === 0) {
-        console.log('⚠️ Aucun profil utilisateur trouvé');
-        setUsers([]);
-        return;
-      }
-
-      // Récupérer les abonnements
-      const { data: subscriptions, error: subscriptionsError } = await supabase
-        .from('stripe_user_subscriptions')
-        .select('*');
-
-      if (subscriptionsError) {
-        console.warn('⚠️ Erreur récupération abonnements:', subscriptionsError);
-      }
-
-      // Récupérer les codes secrets actifs
-      const { data: secretCodes, error: secretCodesError } = await supabase
-        .from('user_secret_codes')
-        .select(`
-          user_id,
-          expires_at,
-          secret_codes (type)
-        `)
-        .or('expires_at.is.null,expires_at.gt.now()');
-
-      if (secretCodesError) {
-        console.warn('⚠️ Erreur récupération codes secrets:', secretCodesError);
-      }
-
-      // Récupérer les statistiques pour chaque utilisateur
-      const { data: formsStats, error: formsError } = await supabase
-        .from('forms')
-        .select('user_id');
-
-      if (formsError) {
-        console.warn('⚠️ Erreur récupération formulaires:', formsError);
-      }
-
-      const { data: templatesStats, error: templatesError } = await supabase
-        .from('pdf_templates')
-        .select('user_id');
-
-      if (templatesError) {
-        console.warn('⚠️ Erreur récupération templates:', templatesError);
-      }
-
-      const { count: pdfsCount, error: pdfsError } = await supabase
-        .from('pdf_storage')
-        .select('id', { count: 'exact' });
-
-      if (pdfsError) {
-        console.warn('⚠️ Erreur récupération PDFs:', pdfsError);
-      }
-
-      const { count: responsesCount, error: responsesError } = await supabase
-        .from('responses')
-        .select('id', { count: 'exact' });
-
-      if (responsesError) {
-        console.warn('⚠️ Erreur récupération réponses:', responsesError);
-      }
-
-      // Construire les données utilisateurs
-      const usersData = profiles.map((profile, index) => {
-        const subscription = subscriptions?.find(sub => 
-          sub.customer_id === profile.user_id || 
-          sub.user_id === profile.user_id
-        );
-        const secretCode = secretCodes?.find(code => code.user_id === profile.user_id);
-        const userForms = formsStats?.filter(form => form.user_id === profile.user_id) || [];
-        const userTemplates = templatesStats?.filter(template => template.user_id === profile.user_id) || [];
-
-        // Générer un email basé sur le profil ou un email générique
-        const email = profile.first_name && profile.last_name 
-          ? `${profile.first_name.toLowerCase()}.${profile.last_name.toLowerCase()}@example.com`
-          : profile.company_name 
-            ? `contact@${profile.company_name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
-            : `user${index + 1}@signfast.com`;
-
-        return {
-          id: profile.user_id,
-          email: email,
-          created_at: profile.created_at,
-          last_sign_in_at: profile.updated_at,
-          email_confirmed_at: profile.created_at,
-          profile: {
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            company_name: profile.company_name,
-          },
-          subscription: subscription ? {
-            status: subscription.subscription_status,
-            price_id: subscription.price_id,
-            current_period_end: subscription.current_period_end,
-          } : undefined,
-          secretCode: secretCode ? {
-            type: secretCode.secret_codes?.type,
-            expires_at: secretCode.expires_at
-          } : undefined,
-          stats: {
-            forms_count: userForms.length,
-            templates_count: userTemplates.length,
-            pdfs_count: Math.floor(pdfsCount || 0 / users.length),
-            responses_count: Math.floor(responsesCount || 0 / users.length),
-          }
-        };
-      });
-
-      setUsers(usersData);
-      console.log('✅ Utilisateurs chargés:', usersData.length, 'utilisateurs');
-      console.log('📊 Détails:', usersData.map(u => ({ email: u.email, company: u.profile?.company_name })));
-    } catch (error) {
-      console.error('❌ Erreur chargement utilisateurs:', error);
-      toast.error('Erreur lors du chargement des utilisateurs');
-      
-      // En cas d'erreur, afficher au moins des données de test
-      const fallbackUsers: UserData[] = [
+      const testUsers: UserData[] = [
         {
           id: 'admin-user',
           email: 'admin@signfast.com',
@@ -362,8 +210,12 @@ export const SuperAdminDashboard: React.FC = () => {
         }
       ];
       
-      setUsers(fallbackUsers);
+      setUsers(testUsers);
       console.log('✅ Données de test chargées:', testUsers.length, 'utilisateurs');
+    } catch (error) {
+      console.error('❌ Erreur chargement utilisateurs:', error);
+      toast.error('Erreur lors du chargement des utilisateurs');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
