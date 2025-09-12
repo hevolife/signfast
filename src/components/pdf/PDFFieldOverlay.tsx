@@ -272,35 +272,34 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
                 width: `${checkboxSize}px`,
                 height: `${checkboxSize}px`,
                 fontSize: `${checkboxSize * 0.6}px`
+              }}
             >
               ✓
             </div>
           </div>
         );
       
-    if (tempPosition && pdfViewerRef.current) {
+      case 'signature':
         return (
           <div className="flex items-center justify-center h-full text-gray-500 italic border-2 border-dashed border-gray-300 bg-gray-50">
-        const newXRatio = tempPosition.x / canvasDimensions.width;
-        const newYRatio = tempPosition.y / canvasDimensions.height;
+            <span style={{ fontSize: `${fontSize}px` }}>✍️ Signature</span>
+          </div>
         );
-        console.log('🎯 Mise à jour ratios:', {
-          tempPosition,
+      
+      case 'image':
         return (
           <div className="flex items-center justify-center h-full text-gray-500 border-2 border-dashed border-gray-300 bg-gray-50">
             <span style={{ fontSize: `${fontSize}px` }}>📷 Image</span>
           </div>
         );
-        // Mettre à jour les ratios
-        onUpdate({
+      
+      default:
+        return (
           <div className="truncate px-1 py-0.5 flex items-center">
             {getExampleText(field)}
           </div>
         );
     }
-    
-    // Nettoyer la position temporaire après la mise à jour
-    setTempPosition(null);
   };
 
   // Utiliser la position temporaire pendant le drag, sinon la position calculée
