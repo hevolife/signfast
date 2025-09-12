@@ -19,7 +19,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  }
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
@@ -156,9 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const normalAuthFlow = () => {
-  };
-  
-  useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error && error.message.includes('Invalid Refresh Token')) {
@@ -183,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => subscription?.unsubscribe();
-  }, []);
+  };
 
   // Fonction pour arrêter l'impersonation
   const stopImpersonation = useCallback(() => {
@@ -192,6 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Mode impersonation désactivé');
     window.location.href = '/admin';
   }, []);
+
   const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -238,7 +235,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // For other errors, assume session is still valid
       return true;
     }
-  }, [user, session, signOut]);
+  }, [user, session, signOut, isImpersonating]);
+
+  const wrapSupabaseCall = useCallback(async <T>(call: () => Promise<T>): Promise<T> => {
+    try {
+      return await call();
+    } catch (error: any) {
+      if (error?.status === 403 || error?.message?.includes('session_not_found')) {
+        console.warn('Session invalide détectée dans wrapSupabaseCall, déconnexion automatique');
+        await signOut();
+        throw new Error('Session expirée, veuillez vous reconnecter');
+      }
+      throw error;
+    }
+  }, [signOut]);
 
   const value = {
     user,
@@ -250,6 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     checkAndSignOutIfInvalid,
+    wrapSupabaseCall,
   };
 
   return (
