@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
+import { AdminSetupButton } from './components/admin/AdminSetupButton';
 import { Navbar } from './components/layout/Navbar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -30,6 +31,8 @@ const AppContent: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isPublicForm ? '' : 'pb-16 md:pb-0'}`}>
       {!isPublicForm && <Navbar />}
+      {/* Bouton de création admin - visible seulement en développement ou si pas d'admin */}
+      {(import.meta.env.DEV || location.pathname === '/') && <AdminSetupButton />}
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
