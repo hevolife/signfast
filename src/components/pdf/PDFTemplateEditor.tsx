@@ -185,7 +185,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const addField = useCallback((type: PDFField['type']) => {
     // Activer le mode de placement manuel
     setDraggedFieldType(type);
-    toast.info('Cliquez sur le PDF pour placer le champ', { duration: 3000 });
+    toast('Cliquez sur le PDF pour placer le champ', { duration: 3000 });
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
