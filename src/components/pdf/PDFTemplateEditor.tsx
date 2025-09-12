@@ -602,9 +602,15 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       </Card>
                     )}
                     </div>
+                  </div>
+                </div>
+              </div>
 
               <div className="lg:hidden space-y-6">
                 {/* Palette mobile */}
+              </div>
+            </div>
+          )}
           {/* Input caché pour le changement de PDF */}
           <input
             type="file"
