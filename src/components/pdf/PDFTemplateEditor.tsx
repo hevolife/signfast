@@ -424,9 +424,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       onScaleChange={setScale}
                     >
                       {/* Overlay des champs */}
-                      {fields
-                        .filter(field => field.page === currentPage)
-                        .map(field => (
+                      {fields.map(field => (
                           <PDFFieldOverlay
                             key={field.id}
                             field={field}
@@ -436,7 +434,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                             onUpdate={(updates) => updateField(field.id, updates)}
                             onDelete={() => deleteField(field.id)}
                           />
-                        ))}
+                      ))}
                     </PDFViewer>
                   </Card>
                 </div>

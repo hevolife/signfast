@@ -25,7 +25,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   containerHeight,
 }) => {
   const [isResizing, setIsResizing] = useState(false);
-  const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   React.useEffect(() => {
     const checkMobile = () => {
