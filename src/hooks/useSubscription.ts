@@ -78,6 +78,7 @@ export const useSubscription = () => {
         const { data, error } = await supabase
           .from('stripe_user_subscriptions')
           .select('*')
+          .eq('customer_id', targetUserId)
           .limit(1);
 
         if (error && error.code !== 'PGRST116') {
@@ -97,6 +98,8 @@ export const useSubscription = () => {
       let secretCodeExpiresAt = null;
 
       try {
+        console.log('🔑 Vérification codes secrets pour userId:', targetUserId);
+        
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
           .select(`
@@ -107,19 +110,30 @@ export const useSubscription = () => {
             )
           `)
           .eq('user_id', targetUserId)
-          .limit(1);
+          .order('activated_at', { ascending: false });
 
+        console.log('🔑 Codes secrets trouvés:', secretCodeData?.length || 0);
+        if (secretCodeData) {
+          console.log('🔑 Détails codes:', secretCodeData.map(c => ({
+            type: c.secret_codes?.type,
+            expires_at: c.expires_at
+          })));
+        }
         if (!secretCodeError && secretCodeData && secretCodeData.length > 0) {
           // Vérifier chaque code pour trouver un code actif
           for (const codeData of secretCodeData) {
             const codeType = codeData.secret_codes?.type;
             const expiresAt = codeData.expires_at;
             
+            console.log('🔑 Vérification code:', { type: codeType, expires_at: expiresAt });
+            
             // Un code est actif si :
             // - C'est un code à vie (expires_at est null)
             // - OU c'est un code mensuel non expiré
             const isLifetime = codeType === 'lifetime' && !expiresAt;
             const isValidMonthly = codeType === 'monthly' && expiresAt && new Date(expiresAt) > new Date();
+            
+            console.log('🔑 État du code:', { isLifetime, isValidMonthly });
             
             if (isLifetime || isValidMonthly) {
               hasActiveSecretCode = true;
@@ -134,6 +148,12 @@ export const useSubscription = () => {
             }
           }
         }
+        
+        console.log('🔑 Résultat final codes secrets:', {
+          hasActiveSecretCode,
+          secretCodeType,
+          secretCodeExpiresAt
+        });
       } catch (secretCodeError) {
         console.warn('Erreur codes secrets (ignorée):', secretCodeError);
       }
@@ -145,6 +165,13 @@ export const useSubscription = () => {
       
       const isSubscribed = hasStripeAccess || hasActiveSecretCode;
 
+      console.log('🔑 État final abonnement:', {
+        hasStripeAccess,
+        hasActiveSecretCode,
+        isSubscribed,
+        targetUserId,
+        isImpersonating: !!impersonationData
+      });
       setSubscription({
         isSubscribed,
         subscriptionStatus: stripeSubscription?.subscription_status || null,
