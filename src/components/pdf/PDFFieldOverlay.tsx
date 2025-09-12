@@ -60,7 +60,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   }));
 
   // Utiliser dragPreview pour personnaliser l'aperçu de drag
-  dragPreview(drop(null));
+  dragPreview(null);
   const handleFieldClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('🖱️ Clic sur champ:', field.id);
