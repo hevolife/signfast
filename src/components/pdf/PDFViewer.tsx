@@ -16,7 +16,7 @@ export interface PDFViewerRef {
   canvasRefs: React.MutableRefObject<(HTMLCanvasElement | null)[]>;
 }
 
-export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
+const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewerProps> = ({
   file,
   onPageClick,
   children,
@@ -355,4 +355,6 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
       </div>
     </div>
   );
-});
+};
+
+export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(PDFViewerComponent);
