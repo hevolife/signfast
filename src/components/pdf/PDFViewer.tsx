@@ -18,10 +18,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onScaleChange,
 }) => {
   const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
 
@@ -32,10 +31,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   }, [file]);
 
   useEffect(() => {
-    if (pdfDoc && pageNumber) {
-      renderPage();
+    if (pdfDoc && numPages > 0) {
+      renderAllPages();
     }
-  }, [pdfDoc, pageNumber, scale]);
+  }, [pdfDoc, numPages, scale]);
 
   const loadPDF = async () => {
     if (!file) return;
@@ -59,6 +58,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       const pdf = await pdfjsLib.getDocument(pdfData).promise;
       setPdfDoc(pdf);
       setNumPages(pdf.numPages);
+      // Initialiser les refs pour toutes les pages
+      canvasRefs.current = new Array(pdf.numPages).fill(null);
       setLoading(false);
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -67,33 +68,40 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     }
   };
 
-  const renderPage = async () => {
-    if (!pdfDoc || !canvasRef.current) return;
+  const renderAllPages = async () => {
+    if (!pdfDoc) return;
 
-    try {
-      const page = await pdfDoc.getPage(pageNumber);
-      const viewport = page.getViewport({ scale });
-      
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const canvas = canvasRefs.current[pageNum - 1];
+      if (!canvas) continue;
 
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport,
-      };
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale });
+        
+        const context = canvas.getContext('2d');
+        
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
 
-      await page.render(renderContext).promise;
-    } catch (error) {
-      console.error('Error rendering page:', error);
-      setError('Erreur lors du rendu de la page');
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+
+        await page.render(renderContext).promise;
+      } catch (error) {
+        console.error(`Error rendering page ${pageNum}:`, error);
+      }
     }
   };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!onPageClick) return;
+
+    // Déterminer quelle page a été cliquée
+    const canvas = event.currentTarget;
+    const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
 
     const rect = event.currentTarget.getBoundingClientRect();
     
@@ -115,14 +123,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const zoomOut = () => {
     const newScale = Math.max(scale - 0.2, 0.5);
     onScaleChange?.(newScale);
-  };
-
-  const goToPrevPage = () => {
-    setPageNumber(Math.max(pageNumber - 1, 1));
-  };
-
-  const goToNextPage = () => {
-    setPageNumber(Math.min(pageNumber + 1, numPages));
   };
 
   if (!file) {
@@ -165,15 +165,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
 
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <Button variant="ghost" size="sm" onClick={goToPrevPage} disabled={pageNumber <= 1}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
           <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-            Page {pageNumber} sur {numPages}
+            {numPages} page{numPages > 1 ? 's' : ''}
           </span>
-          <Button variant="ghost" size="sm" onClick={goToNextPage} disabled={pageNumber >= numPages}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
@@ -182,8 +176,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         ref={containerRef}
         className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 sm:p-4"
       >
-        <div className="flex justify-center min-w-0">
-          <div className="relative">
+        <div className="flex flex-col items-center space-y-4 min-w-0">
+          {Array.from({ length: numPages }, (_, index) => (
+            <div key={index} className="relative">
+              <div className="text-center mb-2">
+                <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
+                  Page {index + 1}
+                </span>
+              </div>
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10 rounded-lg p-4">
                 <div className="text-center">
@@ -194,15 +194,25 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             )}
             
             <canvas
-              ref={canvasRef}
+              ref={(el) => (canvasRefs.current[index] = el)}
               onClick={handleCanvasClick}
               className="border border-gray-300 dark:border-gray-600 shadow-lg cursor-crosshair bg-white max-w-full h-auto"
               style={{ display: loading ? 'none' : 'block' }}
             />
 
-            {/* Overlay pour les champs */}
-            {!loading && !error && children}
-          </div>
+            {/* Overlay pour les champs de cette page */}
+            {!loading && !error && (
+              <div className="absolute inset-0">
+                {React.Children.map(children, (child) => {
+                  if (React.isValidElement(child) && child.props.field?.page === index + 1) {
+                    return child;
+                  }
+                  return null;
+                })}
+              </div>
+            )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
