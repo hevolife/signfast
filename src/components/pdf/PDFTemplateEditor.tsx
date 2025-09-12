@@ -602,41 +602,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       </Card>
                     )}
                     </div>
-                  </div>
-                  </div>
-                </div>
-
-              <div className="lg:hidden space-y-6">
-                {/* Palette mobile */}
-                <PDFFieldPalette onAddField={addField} />
-                
-                {/* PDF mobile */}
-                <PDFCanvasWithDrop
-                  pdfFile={pdfFile}
-                  fields={fields}
-                  selectedField={selectedField}
-                  currentPage={currentPage}
-                  scale={scale}
-                  pdfViewerRef={pdfViewerRef}
-                  onPageClick={handlePageClick}
-                  onPageChange={setCurrentPage}
-                  onScaleChange={setScale}
-                  onSelectField={setSelectedField}
-                  onUpdateField={updateField}
-                  onDeleteField={deleteField}
-                />
-                
-                {/* Propriétés mobile */}
-                {selectedFieldData && (
-                  <PDFFieldProperties
-                    field={selectedFieldData}
-                    onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
-                    availableVariables={actualFormVariables}
-                    linkedFormId={currentLinkedFormId}
-                  />
-                )}
-              </div>
-              </div>
 
               <div className="lg:hidden space-y-6">
                 {/* Palette mobile */}
