@@ -97,40 +97,6 @@ export class PDFGenerator {
       } catch (error) {
         console.error('🎨 ❌ Erreur chargement polices:', error);
         
-        // Sur mobile, essayer avec une seule police
-        if (isMobile) {
-          console.log('📱 Fallback: utilisation police unique...');
-          try {
-            font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-            boldFont = font; // Utiliser la même police
-          } catch (fontError) {
-            throw new Error('Impossible de charger les polices sur mobile: ' + fontError.message);
-          }
-        } else {
-          throw new Error('Impossible de charger les polices: ' + error.message);
-        }
-      }
-      console.log('🎨 Polices chargées');
-
-      // Traiter chaque champ
-      let processedFields = 0;
-      const totalFields = template.fields.length;
-      
-      // Collecter tous les fichiers/images du formulaire au début
-      const formFiles = Object.entries(data).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log('📁 ===== FICHIERS FORMULAIRE =====');
-      console.log('📁 Nombre total de fichiers image:', formFiles.length);
-      formFiles.forEach(([key, value], index) => {
-        console.log(`📁 Fichier ${index + 1}:`);
-        console.log(`📁   - Clé: "${key}"`);
-        console.log(`📁   - Type: ${typeof value}`);
-        console.log(`📁   - Est base64: ${typeof value === 'string' && value.startsWith('data:image')}`);
-        console.log(`📁   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
-        console.log(`📁   - Format: ${typeof value === 'string' ? value.substring(0, 30) + '...' : 'N/A'}`);
-      });
-      
       let fileIndex = 0; // Index pour lier automatiquement les fichiers
       
       console.log('🎨 ===== TRAITEMENT DES CHAMPS =====');
