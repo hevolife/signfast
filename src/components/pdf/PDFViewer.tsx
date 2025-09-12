@@ -175,10 +175,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       <div 
         ref={containerRef}
         className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 sm:p-4"
+        id="pdf-container"
       >
         <div className="flex flex-col items-center space-y-4 min-w-0">
           {Array.from({ length: numPages }, (_, index) => (
-            <div key={index} className="relative">
+            <div key={index} className="relative" data-page={index + 1}>
               <div className="text-center mb-2">
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
                   Page {index + 1}
@@ -197,22 +198,20 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               ref={(el) => (canvasRefs.current[index] = el)}
               onClick={handleCanvasClick}
               className="border border-gray-300 dark:border-gray-600 shadow-lg cursor-crosshair bg-white max-w-full h-auto"
+              data-page={index + 1}
               style={{ display: loading ? 'none' : 'block' }}
             />
-
-            {/* Overlay pour les champs de cette page */}
-            {!loading && !error && (
-              <div className="absolute inset-0">
-                {React.Children.map(children, (child) => {
-                  if (React.isValidElement(child) && child.props.field?.page === index + 1) {
-                    return child;
-                  }
-                  return null;
-                })}
-              </div>
-            )}
             </div>
           ))}
+          
+          {/* Overlay global pour tous les champs */}
+          {!loading && !error && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="relative w-full h-full pointer-events-auto">
+                {children}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
