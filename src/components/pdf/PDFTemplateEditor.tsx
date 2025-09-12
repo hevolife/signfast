@@ -255,42 +255,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       return;
     }
 
-    // Mode normal - sélection de champ existant
-    if (!pdfViewerRef.current) return;
-
-    const pdfDimensions = pdfViewerRef.current.getPDFDimensions(page);
-    const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
-    
-    if (!pdfDimensions || !canvasDimensions) return;
-
-    // Calculer les ratios directement depuis les coordonnées canvas réelles
-    const xRatio = canvasX / canvasDimensions.width;
-    const yRatio = canvasY / canvasDimensions.height;
-    
-    console.log(`🖱️ Clic page ${page} à canvas (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
-    console.log(`🖱️ Canvas dimensions: ${canvasDimensions.width} × ${canvasDimensions.height}`);
-    console.log(`🖱️ PDF dimensions: ${pdfDimensions.width} × ${pdfDimensions.height} points`);
-    console.log(`🖱️ Ratios calculés: (${xRatio.toFixed(4)}, ${yRatio.toFixed(4)})`);
-
+    // Mode normal - changer de page
     setCurrentPage(page);
-
-    if (selectedField) {
-      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
-      if (!canvasDimensions) return;
-
-      const xRatio = canvasX / canvasDimensions.width;
-      const yRatio = canvasY / canvasDimensions.height;
-
-      updateField(selectedField, {
-        page,
-        xRatio,
-        yRatio
-      });
-
-      toast.success(`Champ déplacé`, { duration: 1000 });
-    } else {
-      setSelectedField(null);
-    }
+    setSelectedField(null);
   }, [selectedField, updateField, draggedFieldType]);
 
   // Annuler le mode placement si on appuie sur Échap

@@ -83,34 +83,50 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     onSelect(field);
     setIsDragging(true);
     
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPosition = getDisplayPosition();
+    
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !pdfViewerRef.current) return;
+      if (!pdfViewerRef.current) return;
       
       const canvas = pdfViewerRef.current.getCanvasElement(currentPage);
       if (!canvas) return;
       
-      // Utiliser les dimensions réelles du canvas pour le calcul des ratios
       const rect = canvas.getBoundingClientRect();
-      const displayX = e.clientX - rect.left;
-      const displayY = e.clientY - rect.top;
+      
+      // Calculer le déplacement depuis le point de départ
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
       
       // Convertir en coordonnées canvas réelles
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       
-      const canvasX = displayX * scaleX;
-      const canvasY = displayY * scaleY;
+      // Nouvelle position = position de départ + déplacement
+      const newCanvasX = startPosition.x + (deltaX * scaleX);
+      const newCanvasY = startPosition.y + (deltaY * scaleY);
       
       // Contraindre dans les limites du canvas
-      const constrainedX = Math.max(0, Math.min(canvas.width - position.width * scaleX, canvasX));
-      const constrainedY = Math.max(0, Math.min(canvas.height - position.height * scaleY, canvasY));
+      const fieldWidth = (field.widthRatio || 0.1) * canvas.width;
+      const fieldHeight = (field.heightRatio || 0.05) * canvas.height;
+      
+      const constrainedX = Math.max(0, Math.min(canvas.width - fieldWidth, newCanvasX));
+      const constrainedY = Math.max(0, Math.min(canvas.height - fieldHeight, newCanvasY));
       
       // Calculer les nouveaux ratios
       const newXRatio = constrainedX / canvas.width;
       const newYRatio = constrainedY / canvas.height;
       
-      console.log(`🖱️ Déplacement: ratios (${newXRatio.toFixed(4)}, ${newYRatio.toFixed(4)})`);
+      // Mettre à jour la position locale immédiatement pour un feedback fluide
+      setPosition({
+        x: constrainedX,
+        y: constrainedY,
+        width: fieldWidth,
+        height: fieldHeight
+      });
       
+      // Mettre à jour les ratios dans le champ
       onUpdate({
         ...field,
         xRatio: newXRatio,
@@ -124,6 +140,12 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      
+      // Recalculer la position finale pour s'assurer de la cohérence
+      setTimeout(() => {
+        const finalPosition = getDisplayPosition();
+        setPosition(finalPosition);
+      }, 50);
     };
     
     document.addEventListener('mousemove', handleMouseMove);
