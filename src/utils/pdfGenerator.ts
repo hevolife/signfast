@@ -3,9 +3,7 @@ import { PDFField, PDFTemplate } from '../types/pdf';
 
 export class PDFGenerator {
   static async generatePDF(
-    template
-  )
-}: PDFTemplate,
+    template: PDFTemplate,
     data: Record<string, any>,
     originalPdfBytes: Uint8Array
   ): Promise<Uint8Array> {
