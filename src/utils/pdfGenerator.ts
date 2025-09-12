@@ -121,6 +121,11 @@ export class PDFGenerator {
       const totalFields = template.fields.length;
       
       console.log('🎨 ===== TRAITEMENT DES CHAMPS =====');
+      console.log('🎨 Pages disponibles:', pages.length);
+      console.log('🎨 Champs par page:', template.fields.reduce((acc, field) => {
+        acc[field.page] = (acc[field.page] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>));
       
       for (const field of template.fields) {
         console.log(`🎨 ===== CHAMP ${processedFields + 1}/${totalFields} =====`);
@@ -128,6 +133,7 @@ export class PDFGenerator {
         console.log(`🎨 Type: ${field.type}`);
         console.log(`🎨 Position: (${field.x}, ${field.y})`);
         console.log(`🎨 Taille: ${field.width}x${field.height}`);
+        console.log(`🎨 Page: ${field.page}`);
         
         // Sur mobile, ajouter des pauses entre les champs pour éviter les blocages
         if (isMobile && processedFields > 0 && processedFields % 3 === 0) {
@@ -135,15 +141,31 @@ export class PDFGenerator {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        const page = pages[field.page - 1];
-        if (!page) continue;
+        const pageIndex = (field.page || 1) - 1;
+        const page = pages[pageIndex];
+        
+        if (!page) {
+          console.log(`🎨 ❌ Page ${field.page} non trouvée (index ${pageIndex}), pages disponibles: ${pages.length}`);
+          continue;
+        }
+        
+        console.log(`🎨 ✅ Page ${field.page} trouvée (index ${pageIndex})`);
 
         const { height: currentPageHeight } = page.getSize();
+        console.log(`🎨 Hauteur page ${field.page}: ${currentPageHeight}`);
         
         // CORRECTION CRITIQUE: Utiliser directement les coordonnées de l'éditeur
         // L'éditeur utilise un système top-left (0,0 en haut à gauche)
         // PDF-lib utilise un système bottom-left (0,0 en bas à gauche)
         // Conversion: y_pdf = pageHeight - y_editor - fieldHeight
+        
+        // Conversion de coordonnées: éditeur (top-left) vers PDF (bottom-left)
+        const pdfX = field.x;
+        const pdfY = currentPageHeight - field.y - field.height;
+        
+        console.log(`🎨   - Position éditeur: (${field.x}, ${field.y}) sur page ${field.page}`);
+        console.log(`🎨   - Position PDF finale: (${pdfX}, ${pdfY}) sur page ${field.page}`);
+        
         let value;
         
         // Pour les champs image, utiliser automatiquement les fichiers du formulaire
@@ -179,16 +201,6 @@ export class PDFGenerator {
           value = this.getFieldValue(field, data);
         }
         
-        console.log(`🎨 Champ "${field.variable}":`);
-        console.log(`🎨   - Position éditeur: (${field.x}, ${field.y})`);
-        console.log(`🎨   - Taille: ${field.width}x${field.height}`);
-        console.log(`🎨   - Page height: ${currentPageHeight}`);
-        
-        // Conversion de coordonnées: éditeur (top-left) vers PDF (bottom-left)
-        const pdfX = field.x;
-        const pdfY = currentPageHeight - field.y - field.height;
-        
-        console.log(`🎨   - Position PDF finale: (${pdfX}, ${pdfY})`);
         console.log(`🎨   - Valeur: ${
           typeof value === 'string' && value.startsWith('data:image') 
             ? `IMAGE_BASE64 (${value.length} caractères)` 
@@ -206,7 +218,7 @@ export class PDFGenerator {
           case 'number':
             try {
               await this.drawText(page, value, pdfX, pdfY, field, font);
-              console.log(`🎨 ✅ Texte dessiné: "${value}"`);
+              console.log(`🎨 ✅ Texte dessiné: "${value}" sur page ${field.page}`);
             } catch (error) {
               console.error(`🎨 ❌ Erreur dessin texte pour ${field.variable}:`, error);
               if (isMobile) {
@@ -224,7 +236,7 @@ export class PDFGenerator {
             const dateValue = this.formatDate(value);
             try {
               await this.drawText(page, dateValue, pdfX, pdfY, field, font);
-              console.log(`🎨 ✅ Date dessinée: "${dateValue}"`);
+              console.log(`🎨 ✅ Date dessinée: "${dateValue}" sur page ${field.page}`);
             } catch (error) {
               console.error(`🎨 ❌ Erreur dessin date pour ${field.variable}:`, error);
             }
@@ -233,7 +245,7 @@ export class PDFGenerator {
           case 'checkbox':
             try {
               await this.drawCheckbox(page, value, pdfX, pdfY, field);
-              console.log(`🎨 ✅ Checkbox dessinée: ${value}`);
+              console.log(`🎨 ✅ Checkbox dessinée: ${value} sur page ${field.page}`);
             } catch (error) {
               console.error(`🎨 ❌ Erreur dessin checkbox pour ${field.variable}:`, error);
             }
@@ -244,9 +256,10 @@ export class PDFGenerator {
               try {
                 console.log(`✍️ ===== TRAITEMENT SIGNATURE =====`);
                 console.log(`✍️ Variable: ${field.variable}`);
+                console.log(`✍️ Page: ${field.page}`);
                 console.log(`✍️ Taille données: ${value.length} caractères`);
                 await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, field);
-                console.log(`✍️ ✅ Signature dessinée avec succès`);
+                console.log(`✍️ ✅ Signature dessinée avec succès sur page ${field.page}`);
               } catch (error) {
                 console.error(`✍️ ❌ Erreur dessin signature pour ${field.variable}:`, error);
                 if (isMobile) {
@@ -265,6 +278,7 @@ export class PDFGenerator {
                 console.log(`🖼️ ===== DÉBUT DESSIN IMAGE ${processedFields + 1} =====`);
                 console.log(`🖼️ Variable: ${field.variable}`);
                 console.log(`🖼️ Variable normalisée: ${field.variable.replace(/^\$\{|\}$/g, '')}`);
+                console.log(`🖼️ Page: ${field.page}`);
                 console.log(`🖼️ Position: (${pdfX}, ${pdfY})`);
                 console.log(`🖼️ Taille: ${field.width}x${field.height}`);
                 console.log(`🖼️ Type de données: base64`);
@@ -278,10 +292,11 @@ export class PDFGenerator {
                 }
                 
                 await this.drawImage(pdfDoc, page, value, pdfX, pdfY, field);
-                console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS`);
+                console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS sur page ${field.page}`);
               } catch (error) {
                 console.error(`🖼️ ❌ ERREUR DESSIN IMAGE:`, error);
                 console.error(`🖼️ Variable problématique: ${field.variable}`);
+                console.error(`🖼️ Page problématique: ${field.page}`);
                 console.error(`🖼️ Taille données: ${typeof value === 'string' ? value.length : 'N/A'}`);
                 if (isMobile) {
                   console.log('📱 ❌ Image ignorée sur mobile (erreur)');
@@ -305,6 +320,7 @@ export class PDFGenerator {
                     font,
                     color: rgb(0.5, 0.5, 0.5),
                   });
+                  console.log(`🖼️ ✅ Placeholder dessiné sur page ${field.page}`);
                 } catch (placeholderError) {
                   console.error('🖼️ ❌ Impossible de dessiner le placeholder:', placeholderError);
                 }
@@ -312,6 +328,7 @@ export class PDFGenerator {
             } else {
               console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ (pas de données valides):`);
               console.log(`🖼️   - Champ: ${field.variable}`);
+              console.log(`🖼️   - Page: ${field.page}`);
               console.log(`🖼️   - Type valeur: ${typeof value}`);
               console.log(`🖼️   - Valeur: ${typeof value === 'string' ? (value.startsWith('data:') ? 'BASE64_DATA' : value) : value}`);
               console.log(`🖼️   - Valeur valide: ${typeof value === 'string' && value.startsWith('data:image')}`);
@@ -323,10 +340,11 @@ export class PDFGenerator {
                 console.log(`🖼️ 🔄 TENTATIVE ASSIGNATION AUTOMATIQUE:`);
                 console.log(`🖼️   - Fichier auto: ${fileIndex + 1}/${formFiles.length}`);
                 console.log(`🖼️   - Clé source: "${formFiles[fileIndex][0]}"`);
+                console.log(`🖼️   - Page cible: ${field.page}`);
                 
                 try {
                   await this.drawImage(pdfDoc, page, autoValue, pdfX, pdfY, field);
-                  console.log(`🖼️ ✅ IMAGE ASSIGNÉE AUTOMATIQUEMENT`);
+                  console.log(`🖼️ ✅ IMAGE ASSIGNÉE AUTOMATIQUEMENT sur page ${field.page}`);
                   fileIndex++;
                 } catch (autoError) {
                   console.error(`🖼️ ❌ Erreur assignation automatique:`, autoError);
@@ -348,6 +366,14 @@ export class PDFGenerator {
       }
 
       console.log('🎨 Tous les champs traités, sauvegarde du PDF...');
+      console.log('🎨 Résumé des champs traités par page:');
+      const fieldsByPage = template.fields.reduce((acc, field) => {
+        acc[field.page] = (acc[field.page] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
+      Object.entries(fieldsByPage).forEach(([page, count]) => {
+        console.log(`🎨   Page ${page}: ${count} champs`);
+      });
       
       // Retourner le PDF généré
       let finalPdf;
