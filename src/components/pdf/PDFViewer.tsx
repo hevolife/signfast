@@ -254,9 +254,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
           </div>
         )}
 
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {fields.length} champ{fields.length > 1 ? 's' : ''}
-        </div>
       </div>
 
       {/* Conteneur PDF */}
