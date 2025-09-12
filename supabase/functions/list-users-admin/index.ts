@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
 
           const { count: formsCount } = await supabaseAdmin.from('forms').select('id', { count: 'exact' }).eq('user_id', authUser.id);
           const { count: templatesCount } = await supabaseAdmin.from('pdf_templates').select('id', { count: 'exact' }).eq('user_id', authUser.id);
-          const { count: pdfsCount } = await supabaseAdmin.from('pdf_storage').select('id', { count: 'exact' });
+          const { count: pdfsCount } = await supabaseAdmin.from('pdf_storage').select('id', { count: 'exact' }).eq('user_id', authUser.id);
           const { count: responsesCount } = await supabaseAdmin.from('responses').select('id', { count: 'exact' });
 
           return {
