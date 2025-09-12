@@ -156,10 +156,8 @@ export const AdminSetupButton: React.FC = () => {
               </Button>
             </div>
           </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Always show the button if no admin account exists yet
+  // This allows creation of the initial admin account in production
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
