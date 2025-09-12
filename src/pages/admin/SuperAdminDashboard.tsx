@@ -71,7 +71,7 @@ interface SecretCode {
 }
 
 export const SuperAdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,9 +94,13 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const loadUsers = async () => {
     try {
+      if (!session?.access_token) {
+        throw new Error('Session non disponible');
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
       });
