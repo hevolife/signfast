@@ -704,10 +704,16 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
           
           console.log('📍 Position calculée:', { x, y, page: currentPage });
           
-          if (item.type === 'existing-field' && item.id) {
+          if (item.id) {
             // Déplacer un champ existant
             console.log('🔄 Déplacement champ existant:', item.id, 'vers', { x, y, page: currentPage });
-            onUpdateField(item.id, { x, y, page: currentPage });
+            
+            // Vérifier que les coordonnées sont valides
+            if (x >= 0 && y >= 0 && x < 600 && y < 800) {
+              onUpdateField(item.id, { x: Math.round(x), y: Math.round(y), page: currentPage });
+            } else {
+              console.warn('📍 Position invalide, déplacement annulé:', { x, y });
+            }
           } else if (item.type && !item.id) {
             // Nouveau champ depuis la palette
             console.log('➕ Nouveau champ depuis palette:', item.type, 'à', { x, y, page: currentPage });
@@ -723,12 +729,8 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
   }));
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    // Désélectionner seulement si on clique sur le canvas lui-même
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'CANVAS') {
-      console.log('🖱️ Clic sur canvas vide - désélection');
-      onSelectField(null);
-    }
+    console.log('🖱️ Clic sur canvas');
+    // Ne pas désélectionner automatiquement pour éviter les conflits
   };
 
   return (

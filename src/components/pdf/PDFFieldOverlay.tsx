@@ -26,14 +26,41 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     return null;
   }
 
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
     type: 'pdf-field',
-    item: { id: field.id, type: 'existing-field' },
+    item: () => {
+      console.log('🎯 Début drag pour champ:', field.id);
+      return { 
+        id: field.id, 
+        type: 'existing-field',
+        originalX: field.x,
+        originalY: field.y,
+        originalPage: field.page
+      };
+    },
+    end: (item, monitor) => {
+      console.log('🎯 Fin drag pour champ:', field.id);
+      const dropResult = monitor.getDropResult();
+      console.log('🎯 Drop result:', dropResult);
+      
+      if (!dropResult?.moved) {
+        console.log('🎯 Drop échoué, restauration position originale');
+        // Restaurer la position originale si le drop a échoué
+        onUpdate({
+          ...field,
+          x: item.originalX,
+          y: item.originalY,
+          page: item.originalPage
+        });
+      }
+    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   }));
 
+  // Utiliser dragPreview pour personnaliser l'aperçu de drag
+  dragPreview(drop(null));
   const handleFieldClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('🖱️ Clic sur champ:', field.id);
@@ -42,10 +69,16 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     console.log('🗑️ Suppression champ:', field.id);
     onDelete(field.id);
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    console.log('🖱️ MouseDown sur champ:', field.id);
+    // Sélectionner le champ au mouseDown pour préparer le drag
+    onSelect(field);
+  };
   const getExampleText = (field: PDFField): string => {
     const variable = field.variable.toLowerCase();
     
@@ -155,15 +188,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         pointerEvents: 'auto'
       }}
       onClick={handleFieldClick}
+      onMouseDown={handleMouseDown}
     >
       {renderFieldContent()}
       
       {/* Delete button - Always visible when selected */}
       {isSelected && (
         <button
-          className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 text-white rounded-full text-xl font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50 cursor-pointer"
+          className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 text-white rounded-full text-lg font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50 cursor-pointer"
           onClick={handleDeleteClick}
+          onMouseDown={(e) => e.stopPropagation()}
           title="Supprimer le champ"
+          style={{ pointerEvents: 'auto' }}
         >
           ×
         </button>
@@ -173,13 +209,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {isSelected && (
         <>
           <div 
-            className="absolute -bottom-2 -right-2 w-5 h-5 bg-blue-500 cursor-se-resize border-2 border-white shadow-sm z-20"
+            className="absolute -bottom-2 -right-2 w-5 h-5 bg-blue-500 cursor-se-resize border-2 border-white shadow-sm z-20 pointer-events-none"
           />
           <div 
-            className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-5 h-4 bg-blue-500 cursor-s-resize border-2 border-white shadow-sm z-20"
+            className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-5 h-4 bg-blue-500 cursor-s-resize border-2 border-white shadow-sm z-20 pointer-events-none"
           />
           <div 
-            className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-5 bg-blue-500 cursor-e-resize border-2 border-white shadow-sm z-20"
+            className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-5 bg-blue-500 cursor-e-resize border-2 border-white shadow-sm z-20 pointer-events-none"
           />
         </>
       )}
