@@ -413,20 +413,8 @@ export class PDFService {
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
     try {
-      // Récupérer l'utilisateur actuel
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      // Nettoyer Supabase
-      if (user) {
-        try {
-        await supabase
-          .from('pdf_storage')
-          .delete()
-          .eq('user_id', user.id); // IMPORTANT: Supprimer seulement ses propres PDFs
-        } catch (supabaseError) {
-        console.warn('💾 Erreur nettoyage Supabase:', supabaseError);
-        }
-      }
+      // Temporairement désactivé jusqu'à ce que la colonne user_id soit ajoutée
+      console.log('💾 Nettoyage Supabase temporairement désactivé (colonne user_id manquante)');
 
       // Nettoyer localStorage
       localStorage.removeItem('allSavedPDFs');
