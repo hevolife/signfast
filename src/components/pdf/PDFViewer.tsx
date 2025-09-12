@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '../ui/Button';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
@@ -10,19 +10,27 @@ interface PDFViewerProps {
   onScaleChange?: (scale: number) => void;
 }
 
-export const PDFViewer: React.FC<PDFViewerProps> = ({
+export interface PDFViewerRef {
+  canvasRefs: React.MutableRefObject<(HTMLCanvasElement | null)[]>;
+}
+
+export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
   file,
   onPageClick,
   children,
   scale = 1,
   onScaleChange,
-}) => {
+}, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    canvasRefs
+  }), []);
 
   useEffect(() => {
     if (file) {
@@ -207,4 +215,4 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       </div>
     </div>
   );
-};
+});
