@@ -9,6 +9,9 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supab
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Export createClient for admin operations
+export { createClient };
+
 export type Database = {
   public: {
     Tables: {
