@@ -1,5 +1,4 @@
 import React from 'react';
-import toast from 'react-hot-toast';
 import { FormField } from '../../types/form';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';

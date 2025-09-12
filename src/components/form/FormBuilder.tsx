@@ -154,7 +154,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   const bulkSetRequired = (required: boolean) => {
     updateMultipleFields({ required });
     const count = selectedFields.size;
-    toast.success(`${count} champ(s) ${required ? 'marqués comme obligatoires' : 'marqués comme optionnels'}`);
+    // toast.success(`${count} champ(s) ${required ? 'marqués comme obligatoires' : 'marqués comme optionnels'}`);
   };
 
   return (
