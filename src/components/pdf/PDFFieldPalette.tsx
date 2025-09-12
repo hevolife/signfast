@@ -35,13 +35,13 @@ const FieldType: React.FC<FieldTypeProps> = ({ type, icon, label, onAdd }) => {
     <div
       ref={drag}
       onClick={onAdd}
-      className={`p-2 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-center ${
+      className={`p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-center active:scale-95 ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
       <div className="flex flex-col items-center space-y-1">
         <div className="text-blue-600">{icon}</div>
-        <span className="text-xs font-medium text-gray-900 dark:text-white">
+        <span className="text-xs font-medium text-gray-900 dark:text-white leading-tight">
           {label}
         </span>
       </div>
@@ -60,11 +60,17 @@ export const PDFFieldPalette: React.FC<PDFFieldPaletteProps> = ({ onAddField }) 
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+    <Card>
+      <CardHeader className="pb-3">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
         Champs PDF
       </h3>
-      <div className="flex flex-wrap gap-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Cliquez pour ajouter un champ au PDF
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
           {fieldTypes.map(({ type, icon, label }) => (
             <FieldType
               key={type}
@@ -74,7 +80,8 @@ export const PDFFieldPalette: React.FC<PDFFieldPaletteProps> = ({ onAddField }) 
               onAdd={() => onAddField(type)}
             />
           ))}
-      </div>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

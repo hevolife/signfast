@@ -377,14 +377,15 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
               </CardContent>
             </Card>
           ) : (
-            <div className="grid lg:grid-cols-4 gap-6">
-              {/* Palette des champs */}
-              <div className="lg:col-span-1">
-                <PDFFieldPalette onAddField={addField} />
-              </div>
-
-              {/* Visualiseur PDF */}
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Visualiseur PDF avec palette au-dessus */}
               <div className="lg:col-span-2">
+                {/* Palette des champs au-dessus */}
+                <div className="mb-4">
+                  <PDFFieldPalette onAddField={addField} />
+                </div>
+                
+                {/* Visualiseur PDF */}
                 <Card className="h-[800px]">
                   <PDFViewer
                     ref={pdfViewerRef}
