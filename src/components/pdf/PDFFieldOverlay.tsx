@@ -69,13 +69,14 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Position directe basée sur les coordonnées du champ
   const style = {
     position: 'absolute' as const,
-    left: field.x * scale,
-    top: field.y * scale,
+    left: (field.x * scale) + (containerRef.current?.scrollLeft || 0),
+    top: (field.y * scale) + (containerRef.current?.scrollTop || 0) + 60, // +60 pour la barre d'outils
     width: field.width * scale,
     height: field.height * scale,
     minWidth: '40px',
     minHeight: '20px',
     zIndex: isSelected ? 1000 : 500,
+    pointerEvents: 'auto' as const,
   };
 
   return (
