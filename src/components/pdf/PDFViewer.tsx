@@ -33,7 +33,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
-  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
 
   useImperativeHandle(ref, () => ({
@@ -42,15 +42,16 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       return pdfDimensions[index] || null;
     },
     getCanvasDimensions: (pageNumber: number) => {
-      const index = pageNumber - 1;
-      const canvas = canvasRefs.current[index];
-      if (!canvas) return null;
-      // Retourner les dimensions réelles du canvas, pas celles affichées
+      const canvas = canvasRefs.current.get(pageNumber);
+      if (!canvas) {
+        console.warn(`❌ Canvas non trouvé pour page ${pageNumber}`);
+        return null;
+      }
+      console.log(`📐 Canvas page ${pageNumber} dimensions:`, { width: canvas.width, height: canvas.height });
       return { width: canvas.width, height: canvas.height };
     },
     getCanvasElement: (pageNumber: number) => {
-      const index = pageNumber - 1;
-      return canvasRefs.current[index];
+      return canvasRefs.current.get(pageNumber) || null;
     }
   }), [pdfDimensions]);
 
@@ -66,16 +67,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     }
   }, [pdfDoc, numPages, scale]);
 
-  // Forcer un re-render quand les dimensions changent
-  useEffect(() => {
-    if (pdfDoc && numPages > 0) {
-      // Délai pour s'assurer que les canvas sont prêts
-      setTimeout(() => {
-        console.log('📄 Force re-render de toutes les pages');
-        renderAllPages();
-      }, 100);
-    }
-  }, [scale]);
   const loadPDF = async () => {
     if (!file) return;
 
@@ -101,28 +92,20 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       
       setPdfDoc(pdf);
       setNumPages(pdf.numPages);
-      canvasRefs.current = new Array(pdf.numPages).fill(null);
+      canvasRefs.current.clear();
       
-      // Charger les dimensions PDF réelles en points pour chaque page
+      // Charger les dimensions PDF réelles
       const dimensions = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1 }); // Scale 1 = dimensions réelles en points
+        const viewport = page.getViewport({ scale: 1 });
         dimensions.push({ width: viewport.width, height: viewport.height });
         console.log(`📐 Page ${i} dimensions PDF: ${viewport.width} × ${viewport.height} points`);
       }
       setPdfDimensions(dimensions);
       
-      // Notifier le parent que le PDF est chargé avec ses dimensions
       onPDFLoaded?.(dimensions);
-      
       setLoading(false);
-      
-      // Forcer un re-render après chargement complet
-      setTimeout(() => {
-        console.log('📄 Force re-render après chargement complet');
-        renderAllPages();
-      }, 100);
     } catch (error) {
       console.error('Erreur chargement PDF:', error);
       setError('Erreur lors du chargement du PDF');
@@ -137,8 +120,11 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     
     try {
       for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-        const canvas = canvasRefs.current[pageNum - 1];
-        if (!canvas) continue;
+        const canvas = canvasRefs.current.get(pageNum);
+        if (!canvas) {
+          console.warn(`❌ Canvas non trouvé pour page ${pageNum}`);
+          continue;
+        }
 
         const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale });
@@ -164,39 +150,29 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     }
   };
 
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasClick = (pageNumber: number) => (event: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('🖱️ === CLIC CANVAS ===');
+    console.log('🖱️ Page cliquée (depuis closure):', pageNumber);
+    console.log('🖱️ Page courante:', currentPage);
+    
     if (!onPageClick) return;
 
     const canvas = event.currentTarget;
     
-    // Trouver le numéro de page en cherchant l'index du canvas
-    let pageNumber = 1;
-    for (let i = 0; i < canvasRefs.current.length; i++) {
-      if (canvasRefs.current[i] === canvas) {
-        pageNumber = i + 1;
-        break;
-      }
-    }
-    
-    console.log('🖱️ Canvas cliqué, page détectée:', pageNumber, 'currentPage:', currentPage);
-    console.log('🖱️ Canvas element:', canvas);
-    console.log('🖱️ Data-page attribute:', canvas.getAttribute('data-page'));
-    
+    // Changer de page si nécessaire
     if (onPageChange && pageNumber !== currentPage) {
       console.log('🖱️ Changement de page:', currentPage, '→', pageNumber);
       onPageChange(pageNumber);
     }
 
-    // Utiliser les dimensions réelles du canvas pour calculer les coordonnées
+    // Calculer les coordonnées
     const rect = canvas.getBoundingClientRect();
     const canvasX = event.clientX - rect.left;
     const canvasY = event.clientY - rect.top;
     
-    // Utiliser les dimensions réelles du canvas (pas du rect)
     const realCanvasWidth = canvas.width;
     const realCanvasHeight = canvas.height;
     
-    // Ajuster les coordonnées selon le ratio d'affichage
     const scaleX = realCanvasWidth / rect.width;
     const scaleY = realCanvasHeight / rect.height;
     
@@ -204,8 +180,8 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     const adjustedY = canvasY * scaleY;
     
     console.log(`🖱️ Page ${pageNumber} - Clic: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)}) → (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
-    console.log(`🖱️ Canvas dimensions: ${realCanvasWidth}×${realCanvasHeight}, Rect: ${rect.width}×${rect.height}`);
     
+    // IMPORTANT: Utiliser pageNumber de la closure, pas currentPage
     onPageClick(adjustedX, adjustedY, pageNumber);
   };
 
@@ -295,55 +271,68 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
         )}
 
         <div className="text-xs text-gray-500 font-medium">
-          Cliquez pour placer un champ
+          {draggedFieldType ? `Mode placement: ${draggedFieldType} - Page ${currentPage}` : 'Cliquez pour placer un champ'}
         </div>
       </div>
 
       {/* Conteneur PDF */}
       <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6 relative">
         <div className="flex flex-col items-center space-y-6">
-          {Array.from({ length: numPages }, (_, index) => (
-            <div key={index} className="relative">
-              <div className={`text-center mb-3 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
-                <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-                  Page {index + 1}
-                  {pdfDimensions[index] && (
-                    <span className="ml-2 text-gray-500">
-                      ({Math.round(pdfDimensions[index].width)} × {Math.round(pdfDimensions[index].height)} pts)
-                    </span>
-                  )}
-                </span>
-              </div>
-              
-              {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10 rounded-lg">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Chargement...
-                    </p>
-                  </div>
+          {Array.from({ length: numPages }, (_, index) => {
+            const pageNumber = index + 1;
+            return (
+              <div key={pageNumber} className="relative">
+                <div className={`text-center mb-3 ${currentPage === pageNumber ? 'font-bold text-blue-600' : ''}`}>
+                  <span className={`text-xs px-3 py-1 rounded ${
+                    currentPage === pageNumber 
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}>
+                    Page {pageNumber}
+                    {pdfDimensions[index] && (
+                      <span className="ml-2 text-gray-500">
+                        ({Math.round(pdfDimensions[index].width)} × {Math.round(pdfDimensions[index].height)} pts)
+                      </span>
+                    )}
+                    {draggedFieldType && currentPage === pageNumber && (
+                      <span className="ml-2 text-blue-600 font-bold">← Cliquez ici pour placer</span>
+                    )}
+                  </span>
                 </div>
-              )}
-              
-              <canvas
-                ref={(el) => {
-                  canvasRefs.current[index] = el;
-                }}
-                onClick={handleCanvasClick}
-                className={`border shadow-xl cursor-crosshair bg-white max-w-none ${
-                  currentPage === index + 1 
-                    ? 'border-blue-500 border-2 shadow-blue-200' 
-                    : 'border-gray-300 dark:border-gray-600'
-                } hover:shadow-2xl transition-shadow`}
-                style={{ 
-                  minWidth: '600px',
-                  minHeight: '800px'
-                }}
-                data-page={index + 1}
-              />
-            </div>
-          ))}
+                
+                {loading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10 rounded-lg">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Chargement...
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <canvas
+                  ref={(el) => {
+                    if (el) {
+                      canvasRefs.current.set(pageNumber, el);
+                      console.log(`📄 Canvas ref enregistré pour page ${pageNumber}`);
+                    }
+                  }}
+                  onClick={handleCanvasClick(pageNumber)}
+                  className={`border shadow-xl cursor-crosshair bg-white max-w-none transition-all ${
+                    currentPage === pageNumber 
+                      ? 'border-blue-500 border-4 shadow-blue-200 ring-2 ring-blue-300' 
+                      : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
+                  } ${draggedFieldType && currentPage === pageNumber ? 'ring-4 ring-blue-400 border-blue-600' : ''}`}
+                  style={{ 
+                    minWidth: '600px',
+                    minHeight: '800px'
+                  }}
+                  data-page={pageNumber}
+                />
+              </div>
+            );
+          })}
         </div>
         
         {/* Overlay des champs */}

@@ -246,10 +246,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     console.log('🖱️ Page courante:', currentPage);
     console.log('🖱️ Mode placement actif:', !!draggedFieldType, 'Type:', draggedFieldType);
     console.log('🖱️ Coordonnées:', { canvasX, canvasY });
+    console.log('🖱️ PDF dimensions disponibles:', pdfDimensions.length, 'pages');
     
     // Si on est en mode placement de champ
     if (draggedFieldType) {
       console.log('🖱️ === MODE PLACEMENT ACTIF ===');
+      console.log('🖱️ Tentative placement sur page:', page);
+      
       if (!pdfViewerRef.current) return;
 
       console.log('🖱️ Récupération dimensions pour page:', page);
@@ -257,6 +260,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       if (!canvasDimensions) {
         console.error('🖱️ ❌ Dimensions canvas non disponibles pour page:', page);
         toast.error(`Impossible de placer le champ sur la page ${page}`);
+        console.error('🖱️ ❌ Vérification: canvas existe?', !!pdfViewerRef.current.getCanvasElement(page));
+        console.error('🖱️ ❌ PDFViewer ref non disponible');
         return;
       }
       
@@ -285,7 +290,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       const newField: PDFField = {
         id: uuidv4(),
         type: draggedFieldType,
-        page: page, // IMPORTANT: Utiliser la page cliquée
+        page: page, // CRITIQUE: Page où le champ est placé
         variable: '',
         xRatio,
         yRatio,
@@ -302,13 +307,19 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       console.log('🖱️ === NOUVEAU CHAMP CRÉÉ ===');
       console.log('➕ Champ:', {
         type: draggedFieldType,
-        page: page,
+        page: page, // CONFIRMER: Page de placement
         position: { xRatio, yRatio },
         size: { widthRatio, heightRatio },
         id: newField.id
       });
 
       setFields(prev => [...prev, newField]);
+        const newFields = [...prev, newField];
+        console.log('➕ Nouveaux champs total:', newFields.length);
+        console.log('➕ Champs par page:', newFields.reduce((acc, f) => {
+          acc[f.page] = (acc[f.page] || 0) + 1;
+          return acc;
+        return newFields;
       setSelectedField(newField.id);
       
       // Changer vers la page où le champ a été placé si nécessaire
@@ -318,7 +329,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       }
       
       setDraggedFieldType(null);
-      toast.success(`Champ ajouté sur la page ${page} !`);
+      toast.success(`Champ ${draggedFieldType} ajouté sur la page ${page} !`, { duration: 3000 });
       return;
     }
 
