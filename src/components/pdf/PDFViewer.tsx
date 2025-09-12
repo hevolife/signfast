@@ -291,7 +291,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       {/* Conteneur PDF avec overlay */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 relative"
+        className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 relative pdf-canvas-container"
         style={{ 
           scrollBehavior: 'smooth',
           // Optimisations de performance
@@ -331,9 +331,9 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
                 onClick={handleCanvasClick}
                 className={`border shadow-lg cursor-crosshair bg-white ${
                   currentPage === index + 1 
-                    ? 'border-blue-500 border-2' 
+                    ? 'border-blue-500 border-2 shadow-blue-200' 
                     : 'border-gray-300 dark:border-gray-600'
-                }`}
+                } hover:shadow-xl transition-shadow`}
                 style={{
                   // Optimisations de performance
                   willChange: 'transform',
@@ -348,7 +348,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
         
         {/* Overlay des champs - positionné absolument dans le conteneur */}
         {children && (
-          <div className="absolute inset-0 pointer-events-none" style={{ top: '60px', left: '16px' }} id="fields-overlay">
+          <div className="absolute inset-0 pointer-events-none" style={{ top: '60px', left: '16px', zIndex: 20 }} id="fields-overlay">
             {console.log(`📄 ===== OVERLAY CHAMPS =====`)}
             {console.log(`📄 Children présents:`, !!children)}
             {children}

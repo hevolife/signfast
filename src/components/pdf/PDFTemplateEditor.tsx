@@ -367,7 +367,22 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       const field = fields.find(f => f.id === selectedField);
       if (field) {
         console.log(`🎯 Déplacement champ ${selectedField} vers (${x}, ${y}) sur page ${page}`);
-        updateField(selectedField, { x: Math.round(x), y: Math.round(y), page });
+        // Aligner sur une grille de 5px pour un positionnement plus propre
+        const gridSize = 5;
+        const snappedX = Math.round(x / gridSize) * gridSize;
+        const snappedY = Math.round(y / gridSize) * gridSize;
+        
+        updateField(selectedField, { 
+          x: Math.max(0, snappedX), 
+          y: Math.max(0, snappedY), 
+          page 
+        });
+        
+        toast.success(`Champ déplacé vers (${snappedX}, ${snappedY})`, { duration: 1000 });
+      }
+    } else {
+      // Si aucun champ sélectionné, désélectionner tout
+      setSelectedField(null);
       }
     }
   }, [selectedField, fields, updateField]);

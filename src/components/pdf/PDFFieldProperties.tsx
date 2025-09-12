@@ -170,107 +170,123 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
             Positionnement rapide
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1">
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 30, y: 50 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+              onClick={() => onUpdate({ x: 20, y: 40 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
             >
-              ↖ Haut gauche
+              ↖
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 200, y: 50 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+              onClick={() => onUpdate({ x: 250, y: 40 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
             >
-              ↑ Haut centre
+              ↑
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 370, y: 50 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+              onClick={() => onUpdate({ x: 450, y: 40 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
             >
-              ↗ Haut droite
+              ↗
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 30, y: 600 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+              onClick={() => onUpdate({ x: 20, y: 350 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
             >
-              ↙ Bas gauche
+              ↙
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 200, y: 600 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+              onClick={() => onUpdate({ x: 250, y: 350 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
             >
-              ↓ Bas centre
+              ↓
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 370, y: 600 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+              onClick={() => onUpdate({ x: 450, y: 350 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
             >
-              ↘ Bas droite
+              ↘
             </Button>
           </div>
         </div>
         
-        {/* Boutons de taille rapide */}
+        {/* Boutons de taille et alignement */}
         <div className="space-y-2">
           <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-            Tailles prédéfinies
+            Actions rapides
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1">
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 100, height: 20 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+              onClick={() => onUpdate({ width: 80, height: 20 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-1"
             >
-              📏 Petit
+              📏 S
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 150, height: 25 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+              onClick={() => onUpdate({ width: 120, height: 25 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-1"
             >
-              📏 Moyen
+              📏 M
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 200, height: 30 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+              onClick={() => onUpdate({ width: 160, height: 30 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-1"
             >
-              📏 Grand
+              📏 L
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 180, height: 60 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+              onClick={() => onUpdate({ width: 180, height: 50 })}
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 p-1"
             >
-              ✍️ Signature
+              ✍️
             </Button>
           </div>
+          
+          {/* Alignement sur grille */}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              const gridSize = 10;
+              const snappedX = Math.round(field.x / gridSize) * gridSize;
+              const snappedY = Math.round(field.y / gridSize) * gridSize;
+              onUpdate({ x: snappedX, y: snappedY });
+            }}
+            className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300"
+          >
+            📐 Aligner sur grille (10px)
+          </Button>
         </div>
         {(field.type === 'text' || field.type === 'number') && (
           <>
