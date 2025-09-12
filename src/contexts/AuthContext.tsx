@@ -99,7 +99,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const normalAuthFlow = () => {
-  }
+  };
+  
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -125,8 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => subscription?.unsubscribe();
-  };
-  )
+  }, []);
 
   // Fonction pour arrêter l'impersonation
   const stopImpersonation = useCallback(() => {
