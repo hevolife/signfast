@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { PDFService } from '../services/pdfService';
 import { formatDateTimeFR } from '../utils/dateFormatter';
 import { useLimits } from '../hooks/useLimits';
@@ -34,197 +33,21 @@ export const PDFManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'template'>('date');
   const product = stripeConfig.products[0];
 
-  const [isResponsive, setIsResponsive] = useState(false);
-
-  // Fonction de debug pour l'impersonation
-  const debugImpersonation = async () => {
-    console.log('🔍 === DEBUG IMPERSONATION DÉTAILLÉ ===');
-    
-    // 1. Vérifier les données d'impersonation
-    const impersonationData = localStorage.getItem('admin_impersonation');
-    console.log('🔍 1. Données impersonation brutes:', impersonationData);
-    
-    if (impersonationData) {
-      try {
-        const data = JSON.parse(impersonationData);
-        console.log('🔍 2. Données impersonation parsées:', data);
-        
-        // 2. Vérifier l'utilisateur auth actuel
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('🔍 3. Utilisateur auth:', {
-          hasUser: !!user,
-          userId: user?.id,
-          email: user?.email,
-          error: userError?.message
-        });
-        
-        // 3. Compter TOUS les PDFs dans la table
-        const { count: totalCount, error: countError } = await supabase
-          .from('pdf_storage')
-          .select('user_id', { count: 'exact', head: true });
-        console.log('🔍 4. Total PDFs dans la table:', totalCount, 'erreur:', countError?.message);
-        
-        // 4. Lister tous les user_ids qui ont des PDFs
-        const { data: allUserIds, error: allUsersError } = await supabase
-          .from('pdf_storage')
-          .select('user_id, file_name, form_title')
-          .limit(50);
-        
-        if (!allUsersError && allUserIds) {
-          console.log('🔍 5. Tous les PDFs dans la table:');
-          allUserIds.forEach((pdf, index) => {
-            console.log(`🔍    PDF ${index + 1}: userId=${pdf.user_id}, file=${pdf.file_name}, form=${pdf.form_title}`);
-          });
-          
-          const uniqueUserIds = [...new Set(allUserIds.map(p => p.user_id))];
-          console.log('🔍 6. User IDs uniques ayant des PDFs:', uniqueUserIds);
-          console.log('🔍 7. Target userId dans la liste?', uniqueUserIds.includes(data.target_user_id));
-        }
-        
-        // 5. Requête spécifique pour l'utilisateur impersonné
-        const { data: targetPdfs, error: targetError } = await supabase
-          .from('pdf_storage')
-          .select('*')
-          .eq('user_id', data.target_user_id);
-        
-        console.log('🔍 8. PDFs pour target_user_id', data.target_user_id, ':', {
-          error: targetError?.message,
-          count: targetPdfs?.length,
-          pdfs: targetPdfs?.map(p => ({ fileName: p.file_name, formTitle: p.form_title }))
-        });
-        
-        // 6. Vérifier les formulaires de l'utilisateur impersonné
-        const { data: targetForms, error: formsError } = await supabase
-          .from('forms')
-          .select('id, title')
-          .eq('user_id', data.target_user_id);
-        
-        console.log('🔍 9. Formulaires pour target_user_id:', {
-          error: formsError?.message,
-          count: targetForms?.length,
-          forms: targetForms?.map(f => ({ id: f.id, title: f.title }))
-        });
-        
-        // 7. Vérifier les réponses aux formulaires
-        if (targetForms && targetForms.length > 0) {
-          const formIds = targetForms.map(f => f.id);
-          const { data: responses, error: responsesError } = await supabase
-            .from('responses')
-            .select('id, form_id, created_at')
-            .in('form_id', formIds);
-          
-          console.log('🔍 10. Réponses aux formulaires:', {
-            error: responsesError?.message,
-            count: responses?.length,
-            responses: responses?.map(r => ({ id: r.id, formId: r.form_id, createdAt: r.created_at }))
-          });
-        }
-        
-      } catch (parseError) {
-        console.error('🔍 Erreur parsing impersonation:', parseError);
-      }
-    } else {
-      console.log('🔍 Pas de données d\'impersonation trouvées');
-    }
-    
-    console.log('🔍 === FIN DEBUG IMPERSONATION ===');
-  };
 
   useEffect(() => {
-    // Chargement immédiat
-    setLoading(true);
-    
-    // Debug impersonation
-    debugImpersonation();
-    
     loadPDFs();
-    
-    // Détecter si on est sur mobile/tablette
-    const checkResponsive = () => {
-      setIsResponsive(window.innerWidth < 1024);
-    };
-    
-    checkResponsive();
-    window.addEventListener('resize', checkResponsive);
-    
-    // Rechargement périodique moins fréquent
-    const interval = setInterval(() => {
-      loadPDFs();
-    }, 30000); // Toutes les 30 secondes
-    
-    return () => {
-      window.removeEventListener('resize', checkResponsive);
-      clearInterval(interval);
-    };
   }, []);
 
   const loadPDFs = async () => {
-    // Timeout pour éviter les chargements trop longs
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('💾 Timeout chargement PDFs, affichage liste vide');
-        setPdfs([]);
-        setLoading(false);
-      }
-    }, 5000); // 5 secondes max pour laisser plus de temps
-
+    setLoading(true);
     try {
-      console.log('💾 Chargement des PDFs');
-      
-      // Debug: vérifier le mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          console.log('💾 🎭 Mode impersonation détecté:', {
-            targetEmail: data.target_email,
-            targetUserId: data.target_user_id,
-            adminEmail: data.admin_email
-          });
-        } catch (error) {
-          console.error('💾 Erreur parsing impersonation:', error);
-        }
-      } else {
-        console.log('💾 Mode normal (pas d\'impersonation)');
-      }
-      
       const pdfList = await PDFService.listPDFs();
-      console.log('💾 PDFs trouvés:', pdfList.length);
-      
-      // Debug: afficher les détails des PDFs trouvés
-      if (pdfList.length > 0) {
-        console.log('💾 Détails des PDFs:');
-        pdfList.forEach((pdf, index) => {
-          console.log(`💾 PDF ${index + 1}:`, {
-            fileName: pdf.fileName,
-            formTitle: pdf.formTitle,
-            templateName: pdf.templateName,
-            createdAt: pdf.createdAt,
-            source: (pdf as any).source || 'unknown'
-          });
-        });
-      } else {
-        console.log('💾 Aucun PDF trouvé - vérification des causes possibles...');
-        
-        // Vérifier si l'utilisateur impersonné a des formulaires
-        const currentUserForms = localStorage.getItem('currentUserForms');
-        if (currentUserForms) {
-          const forms = JSON.parse(currentUserForms);
-          console.log('💾 Formulaires de l\'utilisateur impersonné:', forms.length);
-        } else {
-          console.log('💾 Aucun formulaire trouvé pour l\'utilisateur impersonné');
-        }
-      }
-      
-      clearTimeout(loadingTimeout);
       setPdfs(pdfList);
     } catch (error) {
       console.error('💾 Erreur chargement PDFs:', error);
-      clearTimeout(loadingTimeout);
       toast.error('Erreur lors du chargement des PDFs');
-      setPdfs([]); // Afficher liste vide plutôt que loading infini
+      setPdfs([]);
     } finally {
-      clearTimeout(loadingTimeout);
       setLoading(false);
     }
   };
