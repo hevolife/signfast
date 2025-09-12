@@ -685,19 +685,6 @@ export const PublicForm: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400">
               Votre formulaire a été envoyé avec succès.
             </p>
-            
-            {generatedPDF && (
-              <div className="mt-6">
-                <Button
-                  onClick={downloadPDF}
-                  disabled={!savedPdfFileName}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white mx-auto"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>{savedPdfFileName ? 'Télécharger le PDF' : 'Préparation...'}</span>
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
