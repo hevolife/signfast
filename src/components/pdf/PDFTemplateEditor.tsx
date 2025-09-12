@@ -605,7 +605,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                   </div>
                   </div>
                 </div>
-              </div>
 
               <div className="lg:hidden space-y-6">
                 {/* Palette mobile */}
@@ -637,9 +636,10 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                   />
                 )}
               </div>
-            </div>
-          )}
+              </div>
 
+              <div className="lg:hidden space-y-6">
+                {/* Palette mobile */}
           {/* Input caché pour le changement de PDF */}
           <input
             type="file"
