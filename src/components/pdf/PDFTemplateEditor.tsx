@@ -701,6 +701,7 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
           
           if (item.id) {
             // Déplacer un champ existant
+            console.log('🔄 Déplacement champ:', item.id, 'vers', x, y);
             onUpdateField(item.id, { x, y, page: currentPage });
           } else if (item.type) {
             // Nouveau champ depuis la palette
@@ -715,8 +716,14 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
     }),
   }));
 
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // Désélectionner si on clique sur le canvas vide
+    console.log('🖱️ Clic sur canvas vide - désélection');
+    onSelectField('');
+  };
+
   return (
-    <Card className="h-[600px] lg:h-[700px] relative">
+    <Card className="h-[600px] lg:h-[700px] relative" onClick={handleCanvasClick}>
       <PDFViewer
         ref={pdfViewerRef}
         file={pdfFile}
@@ -726,16 +733,22 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
         scale={scale}
         onScaleChange={onScaleChange}
       >
-        <div ref={drop} className="absolute inset-0 pointer-events-none">
+        <div ref={drop} className="absolute inset-0" style={{ pointerEvents: 'none' }}>
           {fields.map(field => (
             <PDFFieldOverlay
               key={field.id}
               field={field}
               scale={scale}
               isSelected={selectedField === field.id}
-              onSelect={(field) => onSelectField(field.id)}
+              onSelect={(selectedField) => {
+                console.log('🎯 Sélection champ depuis overlay:', selectedField.id);
+                onSelectField(selectedField.id);
+              }}
               onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
-              onDelete={() => onDeleteField(field.id)}
+              onDelete={(fieldId) => {
+                console.log('🗑️ Suppression champ depuis overlay:', fieldId);
+                onDeleteField(fieldId);
+              }}
               currentPage={currentPage}
             />
           ))}

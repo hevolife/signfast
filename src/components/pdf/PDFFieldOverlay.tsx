@@ -21,6 +21,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onDelete,
   currentPage
 }) => {
+  // Only render if field is on current page
+  if (field.page !== currentPage) {
+    return null;
+  }
+
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'pdf-field',
     item: { id: field.id, type: field.type },
@@ -29,29 +34,21 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }),
   }));
 
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onDelete(field.id);
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
+  const handleFieldClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('🖱️ Clic sur champ:', field.id);
     onSelect(field);
   };
 
-  // Only render if field is on current page
-  if (field.page !== currentPage) {
-    return null;
-  }
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('🗑️ Suppression champ:', field.id);
+    onDelete(field.id);
+  };
 
   const getExampleText = (field: PDFField): string => {
     const variable = field.variable.toLowerCase();
     
-    // Exemples contextuels basés sur la variable
     if (variable.includes('nom') || variable.includes('name')) {
       return 'Dupont';
     } else if (variable.includes('prenom') || variable.includes('firstname')) {
@@ -60,22 +57,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       return 'jean.dupont@email.com';
     } else if (variable.includes('telephone') || variable.includes('phone')) {
       return '01 23 45 67 89';
-    } else if (variable.includes('adresse') || variable.includes('address')) {
-      return '123 Rue de la Paix';
-    } else if (variable.includes('ville') || variable.includes('city')) {
-      return 'Paris';
-    } else if (variable.includes('code') && variable.includes('postal')) {
-      return '75001';
     } else if (variable.includes('date')) {
       return '15/03/2024';
-    } else if (variable.includes('age')) {
-      return '35';
-    } else if (variable.includes('salaire') || variable.includes('salary')) {
-      return '2500€';
-    } else if (variable.includes('prix') || variable.includes('price')) {
-      return '150€';
-    } else if (variable.includes('numero') || variable.includes('number')) {
-      return '12345';
     } else {
       return field.placeholder || 'Exemple';
     }
@@ -152,16 +135,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   return (
     <div
-      ref={(el) => {
-        ref.current = el;
-        drag(el);
-      }}
-      className={`absolute select-none border-2 ${
+      ref={drag}
+      className={`absolute select-none border-2 transition-all duration-200 ${
         isSelected 
-          ? 'border-blue-500 bg-blue-50 shadow-lg' 
+          ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-300' 
           : 'border-gray-300 bg-white hover:border-blue-300 hover:shadow-md'
-      } transition-all duration-200 ${
-        isDragging ? 'opacity-50 cursor-grabbing' : 'opacity-100 cursor-grab'
+      } ${
+        isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab hover:cursor-grab'
       }`}
       style={{
         left: `${field.x * scale}px`,
@@ -169,18 +149,20 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         width: `${field.width * scale}px`,
         height: `${field.height * scale}px`,
         backgroundColor: field.backgroundColor || 'transparent',
-        zIndex: isSelected ? 20 : 10
+        zIndex: isSelected ? 20 : 10,
+        pointerEvents: 'auto'
       }}
-      onClick={handleClick}
+      onClick={handleFieldClick}
     >
       {renderFieldContent()}
       
-      {/* Delete button when selected */}
+      {/* Delete button - Always visible when selected */}
       {isSelected && (
         <button
-          className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full text-sm hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-30"
-          onClick={handleDelete}
+          className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full text-lg font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50"
+          onClick={handleDeleteClick}
           title="Supprimer le champ"
+          style={{ pointerEvents: 'auto' }}
         >
           ×
         </button>
@@ -190,14 +172,17 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {isSelected && (
         <>
           <div 
-            className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 cursor-se-resize border border-white shadow-sm z-20 pointer-events-none"
-          ></div>
+            className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 cursor-se-resize border border-white shadow-sm z-20"
+            style={{ pointerEvents: 'none' }}
+          />
           <div 
-            className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-3 bg-blue-500 cursor-s-resize border border-white shadow-sm z-20 pointer-events-none"
-          ></div>
+            className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-3 bg-blue-500 cursor-s-resize border border-white shadow-sm z-20"
+            style={{ pointerEvents: 'none' }}
+          />
           <div 
-            className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-blue-500 cursor-e-resize border border-white shadow-sm z-20 pointer-events-none"
-          ></div>
+            className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-blue-500 cursor-e-resize border border-white shadow-sm z-20"
+            style={{ pointerEvents: 'none' }}
+          />
         </>
       )}
     </div>
