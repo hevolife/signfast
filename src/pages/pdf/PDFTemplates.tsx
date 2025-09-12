@@ -60,7 +60,7 @@ export const PDFTemplates: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Templates PDF
+              Templates
               {isSubscribed && (
                 <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                   {product.name}
@@ -69,7 +69,7 @@ export const PDFTemplates: React.FC = () => {
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               {isSubscribed 
-                ? `Créez des templates PDF illimités avec ${product.name}`
+                ? `Créez des templates illimités avec ${product.name}`
                 : 'Gérez vos templates PDF avec champs dynamiques'
               }
             </p>

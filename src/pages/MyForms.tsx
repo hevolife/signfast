@@ -60,7 +60,7 @@ export const MyForms: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Mes Formulaires
+              Formulaires
               {isSubscribed && (
                 <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                   {product.name}

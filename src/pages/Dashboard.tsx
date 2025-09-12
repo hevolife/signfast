@@ -339,7 +339,7 @@ export const Dashboard: React.FC = () => {
                   <Activity className="h-6 w-6" />
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  Mes Formulaires
+                  Formulaires
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Gérer mes formulaires
@@ -355,7 +355,7 @@ export const Dashboard: React.FC = () => {
                   <HardDrive className="h-6 w-6" />
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  PDFs Sauvegardés
+                  Stockage
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Voir mes PDFs

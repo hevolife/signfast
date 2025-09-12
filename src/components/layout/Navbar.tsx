@@ -71,19 +71,19 @@ export const Navbar: React.FC = () => {
                 <Link to="/forms">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <FileText className="h-4 w-4" />
-                    <span>Mes Formulaires</span>
+                    <span>Formulaires</span>
                   </Button>
                 </Link>
                 <Link to="/pdf/templates">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <FileText className="h-4 w-4" />
-                    <span>Templates PDF</span>
+                    <span>Templates</span>
                   </Button>
                 </Link>
                 <Link to="/pdf/manager">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <HardDrive className="h-4 w-4" />
-                    <span>PDFs sauvegardés</span>
+                    <span>Stockage</span>
                   </Button>
                 </Link>
                 {isSuperAdmin && (
