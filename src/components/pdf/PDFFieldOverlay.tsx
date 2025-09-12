@@ -47,6 +47,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     return null;
   }
 
+  // Utiliser une variable pour capturer la position finale
+  let finalPosition = tempPosition;
+
   const handleMouseDown = (e: React.MouseEvent) => {
     // Ignorer si on clique sur les boutons de contrôle
     if ((e.target as HTMLElement).closest('.delete-button') || 
@@ -97,28 +100,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     };
 
     const handleMouseUp = () => {
-      if (tempPosition && canvas && pdfViewerRef.current) {
-        const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
-        if (canvasDimensions) {
-        // Calculer les nouveaux ratios depuis la position finale
-          const newXRatio = tempPosition.x / canvasDimensions.width;
-          const newYRatio = tempPosition.y / canvasDimensions.height;
-        
-          console.log('🎯 Sauvegarde position finale:', {
-            tempPosition,
-            canvasDimensions,
-            newRatios: { xRatio: newXRatio, yRatio: newYRatio }
-          });
-        
-          // Mettre à jour définitivement le champ
-          onUpdate({
-            ...field,
-            xRatio: newXRatio,
-            yRatio: newYRatio
-          });
-        }
-      }
-      
       // Nettoyer l'état
       setIsDragging(false);
       setTempPosition(null);
@@ -126,6 +107,29 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      
+      // Mettre à jour définitivement le champ avec les nouveaux ratios
+      if (finalPosition && pdfViewerRef.current) {
+        const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+        if (canvasDimensions) {
+          const newXRatio = finalPosition.x / canvasDimensions.width;
+          const newYRatio = finalPosition.y / canvasDimensions.height;
+          
+          console.log('🎯 Sauvegarde position finale:', {
+            finalPosition,
+            canvasDimensions,
+            oldRatios: { xRatio: field.xRatio, yRatio: field.yRatio },
+            newRatios: { xRatio: newXRatio, yRatio: newYRatio }
+          });
+          
+          // Forcer la mise à jour avec les nouveaux ratios
+          onUpdate({
+            ...field,
+            xRatio: newXRatio,
+            yRatio: newYRatio
+          });
+        }
+      }
     };
     
     document.addEventListener('mousemove', handleMouseMove);

@@ -189,6 +189,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
+    console.log('🔄 updateField appelé:', id, updates);
     setFields(prev => prev.map(field => 
       field.id === id ? { ...field, ...updates } : field
     ));
