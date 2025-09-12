@@ -102,11 +102,19 @@ export const SuperAdminDashboard: React.FC = () => {
       setLoading(true);
       console.log('🔧 Chargement des vrais utilisateurs...');
       
+      // Récupérer la session actuelle pour avoir un token valide
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        console.warn('⚠️ Pas de session valide, utilisation des données de test');
+        throw new Error('Session invalide');
+      }
+
       // Appeler la fonction edge pour récupérer les vrais utilisateurs
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${user?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
       });
