@@ -332,7 +332,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     console.log(`➕ Nouveau champ créé:`, newField);
     setFields(prev => [...prev, newField]);
     setSelectedField(newField.id);
-  }, [currentPage]);
   }, [currentPage, fields]);
 
   const handlePageClick = useCallback((x: number, y: number, page: number) => {
@@ -353,7 +352,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         updateField(selectedField, { x, y });
       }
     }
-  }, []);
   }, [selectedField, fields, updateField]);
 
   // Détecter si on est sur mobile
@@ -640,7 +638,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                           scale={scale}
                           isSelected={selectedField === field.id}
                           onSelect={() => setSelectedField(field.id)}
-                        currentPage={currentPage}
+                          onUpdate={(updates) => updateField(field.id, updates)}
+                          currentPage={currentPage}
                           onDelete={() => deleteField(field.id)}
                           canvasRefs={pdfViewerRef.current?.canvasRefs}
                         />
