@@ -153,16 +153,18 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   };
 
   const handleCanvasClick = (pageNumber: number) => (event: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log('🖱️ === CLIC CANVAS ===');
-    console.log('🖱️ Page cliquée (depuis closure):', pageNumber);
-    console.log('🖱️ Page courante:', currentPage);
+    console.log('🖱️ === CLIC CANVAS DÉTAILLÉ ===');
+    console.log('🖱️ Page cliquée (closure):', pageNumber);
+    console.log('🖱️ Page courante (state):', currentPage);
+    console.log('🖱️ Canvas dataset page:', event.currentTarget.dataset.page);
     console.log('🖱️ onPageClick disponible:', !!onPageClick);
     
     if (!onPageClick) return;
 
     const canvas = event.currentTarget;
-    console.log('🖱️ Canvas cliqué:', canvas.dataset.page, 'attendu:', pageNumber);
-    
+    const actualPageFromDataset = parseInt(canvas.dataset.page || '1');
+    console.log('🖱️ Page réelle du canvas:', actualPageFromDataset);
+    console.log('🖱️ Page de la closure:', pageNumber);
 
     // Calculer les coordonnées
     const rect = canvas.getBoundingClientRect();
@@ -178,16 +180,14 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     const adjustedX = canvasX * scaleX;
     const adjustedY = canvasY * scaleY;
     
-    console.log(`🖱️ Page ${pageNumber} - Clic: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)}) → (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
+    console.log(`🖱️ COORDONNÉES CALCULÉES:`);
+    console.log(`🖱️   Clic écran: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
+    console.log(`🖱️   Clic canvas: (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
+    console.log(`🖱️   Page utilisée: ${actualPageFromDataset}`);
     
-    // CRITIQUE: Utiliser pageNumber de la closure (page réellement cliquée)
-    onPageClick(adjustedX, adjustedY, pageNumber);
-    
-    // Changer de page APRÈS avoir traité le clic
-    if (onPageChange && pageNumber !== currentPage) {
-      console.log('🖱️ Changement de page après clic:', currentPage, '→', pageNumber);
-      onPageChange(pageNumber);
-    }
+    // UTILISER LA PAGE DU DATASET (plus fiable)
+    console.log(`🖱️ APPEL onPageClick avec page: ${actualPageFromDataset}`);
+    onPageClick(adjustedX, adjustedY, actualPageFromDataset);
   };
 
   const zoomIn = () => {

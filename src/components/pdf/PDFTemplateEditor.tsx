@@ -241,37 +241,38 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [selectedField]);
 
   const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
-    console.log('🖱️ === CLIC SUR PAGE ===');
-    console.log('🖱️ Page cliquée:', page);
-    console.log('🖱️ Page courante:', currentPage);
-    console.log('🖱️ Mode placement actif:', !!draggedFieldType, 'Type:', draggedFieldType);
-    console.log('🖱️ Coordonnées:', { canvasX, canvasY });
-    console.log('🖱️ PDF dimensions disponibles:', pdfDimensions.length, 'pages');
+    console.log('🎯 === HANDLE PAGE CLICK ===');
+    console.log('🎯 Page reçue du clic:', page);
+    console.log('🎯 Page courante (state):', currentPage);
+    console.log('🎯 Mode placement actif:', !!draggedFieldType);
+    console.log('🎯 Type de champ à placer:', draggedFieldType);
+    console.log('🎯 Coordonnées reçues:', { canvasX, canvasY });
+    console.log('🎯 PDF dimensions disponibles:', pdfDimensions.length, 'pages');
     
     // Si on est en mode placement de champ
     if (draggedFieldType) {
-      console.log('🖱️ === MODE PLACEMENT ACTIF ===');
-      console.log('🖱️ Tentative placement sur page:', page);
+      console.log('🎯 === PLACEMENT DE CHAMP ===');
+      console.log('🎯 PLACEMENT SUR PAGE:', page);
+      console.log('🎯 Type de champ:', draggedFieldType);
       
       if (!pdfViewerRef.current) return;
 
-      console.log('🖱️ Récupération dimensions pour page:', page);
+      console.log('🎯 Récupération dimensions pour page:', page);
       const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
       if (!canvasDimensions) {
-        console.error('🖱️ ❌ Dimensions canvas non disponibles pour page:', page);
+        console.error('🎯 ❌ Dimensions canvas non disponibles pour page:', page);
         toast.error(`Impossible de placer le champ sur la page ${page}`);
-        console.error('🖱️ ❌ Vérification: canvas existe?', !!pdfViewerRef.current.getCanvasElement(page));
-        console.error('🖱️ ❌ PDFViewer ref non disponible');
+        console.error('🎯 ❌ Vérification: canvas existe?', !!pdfViewerRef.current.getCanvasElement(page));
         return;
       }
       
-      console.log('🖱️ Dimensions canvas page', page, ':', canvasDimensions);
+      console.log('🎯 Dimensions canvas page', page, ':', canvasDimensions);
 
       // Calculer les ratios depuis la position de clic
       const xRatio = canvasX / canvasDimensions.width;
       const yRatio = canvasY / canvasDimensions.height;
       
-      console.log('🖱️ Ratios calculés:', { xRatio, yRatio });
+      console.log('🎯 Ratios calculés:', { xRatio, yRatio });
 
       // Ratios de taille selon le type
       const defaultRatios = {
@@ -290,7 +291,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       const newField: PDFField = {
         id: uuidv4(),
         type: draggedFieldType,
-        page: page, // CRITIQUE: Utiliser la page cliquée, pas currentPage
+        page: page, // FORCER LA PAGE CLIQUÉE
         variable: '',
         xRatio,
         yRatio,
@@ -304,19 +305,19 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         offsetY: 0,
       };
 
-      console.log('🖱️ === NOUVEAU CHAMP CRÉÉ ===');
-      console.log('➕ Champ:', {
+      console.log('🎯 === NOUVEAU CHAMP CRÉÉ ===');
+      console.log('🎯 Champ créé:', {
+        id: newField.id,
         type: draggedFieldType,
-        page: page, // CONFIRMER: Page de placement (page cliquée)
+        page: page,
         position: { xRatio, yRatio },
         size: { widthRatio, heightRatio },
-        id: newField.id
       });
 
       setFields(prev => {
         const newFields = [...prev, newField];
-        console.log('➕ Nouveaux champs total:', newFields.length);
-        console.log('➕ Champs par page:', newFields.reduce((acc, f) => {
+        console.log('🎯 Total champs après ajout:', newFields.length);
+        console.log('🎯 Répartition par page:', newFields.reduce((acc, f) => {
           acc[f.page] = (acc[f.page] || 0) + 1;
           return acc;
         }, {} as Record<number, number>));
@@ -324,21 +325,21 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       });
       setSelectedField(newField.id);
       
-      // Changer vers la page où le champ a été placé si nécessaire
+      // Changer vers la page où le champ a été placé
       if (page !== currentPage) {
-        console.log('🖱️ Changement de page vers:', page);
+        console.log('🎯 Changement de page courante vers:', page);
         setCurrentPage(page);
       }
       
       setDraggedFieldType(null);
-      toast.success(`Champ ${draggedFieldType} ajouté sur la page ${page} !`, { duration: 3000 });
+      toast.success(`✅ Champ ${draggedFieldType} ajouté sur la page ${page} !`, { duration: 3000 });
       return;
     }
 
     // Mode normal - changer de page
     if (currentPage !== page) {
-      console.log('🖱️ === CHANGEMENT DE PAGE ===');
-      console.log('🖱️ Changement de page vers:', page);
+      console.log('🎯 === CHANGEMENT DE PAGE NORMAL ===');
+      console.log('🎯 Changement de page vers:', page);
       setCurrentPage(page);
       setSelectedField(null);
     }
