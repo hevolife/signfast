@@ -690,7 +690,7 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
 }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ['pdf-field-type', 'pdf-field'],
-    drop: (item: { id: string }, monitor) => {
+    drop: (item: { id?: string; type?: string }, monitor) => {
       const offset = monitor.getClientOffset();
       if (offset && pdfViewerRef.current?.canvasRefs.current) {
         const canvas = pdfViewerRef.current.canvasRefs.current[currentPage - 1];
@@ -700,8 +700,11 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
           const y = (offset.y - rect.top) / scale;
           
           if (item.id) {
-            // Moving existing field
+            // Déplacer un champ existant
             onUpdateField(item.id, { x, y, page: currentPage });
+          } else if (item.type) {
+            // Nouveau champ depuis la palette
+            console.log('Nouveau champ déposé:', item.type, 'à', x, y);
           }
         }
       }
@@ -712,19 +715,8 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
     }),
   }));
 
-  const handleCanvasClick = (e: React.MouseEvent) => {
-    // Only handle clicks on the canvas itself, not on field overlays
-    if (e.target === e.currentTarget) {
-      onSelectField(''); // Deselect all fields
-    }
-  };
-
   return (
-    <Card className="h-[600px] lg:h-[700px] relative" ref={drop}>
-      <div 
-        className="absolute inset-0 z-0"
-        onClick={handleCanvasClick}
-      />
+    <Card className="h-[600px] lg:h-[700px] relative">
       <PDFViewer
         ref={pdfViewerRef}
         file={pdfFile}
@@ -734,19 +726,20 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
         scale={scale}
         onScaleChange={onScaleChange}
       >
-        {fields.map(field => (
-          <PDFFieldOverlay
-            key={field.id}
-            field={field}
-            scale={scale}
-            isSelected={selectedField === field.id}
-            onSelect={(field) => onSelectField(field.id)}
-            onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
-            onDelete={() => onDeleteField(field.id)}
-            canvasRefs={pdfViewerRef.current?.canvasRefs || undefined}
-            currentPage={currentPage}
-          />
-        ))}
+        <div ref={drop} className="absolute inset-0 pointer-events-none">
+          {fields.map(field => (
+            <PDFFieldOverlay
+              key={field.id}
+              field={field}
+              scale={scale}
+              isSelected={selectedField === field.id}
+              onSelect={(field) => onSelectField(field.id)}
+              onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
+              onDelete={() => onDeleteField(field.id)}
+              currentPage={currentPage}
+            />
+          ))}
+        </div>
       </PDFViewer>
     </Card>
   );
