@@ -262,32 +262,79 @@ export class PDFGenerator {
           case 'image':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
               try {
-                console.log(`🖼️ ===== DÉBUT DESSIN IMAGE =====`);
+                console.log(`🖼️ ===== DÉBUT DESSIN IMAGE ${processedFields + 1} =====`);
                 console.log(`🖼️ Variable: ${field.variable}`);
+                console.log(`🖼️ Variable normalisée: ${field.variable.replace(/^\$\{|\}$/g, '')}`);
                 console.log(`🖼️ Position: (${pdfX}, ${pdfY})`);
                 console.log(`🖼️ Taille: ${field.width}x${field.height}`);
                 console.log(`🖼️ Type de données: base64`);
                 console.log(`🖼️ Début données: ${value.substring(0, 50)}...`);
                 console.log(`🖼️ Taille totale: ${value.length} caractères`);
+                
+                // Vérifier que l'image est valide
+                if (value.length < 100) {
+                  console.log(`🖼️ ⚠️ Image trop petite, probablement corrompue`);
+                  throw new Error('Image trop petite ou corrompue');
+                }
+                
                 await this.drawImage(pdfDoc, page, value, pdfX, pdfY, field);
                 console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS`);
               } catch (error) {
                 console.error(`🖼️ ❌ ERREUR DESSIN IMAGE:`, error);
-                console.error(`🖼️ Stack trace:`, error.stack);
                 console.error(`🖼️ Variable problématique: ${field.variable}`);
-                console.error(`🖼️ Données: ${value.substring(0, 100)}...`);
+                console.error(`🖼️ Taille données: ${typeof value === 'string' ? value.length : 'N/A'}`);
                 if (isMobile) {
                   console.log('📱 ❌ Image ignorée sur mobile (erreur)');
                 }
+                
+                // Dessiner un placeholder en cas d'erreur
+                try {
+                  page.drawRectangle({
+                    x: pdfX,
+                    y: pdfY,
+                    width: field.width,
+                    height: field.height,
+                    borderColor: rgb(0.8, 0.8, 0.8),
+                    borderWidth: 1,
+                  });
+                  
+                  page.drawText('Image non disponible', {
+                    x: pdfX + 5,
+                    y: pdfY + field.height / 2,
+                    size: 8,
+                    font,
+                    color: rgb(0.5, 0.5, 0.5),
+                  });
+                } catch (placeholderError) {
+                  console.error('🖼️ ❌ Impossible de dessiner le placeholder:', placeholderError);
+                }
               }
             } else {
-              console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ:`);
+              console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ (pas de données valides):`);
               console.log(`🖼️   - Champ: ${field.variable}`);
               console.log(`🖼️   - Type valeur: ${typeof value}`);
-              console.log(`🖼️   - Valeur: ${typeof value === 'string' ? value.substring(0, 50) + '...' : value}`);
+              console.log(`🖼️   - Valeur: ${typeof value === 'string' ? (value.startsWith('data:') ? 'BASE64_DATA' : value) : value}`);
               console.log(`🖼️   - Valeur valide: ${typeof value === 'string' && value.startsWith('data:image')}`);
               console.log(`🖼️   - Fichiers disponibles: ${formFiles.length}`);
-              console.log(`🖼️   - Index actuel: ${fileIndex}`);
+              
+              // Essayer l'assignation automatique même si la variable n'est pas trouvée
+              if (fileIndex < formFiles.length) {
+                const autoValue = formFiles[fileIndex][1];
+                console.log(`🖼️ 🔄 TENTATIVE ASSIGNATION AUTOMATIQUE:`);
+                console.log(`🖼️   - Fichier auto: ${fileIndex + 1}/${formFiles.length}`);
+                console.log(`🖼️   - Clé source: "${formFiles[fileIndex][0]}"`);
+                
+                try {
+                  await this.drawImage(pdfDoc, page, autoValue, pdfX, pdfY, field);
+                  console.log(`🖼️ ✅ IMAGE ASSIGNÉE AUTOMATIQUEMENT`);
+                  fileIndex++;
+                } catch (autoError) {
+                  console.error(`🖼️ ❌ Erreur assignation automatique:`, autoError);
+                  fileIndex++;
+                }
+              } else {
+                console.log(`🖼️ ❌ Aucun fichier disponible pour assignation automatique`);
+              }
             }
             break;
         }
@@ -372,8 +419,22 @@ export class PDFGenerator {
     // Extraire le nom de la variable (enlever ${})
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
     
-    console.log(`🔍 Recherche variable: "${variableName}"`);
-    console.log(`🔍 Clés disponibles:`, Object.keys(data));
+    console.log(`🔍 ===== RECHERCHE VARIABLE =====`);
+    console.log(`🔍 Variable recherchée: "${variableName}"`);
+    console.log(`🔍 Type de champ: ${field.type}`);
+    console.log(`🔍 Clés disponibles dans data:`, Object.keys(data));
+    
+    // Debug spécial pour les images
+    if (field.type === 'image') {
+      const imageKeys = Object.keys(data).filter(key => {
+        const value = data[key];
+        return typeof value === 'string' && value.startsWith('data:image');
+      });
+      console.log(`🔍 🖼️ Clés contenant des images:`, imageKeys);
+      imageKeys.forEach(key => {
+        console.log(`🔍 🖼️ Image "${key}": ${data[key].substring(0, 50)}...`);
+      });
+    }
     
     let value = data[variableName];
     
@@ -389,8 +450,23 @@ export class PDFGenerator {
         value = data[matchingKey];
         console.log(`🔍 Trouvé via clé: ${matchingKey} = ${typeof value === 'string' && value.startsWith('data:') ? 'IMAGE_DATA' : value}`);
       } else {
-        console.log(`🔍 Variable ${variableName} not found. Available keys:`, originalKeys);
-        console.log(`🔍 Data values:`, Object.entries(data).map(([k, v]) => `${k}: ${typeof v === 'string' && v.startsWith('data:') ? 'base64_image' : v}`));
+        console.log(`🔍 ❌ Variable "${variableName}" non trouvée`);
+        console.log(`🔍 Clés disponibles:`, originalKeys);
+        
+        // Pour les champs image, essayer de trouver n'importe quelle image disponible
+        if (field.type === 'image') {
+          const anyImageKey = originalKeys.find(key => {
+            const val = data[key];
+            return typeof val === 'string' && val.startsWith('data:image');
+          });
+          
+          if (anyImageKey) {
+            value = data[anyImageKey];
+            console.log(`🔍 🖼️ ✅ Image trouvée via recherche générale: "${anyImageKey}"`);
+          } else {
+            console.log(`🔍 🖼️ ❌ Aucune image trouvée dans les données`);
+          }
+        }
       }
     }
     
@@ -523,6 +599,19 @@ export class PDFGenerator {
     console.log(`🖼️ Taille données: ${imageData.length} caractères`);
     console.log(`🖼️ Format: ${imageData.substring(0, 30)}...`);
     
+    // Validation des données d'entrée
+    if (!imageData || typeof imageData !== 'string') {
+      throw new Error('Données image invalides: pas de string');
+    }
+    
+    if (!imageData.startsWith('data:image')) {
+      throw new Error('Données image invalides: pas de format data:image');
+    }
+    
+    if (imageData.length < 100) {
+      throw new Error('Données image trop petites: probablement corrompues');
+    }
+    
     try {
       let image;
       
@@ -530,6 +619,10 @@ export class PDFGenerator {
       // Image base64
       const imageBytes = this.base64ToBytes(imageData);
       console.log(`🖼️ Bytes extraits: ${imageBytes.length} bytes`);
+      
+      if (imageBytes.length === 0) {
+        throw new Error('Conversion base64 échouée: 0 bytes');
+      }
       
       if (imageData.includes('data:image/png')) {
         console.log(`🖼️ Format détecté: PNG`);
@@ -563,29 +656,35 @@ export class PDFGenerator {
       console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS !`);
     } catch (error) {
       console.error('🖼️ ❌ ERREUR CRITIQUE lors de l\'ajout de l\'image:', error);
-      console.error('🖼️ Stack trace complète:', error.stack);
       console.error('🖼️ Données image problématiques:', imageData.substring(0, 100) + '...');
       
       // En cas d'erreur, dessiner un placeholder
       console.log(`🖼️ Dessin d'un placeholder à la place...`);
-      page.drawRectangle({
-        x,
-        y,
-        width: field.width,
-        height: field.height,
-        borderColor: rgb(0.8, 0.8, 0.8),
-        borderWidth: 1,
-      });
+      try {
+        page.drawRectangle({
+          x,
+          y,
+          width: field.width,
+          height: field.height,
+          borderColor: rgb(0.8, 0.8, 0.8),
+          borderWidth: 1,
+        });
+        
+        // Ajouter un texte d'erreur
+        page.drawText('Image non disponible', {
+          x: x + 5,
+          y: y + field.height / 2,
+          size: 8,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+        
+        console.log(`🖼️ Placeholder dessiné`);
+      } catch (placeholderError) {
+        console.error('🖼️ ❌ Impossible de dessiner le placeholder:', placeholderError);
+      }
       
-      // Ajouter un texte d'erreur
-      page.drawText('Image non disponible', {
-        x: x + 5,
-        y: y + field.height / 2,
-        size: 8,
-        color: rgb(0.5, 0.5, 0.5),
-      });
-      
-      console.log(`🖼️ Placeholder dessiné`);
+      // Re-throw l'erreur pour que l'appelant soit au courant
+      throw error;
     }
   }
 
@@ -614,14 +713,39 @@ export class PDFGenerator {
   }
 
   private static base64ToBytes(base64: string): Uint8Array {
+    try {
+      if (!base64 || typeof base64 !== 'string') {
+        throw new Error('Base64 string invalide');
+      }
+      
+      if (!base64.includes(',')) {
+        throw new Error('Format base64 invalide: pas de virgule trouvée');
+      }
+      
     const base64Data = base64.split(',')[1];
+      
+      if (!base64Data) {
+        throw new Error('Pas de données après la virgule dans base64');
+      }
+      
     const binaryString = atob(base64Data);
+      
+      if (binaryString.length === 0) {
+        throw new Error('Décodage base64 a produit 0 bytes');
+      }
+      
     const bytes = new Uint8Array(binaryString.length);
     
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
     
+      console.log(`🔧 Base64 décodé: ${base64Data.length} chars → ${bytes.length} bytes`);
     return bytes;
+    } catch (error) {
+      console.error('🔧 ❌ Erreur conversion base64:', error);
+      console.error('🔧 Données problématiques:', base64.substring(0, 100) + '...');
+      throw new Error(`Conversion base64 échouée: ${error.message}`);
+    }
   }
 }
