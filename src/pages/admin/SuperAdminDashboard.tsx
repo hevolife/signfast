@@ -26,9 +26,12 @@ import {
   HardDrive,
   DollarSign,
   Gift,
-  UserCheck
+  UserCheck,
+  Settings,
+  AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useMaintenanceMode } from '../../hooks/useMaintenanceMode';
 
 interface AdminUser {
   id: string;
@@ -72,6 +75,7 @@ interface SecretCode {
 
 export const SuperAdminDashboard: React.FC = () => {
   const { user, session } = useAuth();
+  const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +85,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [newCodeDescription, setNewCodeDescription] = useState('');
   const [newCodeMaxUses, setNewCodeMaxUses] = useState<number>(1);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
 
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
@@ -214,6 +219,22 @@ export const SuperAdminDashboard: React.FC = () => {
     }));
   };
 
+  const handleToggleMaintenance = async () => {
+    setMaintenanceLoading(true);
+    try {
+      await toggleMaintenanceMode();
+      toast.success(
+        isMaintenanceMode 
+          ? '✅ Mode maintenance désactivé - Site accessible' 
+          : '🔧 Mode maintenance activé - Site fermé au public'
+      );
+    } catch (error) {
+      toast.error('Erreur lors du changement de mode maintenance');
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.profile?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -288,6 +309,46 @@ export const SuperAdminDashboard: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">
             Gestion des utilisateurs et codes secrets SignFast
           </p>
+          
+          {/* Bouton Mode Maintenance */}
+          <div className="mt-6">
+            <Button
+              onClick={handleToggleMaintenance}
+              disabled={maintenanceLoading}
+              className={`flex items-center space-x-2 mx-auto ${
+                isMaintenanceMode 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-orange-600 hover:bg-orange-700 text-white'
+              }`}
+            >
+              {maintenanceLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : isMaintenanceMode ? (
+                <Settings className="h-4 w-4" />
+              ) : (
+                <AlertTriangle className="h-4 w-4" />
+              )}
+              <span>
+                {maintenanceLoading 
+                  ? 'Mise à jour...' 
+                  : isMaintenanceMode 
+                  ? 'Désactiver la maintenance' 
+                  : 'Activer la maintenance'
+                }
+              </span>
+            </Button>
+            
+            {isMaintenanceMode && (
+              <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 max-w-md mx-auto">
+                <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    🔧 Site en maintenance - Seuls les super admins peuvent accéder
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Onglets */}

@@ -25,7 +25,17 @@ import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
+  const { isMaintenanceMode, loading: maintenanceLoading } = useMaintenanceMode();
   const isPublicForm = location.pathname.startsWith('/form/');
+  
+  // Vérifier si l'utilisateur est super admin
+  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+  
+  // Afficher le mode maintenance si activé et que l'utilisateur n'est pas super admin
+  if (!maintenanceLoading && isMaintenanceMode && !isSuperAdmin) {
+    return <MaintenanceMode />;
+  }
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isPublicForm ? '' : 'pb-16 md:pb-0'}`}>
