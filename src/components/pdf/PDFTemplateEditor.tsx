@@ -689,14 +689,14 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
   onDeleteField,
 }) => {
   const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'pdf-field',
+    accept: ['pdf-field-type', 'pdf-field'],
     drop: (item: { id?: string; type?: string }, monitor) => {
       console.log('📍 Drop détecté sur canvas:', item);
       const offset = monitor.getClientOffset();
       const canvasRefs = pdfViewerRef.current?.canvasRefs.current;
       
       if (offset && canvasRefs) {
-        const canvas = pdfViewerRef.current.canvasRefs.current[currentPage - 1];
+        const canvas = canvasRefs[currentPage - 1];
         if (canvas) {
           const rect = canvas.getBoundingClientRect();
           const x = (offset.x - rect.left) / scale;
@@ -704,15 +704,18 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
           
           console.log('📍 Position calculée:', { x, y, page: currentPage });
           
-          if (item.id) {
+          if (item.type === 'existing-field' && item.id) {
             // Déplacer un champ existant
             console.log('🔄 Déplacement champ existant:', item.id, 'vers', { x, y, page: currentPage });
             onUpdateField(item.id, { x, y, page: currentPage });
-            return { moved: true };
+          } else if (item.type && !item.id) {
+            // Nouveau champ depuis la palette
+            console.log('➕ Nouveau champ depuis palette:', item.type, 'à', { x, y, page: currentPage });
+            // Cette logique sera gérée par le parent
           }
         }
       }
-      return undefined;
+      return { moved: true };
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
@@ -720,35 +723,35 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
   }));
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    // Vérifier si on clique vraiment sur le canvas et pas sur un champ
+    // Désélectionner seulement si on clique sur le canvas lui-même
     const target = e.target as HTMLElement;
-    if (target.tagName === 'CANVAS' || target.closest('.pdf-canvas-container')) {
+    if (target.tagName === 'CANVAS') {
       console.log('🖱️ Clic sur canvas vide - désélection');
-      onSelectField('');
+      onSelectField(null);
     }
   };
 
   return (
-    <Card className="h-[600px] lg:h-[700px] relative pdf-canvas-container" onClick={handleCanvasClick}>
-      <PDFViewer
-        ref={pdfViewerRef}
-        file={pdfFile}
-        onPageClick={onPageClick}
-        currentPage={currentPage}
-        onPageChange={onPageChange}
-        scale={scale}
-        onScaleChange={onScaleChange}
-      >
-        <div ref={drop} className="absolute inset-0 pointer-events-none">
+    <Card className="h-[600px] lg:h-[700px] relative">
+      <div ref={drop} className="h-full w-full">
+        <PDFViewer
+          ref={pdfViewerRef}
+          file={pdfFile}
+          onPageClick={onPageClick}
+          currentPage={currentPage}
+          onPageChange={onPageChange}
+          scale={scale}
+          onScaleChange={onScaleChange}
+        >
           {fields.map(field => (
             <PDFFieldOverlay
               key={field.id}
               field={field}
               scale={scale}
               isSelected={selectedField === field.id}
-              onSelect={(selectedField) => {
-                console.log('🎯 Sélection champ depuis overlay:', selectedField.id);
-                onSelectField(selectedField.id);
+              onSelect={(field) => {
+                console.log('🎯 Sélection champ depuis overlay:', field.id);
+                onSelectField(field.id);
               }}
               onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
               onDelete={(fieldId) => {
@@ -758,8 +761,8 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
               currentPage={currentPage}
             />
           ))}
-        </div>
-      </PDFViewer>
+        </PDFViewer>
+      </div>
     </Card>
   );
 };

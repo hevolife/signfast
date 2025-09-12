@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDrag, useDrop } from 'react-dnd';
+import { useDrag } from 'react-dnd';
 import { PDFField } from '../../types/pdf';
 
 interface PDFFieldOverlayProps {
@@ -28,61 +28,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'pdf-field',
-    item: () => {
-      console.log('🚀 Début drag du champ:', field.id);
-      return { 
-        id: field.id, 
-        type: field.type,
-        originalX: field.x,
-        originalY: field.y,
-        originalPage: field.page
-      };
-    },
-    end: (item, monitor) => {
-      const dropResult = monitor.getDropResult();
-      console.log('🏁 Fin drag du champ:', field.id, 'dropResult:', dropResult);
-      
-      if (!dropResult && monitor.didDrop()) {
-        console.log('✅ Drop réussi pour champ:', field.id);
-      } else if (!monitor.didDrop()) {
-        console.log('❌ Drop échoué, reset position pour champ:', field.id);
-        // Reset à la position originale si le drop échoue
-        onUpdate({
-          ...field,
-          x: item.originalX,
-          y: item.originalY,
-          page: item.originalPage
-        });
-      }
-    },
+    item: { id: field.id, type: 'existing-field' },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
-    }),
-  }));
-
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'pdf-field',
-    hover: (item: any, monitor) => {
-      if (item.id === field.id) return; // Ne pas se déposer sur soi-même
-      
-      const clientOffset = monitor.getClientOffset();
-      if (!clientOffset) return;
-      
-      // Calculer la nouvelle position relative au champ survolé
-      const hoverBoundingRect = (drop as any).current?.getBoundingClientRect();
-      if (!hoverBoundingRect) return;
-      
-      const newX = field.x + (clientOffset.x - hoverBoundingRect.left) / scale;
-      const newY = field.y + (clientOffset.y - hoverBoundingRect.top) / scale;
-      
-      console.log('🎯 Hover sur champ:', field.id, 'nouvelle position calculée:', newX, newY);
-    },
-    drop: (item: any, monitor) => {
-      console.log('📍 Drop sur champ:', field.id, 'item:', item);
-      return { moved: true };
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
     }),
   }));
 
@@ -189,16 +137,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     <div
       ref={(node) => {
         drag(node);
-        drop(node);
       }}
       className={`absolute select-none border-2 transition-all duration-200 ${
         isSelected 
           ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-300' 
           : 'border-gray-300 bg-white hover:border-blue-300 hover:shadow-md'
       } ${
-        isDragging ? 'opacity-50 cursor-grabbing z-50' : 'cursor-grab hover:cursor-grab'
-      } ${
-        isOver && !isDragging ? 'ring-2 ring-green-300' : ''
+        isDragging ? 'opacity-50 cursor-grabbing z-50' : 'cursor-move hover:cursor-grab'
       }`}
       style={{
         left: `${field.x * scale}px`,
