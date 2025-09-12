@@ -48,14 +48,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     const left = canvasRect.left - containerRect.left + (currentX * scale);
     const top = canvasRect.top - containerRect.top + (currentY * scale);
-    const left = canvasRect.left - containerRect.left + (field.x * scale);
-    const top = canvasRect.top - containerRect.top + (field.y * scale);
 
-    // Add drag offset for smooth dragging
-    return { 
-      left: left + (isDragging ? dragOffset.x : 0), 
-      top: top + (isDragging ? dragOffset.y : 0) 
-    };
+    return { left, top };
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
