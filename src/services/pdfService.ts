@@ -283,6 +283,48 @@ export class PDFService {
     }
   }
 
+  // COMPTER LES PDFS (optimisé pour éviter les timeouts)
+  static async countPDFs(): Promise<number> {
+    try {
+      // Essayer Supabase d'abord
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (!userError && user) {
+          const { count, error } = await supabase
+            .from('pdf_storage')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+
+          if (!error && count !== null) {
+            console.log('💾 Nombre de PDFs Supabase:', count);
+            return count;
+          } else {
+            console.warn('💾 Erreur count Supabase:', error?.message || 'Count null');
+          }
+        } else {
+          console.log('💾 Utilisateur non connecté pour count');
+        }
+      } catch (supabaseError) {
+        console.warn('💾 Erreur Supabase count (ignorée):', supabaseError);
+      }
+
+      // Fallback localStorage
+      try {
+        const localPDFs = this.getLocalPDFs();
+        const localCount = Object.keys(localPDFs).length;
+        console.log('💾 Nombre de PDFs localStorage:', localCount);
+        return localCount;
+      } catch (localError) {
+        console.warn('💾 Erreur count local:', localError);
+        return 0;
+      }
+    } catch (error) {
+      console.error('💾 Erreur count PDFs:', error);
+      return 0;
+    }
+  }
+
   // LISTER LES PDFS (métadonnées uniquement)
   static async listPDFs(): Promise<Array<{
     fileName: string;
@@ -294,6 +336,7 @@ export class PDFService {
     formData: Record<string, any>;
   }>> {
     try {
+      console.log('💾 listPDFs appelé');
       const allPDFs: any[] = [];
 
       // Essayer de récupérer depuis Supabase d'abord
@@ -302,12 +345,18 @@ export class PDFService {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!userError && user) {
-          // Essayer de récupérer les PDFs de l'utilisateur connecté
-          const { data, error } = await supabase
+          // Timeout pour éviter les blocages
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout Supabase')), 2000);
+          });
+
+          const queryPromise = supabase
             .from('pdf_storage')
             .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
+
+          const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
           if (!error && data) {
             console.log('💾 PDFs Supabase trouvés:', data.length);
@@ -323,13 +372,13 @@ export class PDFService {
             }));
             allPDFs.push(...supabasePDFs);
           } else {
-            console.warn('💾 Erreur ou pas de données Supabase:', error?.message || 'Pas de données');
+            console.warn('💾 Supabase lent ou indisponible, utilisation localStorage uniquement');
           }
         } else {
           console.log('💾 Utilisateur non connecté, skip Supabase');
         }
       } catch (supabaseError) {
-        console.warn('💾 Erreur Supabase (ignorée):', supabaseError);
+        console.warn('💾 Supabase timeout ou erreur (ignorée), utilisation localStorage');
       }
 
       // Récupérer depuis localStorage

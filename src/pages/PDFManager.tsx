@@ -35,6 +35,8 @@ export const PDFManager: React.FC = () => {
   const [isResponsive, setIsResponsive] = useState(false);
 
   useEffect(() => {
+    // Chargement immédiat
+    setLoading(true);
     loadPDFs();
     
     // Détecter si on est sur mobile/tablette
@@ -45,10 +47,10 @@ export const PDFManager: React.FC = () => {
     checkResponsive();
     window.addEventListener('resize', checkResponsive);
     
-    // Rechargement périodique
+    // Rechargement périodique moins fréquent
     const interval = setInterval(() => {
       loadPDFs();
-    }, 10000); // Toutes les 10 secondes
+    }, 30000); // Toutes les 30 secondes
     
     return () => {
       window.removeEventListener('resize', checkResponsive);
@@ -57,17 +59,30 @@ export const PDFManager: React.FC = () => {
   }, []);
 
   const loadPDFs = async () => {
+    // Timeout pour éviter les chargements trop longs
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('💾 Timeout chargement PDFs, affichage liste vide');
+        setPdfs([]);
+        setLoading(false);
+      }
+    }, 3000); // 3 secondes max
+
     try {
       console.log('💾 Chargement des PDFs');
       
       const pdfList = await PDFService.listPDFs();
       console.log('💾 PDFs trouvés:', pdfList.length);
       
+      clearTimeout(loadingTimeout);
       setPdfs(pdfList);
     } catch (error) {
       console.error('💾 Erreur chargement PDFs:', error);
+      clearTimeout(loadingTimeout);
       toast.error('Erreur lors du chargement des PDFs');
+      setPdfs([]); // Afficher liste vide plutôt que loading infini
     } finally {
+      clearTimeout(loadingTimeout);
       setLoading(false);
     }
   };

@@ -77,6 +77,8 @@ export class PDFTemplateService {
   // LISTER LES TEMPLATES DE L'UTILISATEUR
   static async getUserTemplates(userId: string): Promise<PDFTemplate[]> {
     try {
+      console.log('📄 getUserTemplates appelé pour userId:', userId);
+      
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -86,17 +88,25 @@ export class PDFTemplateService {
         return [];
       }
 
-      const { data, error } = await supabase
+      // Timeout pour éviter les blocages
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout Supabase')), 3000);
+      });
+
+      const queryPromise = supabase
         .from('pdf_templates')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error) {
         console.warn('📄 Supabase non disponible - retour liste vide:', error.message);
         return [];
       }
 
+      console.log('📄 Templates récupérés:', data?.length || 0);
       return data.map(item => ({
         id: item.id,
         name: item.name,
@@ -110,7 +120,7 @@ export class PDFTemplateService {
         user_id: item.user_id,
       }));
     } catch (error) {
-      console.error('❌ Erreur récupération templates:', error);
+      console.warn('📄 Erreur récupération templates (timeout ou réseau):', error.message);
       return [];
     }
   }
