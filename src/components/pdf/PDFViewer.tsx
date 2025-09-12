@@ -338,7 +338,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
                   // Optimisations de performance
                   willChange: 'transform',
                   transform: 'translateZ(0)',
-                  display: (loading || isRendering) ? 'none' : 'block'
+                  visibility: (loading || isRendering) ? 'hidden' : 'visible'
                 }}
                 data-page={index + 1}
               />
