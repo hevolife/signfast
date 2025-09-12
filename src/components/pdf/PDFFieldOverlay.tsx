@@ -34,16 +34,16 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Calculer la position du champ
   useEffect(() => {
     const updatePosition = () => {
-      console.log(`🎯 Calcul position pour champ ${field.variable} page ${field.page}`);
+      console.log(`🎯 Calcul position pour champ ${field.variable || field.type} page ${field.page}`);
       
       // Trouver le canvas de la page
       const pageCanvas = document.querySelector(`canvas[data-page="${field.page}"]`) as HTMLCanvasElement;
       if (!pageCanvas) {
-        console.warn(`🎯 Canvas page ${field.page} non trouvé`);
+        console.warn(`🎯 Canvas page ${field.page} non trouvé pour champ ${field.variable || field.type}`);
         return;
       }
 
-      // Obtenir la position du canvas
+      // Obtenir la position du canvas par rapport au document
       const canvasRect = pageCanvas.getBoundingClientRect();
       const pdfContainer = document.querySelector('#pdf-container') as HTMLElement;
       
@@ -52,22 +52,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         return;
       }
 
-      // Position relative au conteneur PDF avec scroll
+      // Obtenir la position du conteneur PDF
       const containerRect = pdfContainer.getBoundingClientRect();
-      const scrollTop = pdfContainer.scrollTop;
-      const scrollLeft = pdfContainer.scrollLeft;
       
-      // Position absolue dans le conteneur PDF
-      const left = (canvasRect.left - containerRect.left) + scrollLeft + (field.x * scale);
-      const top = (canvasRect.top - containerRect.top) + scrollTop + (field.y * scale);
+      // Calculer la position relative au canvas
+      const left = (canvasRect.left - containerRect.left) + (field.x * scale);
+      const top = (canvasRect.top - containerRect.top) + (field.y * scale);
       const width = field.width * scale;
       const height = field.height * scale;
 
       const newPosition = { left, top, width, height };
-      console.log(`🎯 Position calculée:`, newPosition);
-      console.log(`🎯 Canvas rect:`, canvasRect);
-      console.log(`🎯 Container rect:`, containerRect);
-      console.log(`🎯 Field coords: x=${field.x}, y=${field.y}, scale=${scale}`);
+      console.log(`🎯 Position calculée pour ${field.variable || field.type}:`, newPosition);
+      console.log(`🎯 Field coords originaux: x=${field.x}, y=${field.y}, scale=${scale}`);
       setPosition(newPosition);
     };
 
@@ -86,18 +82,15 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       pdfContainer.addEventListener('scroll', handleUpdate);
     }
     
-    // Observer les changements du DOM pour les canvas
-    const observer = new MutationObserver(handleUpdate);
-    if (pdfContainer) {
-      observer.observe(pdfContainer, { childList: true, subtree: true });
-    }
+    // Délai pour s'assurer que le canvas est rendu
+    const timer = setTimeout(handleUpdate, 100);
 
     return () => {
       window.removeEventListener('resize', handleUpdate);
       if (pdfContainer) {
         pdfContainer.removeEventListener('scroll', handleUpdate);
       }
-      observer.disconnect();
+      clearTimeout(timer);
     };
   }, [field.x, field.y, field.width, field.height, field.page, scale]);
 
@@ -148,7 +141,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         isSelected 
           ? 'border-blue-500 bg-blue-100/50' 
           : 'border-gray-400 bg-gray-100/30 hover:border-blue-400'
-      } touch-manipulation`}
+      } touch-manipulation transition-all duration-150`}
       style={{
         left: position.left,
         top: position.top,
@@ -182,6 +175,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
               e.stopPropagation();
               onDelete();
             }}
+            className="bg-red-500 text-white hover:bg-red-600 text-xs px-2 py-1"
           >
             <Trash2 className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
           </Button>
