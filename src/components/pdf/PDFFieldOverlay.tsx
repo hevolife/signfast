@@ -131,7 +131,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     onUpdate({
       ...field,
       x: Math.round(newX),
-      y: Math.round(newY)
+      y: Math.round(newY),
       ratioX: finalRatioX,
       ratioY: finalRatioY
     });
