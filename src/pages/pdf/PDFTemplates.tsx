@@ -17,7 +17,15 @@ export const PDFTemplates: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const { pdfTemplates: templatesLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const product = stripeConfig.products[0];
+
+  // Gérer le chargement initial
+  useEffect(() => {
+    if (!loading && !initialLoadDone) {
+      setInitialLoadDone(true);
+    }
+  }, [loading, initialLoadDone]);
 
   const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le template "${name}" ?`)) {
@@ -43,12 +51,14 @@ export const PDFTemplates: React.FC = () => {
     // Navigation handled by Link component
   };
 
-  if (loading) {
+  // Afficher le loading seulement au premier chargement et pas trop longtemps
+  if (loading && !initialLoadDone) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Chargement des templates...</p>
+          <p className="text-xs text-gray-500 mt-2">Si le chargement est trop long, la page s'affichera automatiquement</p>
         </div>
       </div>
     );
