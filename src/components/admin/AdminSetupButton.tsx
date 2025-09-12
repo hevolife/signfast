@@ -161,29 +161,6 @@ export const AdminSetupButton: React.FC = () => {
     );
   }
 
-  // Always show the button if no admin account exists yet
-  // This allows creation of the initial admin account in production
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Button
-        onClick={handleSetup}
-        disabled={loading}
-        className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white shadow-lg"
-      >
-        {loading ? (
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-        ) : (
-          <Shield className="h-4 w-4" />
-        )}
-        <span>{loading ? 'Création...' : 'Créer Admin'}</span>
-      </Button>
-    </div>
-  );
-};
-  // Always show the button if no admin account exists yet
-  // This allows creation of the initial admin account in production
-
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <Button
