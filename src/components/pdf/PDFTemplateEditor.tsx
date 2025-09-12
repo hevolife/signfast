@@ -247,6 +247,21 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Détecter si on est sur mobile
+  const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
+    console.log(`🔄 Mise à jour champ ${id}:`, updates);
+    setFields(prev => prev.map(field => 
+      field.id === id ? { ...field, ...updates } : field
+    ));
+  }, []);
+
+  const deleteField = useCallback((id: string) => {
+    setFields(prev => prev.filter(field => field.id !== id));
+    if (selectedField === id) {
+      setSelectedField(null);
+    }
+  }, [selectedField]);
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -353,21 +368,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       }
     }
   }, [selectedField, fields, updateField]);
-
-  // Détecter si on est sur mobile
-  const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
-    console.log(`🔄 Mise à jour champ ${id}:`, updates);
-    setFields(prev => prev.map(field => 
-      field.id === id ? { ...field, ...updates } : field
-    ));
-  }, []);
-
-  const deleteField = useCallback((id: string) => {
-    setFields(prev => prev.filter(field => field.id !== id));
-    if (selectedField === id) {
-      setSelectedField(null);
-    }
-  }, [selectedField]);
 
   const handleSave = () => {
     if (!pdfFile) {
