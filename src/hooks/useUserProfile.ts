@@ -38,11 +38,23 @@ export const useUserProfile = () => {
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return false;
 
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+      }
+    }
     try {
       const { data, error } = await supabase
         .from('user_profiles')
         .upsert({
-          user_id: user.id,
+          user_id: targetUserId,
           ...updates,
         }, {
           onConflict: 'user_id'

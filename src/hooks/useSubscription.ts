@@ -48,6 +48,20 @@ export const useSubscription = () => {
 
   const fetchSubscription = async () => {
     try {
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      let targetUserId = user.id;
+      
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('🎭 Mode impersonation: récupération de l\'abonnement pour', data.target_email);
+        } catch (error) {
+          console.error('Erreur parsing impersonation data:', error);
+        }
+      }
+
       // Vérifier l'abonnement Stripe
       const { data, error } = await supabase
         .from('stripe_user_subscriptions')
@@ -73,7 +87,7 @@ export const useSubscription = () => {
             description
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .or('expires_at.is.null,expires_at.gt.now()')
         .limit(1);
 

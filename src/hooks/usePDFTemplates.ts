@@ -11,9 +11,23 @@ export const usePDFTemplates = () => {
   const fetchTemplates = async () => {
     try {
       if (user) {
+        // Vérifier si on est en mode impersonation
+        const impersonationData = localStorage.getItem('admin_impersonation');
+        let targetUserId = user.id;
+        
+        if (impersonationData) {
+          try {
+            const data = JSON.parse(impersonationData);
+            targetUserId = data.target_user_id;
+            console.log('🎭 Mode impersonation: récupération des templates pour', data.target_email);
+          } catch (error) {
+            console.error('Erreur parsing impersonation data:', error);
+          }
+        }
+
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
-          const supabaseTemplates = await PDFTemplateService.getUserTemplates(user.id);
+          const supabaseTemplates = await PDFTemplateService.getUserTemplates(targetUserId);
           setTemplates(supabaseTemplates);
           console.log('📄 Templates Supabase chargés:', supabaseTemplates.length);
         } catch (supabaseError) {

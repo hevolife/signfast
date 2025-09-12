@@ -56,12 +56,24 @@ export const useForms = () => {
   const createForm = async (formData: Partial<Form>) => {
     if (!user) return null;
 
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+      }
+    }
     try {
       const { data, error } = await supabase
         .from('forms')
         .insert([{
           ...formData,
-          user_id: user.id,
+          user_id: targetUserId,
         }])
         .select()
         .single();
