@@ -8,18 +8,41 @@ export class PDFGenerator {
     originalPdfBytes: Uint8Array
   ): Promise<Uint8Array> {
     try {
-      console.log('🎨 PDFGenerator.generatePDF');
+      console.log('🎨 ===== DÉBUT GÉNÉRATION PDF =====');
       console.log('🎨 Template:', template.name);
+      console.log('🎨 Data reçue:', data);
       console.log('🎨 Data keys:', Object.keys(data));
       console.log('🎨 Template fields:', template.fields?.length || 0);
+      
+      // Debug spécial pour les images
+      const imageData = Object.entries(data).filter(([key, value]) => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      console.log('🖼️ IMAGES TROUVÉES DANS DATA:', imageData.length);
+      imageData.forEach(([key, value], index) => {
+        console.log(`🖼️ Image ${index + 1}: clé="${key}", taille=${typeof value === 'string' ? value.length : 0} caractères`);
+      });
+      
+      // Debug des champs image du template
+      const imageFields = template.fields.filter(field => field.type === 'image');
+      console.log('🎯 CHAMPS IMAGE DANS TEMPLATE:', imageFields.length);
+      imageFields.forEach((field, index) => {
+        console.log(`🎯 Champ image ${index + 1}: variable="${field.variable}", position=(${field.x}, ${field.y}), taille=${field.width}x${field.height}`);
+      });
       
       // Collecter tous les fichiers/images du formulaire
       const formFiles = Object.entries(data).filter(([key, value]) => 
         typeof value === 'string' && value.startsWith('data:image')
       );
-      console.log('📁 Fichiers trouvés dans le formulaire:', formFiles.length);
-      formFiles.forEach(([key, value]) => {
-        console.log(`📁 - ${key}: ${typeof value === 'string' ? value.substring(0, 50) + '...' : value}`);
+      console.log('📁 ===== FICHIERS FORMULAIRE =====');
+      console.log('📁 Nombre total de fichiers image:', formFiles.length);
+      formFiles.forEach(([key, value], index) => {
+        console.log(`📁 Fichier ${index + 1}:`);
+        console.log(`📁   - Clé: "${key}"`);
+        console.log(`📁   - Type: ${typeof value}`);
+        console.log(`📁   - Est base64: ${typeof value === 'string' && value.startsWith('data:image')}`);
+        console.log(`📁   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
+        console.log(`📁   - Format: ${typeof value === 'string' ? value.substring(0, 30) + '...' : 'N/A'}`);
       });
       
       // Détection mobile pour ajustements spécifiques
@@ -94,8 +117,14 @@ export class PDFGenerator {
       const totalFields = template.fields.length;
       let fileIndex = 0; // Index pour lier automatiquement les fichiers
       
+      console.log('🎨 ===== TRAITEMENT DES CHAMPS =====');
+      
       for (const field of template.fields) {
-        console.log(`🎨 Traitement champ: ${field.variable} (${field.type})`);
+        console.log(`🎨 ===== CHAMP ${processedFields + 1}/${totalFields} =====`);
+        console.log(`🎨 Variable: "${field.variable}"`);
+        console.log(`🎨 Type: ${field.type}`);
+        console.log(`🎨 Position: (${field.x}, ${field.y})`);
+        console.log(`🎨 Taille: ${field.width}x${field.height}`);
         
         // Sur mobile, ajouter des pauses entre les champs pour éviter les blocages
         if (isMobile && processedFields > 0 && processedFields % 3 === 0) {
@@ -110,22 +139,38 @@ export class PDFGenerator {
         
         // Pour les champs image, utiliser automatiquement les fichiers du formulaire
         if (field.type === 'image') {
+          console.log(`🖼️ ===== TRAITEMENT CHAMP IMAGE =====`);
+          console.log(`🖼️ Index fichier actuel: ${fileIndex}`);
+          console.log(`🖼️ Fichiers disponibles: ${formFiles.length}`);
+          
           if (fileIndex < formFiles.length) {
             value = formFiles[fileIndex][1]; // Prendre le fichier suivant
-            console.log(`🖼️ Champ image ${field.variable}: utilisation fichier ${fileIndex + 1}/${formFiles.length}`);
+            console.log(`🖼️ ✅ FICHIER ASSIGNÉ:`);
+            console.log(`🖼️   - Champ: ${field.variable}`);
+            console.log(`🖼️   - Fichier: ${fileIndex + 1}/${formFiles.length}`);
+            console.log(`🖼️   - Clé source: "${formFiles[fileIndex][0]}"`);
+            console.log(`🖼️   - Taille données: ${typeof value === 'string' ? value.length : 0} caractères`);
+            console.log(`🖼️   - Format: ${typeof value === 'string' ? value.substring(0, 30) + '...' : 'N/A'}`);
             fileIndex++;
           } else {
-            console.log(`🖼️ Champ image ${field.variable}: aucun fichier disponible (index ${fileIndex})`);
+            console.log(`🖼️ ❌ AUCUN FICHIER DISPONIBLE:`);
+            console.log(`🖼️   - Champ: ${field.variable}`);
+            console.log(`🖼️   - Index demandé: ${fileIndex}`);
+            console.log(`🖼️   - Fichiers disponibles: ${formFiles.length}`);
             value = null;
           }
         } else {
           value = this.getFieldValue(field, data);
         }
         
-        console.log(`🎨 Valeur trouvée: "${value}"`);
+        console.log(`🎨 Valeur finale pour "${field.variable}": ${
+          typeof value === 'string' && value.startsWith('data:image') 
+            ? `IMAGE_BASE64 (${value.length} caractères)` 
+            : `"${value}"`
+        }`);
         
         if (!value && !field.required) {
-          console.log(`🎨 Champ vide et non requis, ignoré`);
+          console.log(`🎨 ⏭️ Champ vide et non requis, ignoré`);
           processedFields++;
           continue;
         }
@@ -136,7 +181,7 @@ export class PDFGenerator {
         const x = field.x;
         const y = pageHeight - field.y - field.height;
         
-        console.log(`🎨 Position: x=${x}, y=${y}`);
+        console.log(`🎨 Position finale: x=${x}, y=${y}, page=${field.page}`);
 
         switch (field.type) {
           case 'text':
@@ -193,16 +238,27 @@ export class PDFGenerator {
           case 'image':
             if (value && typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))) {
               try {
+                console.log(`🖼️ ===== DÉBUT DESSIN IMAGE =====`);
+                console.log(`🖼️ Champ: ${field.variable}`);
+                console.log(`🖼️ Position: (${x}, ${y})`);
+                console.log(`🖼️ Taille: ${field.width}x${field.height}`);
+                console.log(`🖼️ Type de données: ${value.startsWith('data:image') ? 'base64' : 'URL'}`);
                 await this.drawImage(pdfDoc, page, value, x, y, field);
-                console.log(`🎨 ✅ Image dessinée automatiquement pour ${field.variable}`);
+                console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS`);
               } catch (error) {
-                console.error(`🎨 ❌ Erreur dessin image pour ${field.variable}:`, error);
+                console.error(`🖼️ ❌ ERREUR DESSIN IMAGE:`, error);
+                console.error(`🖼️ Stack trace:`, error.stack);
                 if (isMobile) {
-                  console.log('📱 Image ignorée sur mobile (trop complexe)');
+                  console.log('📱 ❌ Image ignorée sur mobile (erreur)');
                 }
               }
             } else {
-              console.log(`🖼️ ❌ Champ image ${field.variable} ignoré - pas de données image valides`);
+              console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ:`);
+              console.log(`🖼️   - Champ: ${field.variable}`);
+              console.log(`🖼️   - Valeur reçue: ${typeof value} - "${value}"`);
+              console.log(`🖼️   - Est string: ${typeof value === 'string'}`);
+              console.log(`🖼️   - Commence par data:image: ${typeof value === 'string' && value.startsWith('data:image')}`);
+              console.log(`🖼️   - Commence par http: ${typeof value === 'string' && value.startsWith('http')}`);
             }
             break;
         }
@@ -423,27 +479,41 @@ export class PDFGenerator {
     y: number,
     field: PDFField
   ) {
+    console.log(`🖼️ ===== drawImage APPELÉE =====`);
+    console.log(`🖼️ Position: (${x}, ${y})`);
+    console.log(`🖼️ Taille: ${field.width}x${field.height}`);
+    console.log(`🖼️ Type données: ${imageData.startsWith('data:image') ? 'base64' : 'URL'}`);
+    
     try {
       let image;
       
       if (imageData.startsWith('data:image')) {
+        console.log(`🖼️ Traitement image base64...`);
         // Image base64
         const imageBytes = this.base64ToBytes(imageData);
+        console.log(`🖼️ Bytes extraits: ${imageBytes.length} bytes`);
         
         if (imageData.includes('data:image/png')) {
+          console.log(`🖼️ Format détecté: PNG`);
           image = await pdfDoc.embedPng(imageBytes);
         } else if (imageData.includes('data:image/jpeg') || imageData.includes('data:image/jpg')) {
+          console.log(`🖼️ Format détecté: JPEG`);
           image = await pdfDoc.embedJpg(imageBytes);
         } else {
+          console.log(`🖼️ Format inconnu, tentative PNG...`);
           // Essayer PNG par défaut pour les autres formats
           try {
             image = await pdfDoc.embedPng(imageBytes);
+            console.log(`🖼️ ✅ PNG réussi`);
           } catch {
+            console.log(`🖼️ PNG échoué, tentative JPEG...`);
             // Si PNG échoue, essayer JPG
             image = await pdfDoc.embedJpg(imageBytes);
+            console.log(`🖼️ ✅ JPEG réussi`);
           }
         }
       } else if (imageData.startsWith('http')) {
+        console.log(`🖼️ Traitement image URL...`);
         // Image URL - télécharger d'abord
         const response = await fetch(imageData);
         const arrayBuffer = await response.arrayBuffer();
@@ -460,16 +530,23 @@ export class PDFGenerator {
         throw new Error('Format d\'image non supporté');
       }
       
+      console.log(`🖼️ Image embedée avec succès, dessin sur la page...`);
+      
       page.drawImage(image, {
         x,
         y,
         width: field.width,
         height: field.height,
       });
+      
+      console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS !`);
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'image:', error);
+      console.error('🖼️ ❌ ERREUR CRITIQUE lors de l\'ajout de l\'image:', error);
+      console.error('🖼️ Stack trace complète:', error.stack);
+      console.error('🖼️ Données image problématiques:', imageData.substring(0, 100) + '...');
       
       // En cas d'erreur, dessiner un placeholder
+      console.log(`🖼️ Dessin d'un placeholder à la place...`);
       page.drawRectangle({
         x,
         y,
@@ -486,6 +563,8 @@ export class PDFGenerator {
         size: 8,
         color: rgb(0.5, 0.5, 0.5),
       });
+      
+      console.log(`🖼️ Placeholder dessiné`);
     }
   }
 

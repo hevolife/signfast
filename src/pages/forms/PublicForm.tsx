@@ -180,19 +180,42 @@ export const PublicForm: React.FC = () => {
     try {
       const submissionData = { ...formData };
       
+      console.log(`📤 ===== SOUMISSION FORMULAIRE =====`);
+      console.log(`📤 FormData avant traitement:`, formData);
+      
       form.fields?.forEach(field => {
         const fieldValue = formData[field.id];
+        console.log(`📤 Traitement champ "${field.label}" (${field.type}):`, 
+          typeof fieldValue === 'string' && fieldValue.startsWith('data:image') 
+            ? `IMAGE_BASE64 (${fieldValue.length} caractères)` 
+            : fieldValue
+        );
+        
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
           submissionData[field.label] = fieldValue;
           
           // Debug pour les champs image/fichier
           if (field.type === 'file' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log(`📷 Image field "${field.label}" saved with base64 data, length: ${fieldValue.length}`);
+            console.log(`📷 ===== IMAGE SAUVEGARDÉE =====`);
+            console.log(`📷 Libellé champ: "${field.label}"`);
+            console.log(`📷 Clé dans submissionData: "${field.label}"`);
+            console.log(`📷 Taille base64: ${fieldValue.length} caractères`);
+            console.log(`📷 Format: ${fieldValue.substring(0, 50)}...`);
           }
         }
       });
 
-      console.log('Submitting data:', submissionData);
+      console.log(`📤 ===== DONNÉES FINALES SOUMISSION =====`);
+      console.log(`📤 Clés dans submissionData:`, Object.keys(submissionData));
+      
+      // Debug spécial pour les images
+      const imagesInSubmission = Object.entries(submissionData).filter(([key, value]) => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      console.log(`📤 Images dans submissionData: ${imagesInSubmission.length}`);
+      imagesInSubmission.forEach(([key, value], index) => {
+        console.log(`📤 Image ${index + 1}: clé="${key}", taille=${typeof value === 'string' ? value.length : 0}`);
+      });
 
       const { data: responseData, error } = await supabase
         .from('responses')
@@ -486,21 +509,39 @@ export const PublicForm: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    console.log(`📷 File selected for field "${field.label}":`, file.name, file.type, file.size);
+                    console.log(`📷 ===== FICHIER SÉLECTIONNÉ =====`);
+                    console.log(`📷 Champ: "${field.label}"`);
+                    console.log(`📷 Nom fichier: ${file.name}`);
+                    console.log(`📷 Type: ${file.type}`);
+                    console.log(`📷 Taille: ${file.size} bytes`);
                     
                     // Pour les images, convertir en base64
                     if (file.type.startsWith('image/')) {
-                      console.log(`📷 Converting image to base64 for field: ${field.label}`);
+                      console.log(`📷 Conversion en base64 pour: ${field.label}`);
                       const reader = new FileReader();
                       reader.onload = (event) => {
                         const base64 = event.target?.result as string;
+                        console.log(`📷 ===== CONVERSION TERMINÉE =====`);
+                        console.log(`📷 Champ: ${field.label}`);
+                        console.log(`📷 Base64 généré: ${base64.length} caractères`);
+                        console.log(`📷 Format détecté: ${base64.substring(0, 30)}...`);
+                        console.log(`📷 Sauvegarde avec clé: "${field.label}"`);
                         handleInputChange(field.id, base64);
-                        console.log(`📷 Image converted to base64 for "${field.label}", length: ${base64.length}`);
+                        
+                        // Vérifier immédiatement que la donnée est bien sauvegardée
+                        setTimeout(() => {
+                          console.log(`📷 ===== VÉRIFICATION SAUVEGARDE =====`);
+                          console.log(`📷 FormData actuel:`, Object.keys(formData));
+                          console.log(`📷 Valeur pour ${field.id}:`, formData[field.id] ? 'PRÉSENTE' : 'ABSENTE');
+                          if (formData[field.id]) {
+                            console.log(`📷 Taille sauvegardée: ${formData[field.id].length} caractères`);
+                          }
+                        }, 100);
                       };
                       reader.readAsDataURL(file);
                     } else {
                       // Pour les autres fichiers, stocker le nom
-                      console.log(`📄 Non-image file for field "${field.label}":`, file.name);
+                      console.log(`📄 Fichier non-image pour "${field.label}": ${file.name}`);
                       handleInputChange(field.id, file.name);
                     }
                   }
@@ -510,6 +551,7 @@ export const PublicForm: React.FC = () => {
               {/* Aperçu de l'image si c'est une image */}
               {formData[field.id] && typeof formData[field.id] === 'string' && formData[field.id].startsWith('data:image') && (
                 <div className="mt-2">
+                  <p className="text-xs text-green-600 mb-1">✅ Image chargée et prête pour le PDF</p>
                   <img
                     src={formData[field.id]}
                     alt="Aperçu"
