@@ -26,7 +26,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
   React.useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -38,48 +37,32 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   }, []);
 
   // Calculer la position absolue en tenant compte de toutes les pages
+  const getAbsolutePosition = () => {
+    // Trouver le conteneur de la page cible
     // Trouver le conteneur de la page cible
     const pageContainer = document.querySelector(`[data-page="${field.page}"]`) as HTMLElement;
     if (!pageContainer) {
       return { left: 0, top: 0, width: 0, height: 0 };
     }
     
-    // Trouver le canvas de cette page pour obtenir ses dimensions
-    const canvas = pageContainer.querySelector('canvas') as HTMLCanvasElement;
-    const canvasRect = canvas?.getBoundingClientRect();
-    const pageOffsetX = containerRect.left - pdfContainerRect.left + (pdfContainer?.scrollLeft || 0);
-    if (!canvasRect) {
-      return { left: 0, top: 0, width: 0, height: 0 };
-    }
-    
-    // Position relative au canvas
-    const canvasOffsetX = canvasRect.left - pdfContainerRect.left + (pdfContainer?.scrollLeft || 0);
-    const canvasOffsetY = canvasRect.top - pdfContainerRect.top + (pdfContainer?.scrollTop || 0);
-    
-    const scaleAdjustment = isMobile ? scale * 0.8 : scale;
-    
-    return {
-      left: canvasOffsetX + field.x * scaleAdjustment,
-      top: canvasOffsetY + field.y * scaleAdjustment,
-      width: field.width * scaleAdjustment,
-      height: field.height * scaleAdjustment,
-    };
-  };
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (isResizing) return;
-    
-    onSelect();
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startFieldX = field.x;
-    const startFieldY = field.y;
-    const startPage = field.page;
+    // Trouver le canvas de cette page
       
       const newY = startFieldY + deltaY;
       
+      // Déterminer la page en fonction de la position Y
+      let targetPage = field.page;
+      let relativeY = newY;
+      
+      // Si on dépasse vers le bas, passer à la page suivante
+      if (newY > 600) {
+        targetPage = Math.min(field.page + Math.floor(newY / 600), 10);
+        relativeY = newY % 600;
+      }
+      // Si on remonte, revenir à la page précédente
+      else if (newY < 0 && field.page > 1) {
+        targetPage = Math.max(1, field.page - 1);
+        relativeY = 600 + newY;
+      }
       // Déterminer la page en fonction de la position Y
       let targetPage = startPage;
       let relativeY = newY;
@@ -101,29 +84,70 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       });
     };
 
-    const handleTouchEnd = () => {
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isResizing) return;
+    
+    onSelect();
+
+    const touch = e.touches[0];
       document.removeEventListener('touchmove', handleTouchMove);
+      const newY = startFieldY + deltaY;
+      
+      // Déterminer la page en fonction de la position Y
+      let targetPage = field.page;
+      let relativeY = newY;
+      
+      // Si on dépasse vers le bas, passer à la page suivante
+      if (newY > 600) {
+        targetPage = Math.min(field.page + Math.floor(newY / 600), 10);
+        relativeY = newY % 600;
+      }
+      // Si on remonte, revenir à la page précédente
+      else if (newY < 0 && field.page > 1) {
+        targetPage = Math.max(1, field.page - 1);
+        relativeY = 600 + newY;
+      }
       document.removeEventListener('touchend', handleTouchEnd);
     };
 
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
   };
-
-  const getFieldIcon = () => {
+    // Obtenir la position du conteneur de la page
+    const pageRect = pageContainer.getBoundingClientRect();
+    const pdfContainer = document.querySelector('#pdf-container');
+    const pdfContainerRect = pdfContainer?.getBoundingClientRect();
+    
+    if (!pdfContainerRect) {
+      return { left: 0, top: 0, width: 0, height: 0 };
+    }
+    
+    // Calculer la position relative au conteneur PDF
+    const relativeTop = pageRect.top - pdfContainerRect.top + (pdfContainer?.scrollTop || 0);
+    const relativeLeft = pageRect.left - pdfContainerRect.left + (pdfContainer?.scrollLeft || 0);
     switch (field.type) {
       case 'text': return 'T';
       case 'date': return '📅';
-      case 'number': return '#';
-      case 'signature': return '✍️';
-      case 'checkbox': return '☐';
+        left: relativeLeft + field.x * scale * 0.8,
+      left: relativeLeft + field.x * scale,
+      top: relativeTop + field.y * scale + 40, // Offset pour le titre de page
       case 'image': return '🖼️';
       default: return '?';
     }
   };
 
   const adjustedPosition = getAbsolutePosition();
-    const startPage = field.page;
 
   return (
     <div
