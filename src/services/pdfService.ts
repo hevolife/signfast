@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { stripeConfig } from '../stripe-config';
+import { PDFGenerator } from '../utils/pdfGenerator';
 
 export class PDFService {
   // SAUVEGARDER LES MÉTADONNÉES PDF (sans générer le PDF)
@@ -171,7 +172,6 @@ export class PDFService {
         const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
 
         // Générer avec le template
-        const { PDFGenerator } = await import('../utils/pdfGenerator');
         
         // Nettoyer les données du formulaire (enlever les métadonnées du template)
         const cleanFormData = { ...metadata.form_data };
