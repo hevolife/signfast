@@ -646,3 +646,110 @@ export const Settings: React.FC = () => {
 
               {/* Plan Pro */}
               <Card className={`${isSubscribed ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-300'} relative`}>
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-600 text-white">
+                    <Crown className="h-4 w-4 mr-1" />
+                    Recommandé
+                  </span>
+                </div>
+                <CardHeader>
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                      {product.name}
+                    </h3>
+                    <div className="text-3xl font-bold text-blue-600">
+                      {product.price}€
+                      <span className="text-sm font-normal text-gray-500">/mois</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      {product.description}
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {product.features.map((feature, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {isSubscribed ? (
+                    <div className="space-y-3 pt-4">
+                      <div className="text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                          <Crown className="h-4 w-4 mr-1" />
+                          {hasSecretCode ? 'Accès Premium Actif' : 'Abonnement actif'}
+                        </span>
+                      </div>
+                      
+                      {hasSecretCode && secretCodeType === 'lifetime' && (
+                        <div className="text-center text-sm text-purple-600 dark:text-purple-400">
+                          <Gift className="h-4 w-4 inline mr-1" />
+                          Accès à vie via code secret
+                        </div>
+                      )}
+                      
+                      {hasSecretCode && secretCodeType === 'monthly' && secretCodeExpiresAt && (
+                        <div className="text-center text-sm text-purple-600 dark:text-purple-400">
+                          <Calendar className="h-4 w-4 inline mr-1" />
+                          Code secret expire le {new Date(secretCodeExpiresAt).toLocaleDateString('fr-FR')}
+                        </div>
+                      )}
+                      
+                      {currentPeriodEnd && !hasSecretCode && (
+                        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                          <Calendar className="h-4 w-4 inline mr-1" />
+                          {cancelAtPeriodEnd ? 'Se termine le' : 'Renouvellement le'} {formatDate(currentPeriodEnd)}
+                        </div>
+                      )}
+
+                      {cancelAtPeriodEnd && (
+                        <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                          <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-sm">
+                              Votre abonnement sera annulé à la fin de la période
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Plan actuel:</span> {hasSecretCode ? 'Premium (Code Secret)' : product.name}
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleSubscribe}
+                      disabled={saving}
+                      className="w-full flex items-center justify-center space-x-2"
+                    >
+                      {saving ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4" />
+                          <span>Passer Pro</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal Code Secret */}
+        <SecretCodeModal
+          isOpen={showSecretCodeModal}
+          onClose={() => setShowSecretCodeModal(false)}
+          onSuccess={handleSecretCodeSuccess}
+        />
+      </div>
+    </div>
+  );
+};
