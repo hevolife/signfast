@@ -165,13 +165,13 @@ export class PDFTemplateService {
   }
 
   // LIER UN TEMPLATE À UN FORMULAIRE
-  static async linkTemplateToForm(templateId: string, formId: string): Promise<boolean> {
+  static async linkTemplateToForm(templateId: string, formId: string | null): Promise<boolean> {
     try {
       console.log('🔗 Liaison template-formulaire:', templateId, '→', formId);
       
       const { error } = await supabase
         .from('pdf_templates')
-        .update({ linked_form_id: formId })
+        .update({ linked_form_id: formId || null })
         .eq('id', templateId);
 
       if (error) {

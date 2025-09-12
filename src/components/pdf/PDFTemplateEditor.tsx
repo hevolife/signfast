@@ -273,7 +273,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     if (formId) {
       toast.success('Formulaire lié mis à jour ! Les variables vont être rechargées.');
     } else {
-      toast.info('Formulaire délié. Variables par défaut utilisées.');
+      toast('Formulaire délié. Variables par défaut utilisées.');
     }
   };
   const selectedFieldData = selectedField ? fields.find(f => f.id === selectedField) : null;

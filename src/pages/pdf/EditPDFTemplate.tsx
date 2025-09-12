@@ -202,7 +202,7 @@ export const EditPDFTemplate: React.FC = () => {
 
     try {
       // Mettre à jour la liaison dans Supabase
-      const success = await PDFTemplateService.linkTemplateToForm(id, formId || '');
+      const success = await PDFTemplateService.linkTemplateToForm(id, formId);
       
       if (success) {
         // Mettre à jour le template local
