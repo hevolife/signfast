@@ -30,7 +30,6 @@ import {
   UserCheck
   HardDrive,
   Key,
-  Gift,
   RefreshCw,
   X
 } from 'lucide-react';
