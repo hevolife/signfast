@@ -9,6 +9,8 @@ interface PDFFieldOverlayProps {
   onUpdate: (field: PDFField) => void;
   onDelete: (fieldId: string) => void;
   currentPage: number;
+  pdfDimensions?: { width: number; height: number };
+  canvasDimensions?: { width: number; height: number };
 }
 
 export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
@@ -18,7 +20,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
-  currentPage
+  currentPage,
+  pdfDimensions,
+  canvasDimensions
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -29,6 +33,42 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   if (field.page !== currentPage) {
     return null;
   }
+
+  // Calculer les ratios pour le positionnement
+  const getRatioPosition = () => {
+    if (!pdfDimensions || !canvasDimensions) {
+      return { x: field.x * scale, y: field.y * scale };
+    }
+    
+    // Ratios stockés dans le champ (0-1)
+    const ratioX = field.ratioX || (field.x / pdfDimensions.width);
+    const ratioY = field.ratioY || (field.y / pdfDimensions.height);
+    
+    // Position sur le canvas affiché
+    const displayX = ratioX * canvasDimensions.width;
+    const displayY = ratioY * canvasDimensions.height;
+    
+    return { x: displayX, y: displayY };
+  };
+  
+  const getRatioSize = () => {
+    if (!pdfDimensions || !canvasDimensions) {
+      return { width: field.width * scale, height: field.height * scale };
+    }
+    
+    // Ratios de taille
+    const ratioW = field.ratioWidth || (field.width / pdfDimensions.width);
+    const ratioH = field.ratioHeight || (field.height / pdfDimensions.height);
+    
+    // Taille sur le canvas affiché
+    const displayWidth = ratioW * canvasDimensions.width;
+    const displayHeight = ratioH * canvasDimensions.height;
+    
+    return { width: displayWidth, height: displayHeight };
+  };
+  
+  const position = getRatioPosition();
+  const size = getRatioSize();
 
   const snapToGrid = (value: number, gridSize: number = 5) => {
     return Math.round(value / gridSize) * gridSize;
@@ -58,29 +98,42 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     e.preventDefault();
     
-    const canvas = document.querySelector(`canvas[data-page="${currentPage}"]`) as HTMLCanvasElement;
+    const canvas = canvasRefs.current[currentPage - 1];
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
     
-    let newX = (e.clientX - rect.left) / scale;
-    let newY = (e.clientY - rect.top) / scale;
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
     
-    // Contraintes
-    const maxX = (rect.width / scale) - field.width;
-    const maxY = (rect.height / scale) - field.height;
+    // Calculer les nouveaux ratios
+    const newRatioX = canvasX / rect.width;
+    const newRatioY = canvasY / rect.height;
     
-    newX = Math.max(0, Math.min(maxX, newX));
-    newY = Math.max(0, Math.min(maxY, newY));
+    // Contraintes (garder dans les limites du PDF)
+    const constrainedRatioX = Math.max(0, Math.min(1, newRatioX));
+    const constrainedRatioY = Math.max(0, Math.min(1, newRatioY));
+    
+    // Convertir en coordonnées éditeur pour affichage
+    let newX = constrainedRatioX * (pdfDimensions?.width || 595);
+    let newY = constrainedRatioY * (pdfDimensions?.height || 842);
     
     // Aligner sur grille
     newX = snapToGrid(newX, 5);
     newY = snapToGrid(newY, 5);
     
+    // Recalculer les ratios après alignement
+    const finalRatioX = newX / (pdfDimensions?.width || 595);
+    const finalRatioY = newY / (pdfDimensions?.height || 842);
+    
+    console.log(`🖱️ Déplacement: ratios (${finalRatioX.toFixed(3)}, ${finalRatioY.toFixed(3)})`);
+    
     onUpdate({
       ...field,
       x: Math.round(newX),
       y: Math.round(newY)
+      ratioX: finalRatioX,
+      ratioY: finalRatioY
     });
   };
 
@@ -256,10 +309,10 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
           : 'cursor-grab hover:cursor-grab'
       }`}
       style={{
-        left: `${field.x * scale}px`,
-        top: `${field.y * scale}px`,
-        width: `${field.width * scale}px`,
-        height: `${field.height * scale}px`,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         backgroundColor: field.backgroundColor || 'transparent',
         zIndex: isSelected ? 30 : isDragging || isResizing ? 50 : 10,
         pointerEvents: 'auto'

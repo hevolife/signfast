@@ -4,7 +4,7 @@ import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PDFViewerProps {
   file: File | string | null;
-  onPageClick?: (x: number, y: number, page: number) => void;
+  onPageClick?: (x: number, y: number, page: number, ratioX: number, ratioY: number) => void;
   children?: React.ReactNode;
   scale?: number;
   onScaleChange?: (scale: number) => void;
@@ -14,6 +14,8 @@ interface PDFViewerProps {
 
 export interface PDFViewerRef {
   canvasRefs: React.MutableRefObject<(HTMLCanvasElement | null)[]>;
+  getPDFDimensions: (pageNumber: number) => { width: number; height: number } | null;
+  getCanvasDimensions: (pageNumber: number) => { width: number; height: number } | null;
 }
 
 const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewerProps> = ({
@@ -31,10 +33,21 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [isRendering, setIsRendering] = useState(false);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
   const renderTasksRef = useRef<(any | null)[]>([]);
 
   useImperativeHandle(ref, () => ({
-    canvasRefs
+    canvasRefs,
+    getPDFDimensions: (pageNumber: number) => {
+      const index = pageNumber - 1;
+      return pdfDimensions[index] || null;
+    },
+    getCanvasDimensions: (pageNumber: number) => {
+      const index = pageNumber - 1;
+      const canvas = canvasRefs.current[index];
+      if (!canvas) return null;
+      return { width: canvas.width, height: canvas.height };
+    }
   }), []);
 
   useEffect(() => {
@@ -93,6 +106,17 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       setPdfDoc(pdf);
       setNumPages(pdf.numPages);
       canvasRefs.current = new Array(pdf.numPages).fill(null);
+      
+      // Charger les dimensions PDF en points pour chaque page
+      const dimensions = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1 }); // Scale 1 = dimensions en points
+        dimensions.push({ width: viewport.width, height: viewport.height });
+        console.log(`📐 Page ${i} dimensions PDF: ${viewport.width} × ${viewport.height} points`);
+      }
+      setPdfDimensions(dimensions);
+      
       renderTasksRef.current = new Array(pdf.numPages).fill(null);
       
       setLoading(false);
@@ -157,16 +181,30 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
 
     const canvas = event.currentTarget;
     const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
+    const pageIndex = pageNumber - 1;
     
     if (onPageChange && pageNumber !== currentPage) {
       onPageChange(pageNumber);
     }
 
     const rect = canvas.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / scale;
-    const y = (event.clientY - rect.top) / scale;
+    const canvasX = event.clientX - rect.left;
+    const canvasY = event.clientY - rect.top;
     
-    onPageClick(x, y, pageNumber);
+    // Calculer les ratios par rapport au canvas affiché
+    const ratioX = canvasX / rect.width;
+    const ratioY = canvasY / rect.height;
+    
+    // Coordonnées dans l'espace PDF (pour l'éditeur)
+    const x = canvasX / scale;
+    const y = canvasY / scale;
+    
+    console.log(`🖱️ Clic page ${pageNumber}:`);
+    console.log(`🖱️ Canvas: (${Math.round(canvasX)}, ${Math.round(canvasY)})`);
+    console.log(`🖱️ Ratios: (${ratioX.toFixed(3)}, ${ratioY.toFixed(3)})`);
+    console.log(`🖱️ Éditeur: (${Math.round(x)}, ${Math.round(y)})`);
+    
+    onPageClick(x, y, pageNumber, ratioX, ratioY);
   };
 
   const zoomIn = () => {

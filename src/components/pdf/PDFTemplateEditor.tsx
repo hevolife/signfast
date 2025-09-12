@@ -223,6 +223,14 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     
     const { width, height } = dimensions[type] || { width: 120, height: 25 };
     
+    // Calculer les ratios par défaut (basés sur une page A4 standard)
+    const defaultPdfWidth = 595; // A4 en points
+    const defaultPdfHeight = 842;
+    const ratioX = newX / defaultPdfWidth;
+    const ratioY = newY / defaultPdfHeight;
+    const ratioWidth = width / defaultPdfWidth;
+    const ratioHeight = height / defaultPdfHeight;
+    
     const newField: PDFField = {
       id: uuidv4(),
       type,
@@ -232,6 +240,10 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       height,
       page: currentPage,
       variable: '',
+      ratioX,
+      ratioY,
+      ratioWidth,
+      ratioHeight,
       fontSize: 12,
       fontColor: '#000000',
       backgroundColor: '#ffffff',
@@ -256,8 +268,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     }
   }, [selectedField]);
 
-  const handlePageClick = useCallback((x: number, y: number, page: number) => {
-    console.log(`🖱️ Clic page ${page} à (${x}, ${y})`);
+  const handlePageClick = useCallback((x: number, y: number, page: number, ratioX: number, ratioY: number) => {
+    console.log(`🖱️ Clic page ${page} à (${x}, ${y}) - ratios (${ratioX.toFixed(3)}, ${ratioY.toFixed(3)})`);
     
     setCurrentPage(page);
     
@@ -270,7 +282,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       updateField(selectedField, { 
         x: Math.max(0, snappedX), 
         y: Math.max(0, snappedY), 
-        page 
+        page,
+        ratioX: ratioX,
+        ratioY: ratioY
       });
       
       toast.success(`Champ déplacé vers (${snappedX}, ${snappedY})`, { duration: 1000 });
@@ -473,6 +487,22 @@ interface PDFCanvasWithDropProps {
   onAddField: (type: PDFField['type']) => void;
 }
 
+// Composant Canvas avec Drop Zone
+interface PDFCanvasWithDropProps {
+  pdfFile: File | null;
+  fields: PDFField[];
+  selectedField: string | null;
+  currentPage: number;
+  scale: number;
+  onPageClick: (x: number, y: number, page: number, ratioX: number, ratioY: number) => void;
+  onPageChange: (page: number) => void;
+  onScaleChange: (scale: number) => void;
+  onSelectField: (fieldId: string) => void;
+  onUpdateField: (id: string, updates: Partial<PDFField>) => void;
+  onDeleteField: (id: string) => void;
+  onAddField: (type: PDFField['type']) => void;
+}
+
 const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
   pdfFile,
   fields,
@@ -487,9 +517,12 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
   onDeleteField,
   onAddField,
 }) => {
+  const pdfViewerRef = useRef<any>(null);
+  
   return (
     <Card className="h-[700px] relative">
       <PDFViewer
+        ref={pdfViewerRef}
         file={pdfFile}
         onPageClick={onPageClick}
         currentPage={currentPage}
@@ -507,6 +540,8 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
             onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
             onDelete={onDeleteField}
             currentPage={currentPage}
+            pdfDimensions={pdfViewerRef.current?.getPDFDimensions(currentPage)}
+            canvasDimensions={pdfViewerRef.current?.getCanvasDimensions(currentPage)}
           />
         ))}
       </PDFViewer>

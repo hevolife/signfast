@@ -32,15 +32,34 @@ export class PDFGenerator {
           continue;
         }
         
-        const { height: pageHeight } = page.getSize();
+        const { width: pageWidth, height: pageHeight } = page.getSize();
         
-        // Conversion coordonnées: éditeur (top-left) vers PDF (bottom-left)
-        const pdfX = field.x;
-        const pdfY = pageHeight - field.y - field.height;
+        // Utiliser les ratios pour un positionnement précis
+        let pdfX, pdfY, pdfWidth, pdfHeight;
+        
+        if (field.ratioX !== undefined && field.ratioY !== undefined) {
+          // Utiliser les ratios (méthode précise)
+          pdfX = field.ratioX * pageWidth;
+          pdfY = (1 - field.ratioY - (field.ratioHeight || 0)) * pageHeight; // Conversion top-left → bottom-left
+          pdfWidth = (field.ratioWidth || 0) * pageWidth;
+          pdfHeight = (field.ratioHeight || 0) * pageHeight;
+          
+          console.log(`🎨 Champ ${field.variable} (ratios):`);
+          console.log(`🎨   Ratios: (${field.ratioX.toFixed(3)}, ${field.ratioY.toFixed(3)})`);
+          console.log(`🎨   PDF: (${Math.round(pdfX)}, ${Math.round(pdfY)}) ${Math.round(pdfWidth)}×${Math.round(pdfHeight)}`);
+        } else {
+          // Fallback méthode ancienne
+          pdfX = field.x;
+          pdfY = pageHeight - field.y - field.height;
+          pdfWidth = field.width;
+          pdfHeight = field.height;
+          
+          console.log(`🎨 Champ ${field.variable} (coordonnées directes): (${pdfX}, ${pdfY})`);
+        }
         
         const value = this.getFieldValue(field, data);
         
-        console.log(`🎨 Champ ${field.variable}: "${value}" à (${pdfX}, ${pdfY})`);
+        console.log(`🎨 Valeur: "${value}"`);
         
         if (!value && !field.required) {
           continue;
@@ -49,27 +68,27 @@ export class PDFGenerator {
         switch (field.type) {
           case 'text':
           case 'number':
-            await this.drawText(page, value, pdfX, pdfY, field, font);
+            await this.drawText(page, value, pdfX, pdfY, pdfWidth, pdfHeight, field, font);
             break;
             
           case 'date':
             const dateValue = this.formatDate(value);
-            await this.drawText(page, dateValue, pdfX, pdfY, field, font);
+            await this.drawText(page, dateValue, pdfX, pdfY, pdfWidth, pdfHeight, field, font);
             break;
             
           case 'checkbox':
-            await this.drawCheckbox(page, value, pdfX, pdfY, field);
+            await this.drawCheckbox(page, value, pdfX, pdfY, pdfWidth, pdfHeight, field);
             break;
             
           case 'signature':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
-              await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, field);
+              await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, pdfWidth, pdfHeight);
             }
             break;
             
           case 'image':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
-              await this.drawImage(pdfDoc, page, value, pdfX, pdfY, field);
+              await this.drawImage(pdfDoc, page, value, pdfX, pdfY, pdfWidth, pdfHeight);
             }
             break;
         }
@@ -141,6 +160,8 @@ export class PDFGenerator {
     text: string,
     x: number,
     y: number,
+    width: number,
+    height: number,
     field: PDFField,
     font: any
   ) {
@@ -153,8 +174,8 @@ export class PDFGenerator {
       page.drawRectangle({
         x,
         y,
-        width: field.width,
-        height: field.height,
+        width,
+        height,
         color: rgb(bgColor.r, bgColor.g, bgColor.b),
       });
     }
@@ -162,7 +183,7 @@ export class PDFGenerator {
     // Texte centré verticalement
     page.drawText(text, {
       x: x + 5,
-      y: y + (field.height - fontSize) / 2,
+      y: y + (height - fontSize) / 2,
       size: fontSize,
       font,
       color: rgb(color.r, color.g, color.b),
@@ -174,15 +195,17 @@ export class PDFGenerator {
     value: boolean | string,
     x: number,
     y: number,
+    width: number,
+    height: number,
     field: PDFField
   ) {
     const isChecked = value === true || value === 'true' || value === '1';
-    const size = Math.min(field.width, field.height, 16);
+    const size = Math.min(width, height, 16);
     
     // Case
     page.drawRectangle({
       x,
-      y: y + (field.height - size) / 2,
+      y: y + (height - size) / 2,
       width: size,
       height: size,
       borderColor: rgb(0, 0, 0),
@@ -194,7 +217,7 @@ export class PDFGenerator {
     if (isChecked) {
       page.drawText('✓', {
         x: x + 2,
-        y: y + (field.height - size) / 2 + 2,
+        y: y + (height - size) / 2 + 2,
         size: size * 0.7,
         color: rgb(0, 0.6, 0),
       });
@@ -207,7 +230,8 @@ export class PDFGenerator {
     signatureData: string,
     x: number,
     y: number,
-    field: PDFField
+    width: number,
+    height: number
   ) {
     try {
       const imageBytes = this.base64ToBytes(signatureData);
@@ -216,8 +240,8 @@ export class PDFGenerator {
       page.drawImage(image, {
         x,
         y,
-        width: field.width,
-        height: field.height,
+        width,
+        height,
       });
     } catch (error) {
       console.error('Erreur signature:', error);
@@ -230,7 +254,8 @@ export class PDFGenerator {
     imageData: string,
     x: number,
     y: number,
-    field: PDFField
+    width: number,
+    height: number
   ) {
     try {
       const imageBytes = this.base64ToBytes(imageData);
@@ -245,8 +270,8 @@ export class PDFGenerator {
       page.drawImage(image, {
         x,
         y,
-        width: field.width,
-        height: field.height,
+        width,
+        height,
       });
     } catch (error) {
       console.error('Erreur image:', error);
@@ -255,15 +280,15 @@ export class PDFGenerator {
       page.drawRectangle({
         x,
         y,
-        width: field.width,
-        height: field.height,
+        width,
+        height,
         borderColor: rgb(0.8, 0.8, 0.8),
         borderWidth: 1,
       });
       
       page.drawText('Image non disponible', {
         x: x + 5,
-        y: y + field.height / 2,
+        y: y + height / 2,
         size: 8,
         color: rgb(0.5, 0.5, 0.5),
       });

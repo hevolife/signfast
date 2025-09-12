@@ -7,6 +7,10 @@ export interface PDFField {
   height: number;
   page: number;
   variable: string; // ${nom}, ${email}, etc.
+  ratioX?: number; // Position X en ratio (0-1)
+  ratioY?: number; // Position Y en ratio (0-1)
+  ratioWidth?: number; // Largeur en ratio (0-1)
+  ratioHeight?: number; // Hauteur en ratio (0-1)
   fontSize?: number;
   fontColor?: string;
   backgroundColor?: string;
