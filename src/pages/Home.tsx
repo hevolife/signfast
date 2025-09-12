@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { 
@@ -24,10 +24,21 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
 
   // Rediriger vers le dashboard si l'utilisateur est connecté
   if (user) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Rediriger vers login si l'utilisateur n'est pas connecté (sauf si on vient déjà de login/signup)
+  const isFromAuth = location.state?.from?.pathname === '/login' || 
+                     location.state?.from?.pathname === '/signup' ||
+                     location.pathname === '/login' ||
+                     location.pathname === '/signup';
+  
+  if (!user && !isFromAuth) {
+    return <Navigate to="/login" replace />;
   }
 
   return (

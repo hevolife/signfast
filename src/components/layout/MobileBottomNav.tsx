@@ -35,7 +35,7 @@ export const MobileBottomNav: React.FC = () => {
   const visibleItems = user ? [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
     { path: '/forms', icon: FileText, label: 'Formulaires', show: true },
-    { path: '/pdf/templates', icon: FileText, label: 'Templates', show: !isSuperAdmin },
+    { path: '/pdf/templates', icon: FileText, label: 'Templates', show: true },
     { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', show: true },
     { path: '/settings', icon: Settings, label: 'Paramètres', show: true }
   ] : [
@@ -46,8 +46,8 @@ export const MobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg safe-area-inset-bottom">
-      <div className={`flex ${user ? 'justify-around' : 'justify-around'} items-center ${user ? 'py-3 px-1' : 'py-2 px-2'}`}>
+    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className={`flex justify-around items-center ${user ? 'py-4 px-1' : 'py-3 px-2'}`}>
         {visibleItems.map((item, index) => {
           const Icon = item.icon;
           const active = !item.isButton && isActive(item.path);
@@ -69,14 +69,14 @@ export const MobileBottomNav: React.FC = () => {
             <Link
               key={`link-${item.path}`}
               to={item.path}
-              className={`flex flex-col items-center justify-center ${user ? 'py-2 px-2' : 'py-2 px-3'} rounded-lg transition-colors min-w-0 ${
+              className={`flex flex-col items-center justify-center ${user ? 'py-2 px-1' : 'py-2 px-3'} rounded-lg transition-colors min-w-0 ${
                 active
                   ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              <Icon className={`${user ? 'h-6 w-6' : 'h-5 w-5'} mb-1`} />
-              <span className={`${user ? 'text-xs' : 'text-xs'} font-medium truncate`}>{item.label}</span>
+              <Icon className={`${user ? 'h-7 w-7' : 'h-5 w-5'} mb-1`} />
+              <span className={`${user ? 'text-xs' : 'text-xs'} font-medium truncate max-w-16 text-center`}>{item.label}</span>
             </Link>
           );
         })}

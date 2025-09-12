@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -14,6 +14,7 @@ export const Signup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +38,9 @@ export const Signup: React.FC = () => {
         toast.error(error.message);
       } else {
         toast.success('Compte créé avec succès !');
-        navigate('/dashboard');
+        // Rediriger vers la page demandée ou le dashboard
+        const from = location.state?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
       }
     } catch (error) {
       toast.error('Une erreur est survenue');
@@ -113,9 +116,20 @@ export const Signup: React.FC = () => {
                 Déjà un compte ?{' '}
                 <Link
                   to="/login"
+                  state={{ from: location.state?.from }}
                   className="font-medium text-blue-600 hover:text-blue-500"
                 >
                   Se connecter
+                </Link>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Ou{' '}
+                <Link
+                  to="/"
+                  state={{ from: { pathname: '/signup' } }}
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
+                  voir la présentation
                 </Link>
               </p>
             </div>
