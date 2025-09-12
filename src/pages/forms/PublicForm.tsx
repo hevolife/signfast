@@ -629,9 +629,9 @@ export const PublicForm: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         {/* Logo de l'entreprise - Toujours affiché pour debug */}
         <div className="text-center mb-8">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
+          <div className="mb-6">
             {formOwnerProfile === null ? (
-              <div className="h-16 flex items-center justify-center">
+              <div className="h-24 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 <span className="text-gray-400 text-sm ml-2">Chargement du profil...</span>
               </div>
@@ -639,7 +639,7 @@ export const PublicForm: React.FC = () => {
               <img
                 src={formOwnerProfile.logo_url}
                 alt={formOwnerProfile.company_name || "Logo de l'entreprise"}
-                className="h-16 w-auto mx-auto object-contain"
+                className="h-24 w-auto mx-auto object-contain max-w-xs"
                 onError={(e) => {
                   console.error('❌ Erreur chargement logo:', formOwnerProfile.logo_url);
                   e.currentTarget.style.display = 'none';
@@ -649,10 +649,10 @@ export const PublicForm: React.FC = () => {
                 }}
               />
             ) : (
-              <div className="h-16 flex items-center justify-center">
+              <div className="h-24 flex items-center justify-center">
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
+                    <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                   </div>
