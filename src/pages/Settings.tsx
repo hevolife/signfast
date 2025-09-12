@@ -210,9 +210,19 @@ export const Settings: React.FC = () => {
     try {
       const success = await uploadLogo(file);
       if (success) {
-        toast.success('Logo mis à jour avec succès !');
-        // Réinitialiser l'input file
-        e.target.value = '';
+        const updatedSuccess = await updateProfile({
+          first_name: firstName,
+          last_name: lastName,
+          company_name: companyName,
+          address: address,
+          siret: siret,
+        });
+        
+        if (updatedSuccess) {
+          toast.success('Logo mis à jour avec succès !');
+        } else {
+          toast.error('Erreur lors de la sauvegarde du logo');
+        }
       } else {
         toast.error('Erreur lors de l\'upload du logo');
       }
@@ -336,21 +346,6 @@ export const Settings: React.FC = () => {
                   <span>Abonnement</span>
                 </div>
               </button>
-              {isSuperAdmin && (
-                <button
-                  onClick={() => setActiveTab('admin')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'admin'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <Shield className="h-4 w-4" />
-                    <span>Admin</span>
-                  </div>
-                </button>
-              )}
             </nav>
           </div>
         </div>
@@ -743,62 +738,6 @@ export const Settings: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                      )}
-                      
-                      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium">Plan actuel:</span> {hasSecretCode ? 'Premium (Code Secret)' : product.name}
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={handleSubscribe}
-                      disabled={saving}
-                      className="w-full flex items-center justify-center space-x-2"
-                    >
-                      {saving ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <>
-                          <Zap className="h-4 w-4" />
-                          <span>Passer Pro</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'admin' && isSuperAdmin && (
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-red-600" />
-                <span>Administration</span>
-              </h3>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 text-red-600 rounded-full mb-6">
-                <Shield className="h-8 w-8" />
-              </div>
-              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Dashboard Super Admin
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Accédez au dashboard d'administration pour gérer les utilisateurs, créer des codes secrets et consulter les statistiques globales.
-              </p>
-              <Link to="/admin">
-                <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
-                  <Shield className="h-4 w-4" />
-                  <span>Ouvrir le Dashboard Admin</span>
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-        
         {/* Modal Code Secret */}
         <SecretCodeModal
           isOpen={showSecretCodeModal}
