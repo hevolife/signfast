@@ -200,18 +200,6 @@ export const Settings: React.FC = () => {
     }
 
     // Vérifier la taille (max 5MB)
-        } else {
-          toast.error('Erreur lors de la sauvegarde du logo');
-        }
-      } else {
-        toast.error('Erreur lors de l\'upload du logo');
-      }
-    } catch (error) {
-      toast.error('Erreur lors de l\'upload du logo');
-    } finally {
-      setLogoUploading(false);
-    }
-  };
 
   const handleSubscribe = async () => {
     setSaving(true);
