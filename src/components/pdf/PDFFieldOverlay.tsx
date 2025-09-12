@@ -1,5 +1,6 @@
 import React from 'react';
 import { PDFField } from '../../types/pdf';
+import { useDrag } from 'react-dnd';
 
 interface PDFFieldOverlayProps {
   field: PDFField;
@@ -22,10 +23,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   canvasRefs,
   currentPage
 }) => {
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onSelect(field);
-  };
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'pdf-field',
+    item: { id: field.id, type: field.type },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -141,11 +145,12 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   return (
     <div
+      ref={drag}
       className={`absolute cursor-move border-2 ${
         isSelected 
           ? 'border-blue-500 bg-blue-50' 
           : 'border-gray-300 bg-white hover:border-blue-300'
-      } transition-colors`}
+      } transition-colors ${isDragging ? 'opacity-50' : 'opacity-100'}`}
       style={{
         left: `${field.x * scale}px`,
         top: `${field.y * scale}px`,
@@ -154,22 +159,17 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         backgroundColor: field.backgroundColor || 'transparent',
         zIndex: isSelected ? 20 : 10
       }}
-      onMouseDown={handleMouseDown}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(field);
+      }}
     >
       {renderFieldContent()}
-      
-      {/* Variable label */}
-      <div 
-        className="absolute -top-5 left-0 text-xs bg-gray-800 text-white px-1 rounded opacity-75"
-        style={{ fontSize: '10px' }}
-      >
-        {field.variable}
-      </div>
       
       {/* Delete button when selected */}
       {isSelected && (
         <button
-          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+          className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full text-sm hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white"
           onClick={handleDelete}
           title="Supprimer le champ"
         >
@@ -180,9 +180,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {/* Resize handles when selected */}
       {isSelected && (
         <>
-          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize"></div>
-          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 cursor-s-resize"></div>
-          <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 cursor-e-resize"></div>
+          <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 cursor-se-resize border border-white shadow-sm"></div>
+          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-3 bg-blue-500 cursor-s-resize border border-white shadow-sm"></div>
+          <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-blue-500 cursor-e-resize border border-white shadow-sm"></div>
         </>
       )}
     </div>

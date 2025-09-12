@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useDrop } from 'react-dnd';
 import { PDFViewer } from './PDFViewer';
 import type { PDFViewerRef } from './PDFViewer';
 import { PDFFieldPalette } from './PDFFieldPalette';
@@ -46,6 +47,26 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [currentLinkedFormId, setCurrentLinkedFormId] = useState<string | null>(linkedFormId || null);
   const [isInitialized, setIsInitialized] = useState(false);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
+
+  // Drop zone pour le déplacement des champs
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'pdf-field',
+    drop: (item: { id: string }, monitor) => {
+      const offset = monitor.getClientOffset();
+      if (offset && pdfViewerRef.current?.canvasRefs.current) {
+        const canvas = pdfViewerRef.current.canvasRefs.current[currentPage - 1];
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const x = (offset.x - rect.left) / scale;
+          const y = (offset.y - rect.top) / scale;
+          updateField(item.id, { x, y, page: currentPage });
+        }
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
 
   // Force re-render when PDF is loaded and fields exist
   useEffect(() => {
@@ -539,7 +560,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
                 {/* Visualiseur PDF - Centre */}
                 <div className="lg:col-span-3">
-                  <Card className="h-[600px] lg:h-[700px]">
+                  <Card className="h-[600px] lg:h-[700px]" ref={drop}>
                     <PDFViewer
                       ref={pdfViewerRef}
                       file={pdfFile}
@@ -555,7 +576,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                           field={field}
                           scale={scale}
                           isSelected={selectedField === field.id}
-                          onSelect={() => setSelectedField(field.id)}
+                          onSelect={(field) => setSelectedField(field.id)}
                           onUpdate={(updates) => updateField(field.id, updates)}
                           onDelete={() => deleteField(field.id)}
                           canvasRefs={pdfViewerRef.current?.canvasRefs}
@@ -621,7 +642,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 <PDFFieldPalette onAddField={addField} />
                 
                 {/* PDF mobile */}
-                <Card className="h-[500px]">
+                <Card className="h-[500px]" ref={drop}>
                   <PDFViewer
                     ref={pdfViewerRef}
                     file={pdfFile}
@@ -637,7 +658,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                           field={field}
                           scale={scale}
                           isSelected={selectedField === field.id}
-                          onSelect={() => setSelectedField(field.id)}
+                          onSelect={(field) => setSelectedField(field.id)}
                           onUpdate={(updates) => updateField(field.id, updates)}
                           currentPage={currentPage}
                           onDelete={() => deleteField(field.id)}
