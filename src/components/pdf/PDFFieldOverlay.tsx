@@ -40,29 +40,15 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   // Calculer la position absolue en tenant compte de toutes les pages
   const getAbsolutePosition = () => {
-    // Obtenir la hauteur réelle du canvas de la page
-    const canvas = document.querySelector(`canvas:nth-child(${field.page * 2 - 1})`) as HTMLCanvasElement;
-    const pageHeight = canvas ? canvas.height / scale : 800;
+    // Calcul simple : position sur la page + offset des pages précédentes
+    const pageHeight = 600; // Hauteur standard d'une page
     const pageSpacing = 32; // Espacement entre les pages
-    
-    // Calculer l'offset total des pages précédentes
-    let totalOffset = 0;
-    for (let i = 1; i < field.page; i++) {
-      const prevCanvas = document.querySelector(`canvas:nth-child(${i * 2 - 1})`) as HTMLCanvasElement;
-      if (prevCanvas) {
-        totalOffset += prevCanvas.height + pageSpacing;
-      } else {
-        totalOffset += pageHeight * scale + pageSpacing;
-      }
-    }
-    
-    // Position Y absolue = position Y sur la page + offset des pages précédentes
-    const absoluteY = field.y * scale + totalOffset;
+    const absoluteY = field.y * scale + (field.page - 1) * (pageHeight * scale + pageSpacing);
     
     if (isMobile) {
       return {
         left: field.x * scale * 0.8,
-        top: absoluteY * 0.8 + 60, // Ajouter offset pour la barre d'outils
+        top: absoluteY * 0.8,
         width: field.width * scale * 0.8,
         height: field.height * scale * 0.8,
       };
@@ -70,7 +56,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     return {
       left: field.x * scale,
-      top: absoluteY + 60, // Ajouter offset pour la barre d'outils
+      top: absoluteY,
       width: field.width * scale,
       height: field.height * scale,
     };
@@ -93,44 +79,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const deltaX = (e.clientX - startX) / scaleAdjustment;
       const deltaY = (e.clientY - startY) / scaleAdjustment;
       
-      // Calculer la nouvelle position absolue
-      const container = document.querySelector('.overflow-auto');
-      if (!container) return;
-      
-      const scrollTop = container.scrollTop;
-      const mouseY = e.clientY + scrollTop - 60; // Ajuster pour la barre d'outils
-      
-      // Trouver sur quelle page on se trouve
-      let currentPageOffset = 0;
-      let targetPage = 1;
-      
-      for (let i = 1; i <= 10; i++) { // Max 10 pages pour éviter les boucles infinies
-        const canvas = document.querySelector(`canvas:nth-child(${i * 2 - 1})`) as HTMLCanvasElement;
-        if (!canvas) break;
-        
-        const pageHeight = canvas.height;
-        const pageSpacing = 32;
-        
-        if (mouseY >= currentPageOffset && mouseY <= currentPageOffset + pageHeight) {
-          targetPage = i;
-          break;
-        }
-        
-        currentPageOffset += pageHeight + pageSpacing;
-        targetPage = i + 1;
-      }
-      
-      // Calculer la position relative à la page cible
-      let pageStartOffset = 0;
-      for (let i = 1; i < targetPage; i++) {
-        const canvas = document.querySelector(`canvas:nth-child(${i * 2 - 1})`) as HTMLCanvasElement;
-        if (canvas) {
-          pageStartOffset += canvas.height + 32;
-        }
-      }
-      
-      const relativeY = (mouseY - pageStartOffset) / scale;
       const newX = startFieldX + deltaX;
+      const newY = startFieldY + deltaY;
+      
+      // Déterminer la page en fonction de la position Y
+      const pageHeight = 600;
+      const targetPage = Math.max(1, Math.floor(newY / pageHeight) + 1);
+      const relativeY = newY - (targetPage - 1) * pageHeight;
       
       onUpdate({ 
         x: Math.max(0, newX), 
@@ -169,44 +124,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const deltaX = (touch.clientX - startX) / scaleAdjustment;
       const deltaY = (touch.clientY - startY) / scaleAdjustment;
       
-      // Calculer la nouvelle position absolue pour mobile
-      const container = document.querySelector('.overflow-auto');
-      if (!container) return;
-      
-      const scrollTop = container.scrollTop;
-      const touchY = touch.clientY + scrollTop - 60;
-      
-      // Trouver sur quelle page on se trouve
-      let currentPageOffset = 0;
-      let targetPage = 1;
-      
-      for (let i = 1; i <= 10; i++) {
-        const canvas = document.querySelector(`canvas:nth-child(${i * 2 - 1})`) as HTMLCanvasElement;
-        if (!canvas) break;
-        
-        const pageHeight = canvas.height;
-        const pageSpacing = 32;
-        
-        if (touchY >= currentPageOffset && touchY <= currentPageOffset + pageHeight) {
-          targetPage = i;
-          break;
-        }
-        
-        currentPageOffset += pageHeight + pageSpacing;
-        targetPage = i + 1;
-      }
-      
-      // Calculer la position relative à la page cible
-      let pageStartOffset = 0;
-      for (let i = 1; i < targetPage; i++) {
-        const canvas = document.querySelector(`canvas:nth-child(${i * 2 - 1})`) as HTMLCanvasElement;
-        if (canvas) {
-          pageStartOffset += canvas.height + 32;
-        }
-      }
-      
-      const relativeY = (touchY - pageStartOffset) / scale;
       const newX = startFieldX + deltaX;
+      const newY = startFieldY + deltaY;
+      
+      // Déterminer la page en fonction de la position Y
+      const pageHeight = 600;
+      const targetPage = Math.max(1, Math.floor(newY / pageHeight) + 1);
+      const relativeY = newY - (targetPage - 1) * pageHeight;
       
       onUpdate({ 
         x: Math.max(0, newX), 
