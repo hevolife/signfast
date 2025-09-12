@@ -379,54 +379,100 @@ export class PDFService {
     formData: Record<string, any>;
   }>> {
     try {
-      console.log('💾 listPDFs appelé');
+      console.log('💾 === DÉBUT listPDFs ===');
       const allPDFs: any[] = [];
 
       // Essayer de récupérer depuis Supabase d'abord
       try {
-        console.log('💾 Tentative récupération depuis Supabase...');
+        console.log('💾 🔍 Étape 1: Vérification utilisateur...');
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        console.log('💾 👤 Utilisateur auth:', {
+          hasUser: !!user,
+          userId: user?.id,
+          email: user?.email,
+          error: userError?.message
+        });
         
         if (!userError && user) {
           // Vérifier si on est en mode impersonation
+          console.log('💾 🎭 Étape 2: Vérification impersonation...');
           const impersonationData = localStorage.getItem('admin_impersonation');
           let targetUserId = user.id;
+          
+          console.log('💾 🎭 Données impersonation brutes:', impersonationData);
           
           if (impersonationData) {
             try {
               const data = JSON.parse(impersonationData);
               targetUserId = data.target_user_id;
-              console.log('🎭 Mode impersonation: récupération des PDFs pour', data.target_email, 'userId:', targetUserId);
+              console.log('💾 🎭 IMPERSONATION DÉTECTÉE:', {
+                adminUserId: user.id,
+                adminEmail: user.email,
+                targetUserId: data.target_user_id,
+                targetEmail: data.target_email,
+                timestamp: new Date(data.timestamp).toLocaleString()
+              });
             } catch (error) {
               console.error('Erreur parsing impersonation data:', error);
             }
+          } else {
+            console.log('💾 🎭 Pas d\'impersonation, utilisateur normal');
           }
 
-          console.log('💾 Requête Supabase pour userId:', targetUserId);
+          console.log('💾 📊 Étape 3: Requête Supabase...');
+          console.log('💾 📊 Target userId final:', targetUserId);
           
+          // D'abord, compter TOUS les PDFs dans la table pour debug
+          const { count: totalCount, error: countError } = await supabase
+            .from('pdf_storage')
+            .select('user_id', { count: 'exact', head: true });
+            
+          console.log('💾 📊 Total PDFs dans la table:', totalCount, 'erreur:', countError?.message);
+          
+          // Ensuite, lister TOUS les user_ids pour voir qui a des PDFs
+          const { data: allUserIds, error: allUsersError } = await supabase
+            .from('pdf_storage')
+            .select('user_id')
+            .limit(100);
+            
+          if (!allUsersError && allUserIds) {
+            const uniqueUserIds = [...new Set(allUserIds.map(p => p.user_id))];
+            console.log('💾 📊 User IDs ayant des PDFs:', uniqueUserIds);
+            console.log('💾 📊 Notre target userId est-il dans la liste?', uniqueUserIds.includes(targetUserId));
+          }
+          
+          // Maintenant faire la vraie requête
           const { data, error } = await supabase
             .from('pdf_storage')
-            .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
+            .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at, user_id')
             .eq('user_id', targetUserId)
             .order('created_at', { ascending: false });
 
-          console.log('💾 Résultat requête Supabase:', { 
-            error: error?.message, 
+          console.log('💾 📊 RÉSULTAT REQUÊTE SUPABASE:', { 
+            error: error?.message,
+            errorCode: error?.code,
             dataLength: data?.length,
-            targetUserId 
+            targetUserId,
+            firstPdf: data?.[0] ? {
+              fileName: data[0].file_name,
+              userId: data[0].user_id,
+              createdAt: data[0].created_at
+            } : 'Aucun'
           });
 
           if (!error && data) {
-            console.log('💾 PDFs Supabase trouvés pour userId', targetUserId, ':', data.length);
+            console.log('💾 ✅ PDFs Supabase trouvés pour userId', targetUserId, ':', data.length);
             
             // Debug: afficher les détails des PDFs trouvés
             data.forEach((pdf, index) => {
-              console.log(`💾 PDF ${index + 1}:`, {
+              console.log(`💾 📄 PDF ${index + 1}:`, {
                 fileName: pdf.file_name,
                 formTitle: pdf.form_title,
                 templateName: pdf.template_name,
                 createdAt: pdf.created_at,
-                userId: 'hidden' // Ne pas logger l'userId pour la sécurité
+                userId: pdf.user_id,
+                hasFormData: !!pdf.form_data
               });
             });
             
@@ -441,27 +487,28 @@ export class PDFService {
               source: 'supabase'
             }));
             allPDFs.push(...supabasePDFs);
+          } else if (error) {
+            console.error('💾 ❌ ERREUR SUPABASE DÉTAILLÉE:', {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+              targetUserId
+            });
           } else {
-            console.warn('💾 Erreur Supabase ou aucune donnée:', error?.message || 'Aucune donnée');
-            
-            // Debug: vérifier si la table existe et si l'utilisateur a des droits
-            if (error?.code === 'PGRST116') {
-              console.log('💾 Aucun PDF trouvé pour cet utilisateur (normal si nouveau compte)');
-            } else if (error) {
-              console.error('💾 Erreur Supabase détaillée:', error);
-            }
-          }
-        } else {
-          console.log('💾 Utilisateur non connecté, skip Supabase');
+            console.log('💾 ⚠️ Aucune donnée retournée par Supabase pour userId:', targetUserId);
+          console.log('💾 ❌ Utilisateur non connecté ou erreur auth:', userError?.message);
         }
       } catch (supabaseError) {
-        console.warn('💾 Erreur Supabase (ignorée), utilisation localStorage:', supabaseError);
+        console.error('💾 ❌ EXCEPTION SUPABASE:', supabaseError);
       }
 
       // Récupérer depuis localStorage
       try {
-        console.log('💾 Récupération depuis localStorage...');
+        console.log('💾 💽 Étape 4: Récupération localStorage...');
         const localPDFs = this.getLocalPDFs();
+        console.log('💾 💽 PDFs localStorage bruts:', Object.keys(localPDFs));
+        
         const localArray = Object.entries(localPDFs).map(([fileName, data]: [string, any]) => ({
           fileName,
           responseId: data.response_id || 'local',
@@ -473,13 +520,16 @@ export class PDFService {
           source: 'local'
         }));
         
-        console.log('💾 PDFs localStorage trouvés:', localArray.length);
+        console.log('💾 💽 PDFs localStorage convertis:', localArray.length);
         allPDFs.push(...localArray);
       } catch (localError) {
-        console.warn('💾 Erreur récupération locale:', localError);
+        console.error('💾 💽 Erreur récupération locale:', localError);
       }
 
       // Dédupliquer
+      console.log('💾 🔄 Étape 5: Déduplication...');
+      console.log('💾 🔄 Total PDFs avant déduplication:', allPDFs.length);
+      
       const uniquePDFs = new Map();
       allPDFs.forEach(pdf => {
         if (!uniquePDFs.has(pdf.fileName) || pdf.source === 'supabase') {
@@ -490,10 +540,13 @@ export class PDFService {
       const result = Array.from(uniquePDFs.values())
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      console.log('💾 Total PDFs (métadonnées):', result.length);
+      console.log('💾 ✅ === RÉSULTAT FINAL ===');
+      console.log('💾 ✅ Total PDFs après déduplication:', result.length);
+      console.log('💾 ✅ Sources:', result.map(p => ({ fileName: p.fileName, source: (p as any).source })));
+      
       return result;
     } catch (error) {
-      console.error('💾 Erreur listage PDFs:', error);
+      console.error('💾 ❌ ERREUR GÉNÉRALE listage PDFs:', error);
       return [];
     }
   }
