@@ -189,10 +189,21 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
-    console.log('🔄 updateField appelé:', id, updates);
+    console.log('🔄 updateField appelé pour:', id);
+    console.log('🔄 Anciennes valeurs:', fields.find(f => f.id === id));
+    console.log('🔄 Nouvelles valeurs:', updates);
+    
     setFields(prev => prev.map(field => 
-      field.id === id ? { ...field, ...updates } : field
+      field.id === id ? { 
+        ...field, 
+        ...updates,
+        // Force la mise à jour des ratios
+        xRatio: updates.xRatio !== undefined ? updates.xRatio : field.xRatio,
+        yRatio: updates.yRatio !== undefined ? updates.yRatio : field.yRatio,
+      } : field
     ));
+    
+    console.log('🔄 Champ mis à jour');
   }, []);
 
   const deleteField = useCallback((id: string) => {

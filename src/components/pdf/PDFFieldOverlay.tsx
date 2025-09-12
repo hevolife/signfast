@@ -25,7 +25,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [tempPosition, setTempPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Calculer la position d'affichage depuis les ratios
   const getDisplayPosition = () => {
@@ -46,9 +45,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   if (field.page !== currentPage) {
     return null;
   }
-
-  // Utiliser une variable pour capturer la position finale
-  let finalPosition = tempPosition;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Ignorer si on clique sur les boutons de contrôle
@@ -75,10 +71,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const offsetX = mouseCanvasX - currentPos.x;
     const offsetY = mouseCanvasY - currentPos.y;
     
+    console.log('🎯 Début drag:', {
+      mouseCanvas: { x: mouseCanvasX, y: mouseCanvasY },
+      currentPos,
+      offset: { x: offsetX, y: offsetY }
+    });
+    
     const handleMouseMove = (e: MouseEvent) => {
-      if (!canvas) return;
+      if (!canvas || !pdfViewerRef.current) return;
       
       const rect = canvas.getBoundingClientRect();
+      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+      if (!canvasDimensions) return;
       
       // Position de la souris en coordonnées canvas
       const mouseCanvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -89,47 +93,38 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const newY = mouseCanvasY - offsetY;
       
       // Contraindre dans les limites
-      const fieldWidth = (field.widthRatio || 0.1) * canvas.width;
-      const fieldHeight = (field.heightRatio || 0.05) * canvas.height;
+      const fieldWidth = (field.widthRatio || 0.1) * canvasDimensions.width;
+      const fieldHeight = (field.heightRatio || 0.05) * canvasDimensions.height;
       
-      const constrainedX = Math.max(0, Math.min(canvas.width - fieldWidth, newX));
-      const constrainedY = Math.max(0, Math.min(canvas.height - fieldHeight, newY));
+      const constrainedX = Math.max(0, Math.min(canvasDimensions.width - fieldWidth, newX));
+      const constrainedY = Math.max(0, Math.min(canvasDimensions.height - fieldHeight, newY));
       
-      // Mettre à jour la position temporaire pour un affichage fluide
-      setTempPosition({ x: constrainedX, y: constrainedY });
+      // Calculer les nouveaux ratios IMMÉDIATEMENT
+      const newXRatio = constrainedX / canvasDimensions.width;
+      const newYRatio = constrainedY / canvasDimensions.height;
+      
+      // Mettre à jour le champ DIRECTEMENT avec les nouveaux ratios
+      const updatedField = {
+        ...field,
+        xRatio: newXRatio,
+        yRatio: newYRatio
+      };
+      
+      console.log('🎯 Mise à jour position:', {
+        canvas: { x: constrainedX, y: constrainedY },
+        ratios: { x: newXRatio, y: newYRatio }
+      });
+      
+      onUpdate(updatedField);
     };
 
     const handleMouseUp = () => {
-      // Nettoyer l'état
+      console.log('🎯 Fin drag');
       setIsDragging(false);
-      setTempPosition(null);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
-      
-      // Mettre à jour définitivement le champ avec les nouveaux ratios
-      if (finalPosition && pdfViewerRef.current) {
-        const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
-        if (canvasDimensions) {
-          const newXRatio = finalPosition.x / canvasDimensions.width;
-          const newYRatio = finalPosition.y / canvasDimensions.height;
-          
-          console.log('🎯 Sauvegarde position finale:', {
-            finalPosition,
-            canvasDimensions,
-            oldRatios: { xRatio: field.xRatio, yRatio: field.yRatio },
-            newRatios: { xRatio: newXRatio, yRatio: newYRatio }
-          });
-          
-          // Forcer la mise à jour avec les nouveaux ratios
-          onUpdate({
-            ...field,
-            xRatio: newXRatio,
-            yRatio: newYRatio
-          });
-        }
-      }
     };
     
     document.addEventListener('mousemove', handleMouseMove);
@@ -153,7 +148,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       if (!pdfViewerRef.current) return;
       
       const canvas = pdfViewerRef.current.getCanvasElement(currentPage);
-      if (!canvas) return;
+      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+      if (!canvas || !canvasDimensions) return;
       
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -186,8 +182,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       newHeight = Math.max(constraint.minHeight, Math.min(constraint.maxHeight, newHeight));
       
       // Calculer les nouveaux ratios de taille
-      const newWidthRatio = newWidth / canvas.width;
-      const newHeightRatio = newHeight / canvas.height;
+      const newWidthRatio = newWidth / canvasDimensions.width;
+      const newHeightRatio = newHeight / canvasDimensions.height;
       
       onUpdate({
         ...field,
@@ -231,6 +227,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   };
 
   const renderFieldContent = () => {
+    const position = getDisplayPosition();
     const fontSize = Math.max(8, (field.fontSize || 12) * scale * 0.8);
     
     switch (field.type) {
@@ -302,12 +299,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
   };
 
-  // Utiliser la position temporaire pendant le drag, sinon la position calculée
-  const position = tempPosition ? {
-    ...tempPosition,
-    width: getDisplayPosition().width,
-    height: getDisplayPosition().height
-  } : getDisplayPosition();
+  const position = getDisplayPosition();
 
   return (
     <div
