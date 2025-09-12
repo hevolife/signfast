@@ -24,6 +24,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   containerRef,
   pageOffset,
 }) => {
+  // Defensive check to ensure pageOffset is always a valid object
+  const safePageOffset = pageOffset || { top: 0, left: 0 };
+
   const [isDragging, setIsDragging] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
 
@@ -73,8 +76,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Position directe basée sur les coordonnées du champ
   const style = {
     position: 'absolute' as const,
-    left: pageOffset.left + (field.x * scale),
-    top: pageOffset.top + (field.y * scale),
+    left: safePageOffset.left + (field.x * scale),
+    top: safePageOffset.top + (field.y * scale),
     width: field.width * scale,
     height: field.height * scale,
     minWidth: '40px',
