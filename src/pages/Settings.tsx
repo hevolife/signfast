@@ -210,19 +210,7 @@ export const Settings: React.FC = () => {
     try {
       const success = await uploadLogo(file);
       if (success) {
-        const updatedSuccess = await updateProfile({
-          first_name: firstName,
-          last_name: lastName,
-          company_name: companyName,
-          address: address,
-          siret: siret,
-        });
-        
-        if (updatedSuccess) {
-          toast.success('Logo mis à jour avec succès !');
-        } else {
-          toast.error('Erreur lors de la sauvegarde du logo');
-        }
+        toast.success('Logo mis à jour avec succès !');
       } else {
         toast.error('Erreur lors de l\'upload du logo');
       }
@@ -346,6 +334,21 @@ export const Settings: React.FC = () => {
                   <span>Abonnement</span>
                 </div>
               </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setActiveTab('admin')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'admin'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-4 w-4" />
+                    <span>Admin</span>
+                  </div>
+                </button>
+              )}
             </nav>
           </div>
         </div>
@@ -738,6 +741,34 @@ export const Settings: React.FC = () => {
                             </span>
                           </div>
                         </div>
+                      )}
+                      
+                      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Plan actuel:</span> {hasSecretCode ? 'Premium (Code Secret)' : product.name}
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleSubscribe}
+                      disabled={saving}
+                      className="w-full flex items-center justify-center space-x-2"
+                    >
+                      {saving ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4" />
+                          <span>Passer Pro</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
         {/* Modal Code Secret */}
         <SecretCodeModal
           isOpen={showSecretCodeModal}
