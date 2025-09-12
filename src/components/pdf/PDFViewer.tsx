@@ -156,16 +156,13 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     console.log('🖱️ === CLIC CANVAS ===');
     console.log('🖱️ Page cliquée (depuis closure):', pageNumber);
     console.log('🖱️ Page courante:', currentPage);
+    console.log('🖱️ onPageClick disponible:', !!onPageClick);
     
     if (!onPageClick) return;
 
     const canvas = event.currentTarget;
+    console.log('🖱️ Canvas cliqué:', canvas.dataset.page, 'attendu:', pageNumber);
     
-    // Changer de page si nécessaire
-    if (onPageChange && pageNumber !== currentPage) {
-      console.log('🖱️ Changement de page:', currentPage, '→', pageNumber);
-      onPageChange(pageNumber);
-    }
 
     // Calculer les coordonnées
     const rect = canvas.getBoundingClientRect();
@@ -183,8 +180,14 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     
     console.log(`🖱️ Page ${pageNumber} - Clic: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)}) → (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
     
-    // IMPORTANT: Utiliser pageNumber de la closure, pas currentPage
+    // CRITIQUE: Utiliser pageNumber de la closure (page réellement cliquée)
     onPageClick(adjustedX, adjustedY, pageNumber);
+    
+    // Changer de page APRÈS avoir traité le clic
+    if (onPageChange && pageNumber !== currentPage) {
+      console.log('🖱️ Changement de page après clic:', currentPage, '→', pageNumber);
+      onPageChange(pageNumber);
+    }
   };
 
   const zoomIn = () => {

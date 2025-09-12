@@ -290,7 +290,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       const newField: PDFField = {
         id: uuidv4(),
         type: draggedFieldType,
-        page: page, // CRITIQUE: Page où le champ est placé
+        page: page, // CRITIQUE: Utiliser la page cliquée, pas currentPage
         variable: '',
         xRatio,
         yRatio,
@@ -307,7 +307,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       console.log('🖱️ === NOUVEAU CHAMP CRÉÉ ===');
       console.log('➕ Champ:', {
         type: draggedFieldType,
-        page: page, // CONFIRMER: Page de placement
+        page: page, // CONFIRMER: Page de placement (page cliquée)
         position: { xRatio, yRatio },
         size: { widthRatio, heightRatio },
         id: newField.id
@@ -325,7 +325,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       setSelectedField(newField.id);
       
       // Changer vers la page où le champ a été placé si nécessaire
-      if (currentPage !== page) {
+      if (page !== currentPage) {
         console.log('🖱️ Changement de page vers:', page);
         setCurrentPage(page);
       }
@@ -342,7 +342,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       setCurrentPage(page);
       setSelectedField(null);
     }
-  }, [selectedField, updateField, draggedFieldType, currentPage]);
+  }, [draggedFieldType, currentPage, pdfDimensions]);
 
   // Annuler le mode placement si on appuie sur Échap
   React.useEffect(() => {
