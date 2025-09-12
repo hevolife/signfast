@@ -97,17 +97,26 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     };
 
     const handleMouseUp = () => {
-      if (tempPosition && canvas) {
+      if (tempPosition && canvas && pdfViewerRef.current) {
+        const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+        if (canvasDimensions) {
         // Calculer les nouveaux ratios depuis la position finale
-        const newXRatio = tempPosition.x / canvas.width;
-        const newYRatio = tempPosition.y / canvas.height;
+          const newXRatio = tempPosition.x / canvasDimensions.width;
+          const newYRatio = tempPosition.y / canvasDimensions.height;
         
-        // Mettre à jour définitivement le champ
-        onUpdate({
-          ...field,
-          xRatio: newXRatio,
-          yRatio: newYRatio
-        });
+          console.log('🎯 Sauvegarde position finale:', {
+            tempPosition,
+            canvasDimensions,
+            newRatios: { xRatio: newXRatio, yRatio: newYRatio }
+          });
+        
+          // Mettre à jour définitivement le champ
+          onUpdate({
+            ...field,
+            xRatio: newXRatio,
+            yRatio: newYRatio
+          });
+        }
       }
       
       // Nettoyer l'état
