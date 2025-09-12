@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Redirection forcée vers la page d'accueil
-      window.location.href = '/';
+      window.location.href = '/login';
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
       // En cas d'erreur, forcer quand même la déconnexion côté client
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Erreur nettoyage localStorage:', storageError);
       }
       
-      window.location.href = '/';
+      window.location.href = '/login';
     }
   }, []);
 
