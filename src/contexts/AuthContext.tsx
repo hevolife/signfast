@@ -207,6 +207,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkAndSignOutIfInvalid = useCallback(async (): Promise<boolean> => {
+    // Skip validation if in impersonation mode
+    if (isImpersonating) {
+      return true;
+    }
+    
     if (!user || !session) {
       return true; // No session to validate
     }
