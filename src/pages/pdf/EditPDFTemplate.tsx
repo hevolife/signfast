@@ -4,12 +4,15 @@ import { PDFTemplateEditor } from '../../components/pdf/PDFTemplateEditor';
 import { PDFField, PDFTemplate } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useForms } from '../../hooks/useForms';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 export const EditPDFTemplate: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { forms, refetch: refetchForms } = useForms();
   const [template, setTemplate] = useState<PDFTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -204,6 +207,35 @@ export const EditPDFTemplate: React.FC = () => {
       if (success) {
         // Mettre à jour le template local
         setTemplate({ ...template, linkedFormId: formId });
+        
+        // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
+        if (formId && user) {
+          const selectedForm = forms.find(f => f.id === formId);
+          try {
+            const { error: formUpdateError } = await supabase
+              .from('forms')
+              .update({
+                settings: {
+                  ...selectedForm?.settings,
+                  pdfTemplateId: id,
+                  generatePdf: true, // Activer automatiquement la génération PDF
+                }
+              })
+              .eq('id', formId)
+              .eq('user_id', user.id);
+
+            if (formUpdateError) {
+              console.warn('⚠️ Erreur mise à jour formulaire:', formUpdateError);
+            } else {
+              console.log('✅ Formulaire mis à jour avec le template ID');
+              // Rafraîchir la liste des formulaires pour refléter les changements
+              await refetchForms();
+            }
+          } catch (formError) {
+            console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
+          }
+        }
+        
         toast.success(formId ? 'Formulaire lié avec succès !' : 'Formulaire délié avec succès !');
       } else {
         toast.error('Erreur lors de la mise à jour de la liaison');

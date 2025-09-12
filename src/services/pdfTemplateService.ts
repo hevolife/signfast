@@ -167,6 +167,8 @@ export class PDFTemplateService {
   // LIER UN TEMPLATE À UN FORMULAIRE
   static async linkTemplateToForm(templateId: string, formId: string): Promise<boolean> {
     try {
+      console.log('🔗 Liaison template-formulaire:', templateId, '→', formId);
+      
       const { error } = await supabase
         .from('pdf_templates')
         .update({ linked_form_id: formId })
@@ -178,6 +180,40 @@ export class PDFTemplateService {
       }
 
       console.log('✅ Template lié au formulaire:', templateId, '→', formId);
+      
+      // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
+      if (formId) {
+        try {
+          // Récupérer les settings actuels du formulaire
+          const { data: currentForm, error: getFormError } = await supabase
+            .from('forms')
+            .select('settings')
+            .eq('id', formId)
+            .single();
+
+          if (!getFormError && currentForm) {
+            const { error: formUpdateError } = await supabase
+              .from('forms')
+              .update({
+                settings: {
+                  ...currentForm.settings,
+                  pdfTemplateId: templateId,
+                  generatePdf: true, // Activer automatiquement la génération PDF
+                }
+              })
+              .eq('id', formId);
+
+            if (formUpdateError) {
+              console.warn('⚠️ Erreur mise à jour settings formulaire:', formUpdateError);
+            } else {
+              console.log('✅ Settings formulaire mis à jour avec template ID');
+            }
+          }
+        } catch (formError) {
+          console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
+        }
+      }
+      
       return true;
     } catch (error) {
       console.error('❌ Erreur liaison template-formulaire:', error);

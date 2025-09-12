@@ -133,6 +133,29 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
             </p>
           )}
           
+          {/* Afficher les settings PDF actuels du formulaire */}
+          {selectedForm.settings && (
+            <div className="bg-white dark:bg-gray-800 p-3 rounded border mb-3">
+              <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Configuration PDF actuelle :
+              </h5>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Génération PDF :</span>
+                  <span className={selectedForm.settings.generatePdf ? 'text-green-600' : 'text-gray-500'}>
+                    {selectedForm.settings.generatePdf ? '✅ Activée' : '❌ Désactivée'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Template lié :</span>
+                  <span className={selectedForm.settings.pdfTemplateId ? 'text-green-600' : 'text-gray-500'}>
+                    {selectedForm.settings.pdfTemplateId ? '✅ Configuré' : '❌ Aucun'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex items-center justify-between">
             <span className="text-xs text-blue-600 dark:text-blue-400">
               Créé le {new Date(selectedForm.created_at).toLocaleDateString('fr-FR')}
