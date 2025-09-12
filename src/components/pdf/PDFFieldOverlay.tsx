@@ -52,11 +52,14 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         return;
       }
 
+      // Position relative au conteneur PDF avec scroll
       const containerRect = pdfContainer.getBoundingClientRect();
-
-      // Position relative au conteneur PDF (pour éviter le mouvement avec le scroll)
-      const left = (canvasRect.left - containerRect.left) + (field.x * scale);
-      const top = (canvasRect.top - containerRect.top) + (field.y * scale);
+      const scrollTop = pdfContainer.scrollTop;
+      const scrollLeft = pdfContainer.scrollLeft;
+      
+      // Position absolue dans le conteneur PDF
+      const left = (canvasRect.left - containerRect.left) + scrollLeft + (field.x * scale);
+      const top = (canvasRect.top - containerRect.top) + scrollTop + (field.y * scale);
       const width = field.width * scale;
       const height = field.height * scale;
 
