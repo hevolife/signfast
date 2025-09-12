@@ -306,11 +306,16 @@ export const PublicForm: React.FC = () => {
       // Sauvegarder le nom de fichier pour le téléchargement
       setSavedPdfFileName(fileName);
       
+      // IMPORTANT: Récupérer l'ID du propriétaire du formulaire pour la sauvegarde PDF
+      const formOwnerId = form.user_id;
+      console.log('🎯 Propriétaire du formulaire:', formOwnerId);
+      
       const metadata = {
         responseId: response.id,
         templateName: 'PDF Simple',
         formTitle: form.title,
         formData: response.data,
+        userId: formOwnerId, // Utiliser l'ID du propriétaire du formulaire
       };
 
       // Vérifier si un template PDF est configuré

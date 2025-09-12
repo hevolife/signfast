@@ -18,10 +18,40 @@ export class PDFService {
     }
   ): Promise<boolean> {
     try {
-      // Récupérer l'utilisateur actuel
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Utiliser l'userId fourni dans les métadonnées (propriétaire du formulaire)
+      // ou fallback sur l'utilisateur connecté
+      let targetUserId = metadata.userId;
       
-      if (userError || !user) {
+      if (!targetUserId) {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.warn('💾 Utilisateur non connecté, sauvegarde locale uniquement');
+          // Fallback localStorage pour utilisateurs non connectés
+          const localData = {
+            file_name: fileName,
+            response_id: metadata.responseId,
+            template_name: metadata.templateName,
+            form_title: metadata.formTitle,
+            form_data: metadata.formData,
+            pdf_content: '',
+            file_size: 0,
+            created_at: new Date().toISOString(),
+          };
+          
+          const existingPDFs = this.getLocalPDFs();
+          existingPDFs[fileName] = localData;
+          localStorage.setItem('allSavedPDFs', JSON.stringify(existingPDFs));
+          
+          console.log('💾 Métadonnées sauvegardées en local uniquement');
+          return true;
+        }
+        targetUserId = user.id;
+      }
+      
+      console.log('💾 Sauvegarde PDF pour userId:', targetUserId);
+      
+      // Ne pas gérer l'impersonation ici - utiliser directement l'userId fourni
+      /*
         console.warn('💾 Utilisateur non connecté, sauvegarde locale uniquement');
         // Fallback localStorage pour utilisateurs non connectés
         const localData = {
@@ -43,19 +73,7 @@ export class PDFService {
         return true;
       }
 
-      // Vérifier si on est en mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      let targetUserId = user.id;
-      
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-          console.log('💾 🎭 Mode impersonation: sauvegarde pour', data.target_email, 'userId:', targetUserId);
-        } catch (error) {
-          console.error('Erreur parsing impersonation data:', error);
-        }
-      }
+      */
 
       // Vérifier les limites avant de sauvegarder
       const currentPdfs = await this.listPDFs();
