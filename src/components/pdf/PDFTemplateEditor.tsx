@@ -212,7 +212,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const addField = useCallback((type: PDFField['type']) => {
     // Activer le mode de placement manuel
     setDraggedFieldType(type);
-    toast('Cliquez sur le PDF pour placer le champ', { duration: 3000 });
+    toast(`Cliquez sur la page ${currentPage} pour placer le champ`, { duration: 3000 });
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
@@ -241,10 +241,14 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [selectedField]);
 
   const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
+    console.log('🖱️ Clic sur page:', page, 'Page courante:', currentPage);
+    console.log('🖱️ Mode placement actif:', !!draggedFieldType, 'Type:', draggedFieldType);
+    
     // Si on est en mode placement de champ
     if (draggedFieldType) {
       if (!pdfViewerRef.current) return;
 
+      // IMPORTANT: Utiliser la page cliquée, pas currentPage
       const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
       if (!canvasDimensions) return;
 
@@ -267,7 +271,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       const newField: PDFField = {
         id: uuidv4(),
         type: draggedFieldType,
-        page,
+        page, // Utiliser la page cliquée
         variable: '',
         xRatio,
         yRatio,
@@ -283,21 +287,25 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
       console.log('➕ Nouveau champ placé manuellement:', {
         type: draggedFieldType,
+        page,
         position: { xRatio, yRatio },
         size: { widthRatio, heightRatio }
       });
 
       setFields(prev => [...prev, newField]);
       setSelectedField(newField.id);
+      // Changer vers la page où le champ a été placé
+      setCurrentPage(page);
       setDraggedFieldType(null);
-      toast.success('Champ ajouté !');
+      toast.success(`Champ ajouté sur la page ${page} !`);
       return;
     }
 
     // Mode normal - changer de page
+    console.log('🖱️ Changement de page vers:', page);
     setCurrentPage(page);
     setSelectedField(null);
-  }, [selectedField, updateField, draggedFieldType]);
+  }, [selectedField, updateField, draggedFieldType, currentPage]);
 
   // Annuler le mode placement si on appuie sur Échap
   React.useEffect(() => {

@@ -168,9 +168,13 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     if (!onPageClick) return;
 
     const canvas = event.currentTarget;
-    const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
+    // Récupérer le numéro de page depuis l'attribut data-page
+    const pageNumber = parseInt(canvas.getAttribute('data-page') || '1');
+    
+    console.log('🖱️ Canvas cliqué, page détectée:', pageNumber);
     
     if (onPageChange && pageNumber !== currentPage) {
+      console.log('🖱️ Changement de page:', currentPage, '→', pageNumber);
       onPageChange(pageNumber);
     }
 
@@ -190,10 +194,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     const adjustedX = canvasX * scaleX;
     const adjustedY = canvasY * scaleY;
     
-    console.log(`🖱️ Clic canvas: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
-    console.log(`🖱️ Canvas réel: ${realCanvasWidth} × ${realCanvasHeight}`);
-    console.log(`🖱️ Canvas affiché: ${rect.width} × ${rect.height}`);
-    console.log(`🖱️ Coordonnées ajustées: (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
+    console.log(`🖱️ Page ${pageNumber} - Clic: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)}) → (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
     
     onPageClick(adjustedX, adjustedY, pageNumber);
   };
