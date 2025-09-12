@@ -16,6 +16,7 @@ export const EditPDFTemplate: React.FC = () => {
   const [template, setTemplate] = useState<PDFTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fieldsReady, setFieldsReady] = useState(false);
 
   // Générer les variables à partir du formulaire lié
   const getFormVariables = () => {
@@ -166,6 +167,11 @@ export const EditPDFTemplate: React.FC = () => {
       if (foundTemplate) {
         setTemplate(foundTemplate);
         console.log('✅ Template chargé avec succès');
+        // Marquer les champs comme prêts après un délai
+        setTimeout(() => {
+          console.log('🎯 Champs marqués comme prêts pour affichage');
+          setFieldsReady(true);
+        }, 1000);
       } else {
         console.error('❌ Template non trouvé:', id);
         toast.error('Template PDF non trouvé');
@@ -320,12 +326,13 @@ export const EditPDFTemplate: React.FC = () => {
   return (
     <PDFTemplateEditor
       onSave={handleSave}
-      initialFields={template.fields}
+      initialFields={fieldsReady ? template.fields : []}
       formVariables={getFormVariables()}
       existingPdfUrl={template.originalPdfUrl}
       templateName={template.name}
       linkedFormId={template.linkedFormId}
       onFormLinkChange={handleFormLinkChange}
+      key={fieldsReady ? 'ready' : 'loading'}
     />
   );
 };

@@ -176,7 +176,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         ref={containerRef}
         className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 sm:p-4"
         id="pdf-container"
-        style={{ position: 'relative' }}
       >
         <div className="flex flex-col items-center space-y-4 min-w-0">
           {Array.from({ length: numPages }, (_, index) => (
@@ -186,34 +185,39 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                   Page {index + 1}
                 </span>
               </div>
-            {loading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10 rounded-lg p-4">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Chargement du PDF...</p>
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10 rounded-lg p-4">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Chargement du PDF...</p>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            <canvas
-              ref={(el) => (canvasRefs.current[index] = el)}
-              onClick={handleCanvasClick}
-              className="border border-gray-300 dark:border-gray-600 shadow-lg cursor-crosshair bg-white max-w-full h-auto"
-              data-page={index + 1}
-              style={{ display: loading ? 'none' : 'block' }}
-            />
+              )}
+              
+              <canvas
+                ref={(el) => (canvasRefs.current[index] = el)}
+                onClick={handleCanvasClick}
+                className="border border-gray-300 dark:border-gray-600 shadow-lg cursor-crosshair bg-white max-w-full h-auto"
+                data-page={index + 1}
+                style={{ display: loading ? 'none' : 'block' }}
+              />
             </div>
           ))}
         </div>
-        
-        {/* Overlay global pour tous les champs - positionné par rapport au conteneur */}
-        {!loading && !error && numPages > 0 && (
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="relative w-full h-full pointer-events-auto">
-              {children}
-            </div>
+      </div>
+      
+      {/* Overlay des champs - positionné de manière absolue par rapport à la page */}
+      {!loading && !error && numPages > 0 && children && (
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1000 }}>
+          <div className="relative w-full h-full pointer-events-auto">
+            {children}
           </div>
-        )}
+        </div>
+      )}
+    </div>
+  );
+};
+
       </div>
     </div>
   );
