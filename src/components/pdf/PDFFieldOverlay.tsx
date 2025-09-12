@@ -3,8 +3,6 @@ import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
 import { Trash2 } from 'lucide-react';
 
-+interface PDFFieldOverlayProps {
-+  field: PDFField;
 interface PDFFieldOverlayProps {
   field: PDFField;
   scale: number;
@@ -54,9 +52,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         return;
       }
 
+      const containerRect = pdfContainer.getBoundingClientRect();
+
       // Position relative au conteneur avec scroll
-      const left = canvasRect.left + pdfContainer.scrollLeft + (field.x * scale);
-      const top = canvasRect.top + pdfContainer.scrollTop + (field.y * scale);
+      const left = canvasRect.left - containerRect.left + pdfContainer.scrollLeft + (field.x * scale);
+      const top = canvasRect.top - containerRect.top + pdfContainer.scrollTop + (field.y * scale);
       const width = field.width * scale;
       const height = field.height * scale;
 
