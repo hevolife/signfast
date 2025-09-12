@@ -56,6 +56,10 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
     setRefreshing(true);
     try {
       await refetch();
+      // Régénérer l'aperçu des variables après actualisation
+      if (selectedFormId && showVariablesPreview) {
+        generateVariablesPreview(selectedFormId);
+      }
       toast.success('Liste des formulaires actualisée !');
     } catch (error) {
       console.error('Erreur lors de l\'actualisation:', error);

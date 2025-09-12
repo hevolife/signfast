@@ -169,6 +169,20 @@ export class PDFTemplateService {
     try {
       console.log('🔗 Liaison template-formulaire:', templateId, '→', formId);
       
+      // Vérifier que le template existe
+      const { data: templateExists, error: checkError } = await supabase
+        .from('pdf_templates')
+        .select('id, name')
+        .eq('id', templateId)
+        .single();
+
+      if (checkError || !templateExists) {
+        console.error('❌ Template non trouvé:', templateId);
+        return false;
+      }
+
+      console.log('✅ Template trouvé:', templateExists.name);
+
       const { error } = await supabase
         .from('pdf_templates')
         .update({ linked_form_id: formId || null })
@@ -184,33 +198,42 @@ export class PDFTemplateService {
       // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
       if (formId) {
         try {
-          // Récupérer les settings actuels du formulaire
-          const { data: currentForm, error: getFormError } = await supabase
+          // Vérifier que le formulaire existe
+          const { data: formExists, error: checkFormError } = await supabase
             .from('forms')
-            .select('settings')
+            .select('id, title, settings')
             .eq('id', formId)
             .single();
 
-          if (!getFormError && currentForm) {
-            const { error: formUpdateError } = await supabase
-              .from('forms')
-              .update({
-                settings: {
-                  ...currentForm.settings,
-                  pdfTemplateId: templateId,
-                  generatePdf: true, // Activer automatiquement la génération PDF
-                }
-              })
-              .eq('id', formId);
+          if (checkFormError || !formExists) {
+            console.error('❌ Formulaire non trouvé:', formId);
+            return false;
+          }
 
-            if (formUpdateError) {
-              console.warn('⚠️ Erreur mise à jour settings formulaire:', formUpdateError);
-            } else {
-              console.log('✅ Settings formulaire mis à jour avec template ID');
-            }
+          console.log('✅ Formulaire trouvé:', formExists.title);
+
+          // Récupérer les settings actuels du formulaire
+          const { error: formUpdateError } = await supabase
+            .from('forms')
+            .update({
+              settings: {
+                ...formExists.settings,
+                pdfTemplateId: templateId,
+                generatePdf: true, // Activer automatiquement la génération PDF
+                savePdfToServer: true, // Activer aussi la sauvegarde
+              }
+            })
+            .eq('id', formId);
+
+          if (formUpdateError) {
+            console.warn('⚠️ Erreur mise à jour settings formulaire:', formUpdateError);
+            return false;
+          } else {
+            console.log('✅ Settings formulaire mis à jour avec template ID');
           }
         } catch (formError) {
           console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
+          return false;
         }
       }
       

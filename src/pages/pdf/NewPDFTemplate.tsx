@@ -75,6 +75,13 @@ export const NewPDFTemplate: React.FC = () => {
 
   const handleFormLinkChange = (formId: string | null) => {
     setLinkedFormId(formId);
+    
+    if (formId) {
+      console.log('🔗 Formulaire sélectionné pour liaison:', formId);
+      toast.success('Formulaire sélectionné ! Il sera lié lors de la sauvegarde.');
+    } else {
+      console.log('🔗 Formulaire délié');
+    }
   };
   return (
     <PDFTemplateEditor
