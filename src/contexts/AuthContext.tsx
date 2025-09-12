@@ -36,16 +36,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('admin_impersonation');
       setIsImpersonating(false);
       
-      // Déconnexion Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Erreur lors de la déconnexion:', error);
-      }
-      
-      // Forcer la mise à jour de l'état
+      // Forcer la mise à jour de l'état immédiatement
       setUser(null);
       setSession(null);
+      
+      try {
+        // Tentative de déconnexion Supabase
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+          console.warn('Erreur déconnexion Supabase (ignorée):', error.message);
+          // Ne pas bloquer la déconnexion si Supabase échoue
+        }
+      } catch (supabaseError) {
+        console.warn('Erreur déconnexion Supabase (ignorée):', supabaseError);
+        // Continuer même si Supabase échoue
+      }
+      
+      // Nettoyer le localStorage
+      try {
+        localStorage.removeItem('sb-fscwmfrwzougwtsxpoqz-auth-token');
+        localStorage.removeItem('supabase.auth.token');
+        // Nettoyer d'autres clés potentielles
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (storageError) {
+        console.warn('Erreur nettoyage localStorage:', storageError);
+      }
       
       // Redirection forcée vers la page d'accueil
       window.location.href = '/';
@@ -54,7 +74,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // En cas d'erreur, forcer quand même la déconnexion côté client
       setUser(null);
       setSession(null);
-      localStorage.clear();
+      
+      // Nettoyer sélectivement au lieu de tout effacer
+      try {
+        localStorage.removeItem('admin_impersonation');
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (storageError) {
+        console.warn('Erreur nettoyage localStorage:', storageError);
+      }
+      
       window.location.href = '/';
     }
   }, []);
