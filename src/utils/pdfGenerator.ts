@@ -30,21 +30,6 @@ export class PDFGenerator {
         console.log(`🎯 Champ image ${index + 1}: variable="${field.variable}", position=(${field.x}, ${field.y}), taille=${field.width}x${field.height}`);
       });
       
-      // Collecter tous les fichiers/images du formulaire
-      const formFiles = Object.entries(data).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log('📁 ===== FICHIERS FORMULAIRE =====');
-      console.log('📁 Nombre total de fichiers image:', formFiles.length);
-      formFiles.forEach(([key, value], index) => {
-        console.log(`📁 Fichier ${index + 1}:`);
-        console.log(`📁   - Clé: "${key}"`);
-        console.log(`📁   - Type: ${typeof value}`);
-        console.log(`📁   - Est base64: ${typeof value === 'string' && value.startsWith('data:image')}`);
-        console.log(`📁   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
-        console.log(`📁   - Format: ${typeof value === 'string' ? value.substring(0, 30) + '...' : 'N/A'}`);
-      });
-      
       // Détection mobile pour ajustements spécifiques
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       if (isMobile) {
@@ -117,7 +102,7 @@ export class PDFGenerator {
       }
       console.log('🎨 Polices chargées');
 
-      // Collecter tous les fichiers/images du formulaire AVANT le traitement
+      // Collecter tous les fichiers/images du formulaire
       const formFiles = Object.entries(data).filter(([key, value]) => 
         typeof value === 'string' && value.startsWith('data:image')
       );
