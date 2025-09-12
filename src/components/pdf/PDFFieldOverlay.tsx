@@ -57,7 +57,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     e.preventDefault();
     onSelect();
     setIsDragging(true);
-    setDragPosition({ x: field.x, y: field.y });
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -75,7 +74,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     };
 
     const handleMouseUp = () => {
-      // Appliquer la position finale immédiatement
+      // Appliquer la position finale avec les dernières valeurs calculées
       onUpdate({ 
         x: dragPosition.x, 
         y: dragPosition.y
