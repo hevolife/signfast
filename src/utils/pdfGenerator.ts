@@ -166,7 +166,7 @@ export class PDFGenerator {
             break;
             
           case 'image':
-            if (value && typeof value === 'string' && value.startsWith('data:image')) {
+            if (value && typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))) {
               try {
                 await this.drawImage(pdfDoc, page, value, x, y, field);
                 console.log(`🎨 ✅ Image dessinée`);
@@ -276,6 +276,12 @@ export class PDFGenerator {
       } else {
         console.log(`🔍 Available keys:`, originalKeys);
       }
+    }
+    
+    // Pour les champs image, retourner la valeur base64 directement
+    if (field.type === 'image' && value && typeof value === 'string' && value.startsWith('data:image')) {
+      console.log(`🔍 Image field found: ${variableName}`);
+      return value;
     }
     
     console.log(`🔍 Final value for ${variableName}:`, value || field.placeholder || 'EMPTY');
@@ -390,10 +396,41 @@ export class PDFGenerator {
     field: PDFField
   ) {
     try {
-      const imageBytes = this.base64ToBytes(imageData);
-      const image = imageData.includes('data:image/png') 
-        ? await pdfDoc.embedPng(imageBytes)
-        : await pdfDoc.embedJpg(imageBytes);
+      let image;
+      
+      if (imageData.startsWith('data:image')) {
+        // Image base64
+        const imageBytes = this.base64ToBytes(imageData);
+        
+        if (imageData.includes('data:image/png')) {
+          image = await pdfDoc.embedPng(imageBytes);
+        } else if (imageData.includes('data:image/jpeg') || imageData.includes('data:image/jpg')) {
+          image = await pdfDoc.embedJpg(imageBytes);
+        } else {
+          // Essayer PNG par défaut pour les autres formats
+          try {
+            image = await pdfDoc.embedPng(imageBytes);
+          } catch {
+            // Si PNG échoue, essayer JPG
+            image = await pdfDoc.embedJpg(imageBytes);
+          }
+        }
+      } else if (imageData.startsWith('http')) {
+        // Image URL - télécharger d'abord
+        const response = await fetch(imageData);
+        const arrayBuffer = await response.arrayBuffer();
+        const imageBytes = new Uint8Array(arrayBuffer);
+        
+        // Détecter le type d'image depuis l'URL ou les headers
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('png') || imageData.toLowerCase().includes('.png')) {
+          image = await pdfDoc.embedPng(imageBytes);
+        } else {
+          image = await pdfDoc.embedJpg(imageBytes);
+        }
+      } else {
+        throw new Error('Format d\'image non supporté');
+      }
       
       page.drawImage(image, {
         x,
@@ -403,6 +440,24 @@ export class PDFGenerator {
       });
     } catch (error) {
       console.error('Erreur lors de l\'ajout de l\'image:', error);
+      
+      // En cas d'erreur, dessiner un placeholder
+      page.drawRectangle({
+        x,
+        y,
+        width: field.width,
+        height: field.height,
+        borderColor: rgb(0.8, 0.8, 0.8),
+        borderWidth: 1,
+      });
+      
+      // Ajouter un texte d'erreur
+      page.drawText('Image non disponible', {
+        x: x + 5,
+        y: y + field.height / 2,
+        size: 8,
+        color: rgb(0.5, 0.5, 0.5),
+      });
     }
   }
 

@@ -166,8 +166,35 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
               {...baseProps}
               type="file"
               label={field.label}
-              onChange={(e) => handleInputChange(field.id, e.target.files?.[0]?.name || '')}
+              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Pour les images, convertir en base64
+                  if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const base64 = event.target?.result as string;
+                      handleInputChange(field.id, base64);
+                    };
+                    reader.readAsDataURL(file);
+                  } else {
+                    // Pour les autres fichiers, stocker le nom
+                    handleInputChange(field.id, file.name);
+                  }
+                }
+              }}
             />
+            {/* Aperçu de l'image */}
+            {formData[field.id] && typeof formData[field.id] === 'string' && formData[field.id].startsWith('data:image') && (
+              <div className="mt-2">
+                <img
+                  src={formData[field.id]}
+                  alt="Aperçu"
+                  className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
+                />
+              </div>
+            )}
           </div>
         );
       

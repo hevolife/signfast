@@ -475,10 +475,38 @@ export const PublicForm: React.FC = () => {
               <input
                 type="file"
                 id={field.id}
+                accept="image/*,.pdf,.doc,.docx"
                 required={field.required}
-                onChange={(e) => handleInputChange(field.id, e.target.files?.[0]?.name || '')}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Pour les images, convertir en base64
+                    if (file.type.startsWith('image/')) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const base64 = event.target?.result as string;
+                        handleInputChange(field.id, base64);
+                        console.log('📷 Image convertie en base64 pour:', field.label);
+                      };
+                      reader.readAsDataURL(file);
+                    } else {
+                      // Pour les autres fichiers, stocker le nom
+                      handleInputChange(field.id, file.name);
+                    }
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               />
+              {/* Aperçu de l'image si c'est une image */}
+              {formData[field.id] && typeof formData[field.id] === 'string' && formData[field.id].startsWith('data:image') && (
+                <div className="mt-2">
+                  <img
+                    src={formData[field.id]}
+                    alt="Aperçu"
+                    className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
+                  />
+                </div>
+              )}
             </div>
           </div>
         );
