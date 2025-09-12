@@ -217,8 +217,3 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     </div>
   );
 };
-
-      </div>
-    </div>
-  );
-};
