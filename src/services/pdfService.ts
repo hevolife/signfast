@@ -43,6 +43,20 @@ export class PDFService {
         return true;
       }
 
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      let targetUserId = user.id;
+      
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('💾 🎭 Mode impersonation: sauvegarde pour', data.target_email, 'userId:', targetUserId);
+        } catch (error) {
+          console.error('Erreur parsing impersonation data:', error);
+        }
+      }
+
       // Vérifier les limites avant de sauvegarder
       const currentPdfs = await this.listPDFs();
       
@@ -53,6 +67,7 @@ export class PDFService {
         const { data: stripeSubscription } = await supabase
           .from('stripe_user_subscriptions')
           .select('subscription_status')
+          .eq('customer_id', targetUserId)
           .limit(1);
         
         const hasStripeAccess = stripeSubscription && stripeSubscription.length > 0 && 
@@ -66,7 +81,7 @@ export class PDFService {
             expires_at,
             secret_codes (type)
           `)
-          .eq('user_id', user.id)
+          .eq('user_id', targetUserId)
           .or('expires_at.is.null,expires_at.gt.now()')
           .limit(1);
 
@@ -114,7 +129,7 @@ export class PDFService {
         form_data: enrichedFormData,
         pdf_content: '', // Vide pour l'instant
         file_size: 0, // Sera calculé au téléchargement
-        user_id: user.id, // IMPORTANT: Associer le PDF à l'utilisateur connecté
+        user_id: targetUserId, // IMPORTANT: Associer le PDF à l'utilisateur cible (impersonation)
       };
 
       // Sauvegarder dans Supabase
@@ -497,6 +512,8 @@ export class PDFService {
             });
           } else {
             console.log('💾 ⚠️ Aucune donnée retournée par Supabase pour userId:', targetUserId);
+          }
+        } else {
           console.log('💾 ❌ Utilisateur non connecté ou erreur auth:', userError?.message);
         }
       } catch (supabaseError) {
@@ -663,10 +680,24 @@ export class PDFService {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!userError && user) {
+          // Vérifier si on est en mode impersonation
+          const impersonationData = localStorage.getItem('admin_impersonation');
+          let targetUserId = user.id;
+          
+          if (impersonationData) {
+            try {
+              const data = JSON.parse(impersonationData);
+              targetUserId = data.target_user_id;
+              console.log('🎭 Mode impersonation: nettoyage PDFs pour', data.target_email);
+            } catch (error) {
+              console.error('Erreur parsing impersonation data:', error);
+            }
+          }
+
           const { error } = await supabase
             .from('pdf_storage')
             .delete()
-            .eq('user_id', user.id);
+            .eq('user_id', targetUserId);
 
           if (!error) {
             console.log('💾 PDFs Supabase nettoyés pour l\'utilisateur');
