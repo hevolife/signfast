@@ -208,8 +208,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       
       {/* Overlay des champs - positionné de manière absolue par rapport à la page */}
       {!loading && !error && numPages > 0 && children && (
-        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1000 }}>
-          {children}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="relative w-full h-full pointer-events-none">
+            <div className="absolute inset-0 pointer-events-auto">
+              {children}
+            </div>
+          </div>
         </div>
       )}
     </div>
