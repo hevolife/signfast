@@ -31,7 +31,6 @@ import {
   HardDrive,
   Key,
   Gift,
-  LogIn,
   RefreshCw,
   X
 } from 'lucide-react';
