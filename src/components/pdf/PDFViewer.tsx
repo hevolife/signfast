@@ -50,13 +50,22 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
   }, [file]);
 
   useEffect(() => {
+    console.log(`📄 ===== EFFECT RENDU =====`);
+    console.log(`📄 pdfDoc:`, !!pdfDoc);
+    console.log(`📄 numPages:`, numPages);
+    console.log(`📄 scale:`, scale);
+    
     if (pdfDoc && numPages > 0) {
+      console.log(`📄 Conditions remplies, démarrage rendu dans 100ms...`);
       // Débounce le rendu pour améliorer les performances
       const timeoutId = setTimeout(() => {
+        console.log(`📄 Timeout écoulé, démarrage renderAllPages()`);
         renderAllPages();
       }, 100);
       
       return () => clearTimeout(timeoutId);
+    } else {
+      console.log(`📄 Conditions non remplies pour le rendu`);
     }
   }, [pdfDoc, numPages, scale]);
 
@@ -75,6 +84,8 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     try {
       setLoading(true);
       setError(null);
+      console.log(`📄 ===== CHARGEMENT PDF =====`);
+      console.log(`📄 Type de fichier:`, file instanceof File ? 'File' : 'String/URL');
       
       // Cancel any existing render tasks before loading new PDF
       cancelAllRenderTasks();
@@ -85,17 +96,27 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
 
       let pdfData;
       if (file instanceof File) {
+        console.log(`📄 Lecture fichier: ${file.name}, taille: ${file.size} bytes`);
         const arrayBuffer = await file.arrayBuffer();
         pdfData = new Uint8Array(arrayBuffer);
       } else {
+        console.log(`📄 Utilisation URL/Data existante`);
         pdfData = file;
       }
 
       const pdf = await pdfjsLib.getDocument(pdfData).promise;
+      console.log(`📄 ===== PDF CHARGÉ =====`);
+      console.log(`📄 Nombre de pages détectées: ${pdf.numPages}`);
+      
       setPdfDoc(pdf);
       setNumPages(pdf.numPages);
       canvasRefs.current = new Array(pdf.numPages).fill(null);
       renderTasksRef.current = new Array(pdf.numPages).fill(null);
+      
+      console.log(`📄 Arrays initialisés:`);
+      console.log(`📄 - canvasRefs.current.length: ${canvasRefs.current.length}`);
+      console.log(`📄 - renderTasksRef.current.length: ${renderTasksRef.current.length}`);
+      
       setLoading(false);
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -113,14 +134,18 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     // Cancel all existing render tasks before starting new ones
     cancelAllRenderTasks();
     
-    console.log(`📄 Rendu de ${numPages} pages...`);
+    console.log(`📄 ===== RENDU DE TOUTES LES PAGES =====`);
+    console.log(`📄 Nombre total de pages: ${numPages}`);
+    console.log(`📄 Scale actuel: ${scale}`);
     
     // Rendu optimisé - une page à la fois
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      console.log(`📄 Rendu page ${pageNum}/${numPages}`);
+      console.log(`📄 ===== RENDU PAGE ${pageNum}/${numPages} =====`);
       const canvas = canvasRefs.current[pageNum - 1];
       if (!canvas) {
-        console.warn(`📄 Canvas manquant pour page ${pageNum}`);
+        console.error(`📄 ❌ Canvas manquant pour page ${pageNum} - index ${pageNum - 1}`);
+        console.log(`📄 Canvas refs length: ${canvasRefs.current.length}`);
+        console.log(`📄 Canvas refs:`, canvasRefs.current.map((c, i) => `${i}: ${c ? 'OK' : 'NULL'}`));
         continue;
       }
 
@@ -135,11 +160,15 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale });
         
+        console.log(`📄 Page ${pageNum} viewport:`, { width: viewport.width, height: viewport.height });
+        
         const context = canvas.getContext('2d');
         if (!context) continue;
         
         canvas.height = viewport.height;
         canvas.width = viewport.width;
+        
+        console.log(`📄 Canvas ${pageNum} configuré:`, { width: canvas.width, height: canvas.height });
         
         // Optimisation: nettoyer le canvas avant le rendu
         context.clearRect(0, 0, canvas.width, canvas.height);
@@ -153,7 +182,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         renderTasksRef.current[pageNum - 1] = renderTask;
         
         await renderTask.promise;
-        console.log(`📄 ✅ Page ${pageNum} rendue avec succès`);
+        console.log(`📄 ✅ Page ${pageNum} rendue avec succès - dimensions: ${canvas.width}x${canvas.height}`);
         
         // Clear the render task reference once completed
         renderTasksRef.current[pageNum - 1] = null;
@@ -171,6 +200,8 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
       }
     }
     
+    console.log(`📄 ===== RENDU TERMINÉ =====`);
+    console.log(`📄 Toutes les ${numPages} pages ont été traitées`);
     setIsRendering(false);
   };
 
@@ -265,9 +296,13 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
           transform: 'translateZ(0)', // Force hardware acceleration
         }}
       >
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center space-y-4" id="pdf-pages-container">
+          {console.log(`📄 ===== RENDU CONTAINER PAGES =====`)}
+          {console.log(`📄 Nombre de pages à rendre: ${numPages}`)}
+          {console.log(`📄 Loading: ${loading}, isRendering: ${isRendering}`)}
           {Array.from({ length: numPages }, (_, index) => (
-            <div key={index} className="relative">
+            <div key={index} className="relative" data-page={index + 1}>
+              {console.log(`📄 Rendu container page ${index + 1}`)}
               <div className={`text-center mb-2 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
                   Page {index + 1} {currentPage === index + 1 ? '(active)' : ''}
@@ -287,6 +322,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
               
               <canvas
                 ref={(el) => (canvasRefs.current[index] = el)}
+                  console.log(`📄 Canvas ref assigné pour page ${index + 1}:`, !!el);
                 onClick={handleCanvasClick}
                 className={`border shadow-lg cursor-crosshair bg-white ${
                   currentPage === index + 1 
@@ -298,6 +334,9 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
                   willChange: 'transform',
                   transform: 'translateZ(0)',
                   display: (loading || isRendering) ? 'none' : 'block'
+                  if (el) {
+                    console.log(`📄 Canvas ${index + 1} créé avec succès`);
+                  }
                 }}
                 data-page={index + 1}
               />
@@ -307,7 +346,9 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         
         {/* Overlay des champs - positionné absolument dans le conteneur */}
         {children && (
-          <div className="absolute inset-0 pointer-events-none" style={{ top: '60px', left: '16px' }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ top: '60px', left: '16px' }} id="fields-overlay">
+            {console.log(`📄 ===== OVERLAY CHAMPS =====`)}
+            {console.log(`📄 Children présents:`, !!children)}
             {children}
           </div>
         )}

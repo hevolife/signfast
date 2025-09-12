@@ -34,8 +34,15 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   // Calculer la position en tenant compte de la page
   const getFieldPosition = () => {
+    console.log(`🎯 ===== CALCUL POSITION CHAMP =====`);
+    console.log(`🎯 Champ: ${field.variable || field.type}`);
+    console.log(`🎯 Page du champ: ${field.page}`);
+    console.log(`🎯 Page courante: ${currentPage}`);
+    console.log(`🎯 Position originale: (${field.x}, ${field.y})`);
+    
     // Pour la page 1, position normale
     if (field.page === 1) {
+      console.log(`🎯 Page 1 - position simple: (${field.x * scale}, ${field.y * scale})`);
       return {
         left: field.x * scale,
         top: field.y * scale,
@@ -44,35 +51,48 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     // Pour les autres pages, calculer l'offset
     const pageIndex = field.page - 1;
+    console.log(`🎯 Page ${field.page} - index: ${pageIndex}`);
     
     let pageOffset = 0;
     
     // Calculer l'offset basé sur les pages précédentes
     if (canvasRefs?.current) {
+      console.log(`🎯 Canvas refs disponibles: ${canvasRefs.current.length}`);
       for (let i = 0; i < pageIndex; i++) {
         const canvas = canvasRefs.current[i];
+        console.log(`🎯 Canvas page ${i + 1}:`, canvas ? `${canvas.height}px` : 'NULL');
         if (canvas) {
           // Hauteur du canvas + espacement + label
-          pageOffset += canvas.height + 48; // 16px gap + 32px label
+          const pageHeight = canvas.height + 48; // 16px gap + 32px label
+          pageOffset += pageHeight;
+          console.log(`🎯 Ajout offset page ${i + 1}: +${pageHeight}px (total: ${pageOffset}px)`);
         } else {
           // Si le canvas n'est pas encore rendu, utiliser une estimation
-          pageOffset += 600; // Estimation de hauteur de page
+          const estimatedHeight = 600;
+          pageOffset += estimatedHeight;
+          console.log(`🎯 Estimation page ${i + 1}: +${estimatedHeight}px (total: ${pageOffset}px)`);
         }
       }
+    } else {
+      console.log(`🎯 ❌ Pas de canvas refs disponibles`);
     }
     
-    console.log(`🎯 Position calculée pour page ${field.page}:`, {
-      originalX: field.x,
-      originalY: field.y,
-      pageOffset,
-      finalLeft: field.x * scale,
-      finalTop: pageOffset + field.y * scale + 32
-    });
-    
-    return {
+    const finalPosition = {
       left: field.x * scale,
       top: pageOffset + field.y * scale + 32,
     };
+    
+    console.log(`🎯 ===== POSITION FINALE =====`, {
+      originalX: field.x,
+      originalY: field.y,
+      scale,
+      pageOffset,
+      finalLeft: finalPosition.left,
+      finalTop: finalPosition.top,
+      page: field.page
+    });
+    
+    return finalPosition;
   };
 
   const position = getFieldPosition();
