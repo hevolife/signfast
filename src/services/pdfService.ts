@@ -13,9 +13,35 @@ export class PDFService {
       templateId?: string;
       templateFields?: any[];
       templatePdfContent?: string;
+      userId?: string;
     }
   ): Promise<boolean> {
     try {
+      // Récupérer l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.warn('💾 Utilisateur non connecté, sauvegarde locale uniquement');
+        // Fallback localStorage pour utilisateurs non connectés
+        const localData = {
+          file_name: fileName,
+          response_id: metadata.responseId,
+          template_name: metadata.templateName,
+          form_title: metadata.formTitle,
+          form_data: metadata.formData,
+          pdf_content: '',
+          file_size: 0,
+          created_at: new Date().toISOString(),
+        };
+        
+        const existingPDFs = this.getLocalPDFs();
+        existingPDFs[fileName] = localData;
+        localStorage.setItem('allSavedPDFs', JSON.stringify(existingPDFs));
+        
+        console.log('💾 Métadonnées sauvegardées en local uniquement');
+        return true;
+      }
+
       // Vérifier les limites avant de sauvegarder
       const currentPdfs = await this.listPDFs();
       
@@ -62,6 +88,7 @@ export class PDFService {
         form_data: enrichedFormData,
         pdf_content: '', // Vide pour l'instant
         file_size: 0, // Sera calculé au téléchargement
+        user_id: user.id, // IMPORTANT: Associer le PDF à l'utilisateur connecté
       };
 
       // Sauvegarder dans Supabase
@@ -267,14 +294,19 @@ export class PDFService {
     formData: Record<string, any>;
   }>> {
     try {
+      // Récupérer l'utilisateur actuel pour filtrer les PDFs
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
       const allPDFs: any[] = [];
 
       // Récupérer depuis Supabase
-      try {
+      if (user) {
+        try {
         console.log('💾 Récupération liste PDFs depuis Supabase...');
         const { data: supabasePDFs, error } = await supabase
           .from('pdf_storage')
           .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
+          .eq('user_id', user.id) // IMPORTANT: Filtrer par utilisateur connecté
           .order('created_at', { ascending: false });
 
         if (!error && supabasePDFs) {
@@ -292,8 +324,11 @@ export class PDFService {
         } else if (error) {
           console.warn('💾 Erreur récupération Supabase:', error);
         }
-      } catch (supabaseError) {
+        } catch (supabaseError) {
         console.warn('💾 Erreur récupération Supabase:', supabaseError);
+        }
+      } else {
+        console.log('💾 Utilisateur non connecté, pas de récupération Supabase');
       }
 
       // Récupérer depuis localStorage
@@ -340,14 +375,19 @@ export class PDFService {
   static async deletePDF(fileName: string): Promise<boolean> {
     try {
       console.log('💾 Suppression PDF:', fileName);
+      
+      // Récupérer l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       let deleted = false;
 
       // Supprimer de Supabase
-      try {
+      if (user) {
+        try {
         const { error } = await supabase
           .from('pdf_storage')
           .delete()
-          .eq('file_name', fileName);
+          .eq('file_name', fileName)
+          .eq('user_id', user.id); // IMPORTANT: S'assurer qu'on supprime seulement ses propres PDFs
 
         if (!error) {
           console.log('💾 PDF supprimé de Supabase');
@@ -355,8 +395,9 @@ export class PDFService {
         } else {
           console.warn('💾 Erreur suppression Supabase:', error);
         }
-      } catch (supabaseError) {
+        } catch (supabaseError) {
         console.warn('💾 Erreur suppression Supabase:', supabaseError);
+        }
       }
 
       // Supprimer du localStorage
@@ -423,14 +464,19 @@ export class PDFService {
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
     try {
+      // Récupérer l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
       // Nettoyer Supabase
-      try {
+      if (user) {
+        try {
         await supabase
           .from('pdf_storage')
           .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000');
-      } catch (supabaseError) {
+          .eq('user_id', user.id); // IMPORTANT: Supprimer seulement ses propres PDFs
+        } catch (supabaseError) {
         console.warn('💾 Erreur nettoyage Supabase:', supabaseError);
+        }
       }
 
       // Nettoyer localStorage
