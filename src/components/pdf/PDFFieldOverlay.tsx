@@ -54,15 +54,16 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
       const containerRect = pdfContainer.getBoundingClientRect();
 
-      // Position absolue par rapport au canvas
-      const left = canvasRect.left + (field.x * scale);
-      const top = canvasRect.top + (field.y * scale);
+      // Position relative au conteneur PDF (pour éviter le mouvement avec le scroll)
+      const left = (canvasRect.left - containerRect.left) + (field.x * scale);
+      const top = (canvasRect.top - containerRect.top) + (field.y * scale);
       const width = field.width * scale;
       const height = field.height * scale;
 
       const newPosition = { left, top, width, height };
       console.log(`🎯 Position calculée:`, newPosition);
       console.log(`🎯 Canvas rect:`, canvasRect);
+      console.log(`🎯 Container rect:`, containerRect);
       console.log(`🎯 Field coords: x=${field.x}, y=${field.y}, scale=${scale}`);
       setPosition(newPosition);
     };
@@ -76,18 +77,23 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     };
 
     window.addEventListener('resize', handleUpdate);
-    window.addEventListener('scroll', handleUpdate, true);
+    // Écouter le scroll du conteneur PDF spécifiquement
+    const pdfContainer = document.querySelector('#pdf-container');
+    if (pdfContainer) {
+      pdfContainer.addEventListener('scroll', handleUpdate);
+    }
     
     // Observer les changements du DOM pour les canvas
     const observer = new MutationObserver(handleUpdate);
-    const pdfContainer = document.querySelector('#pdf-container');
     if (pdfContainer) {
       observer.observe(pdfContainer, { childList: true, subtree: true });
     }
 
     return () => {
       window.removeEventListener('resize', handleUpdate);
-      window.removeEventListener('scroll', handleUpdate, true);
+      if (pdfContainer) {
+        pdfContainer.removeEventListener('scroll', handleUpdate);
+      }
       observer.disconnect();
     };
   }, [field.x, field.y, field.width, field.height, field.page, scale]);
