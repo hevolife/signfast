@@ -26,7 +26,8 @@ import {
   Calendar,
   TrendingUp,
   DollarSign,
-  FileText,
+  Gift,
+  UserCheck
   HardDrive,
   Key,
   Gift,
