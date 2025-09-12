@@ -27,6 +27,7 @@ export interface UsageLimits {
 
 export const useLimits = () => {
   const { user } = useAuth();
+  const { checkAndSignOutIfInvalid } = useAuth();
   const { isSubscribed, loading: subscriptionLoading } = useSubscription();
   const { forms, loading: formsLoading } = useForms();
   const { templates, loading: templatesLoading } = usePDFTemplates();
@@ -40,6 +41,14 @@ export const useLimits = () => {
   }, [user, subscriptionLoading, formsLoading, templatesLoading]);
 
   const loadSavedPdfsCount = async () => {
+    // Validate session before making requests
+    const isSessionValid = await checkAndSignOutIfInvalid();
+    if (!isSessionValid) {
+      setSavedPdfsCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       const pdfs = await PDFService.listPDFs();
       setSavedPdfsCount(pdfs.length);

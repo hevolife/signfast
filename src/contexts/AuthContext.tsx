@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
+  checkAndSignOutIfInvalid: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,6 +206,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { data, error };
   };
 
+  const checkAndSignOutIfInvalid = useCallback(async (): Promise<boolean> => {
+    if (!user || !session) {
+      return true; // No session to validate
+    }
+
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error && (error.message.includes('session_not_found') || error.message.includes('Invalid Refresh Token'))) {
+        console.warn('Session invalide détectée, déconnexion automatique');
+        await signOut();
+        return false;
+      }
+      
+      return true; // Session is valid
+    } catch (error: any) {
+      if (error?.status === 403 || error?.message?.includes('session_not_found')) {
+        console.warn('Session invalide détectée, déconnexion automatique');
+        await signOut();
+        return false;
+      }
+      
+      // For other errors, assume session is still valid
+      return true;
+    }
+  }, [user, session, signOut]);
+
   const value = {
     user,
     session,
@@ -214,6 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
+    checkAndSignOutIfInvalid,
   };
 
   return (
