@@ -79,6 +79,27 @@ export const PublicForm: React.FC = () => {
     try {
       console.log('🔍 Récupération profil propriétaire pour userId:', userId);
       
+     // Vérifier si Supabase est configuré
+     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+     
+     if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+       console.warn('⚠️ Supabase non configuré pour visiteur - profil par défaut');
+       setFormOwnerProfile({
+         id: '',
+         user_id: userId,
+         first_name: null,
+         last_name: null,
+         company_name: null,
+         address: null,
+         siret: null,
+         logo_url: null,
+         created_at: new Date().toISOString(),
+         updated_at: new Date().toISOString(),
+       });
+       return;
+     }
+
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -87,8 +108,19 @@ export const PublicForm: React.FC = () => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching form owner profile:', error);
-        console.log('❌ Erreur Supabase, définition profil vide');
-        setFormOwnerProfile(null);
+       console.log('❌ Erreur Supabase, création profil par défaut');
+       setFormOwnerProfile({
+         id: '',
+         user_id: userId,
+         first_name: null,
+         last_name: null,
+         company_name: null,
+         address: null,
+         siret: null,
+         logo_url: null,
+         created_at: new Date().toISOString(),
+         updated_at: new Date().toISOString(),
+       });
         return;
       }
 
