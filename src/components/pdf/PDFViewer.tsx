@@ -28,6 +28,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
   const renderTasksRef = useRef<(any | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [isRendering, setIsRendering] = useState(false);
 
   useImperativeHandle(ref, () => ({
     canvasRefs
@@ -46,7 +47,12 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
 
   useEffect(() => {
     if (pdfDoc && numPages > 0) {
-      renderAllPages();
+      // Débounce le rendu pour améliorer les performances
+      const timeoutId = setTimeout(() => {
+        renderAllPages();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [pdfDoc, numPages, scale]);
 
@@ -96,9 +102,14 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
 
   const renderAllPages = async () => {
     if (!pdfDoc) return;
+    if (isRendering) return; // Éviter les rendus multiples simultanés
+    
+    setIsRendering(true);
 
     // Cancel all existing render tasks before starting new ones
     cancelAllRenderTasks();
+    
+    // Rendu optimisé - une page à la fois
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
       const canvas = canvasRefs.current[pageNum - 1];
       if (!canvas) continue;
@@ -115,9 +126,13 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         const viewport = page.getViewport({ scale });
         
         const context = canvas.getContext('2d');
+        if (!context) continue;
         
         canvas.height = viewport.height;
         canvas.width = viewport.width;
+        
+        // Optimisation: nettoyer le canvas avant le rendu
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
         const renderContext = {
           canvasContext: context,
@@ -131,6 +146,11 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         
         // Clear the render task reference once completed
         renderTasksRef.current[pageNum - 1] = null;
+        
+        // Petit délai entre les pages pour éviter de bloquer l'UI
+        if (pageNum < numPages) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
       } catch (error) {
         // Only log error if it's not a cancellation
         if (error.name !== 'RenderingCancelledException') {
@@ -139,6 +159,8 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         renderTasksRef.current[pageNum - 1] = null;
       }
     }
+    
+    setIsRendering(false);
   };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -148,13 +170,13 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
 
     const rect = canvas.getBoundingClientRect();
-    // Calculer la position relative au canvas en tenant compte du scroll
-    const scrollContainer = canvas.closest('.overflow-auto') as HTMLElement;
-    const scrollLeft = scrollContainer?.scrollLeft || 0;
-    const scrollTop = scrollContainer?.scrollTop || 0;
     
-    const x = ((event.clientX - rect.left) / scale) - (scrollLeft / scale);
-    const y = ((event.clientY - rect.top) / scale) - (scrollTop / scale);
+    // Position relative au canvas (système top-left de l'éditeur)
+    const x = (event.clientX - rect.left) / scale;
+    const y = (event.clientY - rect.top) / scale;
+    
+    console.log(`🖱️ Clic sur canvas: position brute (${event.clientX - rect.left}, ${event.clientY - rect.top})`);
+    console.log(`🖱️ Position avec scale: (${x}, ${y}), scale: ${scale}`);
     
     onPageClick(x, y, pageNumber);
   };
@@ -219,6 +241,12 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
       <div 
         ref={containerRef}
         className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 relative"
+        style={{ 
+          scrollBehavior: 'smooth',
+          // Optimisations de performance
+          willChange: 'scroll-position',
+          transform: 'translateZ(0)', // Force hardware acceleration
+        }}
       >
         <div className="flex flex-col items-center space-y-4">
           {Array.from({ length: numPages }, (_, index) => (
@@ -229,11 +257,13 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
                 </span>
               </div>
               
-              {loading && (
+              {(loading || isRendering) && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10 rounded-lg">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Chargement du PDF...</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {loading ? 'Chargement du PDF...' : 'Rendu en cours...'}
+                    </p>
                   </div>
                 </div>
               )}
@@ -242,15 +272,20 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
                 ref={(el) => (canvasRefs.current[index] = el)}
                 onClick={handleCanvasClick}
                 className="border border-gray-300 dark:border-gray-600 shadow-lg cursor-crosshair bg-white"
+                style={{
+                  // Optimisations de performance
+                  willChange: 'transform',
+                  transform: 'translateZ(0)',
+                }}
                 data-page={index + 1}
-                style={{ display: loading ? 'none' : 'block' }}
+                style={{ display: (loading || isRendering) ? 'none' : 'block' }}
               />
             </div>
           ))}
         </div>
         
         {/* Overlay des champs - positionné absolument dans le conteneur */}
-        {!loading && children && (
+        {!loading && !isRendering && children && (
           <div className="absolute inset-0 pointer-events-none">
             {children}
           </div>

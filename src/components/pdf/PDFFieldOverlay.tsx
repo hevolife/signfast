@@ -28,28 +28,24 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Calculer la position du champ par rapport au canvas de sa page
   const getFieldPosition = () => {
     if (!canvasRefs.current || !canvasRefs.current[field.page - 1]) {
-      return { left: 0, top: 0 };
+      return { left: field.x * scale, top: field.y * scale };
     }
 
     const canvas = canvasRefs.current[field.page - 1];
     if (!canvas) {
-      return { left: 0, top: 0 };
+      return { left: field.x * scale, top: field.y * scale };
     }
 
     const canvasRect = canvas.getBoundingClientRect();
     const containerRect = canvas.closest('.overflow-auto')?.getBoundingClientRect();
     
     if (!containerRect) {
-      return { left: 0, top: 0 };
+      return { left: field.x * scale, top: field.y * scale };
     }
     
-    // Position relative au canvas avec scroll offset
-    const scrollContainer = canvas.closest('.overflow-auto') as HTMLElement;
-    const scrollLeft = scrollContainer?.scrollLeft || 0;
-    const scrollTop = scrollContainer?.scrollTop || 0;
-    
-    const left = canvasRect.left - containerRect.left + (field.x * scale) + scrollLeft;
-    const top = canvasRect.top - containerRect.top + (field.y * scale) + scrollTop;
+    // Position absolue par rapport au canvas
+    const left = canvasRect.left - containerRect.left + (field.x * scale);
+    const top = canvasRect.top - containerRect.top + (field.y * scale);
 
     return { left, top };
   };
@@ -66,12 +62,15 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const startFieldY = field.y;
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
       const deltaX = (e.clientX - startX) / scale;
       const deltaY = (e.clientY - startY) / scale;
       
       const newX = Math.max(0, startFieldX + deltaX);
       const newY = Math.max(0, startFieldY + deltaY);
       
+      // Mise à jour immédiate de la position
       onUpdate({ x: newX, y: newY });
     };
 
