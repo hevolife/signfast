@@ -321,8 +321,10 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
               )}
               
               <canvas
-                ref={(el) => (canvasRefs.current[index] = el)}
+                ref={(el) => {
+                  canvasRefs.current[index] = el;
                   console.log(`📄 Canvas ref assigné pour page ${index + 1}:`, !!el);
+                }}
                 onClick={handleCanvasClick}
                 className={`border shadow-lg cursor-crosshair bg-white ${
                   currentPage === index + 1 
