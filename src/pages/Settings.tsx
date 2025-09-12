@@ -646,11 +646,3 @@ export const Settings: React.FC = () => {
 
               {/* Plan Pro */}
               <Card className={`${isSubscribed ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-300'} relative`}>
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-600 text-white">
-                    <Crown className="h-4 w-4 mr-1" />
-                    Recommandé
-                  </span>
-                </div>
-                <CardHeader>
-                  <div
