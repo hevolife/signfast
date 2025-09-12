@@ -279,7 +279,7 @@ export const SuperAdminDashboard: React.FC = () => {
     }
 
     try {
-      toast.info(`Fonctionnalité d'impersonation temporairement désactivée pour des raisons de sécurité`);
+      toast(`Fonctionnalité d'impersonation temporairement désactivée pour des raisons de sécurité`);
     } catch (error) {
       console.error('Erreur impersonation:', error);
       toast.error('Erreur lors de la connexion utilisateur');
@@ -288,7 +288,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      toast.info(`Fonctionnalité de modification du statut utilisateur temporairement désactivée`);
+      toast(`Fonctionnalité de modification du statut utilisateur temporairement désactivée`);
     } catch (error) {
       console.error('Erreur toggle status:', error);
       toast.error('Erreur lors de la modification du statut');
