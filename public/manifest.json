@@ -11,21 +11,21 @@
   "lang": "fr",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/logo.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/logo.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/logo.svg",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ],
   "screenshots": [
@@ -50,7 +50,7 @@
       "url": "/forms/new",
       "icons": [
         {
-          "src": "/icon-192.png",
+          "src": "/logo.svg",
           "sizes": "192x192"
         }
       ]
@@ -62,7 +62,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/icon-192.png",
+          "src": "/logo.svg",
           "sizes": "192x192"
         }
       ]
