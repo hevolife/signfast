@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDrag } from 'react-dnd';
+import { useDrag, useDrop } from 'react-dnd';
 import { PDFField } from '../../types/pdf';
 
 interface PDFFieldOverlayProps {
@@ -28,9 +28,61 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'pdf-field',
-    item: { id: field.id, type: field.type },
+    item: () => {
+      console.log('🚀 Début drag du champ:', field.id);
+      return { 
+        id: field.id, 
+        type: field.type,
+        originalX: field.x,
+        originalY: field.y,
+        originalPage: field.page
+      };
+    },
+    end: (item, monitor) => {
+      const dropResult = monitor.getDropResult();
+      console.log('🏁 Fin drag du champ:', field.id, 'dropResult:', dropResult);
+      
+      if (!dropResult && monitor.didDrop()) {
+        console.log('✅ Drop réussi pour champ:', field.id);
+      } else if (!monitor.didDrop()) {
+        console.log('❌ Drop échoué, reset position pour champ:', field.id);
+        // Reset à la position originale si le drop échoue
+        onUpdate({
+          ...field,
+          x: item.originalX,
+          y: item.originalY,
+          page: item.originalPage
+        });
+      }
+    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'pdf-field',
+    hover: (item: any, monitor) => {
+      if (item.id === field.id) return; // Ne pas se déposer sur soi-même
+      
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+      
+      // Calculer la nouvelle position relative au champ survolé
+      const hoverBoundingRect = (drop as any).current?.getBoundingClientRect();
+      if (!hoverBoundingRect) return;
+      
+      const newX = field.x + (clientOffset.x - hoverBoundingRect.left) / scale;
+      const newY = field.y + (clientOffset.y - hoverBoundingRect.top) / scale;
+      
+      console.log('🎯 Hover sur champ:', field.id, 'nouvelle position calculée:', newX, newY);
+    },
+    drop: (item: any, monitor) => {
+      console.log('📍 Drop sur champ:', field.id, 'item:', item);
+      return { moved: true };
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
     }),
   }));
 
@@ -135,13 +187,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   return (
     <div
-      ref={drag}
+      ref={(node) => {
+        drag(node);
+        drop(node);
+      }}
       className={`absolute select-none border-2 transition-all duration-200 ${
         isSelected 
           ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-300' 
           : 'border-gray-300 bg-white hover:border-blue-300 hover:shadow-md'
       } ${
-        isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab hover:cursor-grab'
+        isDragging ? 'opacity-50 cursor-grabbing z-50' : 'cursor-grab hover:cursor-grab'
+      } ${
+        isOver && !isDragging ? 'ring-2 ring-green-300' : ''
       }`}
       style={{
         left: `${field.x * scale}px`,
@@ -159,10 +216,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {/* Delete button - Always visible when selected */}
       {isSelected && (
         <button
-          className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full text-lg font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50"
+          className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 text-white rounded-full text-xl font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50 cursor-pointer"
           onClick={handleDeleteClick}
           title="Supprimer le champ"
-          style={{ pointerEvents: 'auto' }}
         >
           ×
         </button>
@@ -172,16 +228,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {isSelected && (
         <>
           <div 
-            className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 cursor-se-resize border border-white shadow-sm z-20"
-            style={{ pointerEvents: 'none' }}
+            className="absolute -bottom-2 -right-2 w-5 h-5 bg-blue-500 cursor-se-resize border-2 border-white shadow-sm z-20"
           />
           <div 
-            className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-3 bg-blue-500 cursor-s-resize border border-white shadow-sm z-20"
-            style={{ pointerEvents: 'none' }}
+            className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-5 h-4 bg-blue-500 cursor-s-resize border-2 border-white shadow-sm z-20"
           />
           <div 
-            className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-blue-500 cursor-e-resize border border-white shadow-sm z-20"
-            style={{ pointerEvents: 'none' }}
+            className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-5 bg-blue-500 cursor-e-resize border-2 border-white shadow-sm z-20"
           />
         </>
       )}
