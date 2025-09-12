@@ -181,13 +181,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
           // Extraire toutes les variables (principales + conditionnelles)
           extractVariables(linkedForm.fields);
           
-          
-        }
-      }
-    }
-  }
-  )
-}// Ajouter des variables système
+          // Ajouter des variables système
           generatedVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
           
           // Supprimer les doublons
@@ -215,6 +209,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     // Fallback vers les variables par défaut
     console.log('🔗 Fallback vers variables par défaut');
     setActualFormVariables(formVariables);
+  }, [currentLinkedFormId, formVariables]);
+
+  const loadExistingPdf = useCallback(async () => {
     if (!existingPdfUrl) return;
     
     setLoadingExistingPdf(true);
@@ -386,7 +383,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     } else {
       // Si aucun champ sélectionné, désélectionner tout
       setSelectedField(null);
-      }
     }
   }, [selectedField, fields, updateField]);
 
@@ -420,6 +416,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       toast('Formulaire délié. Variables par défaut utilisées.');
     }
   };
+
   const selectedFieldData = selectedField ? fields.find(f => f.id === selectedField) : null;
 
   // Bloquer sur mobile
@@ -500,6 +497,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
               />
             </CardContent>
           </Card>
+
           {!pdfFile && !loadingExistingPdf ? (
             <Card>
               <CardContent className="text-center py-16">
@@ -558,67 +556,67 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 <div className="grid lg:grid-cols-4 gap-6">
                   {/* Visualiseur PDF - Agrandi */}
                   <div className="lg:col-span-3">
-                  <PDFCanvasWithDrop
-                    pdfFile={pdfFile}
-                    fields={fields}
-                    selectedField={selectedField}
-                    currentPage={currentPage}
-                    scale={scale}
-                    pdfViewerRef={pdfViewerRef}
-                    onPageClick={handlePageClick}
-                    onPageChange={setCurrentPage}
-                    onScaleChange={setScale}
-                    onSelectField={setSelectedField}
-                    onUpdateField={updateField}
-                    onDeleteField={deleteField}
-                  />
+                    <PDFCanvasWithDrop
+                      pdfFile={pdfFile}
+                      fields={fields}
+                      selectedField={selectedField}
+                      currentPage={currentPage}
+                      scale={scale}
+                      pdfViewerRef={pdfViewerRef}
+                      onPageClick={handlePageClick}
+                      onPageChange={setCurrentPage}
+                      onScaleChange={setScale}
+                      onSelectField={setSelectedField}
+                      onUpdateField={updateField}
+                      onDeleteField={deleteField}
+                    />
                   </div>
 
                   {/* Propriétés du champ - Droite */}
                   <div className="lg:col-span-1">
                     <div className="sticky top-4">
-                    {selectedFieldData ? (
-                      <PDFFieldProperties
-                        field={selectedFieldData}
-                        onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
-                        availableVariables={actualFormVariables}
-                        linkedFormId={currentLinkedFormId}
-                      />
-                    ) : (
-                      <Card>
-                        <CardHeader>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            Propriétés
-                          </h3>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Cliquez sur le PDF pour ajouter un champ ou sélectionnez un champ existant pour modifier ses propriétés
-                            </p>
-                            
-                            {fields.length > 0 && (
-                              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                                  Champs ajoutés ({fields.length})
-                                </h4>
-                                <div className="space-y-1">
-                                  {fields.map(field => (
-                                    <div 
-                                      key={field.id}
-                                      className="text-xs text-blue-700 dark:text-blue-400 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-800 p-1 rounded"
-                                      onClick={() => setSelectedField(field.id)}
-                                    >
-                                      {field.variable || field.type} ({field.type})
-                                    </div>
-                                  ))}
+                      {selectedFieldData ? (
+                        <PDFFieldProperties
+                          field={selectedFieldData}
+                          onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
+                          availableVariables={actualFormVariables}
+                          linkedFormId={currentLinkedFormId}
+                        />
+                      ) : (
+                        <Card>
+                          <CardHeader>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              Propriétés
+                            </h3>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Cliquez sur le PDF pour ajouter un champ ou sélectionnez un champ existant pour modifier ses propriétés
+                              </p>
+                              
+                              {fields.length > 0 && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+                                    Champs ajoutés ({fields.length})
+                                  </h4>
+                                  <div className="space-y-1">
+                                    {fields.map(field => (
+                                      <div 
+                                        key={field.id}
+                                        className="text-xs text-blue-700 dark:text-blue-400 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-800 p-1 rounded"
+                                        onClick={() => setSelectedField(field.id)}
+                                      >
+                                        {field.variable || field.type} ({field.type})
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -629,6 +627,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
               </div>
             </div>
           )}
+
           {/* Input caché pour le changement de PDF */}
           <input
             type="file"
