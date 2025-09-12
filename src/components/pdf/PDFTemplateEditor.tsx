@@ -607,7 +607,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 </div>
               </div>
 
-              {/* Layout mobile - Stack vertical */}
               <div className="lg:hidden space-y-6">
                 {/* Palette mobile */}
                 <PDFFieldPalette onAddField={addField} />
