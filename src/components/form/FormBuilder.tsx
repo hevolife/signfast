@@ -197,7 +197,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 </div>
               )}
               
-              <div className="flex items-center space-x-2 lg:space-x-4">
+              <div className="flex items-center justify-center space-x-2 lg:space-x-4 flex-1">
                 {/* Mode sélection multiple */}
                 <Button
                   onClick={toggleMultiSelectMode}
