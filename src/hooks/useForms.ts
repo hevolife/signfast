@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 export const useForms = () => {
   const [forms, setForms] = useState<Form[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, wrapSupabaseCall } = useAuth();
 
   const fetchForms = async () => {
     if (!user) return;
@@ -25,11 +25,13 @@ export const useForms = () => {
       }
     }
     try {
-      const { data, error } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('user_id', targetUserId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await wrapSupabaseCall(async () => {
+        return await supabase
+          .from('forms')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       setForms(data || []);
@@ -70,14 +72,16 @@ export const useForms = () => {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('forms')
-        .insert([{
-          ...formData,
-          user_id: user.id,
-        }])
-        .select()
-        .single();
+      const { data, error } = await wrapSupabaseCall(async () => {
+        return await supabase
+          .from('forms')
+          .insert([{
+            ...formData,
+            user_id: user.id,
+          }])
+          .select()
+          .single();
+      });
 
       if (error) throw error;
       
@@ -91,10 +95,12 @@ export const useForms = () => {
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
     try {
-      const { error } = await supabase
-        .from('forms')
-        .update(updates)
-        .eq('id', id);
+      const { error } = await wrapSupabaseCall(async () => {
+        return await supabase
+          .from('forms')
+          .update(updates)
+          .eq('id', id);
+      });
 
       if (error) throw error;
       await fetchForms();
@@ -107,10 +113,12 @@ export const useForms = () => {
 
   const deleteForm = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('forms')
-        .delete()
-        .eq('id', id);
+      const { error } = await wrapSupabaseCall(async () => {
+        return await supabase
+          .from('forms')
+          .delete()
+          .eq('id', id);
+      });
 
       if (error) throw error;
       await fetchForms();
@@ -134,14 +142,17 @@ export const useForms = () => {
 export const useFormResponses = (formId: string) => {
   const [responses, setResponses] = useState<FormResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const { wrapSupabaseCall } = useAuth();
 
   const fetchResponses = async () => {
     try {
-      const { data, error } = await supabase
-        .from('responses')
-        .select('*')
-        .eq('form_id', formId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await wrapSupabaseCall(async () => {
+        return await supabase
+          .from('responses')
+          .select('*')
+          .eq('form_id', formId)
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       setResponses(data || []);

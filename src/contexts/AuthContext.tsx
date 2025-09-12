@@ -13,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   checkAndSignOutIfInvalid: () => Promise<boolean>;
+  wrapSupabaseCall: <T>(call: () => Promise<T>) => Promise<T>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -238,6 +239,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, session, signOut]);
 
+  const wrapSupabaseCall = useCallback(async <T>(call: () => Promise<T>): Promise<T> => {
+    // Skip wrapper if in impersonation mode
+    if (isImpersonating) {
+      return await call();
+    }
+
+    try {
+      return await call();
+    } catch (error: any) {
+      // Check for authentication-related errors
+      if (
+        (error?.status === 401 || error?.status === 403) &&
+        (error?.message?.includes('session_not_found') || 
+         error?.message?.includes('Invalid JWT') ||
+         error?.code === 'session_not_found')
+      ) {
+        console.warn('Session invalide détectée dans wrapSupabaseCall, déconnexion automatique');
+        await signOut();
+        throw new Error('Session expired, please log in again');
+      }
+      
+      // Re-throw other errors
+      throw error;
+    }
+  }, [isImpersonating, signOut]);
   const value = {
     user,
     session,
@@ -248,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     checkAndSignOutIfInvalid,
+    wrapSupabaseCall,
   };
 
   return (
