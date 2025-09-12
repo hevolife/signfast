@@ -286,7 +286,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         
         {/* Overlay des champs - positionné absolument dans le conteneur */}
         {!loading && children && (
-          <div className="absolute inset-0 pointer-events-none" style={{ top: 0, left: 0 }}>
+          <div className="absolute inset-0" style={{ top: 0, left: 0, pointerEvents: 'none' }}>
             {children}
           </div>
         )}
