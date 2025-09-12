@@ -37,7 +37,6 @@ export const MobileBottomNav: React.FC = () => {
     { path: '/settings', icon: Settings, label: 'Paramètres', show: true }
   ] : [
     { path: '/', icon: Home, label: 'Accueil', show: true },
-    { path: '/pdf/manager', icon: HardDrive, label: 'PDFs', show: true },
     { path: '/login', icon: User, label: 'Connexion', show: true }
   ];
 
