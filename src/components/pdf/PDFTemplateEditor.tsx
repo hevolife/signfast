@@ -472,7 +472,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       onScaleChange={setScale}
                     >
                       {(containerRef, pageOffsets) => (
-                        <div className="relative">
+                        <>
                           {fields.map(field => {
                             const pageOffset = pageOffsets[field.page - 1] || { top: 0, left: 0 };
                             return (
@@ -489,7 +489,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                               />
                             );
                           })}
-                        </div>
+                        </>
                       )}
                     </PDFViewer>
                   </Card>

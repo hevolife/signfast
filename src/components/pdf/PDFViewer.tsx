@@ -244,8 +244,18 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       </div>
       
       {/* Overlay des champs - positionné de manière absolue par rapport à la page */}
-      {!loading && !error && numPages > 0 && children && (
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 1000 }}>
+      {/* Overlay des champs - positionné à l'intérieur du conteneur de scroll */}
+      {!loading && !error && numPages > 0 && children && containerRef.current && (
+        <div 
+          className="absolute inset-0 pointer-events-none" 
+          style={{ 
+            zIndex: 1000,
+            top: '60px', // Offset pour la barre d'outils
+            left: '0',
+            right: '0',
+            bottom: '0'
+          }}
+        >
           {typeof children === 'function' ? children(containerRef, pageOffsets) : children}
         </div>
       )}

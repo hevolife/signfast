@@ -76,8 +76,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Position directe basée sur les coordonnées du champ
   const style = {
     position: 'absolute' as const,
-    left: safePageOffset.left + (field.x * scale),
-    top: safePageOffset.top + (field.y * scale),
+    left: safePageOffset.left + (field.x * scale) - (containerRef?.current?.scrollLeft || 0),
+    top: safePageOffset.top + (field.y * scale) - (containerRef?.current?.scrollTop || 0),
     width: field.width * scale,
     height: field.height * scale,
     minWidth: '40px',
