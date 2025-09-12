@@ -42,6 +42,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [actualFormVariables, setActualFormVariables] = useState<string[]>(formVariables);
   const [isMobile, setIsMobile] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [draggedFieldType, setDraggedFieldType] = useState<PDFField['type'] | null>(null);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Détecter mobile
@@ -182,48 +183,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   };
 
   const addField = useCallback((type: PDFField['type']) => {
-    if (!pdfViewerRef.current) return;
-
-    // Position par défaut au centre (ratios fixes)
-    const xRatio = 0.3; // Légèrement à gauche du centre
-    const yRatio = 0.3; // Légèrement en haut du centre
-
-    // Ratios de taille fixes selon le type
-    const defaultRatios = {
-      text: { width: 0.25, height: 0.04 },
-      date: { width: 0.15, height: 0.04 },
-      number: { width: 0.12, height: 0.04 },
-      signature: { width: 0.35, height: 0.1 },
-      checkbox: { width: 0.03, height: 0.03 },
-      image: { width: 0.2, height: 0.15 },
-    };
-
-    const { width: widthRatio, height: heightRatio } = defaultRatios[type] || { width: 0.2, height: 0.04 };
-
-    const newField: PDFField = {
-      id: uuidv4(),
-      type,
-      page: currentPage,
-      variable: '',
-      xRatio,
-      yRatio,
-      widthRatio,
-      heightRatio,
-      fontSize: 12,
-      fontColor: '#000000',
-      backgroundColor: '#ffffff',
-      required: false,
-      offsetX: type === 'text' || type === 'number' || type === 'date' ? -15 : 0, // Offset horizontal ajustable
-      offsetY: 0, // Offset vertical ajustable
-    };
-
-    console.log('➕ Nouveau champ avec ratios fixes:', {
-      type,
-      ratios: { xRatio, yRatio, widthRatio, heightRatio }
-    });
-
-    setFields(prev => [...prev, newField]);
-    setSelectedField(newField.id);
+    // Activer le mode de placement manuel
+    setDraggedFieldType(type);
+    toast.info('Cliquez sur le PDF pour placer le champ', { duration: 3000 });
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
@@ -240,6 +202,60 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [selectedField]);
 
   const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
+    // Si on est en mode placement de champ
+    if (draggedFieldType) {
+      if (!pdfViewerRef.current) return;
+
+      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
+      if (!canvasDimensions) return;
+
+      // Calculer les ratios depuis la position de clic
+      const xRatio = canvasX / canvasDimensions.width;
+      const yRatio = canvasY / canvasDimensions.height;
+
+      // Ratios de taille selon le type
+      const defaultRatios = {
+        text: { width: 0.25, height: 0.04 },
+        date: { width: 0.15, height: 0.04 },
+        number: { width: 0.12, height: 0.04 },
+        signature: { width: 0.35, height: 0.1 },
+        checkbox: { width: 0.03, height: 0.03 },
+        image: { width: 0.2, height: 0.15 },
+      };
+
+      const { width: widthRatio, height: heightRatio } = defaultRatios[draggedFieldType] || { width: 0.2, height: 0.04 };
+
+      const newField: PDFField = {
+        id: uuidv4(),
+        type: draggedFieldType,
+        page,
+        variable: '',
+        xRatio,
+        yRatio,
+        widthRatio,
+        heightRatio,
+        fontSize: 12,
+        fontColor: '#000000',
+        backgroundColor: '#ffffff',
+        required: false,
+        offsetX: 0,
+        offsetY: 0,
+      };
+
+      console.log('➕ Nouveau champ placé manuellement:', {
+        type: draggedFieldType,
+        position: { xRatio, yRatio },
+        size: { widthRatio, heightRatio }
+      });
+
+      setFields(prev => [...prev, newField]);
+      setSelectedField(newField.id);
+      setDraggedFieldType(null);
+      toast.success('Champ ajouté !');
+      return;
+    }
+
+    // Mode normal - sélection de champ existant
     if (!pdfViewerRef.current) return;
 
     const pdfDimensions = pdfViewerRef.current.getPDFDimensions(page);
@@ -259,17 +275,36 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     setCurrentPage(page);
 
     if (selectedField) {
+      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
+      if (!canvasDimensions) return;
+
+      const xRatio = canvasX / canvasDimensions.width;
+      const yRatio = canvasY / canvasDimensions.height;
+
       updateField(selectedField, {
         page,
         xRatio,
         yRatio
       });
 
-      toast.success(`Champ déplacé (ratios: ${xRatio.toFixed(3)}, ${yRatio.toFixed(3)})`, { duration: 1000 });
+      toast.success(`Champ déplacé`, { duration: 1000 });
     } else {
       setSelectedField(null);
     }
-  }, [selectedField, updateField]);
+  }, [selectedField, updateField, draggedFieldType]);
+
+  // Annuler le mode placement si on appuie sur Échap
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && draggedFieldType) {
+        setDraggedFieldType(null);
+        toast.info('Placement annulé');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [draggedFieldType]);
 
   const handleSave = () => {
     if (!pdfFile) {
@@ -368,11 +403,33 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
               <div className="lg:col-span-2">
                 {/* Palette des champs au-dessus */}
                 <div className="mb-4">
-                  <PDFFieldPalette onAddField={addField} />
+                  <div className="relative">
+                    <PDFFieldPalette onAddField={addField} />
+                    {draggedFieldType && (
+                      <div className="absolute inset-0 bg-blue-100/90 dark:bg-blue-900/90 rounded-lg flex items-center justify-center border-2 border-blue-500 border-dashed">
+                        <div className="text-center">
+                          <p className="text-blue-800 dark:text-blue-200 font-medium">
+                            Mode placement: {draggedFieldType}
+                          </p>
+                          <p className="text-blue-600 dark:text-blue-400 text-sm">
+                            Cliquez sur le PDF pour placer le champ
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDraggedFieldType(null)}
+                            className="mt-2 text-blue-600 hover:text-blue-700"
+                          >
+                            Annuler (Échap)
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Visualiseur PDF */}
-                <Card className="h-[800px]">
+                <Card className={`h-[800px] ${draggedFieldType ? 'ring-2 ring-blue-500' : ''}`}>
                   <PDFViewer
                     ref={pdfViewerRef}
                     file={pdfFile}
