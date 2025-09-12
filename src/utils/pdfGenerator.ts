@@ -562,48 +562,6 @@ export class PDFGenerator {
     
     return value || field.placeholder || '';
   }
-      );
-      
-      if (matchingKey) {
-        value = data[matchingKey];
-        console.log(`🔍 Trouvé via clé: ${matchingKey} = ${typeof value === 'string' && value.startsWith('data:') ? 'IMAGE_DATA' : value}`);
-      } else {
-        console.log(`🔍 ❌ Variable "${variableName}" non trouvée`);
-        console.log(`🔍 Clés disponibles:`, originalKeys);
-        
-        // Pour les champs image, essayer de trouver n'importe quelle image disponible
-        if (field.type === 'image') {
-          const anyImageKey = originalKeys.find(key => {
-            const val = data[key];
-            return typeof val === 'string' && val.startsWith('data:image');
-          });
-          
-          if (anyImageKey) {
-            value = data[anyImageKey];
-            console.log(`🔍 🖼️ ✅ Image trouvée via recherche générale: "${anyImageKey}"`);
-          } else {
-            console.log(`🔍 🖼️ ❌ Aucune image trouvée dans les données`);
-          }
-        }
-      }
-    }
-    
-    // Pour les champs image, s'assurer qu'on a bien une image
-    if (field.type === 'image') {
-      if (value && typeof value === 'string' && value.startsWith('data:image')) {
-        console.log(`🔍 ✅ Champ image trouvé: ${variableName}, taille: ${value.length}`);
-        return value;
-      } else {
-        console.log(`🔍 ❌ Champ image "${variableName}" mais pas de données image valides`);
-        console.log(`🔍 Type valeur: ${typeof value}, valide: ${typeof value === 'string' && value.startsWith('data:image')}`);
-        return '';
-      }
-    }
-    
-    console.log(`🔍 Valeur finale pour ${variableName}:`, typeof value === 'string' && value.startsWith('data:') ? 'DONNÉES_BASE64' : (value || field.placeholder || 'VIDE'));
-    
-    return value || field.placeholder || '';
-  }
   
   private static normalizeKey(key: string): string {
     return key
@@ -851,26 +809,26 @@ export class PDFGenerator {
         throw new Error('Format base64 invalide: pas de virgule trouvée');
       }
       
-    const base64Data = base64.split(',')[1];
+      const base64Data = base64.split(',')[1];
       
       if (!base64Data) {
         throw new Error('Pas de données après la virgule dans base64');
       }
       
-    const binaryString = atob(base64Data);
+      const binaryString = atob(base64Data);
       
       if (binaryString.length === 0) {
         throw new Error('Décodage base64 a produit 0 bytes');
       }
       
-    const bytes = new Uint8Array(binaryString.length);
-    
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
+      const bytes = new Uint8Array(binaryString.length);
+      
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
       console.log(`🔧 Base64 décodé: ${base64Data.length} chars → ${bytes.length} bytes`);
-    return bytes;
+      return bytes;
     } catch (error) {
       console.error('🔧 ❌ Erreur conversion base64:', error);
       console.error('🔧 Données problématiques:', base64.substring(0, 100) + '...');
