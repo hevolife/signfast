@@ -36,16 +36,19 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     if (file) {
       loadPDF();
     }
-  }, [file]);
+  }, [file]); // Only reload when file changes
 
   useEffect(() => {
-    if (pdfDoc && numPages > 0) {
+    if (pdfDoc && numPages > 0 && !loading) {
       renderAllPages();
     }
-  }, [pdfDoc, numPages, scale]);
+  }, [pdfDoc, numPages, scale]); // Only re-render when necessary
 
   const loadPDF = async () => {
     if (!file) return;
+
+    // Prevent multiple loads
+    if (loading) return;
 
     try {
       setLoading(true);

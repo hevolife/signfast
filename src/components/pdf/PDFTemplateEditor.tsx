@@ -44,18 +44,20 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [actualFormVariables, setActualFormVariables] = useState<string[]>(formVariables);
   const [isMobile, setIsMobile] = useState(false);
   const [currentLinkedFormId, setCurrentLinkedFormId] = useState<string | null>(linkedFormId || null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Force re-render when PDF is loaded and fields exist
   useEffect(() => {
-    if (pdfFile && initialFields.length > 0) {
+    if (pdfFile && initialFields.length > 0 && !isInitialized) {
       console.log('🎯 PDF chargé avec champs existants, force re-render');
       // Petit délai pour s'assurer que le PDF est complètement rendu
       setTimeout(() => {
         setFields([...initialFields]); // Force update
+        setIsInitialized(true);
       }, 500);
     }
-  }, [pdfFile]);
+  }, [pdfFile, initialFields, isInitialized]);
 
   // Debug pour vérifier l'état des champs
   useEffect(() => {

@@ -23,6 +23,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   canvasRefs,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const fieldRef = useRef<HTMLDivElement>(null);
 
   // Calculer la position du champ par rapport au canvas de sa page
@@ -47,7 +48,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const left = canvasRect.left - containerRect.left + (field.x * scale);
     const top = canvasRect.top - containerRect.top + (field.y * scale);
 
-    return { left, top };
+    // Add drag offset for smooth dragging
+    return { 
+      left: left + (isDragging ? dragOffset.x : 0), 
+      top: top + (isDragging ? dragOffset.y : 0) 
+    };
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -60,19 +65,28 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const startY = e.clientY;
     const startFieldX = field.x;
     const startFieldY = field.y;
+    
+    setDragOffset({ x: 0, y: 0 });
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = (e.clientX - startX) / scale;
       const deltaY = (e.clientY - startY) / scale;
       
-      onUpdate({ 
-        x: Math.max(0, startFieldX + deltaX), 
-        y: Math.max(0, startFieldY + deltaY)
+      // Update drag offset for immediate visual feedback
+      setDragOffset({ x: deltaX * scale, y: deltaY * scale });
+      
+      // Throttle actual position updates
+      requestAnimationFrame(() => {
+        onUpdate({ 
+          x: Math.max(0, startFieldX + deltaX), 
+          y: Math.max(0, startFieldY + deltaY)
+        });
       });
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setDragOffset({ x: 0, y: 0 });
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
