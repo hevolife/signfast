@@ -532,16 +532,14 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
               )}
 
               {/* Layout principal : Champs | PDF | Propriétés */}
-              <div className="grid lg:grid-cols-5 gap-6">
-                {/* Palette des champs - Gauche */}
-                <div className="lg:col-span-1">
-                  <div className="sticky top-4">
-                    <PDFFieldPalette onAddField={addField} />
-                  </div>
-                </div>
+              <div className="space-y-4">
+                {/* Palette des champs - En haut, minimaliste */}
+                <PDFFieldPalette onAddField={addField} />
 
-                {/* Visualiseur PDF - Centre */}
-                <div className="lg:col-span-3">
+                {/* Layout principal : PDF | Propriétés */}
+                <div className="grid lg:grid-cols-4 gap-6">
+                  {/* Visualiseur PDF - Agrandi */}
+                  <div className="lg:col-span-3">
                   <PDFCanvasWithDrop
                     pdfFile={pdfFile}
                     fields={fields}
@@ -556,11 +554,11 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     onUpdateField={updateField}
                     onDeleteField={deleteField}
                   />
-                </div>
+                  </div>
 
-                {/* Propriétés du champ - Droite */}
-                <div className="lg:col-span-1">
-                  <div className="sticky top-4">
+                  {/* Propriétés du champ - Droite */}
+                  <div className="lg:col-span-1">
+                    <div className="sticky top-4">
                     {selectedFieldData ? (
                       <PDFFieldProperties
                         field={selectedFieldData}
@@ -603,6 +601,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                         </CardContent>
                       </Card>
                     )}
+                    </div>
+                  </div>
                   </div>
                 </div>
               </div>

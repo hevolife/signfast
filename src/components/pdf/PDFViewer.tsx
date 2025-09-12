@@ -291,7 +291,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       {/* Conteneur PDF avec overlay */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 relative"
+        className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 relative"
         style={{ 
           scrollBehavior: 'smooth',
           // Optimisations de performance
@@ -299,15 +299,15 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
           transform: 'translateZ(0)', // Force hardware acceleration
         }}
       >
-        <div className="flex flex-col items-center space-y-4" id="pdf-pages-container">
+        <div className="flex flex-col items-center space-y-2" id="pdf-pages-container">
           {console.log(`📄 ===== RENDU CONTAINER PAGES =====`)}
           {console.log(`📄 Nombre de pages à rendre: ${numPages}`)}
           {console.log(`📄 Loading: ${loading}, isRendering: ${isRendering}`)}
           {Array.from({ length: numPages }, (_, index) => (
             <div key={index} className="relative" data-page={index + 1}>
               {console.log(`📄 Rendu container page ${index + 1}`)}
-              <div className={`text-center mb-2 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
-                <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
+              <div className={`text-center mb-1 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
+                <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
                   Page {index + 1} {currentPage === index + 1 ? '(active)' : '(cliquez pour activer)'}
                 </span>
               </div>
