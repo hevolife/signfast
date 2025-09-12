@@ -135,7 +135,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   return (
     <div
-      className={`absolute border-2 cursor-move ${
+      className={`absolute border-2 cursor-move pointer-events-auto ${
         isSelected 
           ? 'border-blue-500 bg-blue-100/50' 
           : 'border-gray-400 bg-gray-100/30 hover:border-blue-400'
@@ -173,8 +173,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
               e.stopPropagation();
               onDelete();
             }}
-            className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} p-0 bg-red-500 text-white hover:bg-red-600`}
-          >
+        <div className="absolute inset-0" style={{ zIndex: 1000 }}>
+          <div className="relative w-full h-full">
             <Trash2 className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
           </Button>
         </div>
