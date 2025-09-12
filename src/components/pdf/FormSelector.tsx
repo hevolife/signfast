@@ -3,6 +3,7 @@ import { useForms } from '../../hooks/useForms';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { FormInput, RefreshCw, Eye, Unlink } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface FormSelectorProps {
   selectedFormId: string | null;
@@ -17,6 +18,7 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
 }) => {
   const { forms, loading, refetch } = useForms();
   const [previewVariables, setPreviewVariables] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Générer l'aperçu des variables quand le formulaire sélectionné change
   useEffect(() => {
@@ -47,6 +49,19 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
       variables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
       
       setPreviewVariables(variables);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+      toast.success('Liste des formulaires actualisée !');
+    } catch (error) {
+      console.error('Erreur lors de l\'actualisation:', error);
+      toast.error('Erreur lors de l\'actualisation');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -83,11 +98,12 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => refetch()}
+          onClick={handleRefresh}
+          disabled={refreshing}
           className="flex items-center space-x-1"
           title="Actualiser la liste des formulaires"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
         </Button>
         
         {selectedFormId && (
