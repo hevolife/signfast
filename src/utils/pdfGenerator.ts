@@ -183,7 +183,8 @@ export class PDFGenerator {
 
         const { height: pageHeight } = page.getSize();
         
-        // Convertir les coordonnées (PDF utilise un système de coordonnées différent)
+        // Convertir les coordonnées pour correspondre à l'éditeur
+        // L'éditeur utilise un système top-left, PDF utilise bottom-left
         const x = field.x;
         const y = pageHeight - field.y - field.height;
         

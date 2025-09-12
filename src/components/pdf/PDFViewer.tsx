@@ -148,8 +148,13 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / scale;
-    const y = (event.clientY - rect.top) / scale;
+    // Calculer la position relative au canvas en tenant compte du scroll
+    const scrollContainer = canvas.closest('.overflow-auto') as HTMLElement;
+    const scrollLeft = scrollContainer?.scrollLeft || 0;
+    const scrollTop = scrollContainer?.scrollTop || 0;
+    
+    const x = ((event.clientX - rect.left) / scale) - (scrollLeft / scale);
+    const y = ((event.clientY - rect.top) / scale) - (scrollTop / scale);
     
     onPageClick(x, y, pageNumber);
   };
