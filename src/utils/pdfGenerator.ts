@@ -414,7 +414,12 @@ export class PDFGenerator {
   }
   
   private static normalizeKey(key: string): string {
-    return key
+    retu
+      }
+      )
+    }
+  }
+}rn key
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
