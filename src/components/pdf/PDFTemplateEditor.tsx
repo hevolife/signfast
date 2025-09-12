@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { TouchBackend } from 'react-dnd-touch-backend';
-import { PDFViewer } from './PDFViewer';
+import { PDFViewer, PDFViewerRef } from './PDFViewer';
 import { PDFFieldPalette } from './PDFFieldPalette';
 import { PDFFieldOverlay } from './PDFFieldOverlay';
 import { PDFFieldProperties } from './PDFFieldProperties';
@@ -34,7 +33,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   linkedFormId,
   onFormLinkChange,
 }) => {
-  // États principaux
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [fields, setFields] = useState<PDFField[]>([]);
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -44,6 +42,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [actualFormVariables, setActualFormVariables] = useState<string[]>(formVariables);
   const [isMobile, setIsMobile] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Détecter mobile
   useEffect(() => {
@@ -119,7 +118,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     if (!currentLinkedFormId) return;
     
     try {
-      // Chercher le formulaire dans les différentes sources
       let forms = [];
       
       if (localStorage.getItem('currentUserForms')) {
@@ -135,7 +133,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       if (linkedForm?.fields) {
         const variables: string[] = [];
         
-        // Extraire variables des champs principaux et conditionnels
         const extractVariables = (fields: any[]) => {
           fields.forEach((field: any) => {
             const variableName = field.label
@@ -148,7 +145,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
             
             variables.push(`\${${variableName}}`);
             
-            // Champs conditionnels
             if (field.conditionalFields) {
               Object.values(field.conditionalFields).forEach((conditionalFields: any) => {
                 if (Array.isArray(conditionalFields)) {
@@ -160,8 +156,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         };
         
         extractVariables(linkedForm.fields);
-        
-        // Variables système
         variables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
         
         const uniqueVariables = [...new Set(variables)];
@@ -188,31 +182,26 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   };
 
   const addField = useCallback((type: PDFField['type']) => {
-    // Position intelligente pour éviter les chevauchements
-    const existingFields = fields.filter(f => f.page === currentPage);
-    let newX = 50;
-    let newY = 100;
+    if (!pdfViewerRef.current) return;
+
+    const pdfDimensions = pdfViewerRef.current.getPDFDimensions(currentPage);
+    const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
     
-    if (existingFields.length > 0) {
-      const lastField = existingFields[existingFields.length - 1];
-      newX = lastField.x;
-      newY = lastField.y + lastField.height + 20;
-      
-      // Nouvelle colonne si on dépasse
-      if (newY > 700) {
-        const rightmostX = Math.max(...existingFields.map(f => f.x + f.width));
-        newX = rightmostX + 30;
-        newY = 100;
-        
-        if (newX > 400) {
-          newX = 50;
-          newY = 100;
-        }
-      }
+    if (!pdfDimensions || !canvasDimensions) {
+      console.warn('Dimensions PDF/Canvas non disponibles');
+      return;
     }
-    
-    // Dimensions par défaut
-    const dimensions = {
+
+    // Position par défaut au centre
+    const centerX = canvasDimensions.width / 2;
+    const centerY = canvasDimensions.height / 2;
+
+    // Calculer les ratios pour la position
+    const xRatio = centerX / canvasDimensions.width;
+    const yRatio = centerY / canvasDimensions.height;
+
+    // Dimensions par défaut selon le type
+    const defaultSizes = {
       text: { width: 150, height: 25 },
       date: { width: 100, height: 25 },
       number: { width: 80, height: 25 },
@@ -220,40 +209,38 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       checkbox: { width: 20, height: 20 },
       image: { width: 120, height: 80 },
     };
-    
-    const { width, height } = dimensions[type] || { width: 120, height: 25 };
-    
-    // Calculer les ratios par défaut (basés sur une page A4 standard)
-    const defaultPdfWidth = 595; // A4 en points
-    const defaultPdfHeight = 842;
-    const ratioX = newX / defaultPdfWidth;
-    const ratioY = newY / defaultPdfHeight;
-    const ratioWidth = width / defaultPdfWidth;
-    const ratioHeight = height / defaultPdfHeight;
-    
+
+    const { width: defaultWidth, height: defaultHeight } = defaultSizes[type] || { width: 120, height: 25 };
+
+    // Calculer les ratios pour la taille
+    const widthRatio = defaultWidth / pdfDimensions.width;
+    const heightRatio = defaultHeight / pdfDimensions.height;
+
     const newField: PDFField = {
       id: uuidv4(),
       type,
-      x: newX,
-      y: newY,
-      width,
-      height,
       page: currentPage,
       variable: '',
-      ratioX,
-      ratioY,
-      ratioWidth,
-      ratioHeight,
+      xRatio,
+      yRatio,
+      widthRatio,
+      heightRatio,
       fontSize: 12,
       fontColor: '#000000',
       backgroundColor: '#ffffff',
       required: false,
     };
-    
+
+    console.log('➕ Nouveau champ avec ratios:', {
+      type,
+      ratios: { xRatio, yRatio, widthRatio, heightRatio },
+      pdfDimensions,
+      canvasDimensions
+    });
+
     setFields(prev => [...prev, newField]);
     setSelectedField(newField.id);
-    console.log('➕ Nouveau champ ajouté:', newField);
-  }, [currentPage, fields]);
+  }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
     setFields(prev => prev.map(field => 
@@ -268,26 +255,31 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     }
   }, [selectedField]);
 
-  const handlePageClick = useCallback((x: number, y: number, page: number, ratioX: number, ratioY: number) => {
-    console.log(`🖱️ Clic page ${page} à (${x}, ${y}) - ratios (${ratioX.toFixed(3)}, ${ratioY.toFixed(3)})`);
-    
+  const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
+    if (!pdfViewerRef.current) return;
+
+    const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
+    if (!canvasDimensions) return;
+
+    console.log(`🖱️ Clic page ${page} à canvas (${canvasX}, ${canvasY})`);
+    console.log(`🖱️ Canvas dimensions: ${canvasDimensions.width} × ${canvasDimensions.height}`);
+
     setCurrentPage(page);
-    
+
     if (selectedField) {
-      // Déplacer le champ sélectionné
-      const gridSize = 5;
-      const snappedX = Math.round(x / gridSize) * gridSize;
-      const snappedY = Math.round(y / gridSize) * gridSize;
-      
-      updateField(selectedField, { 
-        x: Math.max(0, snappedX), 
-        y: Math.max(0, snappedY), 
+      // Calculer les ratios depuis les coordonnées canvas
+      const xRatio = canvasX / canvasDimensions.width;
+      const yRatio = canvasY / canvasDimensions.height;
+
+      console.log(`🖱️ Ratios calculés: (${xRatio.toFixed(4)}, ${yRatio.toFixed(4)})`);
+
+      updateField(selectedField, {
         page,
-        ratioX: ratioX,
-        ratioY: ratioY
+        xRatio,
+        yRatio
       });
-      
-      toast.success(`Champ déplacé vers (${snappedX}, ${snappedY})`, { duration: 1000 });
+
+      toast.success(`Champ déplacé (ratios: ${xRatio.toFixed(3)}, ${yRatio.toFixed(3)})`, { duration: 1000 });
     } else {
       setSelectedField(null);
     }
@@ -337,7 +329,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 Éditeur de Template PDF
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Créez des templates PDF avec des champs dynamiques
+                Créez des templates PDF avec positionnement précis par ratios
               </p>
             </div>
             <Button
@@ -393,20 +385,31 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
               {/* Visualiseur PDF */}
               <div className="lg:col-span-2">
-                <PDFCanvasWithDrop
-                  pdfFile={pdfFile}
-                  fields={fields}
-                  selectedField={selectedField}
-                  currentPage={currentPage}
-                  scale={scale}
-                  onPageClick={handlePageClick}
-                  onPageChange={setCurrentPage}
-                  onScaleChange={setScale}
-                  onSelectField={setSelectedField}
-                  onUpdateField={updateField}
-                  onDeleteField={deleteField}
-                  onAddField={addField}
-                />
+                <Card className="h-[700px]">
+                  <PDFViewer
+                    ref={pdfViewerRef}
+                    file={pdfFile}
+                    onPageClick={handlePageClick}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                    scale={scale}
+                    onScaleChange={setScale}
+                  >
+                    {fields.map(field => (
+                      <PDFFieldOverlay
+                        key={field.id}
+                        field={field}
+                        scale={scale}
+                        isSelected={selectedField === field.id}
+                        onSelect={(field) => setSelectedField(field.id)}
+                        onUpdate={(updatedField) => updateField(updatedField.id, updatedField)}
+                        onDelete={deleteField}
+                        currentPage={currentPage}
+                        pdfViewerRef={pdfViewerRef}
+                      />
+                    ))}
+                  </PDFViewer>
+                </Card>
               </div>
 
               {/* Propriétés */}
@@ -428,7 +431,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Sélectionnez un champ pour modifier ses propriétés
+                          Cliquez sur le PDF pour ajouter un champ ou sélectionnez un champ existant
                         </p>
                         
                         {fields.length > 0 && (
@@ -468,83 +471,5 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         </div>
       </div>
     </DndProvider>
-  );
-};
-
-// Composant Canvas avec Drop Zone
-interface PDFCanvasWithDropProps {
-  pdfFile: File | null;
-  fields: PDFField[];
-  selectedField: string | null;
-  currentPage: number;
-  scale: number;
-  onPageClick: (x: number, y: number, page: number) => void;
-  onPageChange: (page: number) => void;
-  onScaleChange: (scale: number) => void;
-  onSelectField: (fieldId: string) => void;
-  onUpdateField: (id: string, updates: Partial<PDFField>) => void;
-  onDeleteField: (id: string) => void;
-  onAddField: (type: PDFField['type']) => void;
-}
-
-// Composant Canvas avec Drop Zone
-interface PDFCanvasWithDropProps {
-  pdfFile: File | null;
-  fields: PDFField[];
-  selectedField: string | null;
-  currentPage: number;
-  scale: number;
-  onPageClick: (x: number, y: number, page: number, ratioX: number, ratioY: number) => void;
-  onPageChange: (page: number) => void;
-  onScaleChange: (scale: number) => void;
-  onSelectField: (fieldId: string) => void;
-  onUpdateField: (id: string, updates: Partial<PDFField>) => void;
-  onDeleteField: (id: string) => void;
-  onAddField: (type: PDFField['type']) => void;
-}
-
-const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
-  pdfFile,
-  fields,
-  selectedField,
-  currentPage,
-  scale,
-  onPageClick,
-  onPageChange,
-  onScaleChange,
-  onSelectField,
-  onUpdateField,
-  onDeleteField,
-  onAddField,
-}) => {
-  const pdfViewerRef = useRef<any>(null);
-  
-  return (
-    <Card className="h-[700px] relative">
-      <PDFViewer
-        ref={pdfViewerRef}
-        file={pdfFile}
-        onPageClick={onPageClick}
-        currentPage={currentPage}
-        onPageChange={onPageChange}
-        scale={scale}
-        onScaleChange={onScaleChange}
-      >
-        {fields.map(field => (
-          <PDFFieldOverlay
-            key={field.id}
-            field={field}
-            scale={scale}
-            isSelected={selectedField === field.id}
-            onSelect={(field) => onSelectField(field.id)}
-            onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
-            onDelete={onDeleteField}
-            currentPage={currentPage}
-            pdfDimensions={pdfViewerRef.current?.getPDFDimensions(currentPage)}
-            canvasDimensions={pdfViewerRef.current?.getCanvasDimensions(currentPage)}
-          />
-        ))}
-      </PDFViewer>
-    </Card>
   );
 };

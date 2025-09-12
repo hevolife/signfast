@@ -90,44 +90,44 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
         {/* Position */}
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Position X"
+            label="Position X (ratio)"
             type="number"
-            step="1"
+            step="0.001"
             min="0"
-            max="600"
-            value={Math.round(field.x)}
-            onChange={(e) => onUpdate({ x: parseInt(e.target.value) || 0 })}
+            max="1"
+            value={field.xRatio.toFixed(4)}
+            onChange={(e) => onUpdate({ xRatio: parseFloat(e.target.value) || 0 })}
           />
           <Input
-            label="Position Y"
+            label="Position Y (ratio)"
             type="number"
-            step="1"
+            step="0.001"
             min="0"
-            max="800"
-            value={Math.round(field.y)}
-            onChange={(e) => onUpdate({ y: parseInt(e.target.value) || 0 })}
+            max="1"
+            value={field.yRatio.toFixed(4)}
+            onChange={(e) => onUpdate({ yRatio: parseFloat(e.target.value) || 0 })}
           />
         </div>
 
         {/* Taille */}
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Largeur"
+            label="Largeur (ratio)"
             type="number"
-            step="1"
-            min="20"
-            max="400"
-            value={Math.round(field.width)}
-            onChange={(e) => onUpdate({ width: parseInt(e.target.value) || 120 })}
+            step="0.001"
+            min="0.01"
+            max="1"
+            value={field.widthRatio.toFixed(4)}
+            onChange={(e) => onUpdate({ widthRatio: parseFloat(e.target.value) || 0.1 })}
           />
           <Input
-            label="Hauteur"
+            label="Hauteur (ratio)"
             type="number"
-            step="1"
-            min="15"
-            max="200"
-            value={Math.round(field.height)}
-            onChange={(e) => onUpdate({ height: parseInt(e.target.value) || 25 })}
+            step="0.001"
+            min="0.01"
+            max="1"
+            value={field.heightRatio.toFixed(4)}
+            onChange={(e) => onUpdate({ heightRatio: parseFloat(e.target.value) || 0.03 })}
           />
         </div>
 
@@ -140,7 +140,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 50, y: 50 })}
+              onClick={() => onUpdate({ xRatio: 0.1, yRatio: 0.1 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↖
@@ -148,7 +148,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 250, y: 50 })}
+              onClick={() => onUpdate({ xRatio: 0.5, yRatio: 0.1 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↑
@@ -156,7 +156,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 450, y: 50 })}
+              onClick={() => onUpdate({ xRatio: 0.8, yRatio: 0.1 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↗
@@ -164,7 +164,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 50, y: 400 })}
+              onClick={() => onUpdate({ xRatio: 0.1, yRatio: 0.7 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↙
@@ -172,7 +172,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 250, y: 400 })}
+              onClick={() => onUpdate({ xRatio: 0.5, yRatio: 0.7 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↓
@@ -180,7 +180,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 450, y: 400 })}
+              onClick={() => onUpdate({ xRatio: 0.8, yRatio: 0.7 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↘
@@ -197,7 +197,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 80, height: 20 })}
+              onClick={() => onUpdate({ widthRatio: 0.15, heightRatio: 0.03 })}
               className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
               Petit
@@ -205,7 +205,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 150, height: 25 })}
+              onClick={() => onUpdate({ widthRatio: 0.25, heightRatio: 0.04 })}
               className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
               Moyen
@@ -213,7 +213,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 200, height: 30 })}
+              onClick={() => onUpdate({ widthRatio: 0.35, heightRatio: 0.05 })}
               className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
               Grand
@@ -221,7 +221,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 200, height: 60 })}
+              onClick={() => onUpdate({ widthRatio: 0.35, heightRatio: 0.1 })}
               className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100"
             >
               Signature
@@ -295,14 +295,14 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           size="sm"
           variant="ghost"
           onClick={() => {
-            const gridSize = 10;
-            const snappedX = Math.round(field.x / gridSize) * gridSize;
-            const snappedY = Math.round(field.y / gridSize) * gridSize;
-            onUpdate({ x: snappedX, y: snappedY });
+            const gridSize = 0.01; // Grille de 1% pour les ratios
+            const snappedXRatio = Math.round(field.xRatio / gridSize) * gridSize;
+            const snappedYRatio = Math.round(field.yRatio / gridSize) * gridSize;
+            onUpdate({ xRatio: snappedXRatio, yRatio: snappedYRatio });
           }}
           className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100"
         >
-          📐 Aligner sur grille (10px)
+          📐 Aligner sur grille (1%)
         </Button>
 
         {/* Informations du champ */}
@@ -313,8 +313,8 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <div>Type: {field.type}</div>
             <div>Page: {field.page}</div>
-            <div>Position: ({Math.round(field.x)}, {Math.round(field.y)})</div>
-            <div>Taille: {Math.round(field.width)} × {Math.round(field.height)}</div>
+            <div>Ratios position: ({field.xRatio.toFixed(3)}, {field.yRatio.toFixed(3)})</div>
+            <div>Ratios taille: {field.widthRatio.toFixed(3)} × {field.heightRatio.toFixed(3)}</div>
           </div>
         </div>
       </CardContent>

@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { PDFField } from '../../types/pdf';
+import { PDFViewerRef } from './PDFViewer';
 
 interface PDFFieldOverlayProps {
   field: PDFField;
@@ -9,8 +10,7 @@ interface PDFFieldOverlayProps {
   onUpdate: (field: PDFField) => void;
   onDelete: (fieldId: string) => void;
   currentPage: number;
-  pdfDimensions?: { width: number; height: number };
-  canvasDimensions?: { width: number; height: number };
+  pdfViewerRef: React.RefObject<PDFViewerRef>;
 }
 
 export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
@@ -21,58 +21,33 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onUpdate,
   onDelete,
   currentPage,
-  pdfDimensions,
-  canvasDimensions
+  pdfViewerRef
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const fieldRef = useRef<HTMLDivElement>(null);
 
   // Afficher seulement si sur la page courante
   if (field.page !== currentPage) {
     return null;
   }
 
-  // Calculer les ratios pour le positionnement
-  const getRatioPosition = () => {
-    if (!pdfDimensions || !canvasDimensions) {
-      return { x: field.x * scale, y: field.y * scale };
-    }
-    
-    // Ratios stockés dans le champ (0-1)
-    const ratioX = field.ratioX || (field.x / pdfDimensions.width);
-    const ratioY = field.ratioY || (field.y / pdfDimensions.height);
-    
-    // Position sur le canvas affiché
-    const displayX = ratioX * canvasDimensions.width;
-    const displayY = ratioY * canvasDimensions.height;
-    
-    return { x: displayX, y: displayY };
-  };
-  
-  const getRatioSize = () => {
-    if (!pdfDimensions || !canvasDimensions) {
-      return { width: field.width * scale, height: field.height * scale };
-    }
-    
-    // Ratios de taille
-    const ratioW = field.ratioWidth || (field.width / pdfDimensions.width);
-    const ratioH = field.ratioHeight || (field.height / pdfDimensions.height);
-    
-    // Taille sur le canvas affiché
-    const displayWidth = ratioW * canvasDimensions.width;
-    const displayHeight = ratioH * canvasDimensions.height;
-    
-    return { width: displayWidth, height: displayHeight };
-  };
-  
-  const position = getRatioPosition();
-  const size = getRatioSize();
+  // Calculer la position d'affichage depuis les ratios
+  const getDisplayPosition = () => {
+    if (!pdfViewerRef.current) return { x: 0, y: 0, width: 100, height: 25 };
 
-  const snapToGrid = (value: number, gridSize: number = 5) => {
-    return Math.round(value / gridSize) * gridSize;
+    const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+    if (!canvasDimensions) return { x: 0, y: 0, width: 100, height: 25 };
+
+    // Position sur le canvas affiché calculée depuis les ratios
+    const x = field.xRatio * canvasDimensions.width;
+    const y = field.yRatio * canvasDimensions.height;
+    const width = field.widthRatio * canvasDimensions.width;
+    const height = field.heightRatio * canvasDimensions.height;
+
+    return { x, y, width, height };
   };
+
+  const position = getDisplayPosition();
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.delete-button') || 
@@ -85,7 +60,41 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     onSelect(field);
     setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !pdfViewerRef.current) return;
+      
+      const canvas = pdfViewerRef.current.getCanvasElement(currentPage);
+      if (!canvas) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      
+      // Contraindre dans les limites du canvas
+      const constrainedX = Math.max(0, Math.min(rect.width - position.width, canvasX));
+      const constrainedY = Math.max(0, Math.min(rect.height - position.height, canvasY));
+      
+      // Calculer les nouveaux ratios
+      const newXRatio = constrainedX / rect.width;
+      const newYRatio = constrainedY / rect.height;
+      
+      console.log(`🖱️ Déplacement: ratios (${newXRatio.toFixed(4)}, ${newYRatio.toFixed(4)})`);
+      
+      onUpdate({
+        ...field,
+        xRatio: newXRatio,
+        yRatio: newYRatio
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -93,118 +102,73 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     document.body.style.userSelect = 'none';
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    
-    const canvas = canvasRefs.current[currentPage - 1];
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    
-    // Calculer les nouveaux ratios
-    const newRatioX = canvasX / rect.width;
-    const newRatioY = canvasY / rect.height;
-    
-    // Contraintes (garder dans les limites du PDF)
-    const constrainedRatioX = Math.max(0, Math.min(1, newRatioX));
-    const constrainedRatioY = Math.max(0, Math.min(1, newRatioY));
-    
-    // Convertir en coordonnées éditeur pour affichage
-    let newX = constrainedRatioX * (pdfDimensions?.width || 595);
-    let newY = constrainedRatioY * (pdfDimensions?.height || 842);
-    
-    // Aligner sur grille
-    newX = snapToGrid(newX, 5);
-    newY = snapToGrid(newY, 5);
-    
-    // Recalculer les ratios après alignement
-    const finalRatioX = newX / (pdfDimensions?.width || 595);
-    const finalRatioY = newY / (pdfDimensions?.height || 842);
-    
-    console.log(`🖱️ Déplacement: ratios (${finalRatioX.toFixed(3)}, ${finalRatioY.toFixed(3)})`);
-    
-    onUpdate({
-      ...field,
-      x: Math.round(newX),
-      y: Math.round(newY),
-      ratioX: finalRatioX,
-      ratioY: finalRatioY
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-  };
-
   const handleResizeStart = (e: React.MouseEvent, handle: 'se' | 's' | 'e') => {
     e.preventDefault();
     e.stopPropagation();
     
     setIsResizing(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = position.width;
+    const startHeight = position.height;
     
-    document.addEventListener('mousemove', (e) => handleResizeMove(e, handle));
+    const handleResizeMove = (e: MouseEvent) => {
+      if (!isResizing || !pdfViewerRef.current) return;
+      
+      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+      if (!canvasDimensions) return;
+      
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      
+      if (handle === 'se' || handle === 'e') {
+        newWidth = Math.max(20, startWidth + deltaX);
+      }
+      
+      if (handle === 'se' || handle === 's') {
+        newHeight = Math.max(15, startHeight + deltaY);
+      }
+      
+      // Contraintes par type
+      const constraints = {
+        checkbox: { minWidth: 15, maxWidth: 50, minHeight: 15, maxHeight: 50 },
+        signature: { minWidth: 100, maxWidth: 400, minHeight: 40, maxHeight: 150 },
+        image: { minWidth: 50, maxWidth: 400, minHeight: 50, maxHeight: 300 },
+        default: { minWidth: 50, maxWidth: 400, minHeight: 20, maxHeight: 100 }
+      };
+      
+      const constraint = constraints[field.type] || constraints.default;
+      newWidth = Math.max(constraint.minWidth, Math.min(constraint.maxWidth, newWidth));
+      newHeight = Math.max(constraint.minHeight, Math.min(constraint.maxHeight, newHeight));
+      
+      // Calculer les nouveaux ratios de taille
+      const newWidthRatio = newWidth / canvasDimensions.width;
+      const newHeightRatio = newHeight / canvasDimensions.height;
+      
+      onUpdate({
+        ...field,
+        widthRatio: newWidthRatio,
+        heightRatio: newHeightRatio
+      });
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    
+    document.addEventListener('mousemove', handleResizeMove);
     document.addEventListener('mouseup', handleResizeEnd);
     
     const cursor = handle === 'se' ? 'se-resize' : handle === 's' ? 's-resize' : 'e-resize';
     document.body.style.cursor = cursor;
     document.body.style.userSelect = 'none';
-  };
-
-  const handleResizeMove = (e: MouseEvent, handle: 'se' | 's' | 'e') => {
-    if (!isResizing) return;
-    
-    const deltaX = e.clientX - dragStart.x;
-    const deltaY = e.clientY - dragStart.y;
-    
-    let newWidth = field.width;
-    let newHeight = field.height;
-    
-    if (handle === 'se' || handle === 'e') {
-      newWidth = Math.max(20, field.width + deltaX / scale);
-    }
-    
-    if (handle === 'se' || handle === 's') {
-      newHeight = Math.max(15, field.height + deltaY / scale);
-    }
-    
-    // Contraintes par type
-    const constraints = {
-      checkbox: { minWidth: 15, maxWidth: 30, minHeight: 15, maxHeight: 30 },
-      signature: { minWidth: 100, maxWidth: 300, minHeight: 30, maxHeight: 100 },
-      image: { minWidth: 50, maxWidth: 400, minHeight: 50, maxHeight: 300 },
-      default: { minWidth: 50, maxWidth: 400, minHeight: 20, maxHeight: 100 }
-    };
-    
-    const constraint = constraints[field.type] || constraints.default;
-    newWidth = Math.max(constraint.minWidth, Math.min(constraint.maxWidth, newWidth));
-    newHeight = Math.max(constraint.minHeight, Math.min(constraint.maxHeight, newHeight));
-    
-    newWidth = snapToGrid(newWidth, 5);
-    newHeight = snapToGrid(newHeight, 5);
-    
-    onUpdate({
-      ...field,
-      width: Math.round(newWidth),
-      height: Math.round(newHeight)
-    });
-  };
-
-  const handleResizeEnd = () => {
-    setIsResizing(false);
-    document.removeEventListener('mousemove', handleResizeMove);
-    document.removeEventListener('mouseup', handleResizeEnd);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -226,15 +190,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   };
 
   const renderFieldContent = () => {
+    const fontSize = Math.max(8, (field.fontSize || 12) * scale * 0.8);
+    
     switch (field.type) {
       case 'text':
       case 'number':
         return (
           <div 
-            className="truncate text-xs px-1 py-0.5"
+            className="truncate px-1 py-0.5 flex items-center"
             style={{ 
-              fontSize: `${Math.max(8, (field.fontSize || 12) * scale)}px`,
-              color: field.fontColor || '#000000'
+              fontSize: `${fontSize}px`,
+              color: field.fontColor || '#000000',
+              backgroundColor: field.backgroundColor || 'transparent'
             }}
           >
             {getExampleText(field)}
@@ -244,9 +211,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       case 'date':
         return (
           <div 
-            className="truncate text-xs px-1 py-0.5"
+            className="truncate px-1 py-0.5 flex items-center"
             style={{ 
-              fontSize: `${Math.max(8, (field.fontSize || 12) * scale)}px`,
+              fontSize: `${fontSize}px`,
               color: field.fontColor || '#000000'
             }}
           >
@@ -255,15 +222,14 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         );
       
       case 'checkbox':
-        const size = Math.min(field.width * scale, field.height * scale) - 4;
         return (
           <div className="flex items-center justify-center h-full">
             <div 
-              className="border border-gray-400 flex items-center justify-center"
+              className="border border-gray-400 flex items-center justify-center bg-white"
               style={{ 
-                width: `${size}px`, 
-                height: `${size}px`,
-                fontSize: `${size * 0.6}px`
+                width: `${Math.min(position.width - 4, position.height - 4)}px`, 
+                height: `${Math.min(position.width - 4, position.height - 4)}px`,
+                fontSize: `${Math.min(position.width, position.height) * 0.6}px`
               }}
             >
               ✓
@@ -273,21 +239,21 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       
       case 'signature':
         return (
-          <div className="flex items-center justify-center h-full text-xs text-gray-500 italic">
-            Signature
+          <div className="flex items-center justify-center h-full text-gray-500 italic border-2 border-dashed border-gray-300 bg-gray-50">
+            <span style={{ fontSize: `${fontSize}px` }}>Signature</span>
           </div>
         );
       
       case 'image':
         return (
-          <div className="flex items-center justify-center h-full text-xs text-gray-500 border-2 border-dashed border-gray-300">
-            📷 Image
+          <div className="flex items-center justify-center h-full text-gray-500 border-2 border-dashed border-gray-300 bg-gray-50">
+            <span style={{ fontSize: `${fontSize}px` }}>📷 Image</span>
           </div>
         );
       
       default:
         return (
-          <div className="truncate text-xs px-1 py-0.5">
+          <div className="truncate px-1 py-0.5 flex items-center">
             {getExampleText(field)}
           </div>
         );
@@ -296,10 +262,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   return (
     <div
-      ref={fieldRef}
-      className={`absolute select-none border-2 transition-all duration-200 ${
+      className={`absolute select-none border-2 transition-all duration-200 rounded ${
         isSelected 
-          ? 'border-blue-500 bg-blue-50/80 shadow-lg ring-2 ring-blue-300/50' 
+          ? 'border-blue-500 bg-blue-50/90 shadow-lg ring-2 ring-blue-300/50' 
           : 'border-gray-300 bg-white/90 hover:border-blue-300 hover:shadow-md'
       } ${
         isDragging
@@ -311,9 +276,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        width: `${size.width}px`,
-        height: `${size.height}px`,
-        backgroundColor: field.backgroundColor || 'transparent',
+        width: `${position.width}px`,
+        height: `${position.height}px`,
         zIndex: isSelected ? 30 : isDragging || isResizing ? 50 : 10,
         pointerEvents: 'auto'
       }}
@@ -324,7 +288,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {/* Bouton supprimer */}
       {isSelected && (
         <button
-          className="delete-button absolute -top-4 -right-4 w-8 h-8 bg-red-500 text-white rounded-full text-sm font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50"
+          className="delete-button absolute -top-3 -right-3 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold hover:bg-red-600 flex items-center justify-center shadow-lg border-2 border-white z-50"
           onClick={handleDeleteClick}
           title="Supprimer le champ"
         >
@@ -336,27 +300,27 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {isSelected && !isDragging && !isResizing && (
         <>
           <div 
-            className="resize-handle absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 cursor-se-resize border-2 border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
+            className="resize-handle absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize border border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
             onMouseDown={(e) => handleResizeStart(e, 'se')}
             title="Redimensionner"
           />
           <div 
-            className="resize-handle absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-3 bg-blue-500 cursor-s-resize border-2 border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
+            className="resize-handle absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 cursor-s-resize border border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
             onMouseDown={(e) => handleResizeStart(e, 's')}
             title="Redimensionner hauteur"
           />
           <div 
-            className="resize-handle absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-blue-500 cursor-e-resize border-2 border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
+            className="resize-handle absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 cursor-e-resize border border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
             onMouseDown={(e) => handleResizeStart(e, 'e')}
             title="Redimensionner largeur"
           />
         </>
       )}
       
-      {/* Indicateur de position */}
+      {/* Indicateur de ratios */}
       {isSelected && (
         <div className="absolute -top-8 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg z-30">
-          ({Math.round(field.x)}, {Math.round(field.y)}) - {Math.round(field.width)}×{Math.round(field.height)}
+          Ratios: ({field.xRatio.toFixed(3)}, {field.yRatio.toFixed(3)})
         </div>
       )}
     </div>

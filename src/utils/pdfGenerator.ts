@@ -32,30 +32,19 @@ export class PDFGenerator {
           continue;
         }
         
-        const { width: pageWidth, height: pageHeight } = page.getSize();
+        // Lire la taille réelle de la page en points
+        const { width: pdfWidth, height: pdfHeight } = page.getSize();
+        console.log(`📐 Page ${field.page} dimensions: ${pdfWidth} × ${pdfHeight} points`);
         
-        // Utiliser les ratios pour un positionnement précis
-        let pdfX, pdfY, pdfWidth, pdfHeight;
+        // Calculer les coordonnées PDF depuis les ratios
+        const pdfX = field.xRatio * pdfWidth;
+        const pdfY = (1 - field.yRatio - field.heightRatio) * pdfHeight; // Inversion axe Y
+        const pdfFieldWidth = field.widthRatio * pdfWidth;
+        const pdfFieldHeight = field.heightRatio * pdfHeight;
         
-        if (field.ratioX !== undefined && field.ratioY !== undefined) {
-          // Utiliser les ratios (méthode précise)
-          pdfX = field.ratioX * pageWidth;
-          pdfY = (1 - field.ratioY - (field.ratioHeight || 0)) * pageHeight; // Conversion top-left → bottom-left
-          pdfWidth = (field.ratioWidth || 0) * pageWidth;
-          pdfHeight = (field.ratioHeight || 0) * pageHeight;
-          
-          console.log(`🎨 Champ ${field.variable} (ratios):`);
-          console.log(`🎨   Ratios: (${field.ratioX.toFixed(3)}, ${field.ratioY.toFixed(3)})`);
-          console.log(`🎨   PDF: (${Math.round(pdfX)}, ${Math.round(pdfY)}) ${Math.round(pdfWidth)}×${Math.round(pdfHeight)}`);
-        } else {
-          // Fallback méthode ancienne
-          pdfX = field.x;
-          pdfY = pageHeight - field.y - field.height;
-          pdfWidth = field.width;
-          pdfHeight = field.height;
-          
-          console.log(`🎨 Champ ${field.variable} (coordonnées directes): (${pdfX}, ${pdfY})`);
-        }
+        console.log(`🎨 Champ ${field.variable}:`);
+        console.log(`🎨   Ratios: (${field.xRatio.toFixed(4)}, ${field.yRatio.toFixed(4)}, ${field.widthRatio.toFixed(4)}, ${field.heightRatio.toFixed(4)})`);
+        console.log(`🎨   PDF: (${Math.round(pdfX)}, ${Math.round(pdfY)}) ${Math.round(pdfFieldWidth)}×${Math.round(pdfFieldHeight)}`);
         
         const value = this.getFieldValue(field, data);
         
@@ -68,27 +57,27 @@ export class PDFGenerator {
         switch (field.type) {
           case 'text':
           case 'number':
-            await this.drawText(page, value, pdfX, pdfY, pdfWidth, pdfHeight, field, font);
+            await this.drawText(page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight, field, font);
             break;
             
           case 'date':
             const dateValue = this.formatDate(value);
-            await this.drawText(page, dateValue, pdfX, pdfY, pdfWidth, pdfHeight, field, font);
+            await this.drawText(page, dateValue, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight, field, font);
             break;
             
           case 'checkbox':
-            await this.drawCheckbox(page, value, pdfX, pdfY, pdfWidth, pdfHeight, field);
+            await this.drawCheckbox(page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight, field);
             break;
             
           case 'signature':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
-              await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, pdfWidth, pdfHeight);
+              await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
             }
             break;
             
           case 'image':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
-              await this.drawImage(pdfDoc, page, value, pdfX, pdfY, pdfWidth, pdfHeight);
+              await this.drawImage(pdfDoc, page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
             }
             break;
         }
@@ -168,6 +157,8 @@ export class PDFGenerator {
     const fontSize = field.fontSize || 12;
     const color = this.hexToRgb(field.fontColor || '#000000');
     
+    console.log(`✏️ Dessin texte "${text}" à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
+    
     // Fond si spécifié
     if (field.backgroundColor && field.backgroundColor !== '#ffffff') {
       const bgColor = this.hexToRgb(field.backgroundColor);
@@ -180,10 +171,10 @@ export class PDFGenerator {
       });
     }
 
-    // Texte centré verticalement
+    // Dessiner le texte avec positionnement précis
     page.drawText(text, {
-      x: x + 5,
-      y: y + (height - fontSize) / 2,
+      x: x + 2,
+      y: y + 2,
       size: fontSize,
       font,
       color: rgb(color.r, color.g, color.b),
@@ -202,10 +193,12 @@ export class PDFGenerator {
     const isChecked = value === true || value === 'true' || value === '1';
     const size = Math.min(width, height, 16);
     
+    console.log(`☑️ Dessin checkbox à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(size)} - ${isChecked ? 'cochée' : 'vide'}`);
+    
     // Case
     page.drawRectangle({
       x,
-      y: y + (height - size) / 2,
+      y,
       width: size,
       height: size,
       borderColor: rgb(0, 0, 0),
@@ -216,8 +209,8 @@ export class PDFGenerator {
     // Coche
     if (isChecked) {
       page.drawText('✓', {
-        x: x + 2,
-        y: y + (height - size) / 2 + 2,
+        x: x + size * 0.1,
+        y: y + size * 0.1,
         size: size * 0.7,
         color: rgb(0, 0.6, 0),
       });
@@ -234,6 +227,8 @@ export class PDFGenerator {
     height: number
   ) {
     try {
+      console.log(`✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
+      
       const imageBytes = this.base64ToBytes(signatureData);
       const image = await pdfDoc.embedPng(imageBytes);
       
@@ -245,6 +240,23 @@ export class PDFGenerator {
       });
     } catch (error) {
       console.error('Erreur signature:', error);
+      
+      // Placeholder en cas d'erreur
+      page.drawRectangle({
+        x,
+        y,
+        width,
+        height,
+        borderColor: rgb(0.8, 0.8, 0.8),
+        borderWidth: 1,
+      });
+      
+      page.drawText('Signature non disponible', {
+        x: x + 5,
+        y: y + height / 2,
+        size: 8,
+        color: rgb(0.5, 0.5, 0.5),
+      });
     }
   }
 
@@ -258,6 +270,8 @@ export class PDFGenerator {
     height: number
   ) {
     try {
+      console.log(`🖼️ Dessin image à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
+      
       const imageBytes = this.base64ToBytes(imageData);
       let image;
       

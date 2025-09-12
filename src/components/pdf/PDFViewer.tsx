@@ -4,7 +4,7 @@ import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PDFViewerProps {
   file: File | string | null;
-  onPageClick?: (x: number, y: number, page: number, ratioX: number, ratioY: number) => void;
+  onPageClick?: (canvasX: number, canvasY: number, page: number) => void;
   children?: React.ReactNode;
   scale?: number;
   onScaleChange?: (scale: number) => void;
@@ -13,9 +13,9 @@ interface PDFViewerProps {
 }
 
 export interface PDFViewerRef {
-  canvasRefs: React.MutableRefObject<(HTMLCanvasElement | null)[]>;
   getPDFDimensions: (pageNumber: number) => { width: number; height: number } | null;
   getCanvasDimensions: (pageNumber: number) => { width: number; height: number } | null;
+  getCanvasElement: (pageNumber: number) => HTMLCanvasElement | null;
 }
 
 const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewerProps> = ({
@@ -31,13 +31,10 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
-  const [isRendering, setIsRendering] = useState(false);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
-  const renderTasksRef = useRef<(any | null)[]>([]);
 
   useImperativeHandle(ref, () => ({
-    canvasRefs,
     getPDFDimensions: (pageNumber: number) => {
       const index = pageNumber - 1;
       return pdfDimensions[index] || null;
@@ -46,17 +43,19 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       const index = pageNumber - 1;
       const canvas = canvasRefs.current[index];
       if (!canvas) return null;
-      return { width: canvas.width, height: canvas.height };
+      const rect = canvas.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    },
+    getCanvasElement: (pageNumber: number) => {
+      const index = pageNumber - 1;
+      return canvasRefs.current[index];
     }
-  }), []);
+  }), [pdfDimensions]);
 
   useEffect(() => {
     if (file) {
       loadPDF();
     }
-    return () => {
-      cancelAllRenderTasks();
-    };
   }, [file]);
 
   useEffect(() => {
@@ -65,19 +64,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     }
   }, [pdfDoc, numPages, scale]);
 
-  const cancelAllRenderTasks = () => {
-    renderTasksRef.current.forEach((task, index) => {
-      if (task) {
-        try {
-          task.cancel();
-        } catch (e) {
-          // Ignore cancellation errors
-        }
-        renderTasksRef.current[index] = null;
-      }
-    });
-  };
-
   const loadPDF = async () => {
     if (!file) return;
 
@@ -85,8 +71,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       setLoading(true);
       setError(null);
       console.log('📄 Chargement PDF...');
-      
-      cancelAllRenderTasks();
       
       const workerUrl = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
       const pdfjsLib = await import('pdfjs-dist');
@@ -107,17 +91,15 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       setNumPages(pdf.numPages);
       canvasRefs.current = new Array(pdf.numPages).fill(null);
       
-      // Charger les dimensions PDF en points pour chaque page
+      // Charger les dimensions PDF réelles en points pour chaque page
       const dimensions = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1 }); // Scale 1 = dimensions en points
+        const viewport = page.getViewport({ scale: 1 }); // Scale 1 = dimensions réelles en points
         dimensions.push({ width: viewport.width, height: viewport.height });
         console.log(`📐 Page ${i} dimensions PDF: ${viewport.width} × ${viewport.height} points`);
       }
       setPdfDimensions(dimensions);
-      
-      renderTasksRef.current = new Array(pdf.numPages).fill(null);
       
       setLoading(false);
     } catch (error) {
@@ -128,20 +110,14 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   };
 
   const renderAllPages = async () => {
-    if (!pdfDoc || isRendering) return;
-    
-    setIsRendering(true);
-    cancelAllRenderTasks();
+    if (!pdfDoc) return;
     
     console.log(`📄 Rendu de ${numPages} pages à l'échelle ${scale}`);
     
     try {
       for (let pageNum = 1; pageNum <= numPages; pageNum++) {
         const canvas = canvasRefs.current[pageNum - 1];
-        if (!canvas) {
-          console.warn(`📄 Canvas manquant pour page ${pageNum}`);
-          continue;
-        }
+        if (!canvas) continue;
 
         const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale });
@@ -159,20 +135,11 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
           viewport: viewport,
         };
 
-        const renderTask = page.render(renderContext);
-        renderTasksRef.current[pageNum - 1] = renderTask;
-        
-        await renderTask.promise;
-        renderTasksRef.current[pageNum - 1] = null;
-        
-        console.log(`📄 Page ${pageNum} rendue`);
+        await page.render(renderContext).promise;
+        console.log(`📄 Page ${pageNum} rendue (${canvas.width}×${canvas.height})`);
       }
     } catch (error) {
-      if (error.name !== 'RenderingCancelledException') {
-        console.error('Erreur rendu:', error);
-      }
-    } finally {
-      setIsRendering(false);
+      console.error('Erreur rendu:', error);
     }
   };
 
@@ -181,7 +148,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
 
     const canvas = event.currentTarget;
     const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
-    const pageIndex = pageNumber - 1;
     
     if (onPageChange && pageNumber !== currentPage) {
       onPageChange(pageNumber);
@@ -191,20 +157,10 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     const canvasX = event.clientX - rect.left;
     const canvasY = event.clientY - rect.top;
     
-    // Calculer les ratios par rapport au canvas affiché
-    const ratioX = canvasX / rect.width;
-    const ratioY = canvasY / rect.height;
+    console.log(`🖱️ Clic canvas: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
+    console.log(`🖱️ Canvas rect: ${rect.width} × ${rect.height}`);
     
-    // Coordonnées dans l'espace PDF (pour l'éditeur)
-    const x = canvasX / scale;
-    const y = canvasY / scale;
-    
-    console.log(`🖱️ Clic page ${pageNumber}:`);
-    console.log(`🖱️ Canvas: (${Math.round(canvasX)}, ${Math.round(canvasY)})`);
-    console.log(`🖱️ Ratios: (${ratioX.toFixed(3)}, ${ratioY.toFixed(3)})`);
-    console.log(`🖱️ Éditeur: (${Math.round(x)}, ${Math.round(y)})`);
-    
-    onPageClick(x, y, pageNumber, ratioX, ratioY);
+    onPageClick(canvasX, canvasY, pageNumber);
   };
 
   const zoomIn = () => {
@@ -292,6 +248,9 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
           </div>
         )}
 
+        <div className="text-xs text-gray-500">
+          Cliquez pour placer un champ
+        </div>
       </div>
 
       {/* Conteneur PDF */}
@@ -302,6 +261,11 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
               <div className={`text-center mb-2 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
                   Page {index + 1}
+                  {pdfDimensions[index] && (
+                    <span className="ml-2 text-gray-500">
+                      ({Math.round(pdfDimensions[index].width)} × {Math.round(pdfDimensions[index].height)} pts)
+                    </span>
+                  )}
                 </span>
               </div>
               

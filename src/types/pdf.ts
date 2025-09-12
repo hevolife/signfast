@@ -1,16 +1,12 @@
 export interface PDFField {
   id: string;
   type: 'text' | 'date' | 'number' | 'signature' | 'checkbox' | 'image';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
   page: number;
   variable: string; // ${nom}, ${email}, etc.
-  ratioX?: number; // Position X en ratio (0-1)
-  ratioY?: number; // Position Y en ratio (0-1)
-  ratioWidth?: number; // Largeur en ratio (0-1)
-  ratioHeight?: number; // Hauteur en ratio (0-1)
+  xRatio: number; // Position X en ratio (0-1)
+  yRatio: number; // Position Y en ratio (0-1)
+  widthRatio: number; // Largeur en ratio (0-1)
+  heightRatio: number; // Hauteur en ratio (0-1)
   fontSize?: number;
   fontColor?: string;
   backgroundColor?: string;
