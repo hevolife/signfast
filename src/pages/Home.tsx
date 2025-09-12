@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { AdminSetupButton } from '../components/admin/AdminSetupButton';
 import { Card, CardContent } from '../components/ui/Card';
 import { 
   FormInput, 
@@ -561,9 +560,6 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </footer>
-      
-      {/* Admin Setup Button */}
-      <AdminSetupButton />
     </div>
   );
 };
