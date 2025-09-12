@@ -11,6 +11,7 @@ interface PDFViewerProps {
   onScaleChange?: (scale: number) => void;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  draggedFieldType?: string | null;
 }
 
 export interface PDFViewerRef {
@@ -28,6 +29,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   onScaleChange,
   currentPage = 1,
   onPageChange,
+  draggedFieldType,
 }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [loading, setLoading] = useState(true);

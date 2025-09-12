@@ -490,6 +490,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     onPageChange={setCurrentPage}
                     scale={scale}
                     onScaleChange={setScale}
+                    draggedFieldType={draggedFieldType}
                   >
                     {fields.map(field => (
                       <PDFFieldOverlay
