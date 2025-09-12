@@ -326,7 +326,7 @@ export class PDFService {
   // COMPTER LES PDFS (optimisé pour éviter les timeouts)
   static async countPDFs(): Promise<number> {
     try {
-      const targetUserId = await this.getTargetUserId();
+      const targetUserId = await PDFService.getTargetUserId();
       if (!targetUserId) {
         return 0;
       }
@@ -359,117 +359,41 @@ export class PDFService {
     formData: Record<string, any>;
   }>> {
     try {
-      console.log('💾 🔍 === DÉBUT listPDFs AVEC DEBUG IMPERSONATION ===');
-      const allPDFs: any[] = [];
-
-      // 1. Vérifier l'impersonation en premier
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      console.log('💾 🎭 Données impersonation:', impersonationData);
-      
-      let targetUserId: string | null = null;
-      
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-          console.log('💾 🎭 IMPERSONATION ACTIVE:', {
-            adminEmail: data.admin_email,
-            targetEmail: data.target_email,
-            targetUserId: data.target_user_id,
-            timestamp: new Date(data.timestamp).toLocaleString()
-          });
-        } catch (parseError) {
-          console.error('💾 🎭 Erreur parsing impersonation:', parseError);
-        }
-      }
-      
-      // 2. Récupérer l'utilisateur auth si pas d'impersonation
+      const targetUserId = await PDFService.getTargetUserId();
       if (!targetUserId) {
-        try {
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          if (!userError && user) {
-            targetUserId = user.id;
-            console.log('💾 👤 Utilisateur normal:', user.email, 'userId:', user.id);
-          } else {
-            console.log('💾 ❌ Aucun utilisateur connecté');
-            return [];
-          }
-        } catch (authError) {
-          console.error('💾 ❌ Erreur auth:', authError);
-          return [];
-        }
+        return [];
       }
-      
-      console.log('💾 🎯 TARGET USER ID FINAL:', targetUserId);
-      
-      // 3. Debug complet de la base de données
-      try {
-        // Compter tous les PDFs
-        const { count: totalCount } = await supabase
-          .from('pdf_storage')
-          .select('*', { count: 'exact', head: true });
-        console.log('💾 📊 Total PDFs dans la table:', totalCount);
-        
-        // Lister tous les user_ids
-        const { data: allPdfs } = await supabase
-          .from('pdf_storage')
-          .select('user_id, file_name, form_title, created_at')
-          .limit(100);
-        
-        if (allPdfs) {
-          console.log('💾 📊 Tous les PDFs dans la base:');
-          allPdfs.forEach((pdf, index) => {
-            console.log(`💾   ${index + 1}. userId: ${pdf.user_id}, file: ${pdf.file_name}, form: ${pdf.form_title}`);
-          });
-          
-          const uniqueUserIds = [...new Set(allPdfs.map(p => p.user_id))];
-          console.log('💾 📊 User IDs uniques avec PDFs:', uniqueUserIds);
-          console.log('💾 📊 Notre target userId dans la liste?', uniqueUserIds.includes(targetUserId));
-          
-          // Filtrer pour notre utilisateur
-          const userPdfs = allPdfs.filter(pdf => pdf.user_id === targetUserId);
-          console.log('💾 🎯 PDFs pour notre utilisateur:', userPdfs.length);
-          
-          if (userPdfs.length > 0) {
-            console.log('💾 ✅ PDFs trouvés pour l\'utilisateur:');
-            userPdfs.forEach((pdf, index) => {
-              console.log(`💾   ${index + 1}. ${pdf.file_name} - ${pdf.form_title} (${pdf.created_at})`);
-            });
-            
-            const formattedPdfs = userPdfs.map(item => ({
-              fileName: item.file_name,
-              responseId: 'supabase',
-              templateName: 'Template PDF',
-              formTitle: item.form_title,
-              createdAt: item.created_at,
-              size: 0,
-              formData: {},
-            }));
-            
-            setPdfs(formattedPdfs);
-            console.log('💾 ✅ PDFs définis dans l\'état:', formattedPdfs.length);
-          } else {
-            console.log('💾 ❌ Aucun PDF trouvé pour cet utilisateur');
-            setPdfs([]);
-          }
-        }
-      } catch (supabaseError) {
-        console.error('💾 ❌ Erreur Supabase:', supabaseError);
-        setPdfs([]);
+
+      const { data, error } = await supabase
+        .from('pdf_storage')
+        .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('💾 Erreur Supabase:', error);
+        return [];
       }
+
+      return (data || []).map(item => ({
+        fileName: item.file_name,
+        responseId: item.response_id || 'supabase',
+        templateName: item.template_name || 'Template PDF',
+        formTitle: item.form_title,
+        createdAt: item.created_at,
+        size: item.file_size || 0,
+        formData: item.form_data || {},
+      }));
     } catch (error) {
       console.error('💾 ❌ Erreur chargement PDFs:', error);
-      toast.error('Erreur lors du chargement des PDFs');
-      setPdfs([]);
-    } finally {
-      setLoading(false);
+      return [];
     }
-  };
+  }
 
   // SUPPRIMER UN PDF
   static async deletePDF(fileName: string): Promise<boolean> {
     try {
-      const targetUserId = await this.getTargetUserId();
+      const targetUserId = await PDFService.getTargetUserId();
       if (!targetUserId) {
         return false;
       }
@@ -536,7 +460,7 @@ export class PDFService {
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
     try {
-      const targetUserId = await this.getTargetUserId();
+      const targetUserId = await PDFService.getTargetUserId();
       if (!targetUserId) {
         return;
       }
