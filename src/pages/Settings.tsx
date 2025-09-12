@@ -360,7 +360,7 @@ export const Settings: React.FC = () => {
 
         {/* Bouton Admin pour super admins */}
         {isSuperAdmin && (
-          <div className="mb-8 text-center">
+          <div className="mb-8 flex justify-center">
             <Link to="/admin">
               <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
                 <Shield className="h-4 w-4" />
