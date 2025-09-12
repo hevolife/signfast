@@ -383,7 +383,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     } else {
       // Si aucun champ sélectionné, désélectionner tout
       setSelectedField(null);
-      }
     }
   }, [selectedField, fields, updateField]);
 
