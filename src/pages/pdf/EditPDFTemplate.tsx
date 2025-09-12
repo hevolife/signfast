@@ -65,7 +65,59 @@ export const EditPDFTemplate: React.FC = () => {
         console.log('📋 Formulaire lié trouvé:', linkedForm.title);
         console.log('📋 Champs du formulaire:', linkedForm.fields.map((f: any) => f.label));
         
-        const formVariables = linkedForm.fields.map((field: any) => {
+        const formVariables: string[] = [];
+        
+        // Fonction récursive pour extraire tous les champs, y compris conditionnels
+        const extractFieldVariables = (fields: any[]) => {
+          fields.forEach((field: any) => {
+            // Ajouter le champ principal
+            const variableName = field.label
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
+            
+            formVariables.push(`\${${variableName}}`);
+            
+            // Ajouter les champs conditionnels s'ils existent
+            if (field.conditionalFields) {
+              console.log('📋 Champs conditionnels trouvés pour:', field.label);
+              Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+                if (Array.isArray(conditionalFieldsArray)) {
+                  console.log('📋 Extraction champs conditionnels:', conditionalFieldsArray.length, 'champs');
+                  extractFieldVariables(conditionalFieldsArray);
+                }
+              });
+            }
+          });
+        };
+        
+        // Extraire tous les champs (principaux + conditionnels)
+        extractFieldVariables(linkedForm.fields);
+        
+        // Supprimer les doublons
+        const uniqueVariables = [...new Set(formVariables)];
+        
+        console.log('📋 Variables extraites (avec conditionnels):', uniqueVariables);
+        
+        // Ajouter des variables système
+        uniqueVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
+        
+        console.log('📋 Variables finales:', uniqueVariables);
+        return uniqueVariables;
+      } else {
+        console.warn('📋 Formulaire lié non trouvé ou sans champs');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du formulaire lié:', error);
+    }
+    
+    // Variables par défaut en cas d'erreur
+    console.log('📋 Retour aux variables par défaut');
+    return ['${nom}', '${email}', '${date_creation}'];
+  };
           const variableName = field.label
             .toLowerCase()
             .normalize('NFD')

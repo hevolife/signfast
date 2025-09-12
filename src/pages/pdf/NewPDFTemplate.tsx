@@ -12,21 +12,91 @@ export const NewPDFTemplate: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [linkedFormId, setLinkedFormId] = useState<string | null>(null);
 
-  // Variables disponibles depuis les formulaires
-  const formVariables = [
-    '${nom}',
-    '${prenom}',
-    '${email}',
-    '${telephone}',
-    '${adresse}',
-    '${date_naissance}',
-    '${signature}',
-    '${date_creation}',
-    '${numero_contrat}',
-    '${salaire}',
-    '${poste}',
-    '${entreprise}',
-  ];
+  // Générer les variables disponibles depuis les formulaires
+  const getFormVariables = () => {
+    if (!linkedFormId) {
+      // Variables par défaut si aucun formulaire n'est lié
+      return [
+        '${nom}',
+        '${prenom}',
+        '${email}',
+        '${telephone}',
+        '${adresse}',
+        '${date_naissance}',
+        '${signature}',
+        '${date_creation}',
+        '${numero_contrat}',
+        '${salaire}',
+        '${poste}',
+        '${entreprise}',
+      ];
+    }
+    
+    try {
+      // Essayer plusieurs sources de données
+      let formsData = localStorage.getItem('currentUserForms');
+      
+      if (!formsData) {
+        formsData = sessionStorage.getItem('currentUserForms');
+      }
+      
+      if (!formsData) {
+        formsData = localStorage.getItem('forms');
+      }
+      
+      if (!formsData) {
+        throw new Error('Aucune donnée de formulaires trouvée');
+      }
+      
+      const forms = JSON.parse(formsData);
+      const linkedForm = forms.find((f: any) => f.id === linkedFormId);
+      
+      if (linkedForm && linkedForm.fields) {
+        const formVariables: string[] = [];
+        
+        // Fonction récursive pour extraire tous les champs, y compris conditionnels
+        const extractFieldVariables = (fields: any[]) => {
+          fields.forEach((field: any) => {
+            // Ajouter le champ principal
+            const variableName = field.label
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
+            
+            formVariables.push(`\${${variableName}}`);
+            
+            // Ajouter les champs conditionnels s'ils existent
+            if (field.conditionalFields) {
+              Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+                if (Array.isArray(conditionalFieldsArray)) {
+                  extractFieldVariables(conditionalFieldsArray);
+                }
+              });
+            }
+          });
+        };
+        
+        // Extraire tous les champs (principaux + conditionnels)
+        extractFieldVariables(linkedForm.fields);
+        
+        // Supprimer les doublons
+        const uniqueVariables = [...new Set(formVariables)];
+        
+        // Ajouter des variables système
+        uniqueVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
+        
+        return uniqueVariables;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du formulaire lié:', error);
+    }
+    
+    // Variables par défaut en cas d'erreur
+    return ['${nom}', '${email}', '${date_creation}'];
+  };
 
   const handleSave = async (fields: PDFField[], pdfFile: File) => {
     setSaving(true);
@@ -86,7 +156,7 @@ export const NewPDFTemplate: React.FC = () => {
   return (
     <PDFTemplateEditor
       onSave={handleSave}
-      formVariables={formVariables}
+      formVariables={getFormVariables()}
       linkedFormId={linkedFormId}
       onFormLinkChange={handleFormLinkChange}
     />
