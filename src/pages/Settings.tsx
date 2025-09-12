@@ -208,9 +208,14 @@ export const Settings: React.FC = () => {
     setLogoUploading(true);
 
     try {
-      const success = await uploadLogo(file);
-      if (success) {
-        toast.success('Logo mis à jour avec succès !');
+      const logoUrl = await uploadLogo(file);
+      if (logoUrl) {
+        const success = await updateProfile({ logo_url: logoUrl });
+        if (success) {
+          toast.success('Logo mis à jour avec succès !');
+        } else {
+          toast.error('Erreur lors de la mise à jour du logo');
+        }
       } else {
         toast.error('Erreur lors de l\'upload du logo');
       }
@@ -355,7 +360,7 @@ export const Settings: React.FC = () => {
 
         {/* Bouton Admin pour super admins */}
         {isSuperAdmin && (
-          <div className="mb-8 text-center">
+          <div className="mb-8 flex justify-center">
             <Link to="/admin">
               <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
                 <Shield className="h-4 w-4" />
