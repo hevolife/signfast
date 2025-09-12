@@ -3,6 +3,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubscription } from '../hooks/useSubscription';
 import { useLimits } from '../hooks/useLimits';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { SecretCodeModal } from '../components/subscription/SecretCodeModal';
 import { Button } from '../components/ui/Button';
@@ -22,7 +23,8 @@ import {
   Building,
   MapPin,
   FileText,
-  Camera
+  Camera,
+  Shield
 } from 'lucide-react';
 import { stripeConfig } from '../stripe-config';
 import toast from 'react-hot-toast';
@@ -30,6 +32,10 @@ import toast from 'react-hot-toast';
 export const Settings: React.FC = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, updateProfile, uploadLogo } = useUserProfile();
+  
+  // Vérifier si l'utilisateur est super admin
+  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+  
   const { 
     isSubscribed, 
     subscriptionStatus, 
@@ -42,7 +48,7 @@ export const Settings: React.FC = () => {
   } = useSubscription();
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'admin'>('profile');
   const [showSecretCodeModal, setShowSecretCodeModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -335,6 +341,21 @@ export const Settings: React.FC = () => {
                   <span>Abonnement</span>
                 </div>
               </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setActiveTab('admin')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'admin'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-4 w-4" />
+                    <span>Admin</span>
+                  </div>
+                </button>
+              )}
             </nav>
           </div>
         </div>
@@ -741,6 +762,34 @@ export const Settings: React.FC = () => {
               </Card>
             </div>
           </div>
+        )}
+
+        {activeTab === 'admin' && isSuperAdmin && (
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-red-600" />
+                <span>Administration</span>
+              </h3>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 text-red-600 rounded-full mb-6">
+                <Shield className="h-8 w-8" />
+              </div>
+              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Dashboard Super Admin
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Accédez au dashboard d'administration pour gérer les utilisateurs, créer des codes secrets et consulter les statistiques globales.
+              </p>
+              <Link to="/admin">
+                <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
+                  <Shield className="h-4 w-4" />
+                  <span>Ouvrir le Dashboard Admin</span>
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         )}
         
         {/* Modal Code Secret */}

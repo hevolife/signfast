@@ -34,8 +34,7 @@ export const MobileBottomNav: React.FC = () => {
     { path: '/forms', icon: FileText, label: 'Formulaires', show: true },
     { path: '/pdf/templates', icon: FileText, label: 'Templates', show: !isSuperAdmin },
     { path: '/pdf/manager', icon: HardDrive, label: 'PDFs', show: true },
-    { path: '/admin', icon: Shield, label: 'Admin', show: isSuperAdmin },
-    { path: '/settings', icon: Settings, label: 'Paramètres', show: !isSuperAdmin }
+    { path: '/settings', icon: Settings, label: 'Paramètres', show: true }
   ] : [
     { path: '/', icon: Home, label: 'Accueil', show: true },
     { path: '/pdf/manager', icon: HardDrive, label: 'PDFs', show: true },
