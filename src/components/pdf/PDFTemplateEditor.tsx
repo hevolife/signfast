@@ -181,7 +181,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
           // Extraire toutes les variables (principales + conditionnelles)
           extractVariables(linkedForm.fields);
           
-          // Ajouter des variables système
+          
+        }
+      }
+    }
+  }
+  )
+}// Ajouter des variables système
           generatedVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
           
           // Supprimer les doublons
@@ -383,6 +389,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     } else {
       // Si aucun champ sélectionné, désélectionner tout
       setSelectedField(null);
+      }
     }
   }, [selectedField, fields, updateField]);
 
