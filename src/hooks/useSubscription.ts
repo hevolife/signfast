@@ -48,6 +48,16 @@ export const useSubscription = () => {
 
   const fetchSubscription = async () => {
     try {
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('⚠️ Supabase non configuré - mode local uniquement');
+        setSubscription(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
       // Vérifier si on est en mode impersonation
       const impersonationData = localStorage.getItem('admin_impersonation');
       let targetUserId = user.id;
@@ -63,43 +73,51 @@ export const useSubscription = () => {
       }
 
       // Vérifier l'abonnement Stripe
-      const { data, error } = await supabase
-        .from('stripe_user_subscriptions')
-        .select('*')
-        .limit(1);
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching subscription:', error);
-      }
-
       let stripeSubscription = null;
-      if (data && data.length > 0) {
-        stripeSubscription = data[0];
+      try {
+        const { data, error } = await supabase
+          .from('stripe_user_subscriptions')
+          .select('*')
+          .limit(1);
+
+        if (error && error.code !== 'PGRST116') {
+          console.warn('Erreur récupération abonnement Stripe (ignorée):', error.message);
+        }
+
+        if (data && data.length > 0) {
+          stripeSubscription = data[0];
+        }
+      } catch (stripeError) {
+        console.warn('Erreur Stripe (ignorée):', stripeError);
       }
 
       // Vérifier les codes secrets
-      const { data: secretCodeData, error: secretCodeError } = await supabase
-        .from('user_secret_codes')
-        .select(`
-          expires_at,
-          secret_codes (
-            type,
-            description
-          )
-        `)
-        .eq('user_id', targetUserId)
-        .or('expires_at.is.null,expires_at.gt.now()')
-        .limit(1);
-
       let hasActiveSecretCode = false;
       let secretCodeType = null;
       let secretCodeExpiresAt = null;
 
-      if (!secretCodeError && secretCodeData && secretCodeData.length > 0) {
-        const activeCode = secretCodeData[0];
-        hasActiveSecretCode = true;
-        secretCodeType = activeCode.secret_codes?.type || null;
-        secretCodeExpiresAt = activeCode.expires_at;
+      try {
+        const { data: secretCodeData, error: secretCodeError } = await supabase
+          .from('user_secret_codes')
+          .select(`
+            expires_at,
+            secret_codes (
+              type,
+              description
+            )
+          `)
+          .eq('user_id', targetUserId)
+          .or('expires_at.is.null,expires_at.gt.now()')
+          .limit(1);
+
+        if (!secretCodeError && secretCodeData && secretCodeData.length > 0) {
+          const activeCode = secretCodeData[0];
+          hasActiveSecretCode = true;
+          secretCodeType = activeCode.secret_codes?.type || null;
+          secretCodeExpiresAt = activeCode.expires_at;
+        }
+      } catch (secretCodeError) {
+        console.warn('Erreur codes secrets (ignorée):', secretCodeError);
       }
 
       // Déterminer si l'utilisateur a un accès premium
@@ -122,8 +140,19 @@ export const useSubscription = () => {
       });
 
     } catch (error) {
-      console.error('Error fetching subscription:', error);
-      setSubscription(prev => ({ ...prev, loading: false }));
+      console.warn('Erreur récupération abonnement (mode local):', error);
+      // En cas d'erreur réseau, définir des valeurs par défaut
+      setSubscription({
+        isSubscribed: false,
+        subscriptionStatus: null,
+        priceId: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        hasSecretCode: false,
+        secretCodeType: null,
+        secretCodeExpiresAt: null,
+        loading: false,
+      });
     }
   };
 
