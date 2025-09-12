@@ -67,6 +67,8 @@ export const SuperAdminDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'subscribed' | 'free' | 'secret_code'>('all');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [createdCode, setCreatedCode] = useState<{ code: string; type: string } | null>(null);
   const [globalStats, setGlobalStats] = useState({
     totalUsers: 0,
     subscribedUsers: 0,
@@ -337,8 +339,8 @@ export const SuperAdminDashboard: React.FC = () => {
         return;
       }
 
-      toast.success(`Code secret créé: ${code}`);
-      navigator.clipboard.writeText(code);
+      setCreatedCode({ code, type });
+      setShowCodeModal(true);
     } catch (error) {
       console.error('Erreur création code:', error);
       toast.error('Erreur lors de la création du code');
@@ -853,6 +855,85 @@ export const SuperAdminDashboard: React.FC = () => {
                   <Button
                     variant="secondary"
                     onClick={() => setShowUserModal(false)}
+                    className="flex-1"
+                  >
+                    Fermer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Modal Code Secret Créé */}
+        {showCodeModal && createdCode && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <Gift className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Code Secret Créé !
+                      </h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {createdCode.type === 'lifetime' ? 'Code à vie' : 'Code mensuel'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setShowCodeModal(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="text-center">
+                    <p className="text-sm text-purple-800 dark:text-purple-300 mb-3">
+                      Votre code secret :
+                    </p>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-purple-300 dark:border-purple-600">
+                      <code className="text-2xl font-bold text-purple-600 dark:text-purple-400 tracking-wider">
+                        {createdCode.code}
+                      </code>
+                    </div>
+                    <p className="text-xs text-purple-700 dark:text-purple-400 mt-2">
+                      {createdCode.type === 'lifetime' 
+                        ? '🎉 Accès à vie - Aucune expiration'
+                        : '📅 Valide pendant 30 jours'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    💡 <strong>Instructions :</strong>
+                  </p>
+                  <ul className="text-xs text-blue-700 dark:text-blue-400 mt-1 space-y-1">
+                    <li>• Copiez ce code et partagez-le avec l'utilisateur</li>
+                    <li>• L'utilisateur peut l'activer dans Paramètres → Abonnement</li>
+                    <li>• Le code ne peut être utilisé qu'une seule fois</li>
+                  </ul>
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdCode.code);
+                      toast.success('Code copié dans le presse-papiers !');
+                    }}
+                    className="flex-1 flex items-center justify-center space-x-2"
+                  >
+                    <Key className="h-4 w-4" />
+                    <span>Copier le code</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowCodeModal(false)}
                     className="flex-1"
                   >
                     Fermer
