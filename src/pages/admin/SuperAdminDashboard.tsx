@@ -164,35 +164,6 @@ export const SuperAdminDashboard: React.FC = () => {
               const userData: UserData = {
                 id: profile.user_id,
                 email: email,
-                created_at: profile.created_at,
-                last_sign_in_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-                email_confirmed_at: profile.created_at,
-                profile: {
-                  first_name: profile.first_name,
-                  last_name: profile.last_name,
-                  company_name: profile.company_name,
-                },
-                subscription: subscription ? {
-                  status: subscription.subscription_status,
-                  price_id: subscription.price_id,
-                  current_period_end: subscription.current_period_end,
-                } : undefined,
-                secretCode: secretCodeData ? {
-                  type: secretCodeData.secret_codes?.type,
-                  expires_at: secretCodeData.expires_at,
-                } : undefined,
-                stats: {
-                  forms_count: formsCount || 0,
-                  templates_count: templatesCount || 0,
-                  pdfs_count: Math.floor(Math.random() * 20),
-                  responses_count: Math.floor(Math.random() * 100),
-                },
-              };
-
-              realUsers.push(userData);
-              console.log(`✅ Utilisateur traité: ${email}`);
-            } catch (userError) {
-              console.error(`❌ Erreur traitement utilisateur ${profile.user_id}:`, userError);
             }
           }
         }
@@ -309,86 +280,6 @@ export const SuperAdminDashboard: React.FC = () => {
               templates_count: 2,
               pdfs_count: 12,
               responses_count: 34
-            }
-          }
-        ];
-      
-      // Si on a des utilisateurs réels, les utiliser, sinon fallback vers les données de test
-      if (realUsers.length > 0) {
-        setUsers(realUsers);
-        console.log('✅ Utilisateurs réels chargés:', realUsers.length, 'utilisateurs');
-      } else {
-        console.log('🔧 Aucun utilisateur réel, utilisation des données de test...');
-        
-        const testUsers: UserData[] = [
-          {
-            id: 'admin-user',
-            email: 'admin@signfast.com',
-            created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            last_sign_in_at: new Date().toISOString(),
-            email_confirmed_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            profile: {
-              first_name: 'Super',
-              last_name: 'Admin',
-              company_name: 'SignFast Administration'
-            },
-            secretCode: {
-              type: 'lifetime',
-              expires_at: undefined
-            },
-            stats: {
-              forms_count: 0,
-              templates_count: 0,
-              pdfs_count: 0,
-              responses_count: 0
-            }
-          },
-          {
-            id: 'demo-user-1',
-            email: 'marie.martin@entreprise.fr',
-            created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-            last_sign_in_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            email_confirmed_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-            profile: {
-              first_name: 'Marie',
-              last_name: 'Martin',
-              company_name: 'Consulting Digital'
-            },
-            subscription: {
-              status: 'active',
-              price_id: 'price_1S6HwBKiNbWQJGP35byRSSBn',
-              current_period_end: Math.floor((Date.now() + 25 * 24 * 60 * 60 * 1000) / 1000)
-            },
-            stats: {
-              forms_count: 8,
-              templates_count: 3,
-              pdfs_count: 15,
-              responses_count: 47
-            }
-          },
-          {
-            id: 'demo-user-2',
-            email: 'jean.dupont@immobilier.com',
-            created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            last_sign_in_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            email_confirmed_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            profile: {
-              first_name: 'Jean',
-              last_name: 'Dupont',
-              company_name: 'Agence Immobilière Dupont'
-            },
-            stats: {
-              forms_count: 3,
-              templates_count: 2,
-              pdfs_count: 8,
-              responses_count: 23
-            }
-          }
-        ];
-        
-        setUsers(testUsers);
-        console.log('✅ Données de test chargées:', testUsers.length, 'utilisateurs');
-      }
     } catch (error) {
       console.error('❌ Erreur chargement utilisateurs:', error);
       toast.error('Erreur lors du chargement des utilisateurs');
