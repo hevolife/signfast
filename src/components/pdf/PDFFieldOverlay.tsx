@@ -129,7 +129,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       onMouseDown={handleMouseDown}
     >
       {/* Contenu du champ */}
-      <div className="flex items-center justify-center h-full text-xs font-medium text-gray-700 px-1 pointer-events-none">
+      <div className="flex items-center justify-start h-full text-xs font-medium text-gray-700 px-2 pointer-events-none">
         <span className="mr-1">{getFieldIcon()}</span>
         <span className="truncate">{field.variable || field.type}</span>
       </div>
