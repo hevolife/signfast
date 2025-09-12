@@ -325,7 +325,16 @@ export const PDFManager: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedPDFs.map((pdf, index) => {
-              const isLocked = !isSubscribed && index >= savedPdfsLimits.max;
+              // Un PDF est verrouillé seulement si l'utilisateur n'est pas abonné ET que l'index dépasse la limite
+              const isLocked = !isSubscribed && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
+              
+              console.log('🔒 Vérification verrouillage PDF:', {
+                index,
+                isSubscribed,
+                maxLimit: savedPdfsLimits.max,
+                isLocked,
+                pdfName: pdf.fileName
+              });
               
               return (
               <Card key={pdf.fileName} hover className={`group relative ${isLocked ? 'opacity-75 border-2 border-yellow-400' : ''}`}>

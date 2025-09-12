@@ -61,6 +61,15 @@ export const useLimits = () => {
   const getSavedPdfsLimits = (): LimitData => {
     const current = savedPdfsCount;
     const max = isSubscribed ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
+    
+    console.log('📊 Limites PDFs calculées:', {
+      current,
+      max,
+      isSubscribed,
+      canCreate: isSubscribed || current < max,
+      canSave: isSubscribed || current < max
+    });
+    
     return {
       current,
       max,

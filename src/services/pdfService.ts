@@ -49,16 +49,41 @@ export class PDFService {
       // Vérifier si l'utilisateur est abonné (via les données Supabase)
       let isSubscribed = false;
       try {
-        const { data: subscription } = await supabase
+        // Vérifier l'abonnement Stripe
+        const { data: stripeSubscription } = await supabase
           .from('stripe_user_subscriptions')
           .select('subscription_status')
           .limit(1);
         
-        isSubscribed = subscription && subscription.length > 0 && 
-                      (subscription[0].subscription_status === 'active' || 
-                       subscription[0].subscription_status === 'trialing');
+        const hasStripeAccess = stripeSubscription && stripeSubscription.length > 0 && 
+                               (stripeSubscription[0].subscription_status === 'active' || 
+                                stripeSubscription[0].subscription_status === 'trialing');
+        
+        // Vérifier les codes secrets
+        const { data: secretCodeData } = await supabase
+          .from('user_secret_codes')
+          .select(`
+            expires_at,
+            secret_codes (type)
+          `)
+          .eq('user_id', user.id)
+          .or('expires_at.is.null,expires_at.gt.now()')
+          .limit(1);
+
+        const hasActiveSecretCode = secretCodeData && secretCodeData.length > 0;
+        
+        // L'utilisateur est considéré comme abonné s'il a un abonnement Stripe OU un code secret actif
+        isSubscribed = hasStripeAccess || hasActiveSecretCode;
+        
+        console.log('💾 Vérification abonnement:', {
+          hasStripeAccess,
+          hasActiveSecretCode,
+          isSubscribed,
+          currentPdfs: currentPdfs.length,
+          limit: stripeConfig.freeLimits.maxSavedPdfs
+        });
       } catch (error) {
-        // Utilisateur non connecté ou pas d'abonnement
+        console.warn('💾 Erreur vérification abonnement:', error);
         isSubscribed = false;
       }
       
