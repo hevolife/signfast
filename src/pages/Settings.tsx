@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubscription } from '../hooks/useSubscription';
 import { useLimits } from '../hooks/useLimits';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { SecretCodeModal } from '../components/subscription/SecretCodeModal';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -26,6 +28,7 @@ import { stripeConfig } from '../stripe-config';
 import toast from 'react-hot-toast';
 
 export const Settings: React.FC = () => {
+  const { user } = useAuth();
   const { profile, loading: profileLoading, updateProfile, uploadLogo } = useUserProfile();
   const { 
     isSubscribed, 
@@ -39,7 +42,7 @@ export const Settings: React.FC = () => {
   } = useSubscription();
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription'>('profile');
   const [showSecretCodeModal, setShowSecretCodeModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -51,6 +54,13 @@ export const Settings: React.FC = () => {
   const [address, setAddress] = useState(profile?.address || '');
   const [siret, setSiret] = useState(profile?.siret || '');
 
+  // États pour la sécurité
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newEmail, setNewEmail] = useState(user?.email || '');
+  const [emailPassword, setEmailPassword] = useState('');
+
   React.useEffect(() => {
     if (profile) {
       setFirstName(profile.first_name || '');
@@ -60,6 +70,12 @@ export const Settings: React.FC = () => {
       setSiret(profile.siret || '');
     }
   }, [profile]);
+
+  React.useEffect(() => {
+    if (user?.email) {
+      setNewEmail(user.email);
+    }
+  }, [user]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +97,87 @@ export const Settings: React.FC = () => {
       }
     } catch (error) {
       toast.error('Erreur lors de la mise à jour du profil');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('Les nouveaux mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Le nouveau mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Mot de passe mis à jour avec succès !');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (error) {
+      toast.error('Erreur lors de la mise à jour du mot de passe');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!emailPassword) {
+      toast.error('Veuillez saisir votre mot de passe pour confirmer le changement d\'email');
+      return;
+    }
+
+    if (newEmail === user?.email) {
+      toast.error('La nouvelle adresse email est identique à l\'actuelle');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Vérifier d'abord le mot de passe actuel
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: emailPassword
+      });
+
+      if (signInError) {
+        toast.error('Mot de passe incorrect');
+        setSaving(false);
+        return;
+      }
+
+      // Mettre à jour l'email
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Email mis à jour avec succès ! Vérifiez votre nouvelle boîte email pour confirmer.');
+        setEmailPassword('');
+      }
+    } catch (error) {
+      toast.error('Erreur lors de la mise à jour de l\'email');
     } finally {
       setSaving(false);
     }
@@ -198,7 +295,7 @@ export const Settings: React.FC = () => {
         {/* Onglets */}
         <div className="mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8 justify-center">
+            <nav className="-mb-px flex space-x-4 sm:space-x-8 justify-center">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -210,6 +307,19 @@ export const Settings: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <User className="h-4 w-4" />
                   <span>Profil</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('security')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'security'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Key className="h-4 w-4" />
+                  <span>Sécurité</span>
                 </div>
               </button>
               <button
@@ -345,6 +455,111 @@ export const Settings: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            {/* Changement d'email */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span>Adresse email</span>
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangeEmail} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Email actuel
+                    </label>
+                    <div className="px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400">
+                      {user?.email}
+                    </div>
+                  </div>
+                  
+                  <Input
+                    label="Nouvelle adresse email"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="nouvelle@email.com"
+                    required
+                  />
+                  
+                  <Input
+                    label="Mot de passe actuel (pour confirmation)"
+                    type="password"
+                    value={emailPassword}
+                    onChange={(e) => setEmailPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={saving || newEmail === user?.email}
+                    className="w-full"
+                  >
+                    {saving ? 'Mise à jour...' : 'Changer l\'adresse email'}
+                  </Button>
+                </form>
+                
+                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <AlertCircle className="h-4 w-4 inline mr-1" />
+                    Vous recevrez un email de confirmation à votre nouvelle adresse.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Changement de mot de passe */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+                  <Key className="h-5 w-5" />
+                  <span>Mot de passe</span>
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <Input
+                    label="Nouveau mot de passe"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  
+                  <Input
+                    label="Confirmer le nouveau mot de passe"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={saving || !newPassword || newPassword !== confirmPassword}
+                    className="w-full"
+                  >
+                    {saving ? 'Mise à jour...' : 'Changer le mot de passe'}
+                  </Button>
+                </form>
+                
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <AlertCircle className="h-4 w-4 inline mr-1" />
+                    Le mot de passe doit contenir au moins 6 caractères.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {activeTab === 'subscription' && (
           <div className="space-y-6">
             {/* Affichage du code secret actif */}
@@ -438,138 +653,4 @@ export const Settings: React.FC = () => {
                   </span>
                 </div>
                 <CardHeader>
-                  <div className="text-center">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {product.name}
-                    </h3>
-                    <div className="text-3xl font-bold text-blue-600">
-                      {product.price}€
-                      <span className="text-sm font-normal text-gray-500">/mois</span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      {product.description}
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    {product.features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {isSubscribed ? (
-                    <div className="space-y-3 pt-4">
-                      <div className="text-center">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                          <Crown className="h-4 w-4 mr-1" />
-                          {hasSecretCode ? 'Accès Premium Actif' : 'Abonnement actif'}
-                        </span>
-                      </div>
-                      
-                      {hasSecretCode && secretCodeType === 'lifetime' && (
-                        <div className="text-center text-sm text-purple-600 dark:text-purple-400">
-                          <Gift className="h-4 w-4 inline mr-1" />
-                          Accès à vie via code secret
-                        </div>
-                      )}
-                      
-                      {hasSecretCode && secretCodeType === 'monthly' && secretCodeExpiresAt && (
-                        <div className="text-center text-sm text-purple-600 dark:text-purple-400">
-                          <Calendar className="h-4 w-4 inline mr-1" />
-                          Code secret expire le {new Date(secretCodeExpiresAt).toLocaleDateString('fr-FR')}
-                        </div>
-                      )}
-                      
-                      {currentPeriodEnd && !hasSecretCode && (
-                        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                          <Calendar className="h-4 w-4 inline mr-1" />
-                          {cancelAtPeriodEnd ? 'Se termine le' : 'Renouvellement le'} {formatDate(currentPeriodEnd)}
-                        </div>
-                      )}
-
-                      {cancelAtPeriodEnd && (
-                        <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-                          <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
-                            <AlertCircle className="h-4 w-4" />
-                            <span className="text-sm">
-                              Votre abonnement sera annulé à la fin de la période
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium">Plan actuel:</span> {hasSecretCode ? 'Premium (Code Secret)' : product.name}
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={handleSubscribe}
-                      disabled={saving}
-                      className="w-full flex items-center justify-center space-x-2"
-                    >
-                      {saving ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <>
-                          <Zap className="h-4 w-4" />
-                          <span>Passer Pro</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* FAQ */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Questions fréquentes
-                </h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                    Comment fonctionnent les codes secrets ?
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Les codes secrets permettent de débloquer l'accès premium gratuitement. Il existe des codes mensuels (1 mois d'accès) et des codes à vie (accès permanent).
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                    Puis-je annuler mon abonnement à tout moment ?
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Oui, vous pouvez annuler votre abonnement à tout moment. Vous conserverez l'accès aux fonctionnalités Pro jusqu'à la fin de votre période de facturation.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                    Les paiements sont-ils sécurisés ?
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Oui, tous les paiements sont traités de manière sécurisée par Stripe, leader mondial du paiement en ligne.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Modal Code Secret */}
-        <SecretCodeModal
-          isOpen={showSecretCodeModal}
-          onClose={() => setShowSecretCodeModal(false)}
-          onSuccess={handleSecretCodeSuccess}
-        />
-      </div>
-    </div>
-  );
-};
+                  <div
