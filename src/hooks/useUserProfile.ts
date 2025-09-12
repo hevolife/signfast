@@ -79,8 +79,8 @@ export const useUserProfile = () => {
     if (!user) return null;
 
     try {
-      // Convertir le fichier en base64 pour stockage temporaire
-      return new Promise((resolve) => {
+      // Convertir le fichier en base64 pour stockage
+      const logoUrl = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const result = e.target?.result as string;
@@ -88,6 +88,13 @@ export const useUserProfile = () => {
         };
         reader.readAsDataURL(file);
       });
+      
+      // Mettre à jour immédiatement le profil avec la nouvelle URL du logo
+      if (logoUrl) {
+        setProfile(prev => prev ? { ...prev, logo_url: logoUrl } : null);
+      }
+      
+      return logoUrl;
     } catch (error) {
       console.error('Error uploading logo:', error);
       return null;

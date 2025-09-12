@@ -210,18 +210,20 @@ export const Settings: React.FC = () => {
     try {
       const success = await uploadLogo(file);
       if (success) {
+        // Mettre à jour le profil avec la nouvelle URL du logo
         const updatedSuccess = await updateProfile({
           first_name: firstName,
           last_name: lastName,
           company_name: companyName,
           address: address,
           siret: siret,
+          logo_url: success, // Ajouter l'URL du logo
         });
         
         if (updatedSuccess) {
           toast.success('Logo mis à jour avec succès !');
         } else {
-          toast.error('Erreur lors de la sauvegarde du logo');
+          toast.error('Logo uploadé mais erreur lors de la sauvegarde du profil');
         }
       } else {
         toast.error('Erreur lors de l\'upload du logo');
