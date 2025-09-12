@@ -284,12 +284,8 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             // Mode édition - layout adaptatif
             <div className="relative">
               {/* Layout desktop */}
-              <div className="hidden lg:grid lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-1">
-                  <FieldPalette onAddField={addField} />
-                </div>
-                
-                <div className="lg:col-span-3">
+              <div className="hidden lg:block">
+                <div>
                   <FormCanvas
                     fields={fields}
                     selectedField={selectedField}
@@ -372,6 +368,13 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           )}
         </div>
       </div>
+        {/* Palette des éléments - au-dessus du canvas */}
+        {!showPreview && (
+          <div className="mb-6">
+            <FieldPalette onAddField={addField} />
+          </div>
+        )}
+
     </DndProvider>
   );
 };
