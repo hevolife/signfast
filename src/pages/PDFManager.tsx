@@ -67,13 +67,55 @@ export const PDFManager: React.FC = () => {
         setPdfs([]);
         setLoading(false);
       }
-    }, 3000); // 3 secondes max
+    }, 5000); // 5 secondes max pour laisser plus de temps
 
     try {
       console.log('💾 Chargement des PDFs');
       
+      // Debug: vérifier le mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          console.log('💾 🎭 Mode impersonation détecté:', {
+            targetEmail: data.target_email,
+            targetUserId: data.target_user_id,
+            adminEmail: data.admin_email
+          });
+        } catch (error) {
+          console.error('💾 Erreur parsing impersonation:', error);
+        }
+      } else {
+        console.log('💾 Mode normal (pas d\'impersonation)');
+      }
+      
       const pdfList = await PDFService.listPDFs();
       console.log('💾 PDFs trouvés:', pdfList.length);
+      
+      // Debug: afficher les détails des PDFs trouvés
+      if (pdfList.length > 0) {
+        console.log('💾 Détails des PDFs:');
+        pdfList.forEach((pdf, index) => {
+          console.log(`💾 PDF ${index + 1}:`, {
+            fileName: pdf.fileName,
+            formTitle: pdf.formTitle,
+            templateName: pdf.templateName,
+            createdAt: pdf.createdAt,
+            source: (pdf as any).source || 'unknown'
+          });
+        });
+      } else {
+        console.log('💾 Aucun PDF trouvé - vérification des causes possibles...');
+        
+        // Vérifier si l'utilisateur impersonné a des formulaires
+        const currentUserForms = localStorage.getItem('currentUserForms');
+        if (currentUserForms) {
+          const forms = JSON.parse(currentUserForms);
+          console.log('💾 Formulaires de l\'utilisateur impersonné:', forms.length);
+        } else {
+          console.log('💾 Aucun formulaire trouvé pour l\'utilisateur impersonné');
+        }
+      }
       
       clearTimeout(loadingTimeout);
       setPdfs(pdfList);

@@ -324,16 +324,20 @@ export class PDFService {
             try {
               const data = JSON.parse(impersonationData);
               targetUserId = data.target_user_id;
-              console.log('🎭 Mode impersonation: comptage des PDFs pour', data.target_email);
+              console.log('🎭 Mode impersonation: comptage des PDFs pour', data.target_email, 'userId:', targetUserId);
             } catch (error) {
               console.error('Erreur parsing impersonation data:', error);
             }
           }
 
+          console.log('💾 Count PDFs pour userId:', targetUserId);
+          
           const { count, error } = await supabase
             .from('pdf_storage')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', targetUserId);
+
+          console.log('💾 Résultat count:', { count, error: error?.message });
 
           if (!error && count !== null) {
             console.log('💾 Nombre de PDFs Supabase pour userId', targetUserId, ':', count);
@@ -392,27 +396,40 @@ export class PDFService {
             try {
               const data = JSON.parse(impersonationData);
               targetUserId = data.target_user_id;
-              console.log('🎭 Mode impersonation: récupération des PDFs pour', data.target_email);
+              console.log('🎭 Mode impersonation: récupération des PDFs pour', data.target_email, 'userId:', targetUserId);
             } catch (error) {
               console.error('Erreur parsing impersonation data:', error);
             }
           }
 
-          // Timeout pour éviter les blocages
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout Supabase')), 2000);
-          });
-
-          const queryPromise = supabase
+          console.log('💾 Requête Supabase pour userId:', targetUserId);
+          
+          const { data, error } = await supabase
             .from('pdf_storage')
             .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
             .eq('user_id', targetUserId)
             .order('created_at', { ascending: false });
 
-          const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+          console.log('💾 Résultat requête Supabase:', { 
+            error: error?.message, 
+            dataLength: data?.length,
+            targetUserId 
+          });
 
           if (!error && data) {
             console.log('💾 PDFs Supabase trouvés pour userId', targetUserId, ':', data.length);
+            
+            // Debug: afficher les détails des PDFs trouvés
+            data.forEach((pdf, index) => {
+              console.log(`💾 PDF ${index + 1}:`, {
+                fileName: pdf.file_name,
+                formTitle: pdf.form_title,
+                templateName: pdf.template_name,
+                createdAt: pdf.created_at,
+                userId: 'hidden' // Ne pas logger l'userId pour la sécurité
+              });
+            });
+            
             const supabasePDFs = data.map(item => ({
               fileName: item.file_name,
               responseId: item.response_id || 'supabase',
@@ -425,13 +442,20 @@ export class PDFService {
             }));
             allPDFs.push(...supabasePDFs);
           } else {
-            console.warn('💾 Supabase lent ou indisponible, utilisation localStorage uniquement');
+            console.warn('💾 Erreur Supabase ou aucune donnée:', error?.message || 'Aucune donnée');
+            
+            // Debug: vérifier si la table existe et si l'utilisateur a des droits
+            if (error?.code === 'PGRST116') {
+              console.log('💾 Aucun PDF trouvé pour cet utilisateur (normal si nouveau compte)');
+            } else if (error) {
+              console.error('💾 Erreur Supabase détaillée:', error);
+            }
           }
         } else {
           console.log('💾 Utilisateur non connecté, skip Supabase');
         }
       } catch (supabaseError) {
-        console.warn('💾 Supabase timeout ou erreur (ignorée), utilisation localStorage');
+        console.warn('💾 Erreur Supabase (ignorée), utilisation localStorage:', supabaseError);
       }
 
       // Récupérer depuis localStorage
