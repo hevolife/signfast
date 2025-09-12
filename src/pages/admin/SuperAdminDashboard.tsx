@@ -423,13 +423,14 @@ export const SuperAdminDashboard: React.FC = () => {
                         </div>
 
                         {/* Bouton d'action */}
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 self-start">
                           <Button
                             onClick={() => impersonateUser(adminUser)}
-                            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3"
+                            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium shadow-md hover:shadow-lg transition-all"
                           >
                             <UserCheck className="h-4 w-4" />
-                            <span>Se connecter en tant que</span>
+                            <span className="hidden sm:inline">Se connecter en tant que</span>
+                            <span className="sm:hidden">Impersonner</span>
                           </Button>
                         </div>
                       </div>
