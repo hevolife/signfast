@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSubscription } from '../../hooks/useSubscription';
+import { useLimits } from '../../hooks/useLimits';
+import { useForms } from '../../hooks/useForms';
+import { usePDFTemplates } from '../../hooks/usePDFTemplates';
 import { supabase, createClient } from '../../lib/supabase';
+import { stripeConfig } from '../../stripe-config';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -60,7 +65,11 @@ interface UserData {
 }
 
 export const SuperAdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isImpersonating } = useAuth();
+  const { isSubscribed, subscriptionStatus, hasSecretCode, secretCodeType } = useSubscription();
+  const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();
+  const { forms } = useForms();
+  const { templates } = usePDFTemplates();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +91,24 @@ export const SuperAdminDashboard: React.FC = () => {
 
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+
+  // Récupérer les informations d'impersonation
+  const getImpersonationInfo = () => {
+    if (!isImpersonating) return null;
+    
+    try {
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        return JSON.parse(impersonationData);
+      }
+    } catch (error) {
+      console.error('Erreur parsing impersonation data:', error);
+    }
+    return null;
+  };
+
+  const impersonationInfo = getImpersonationInfo();
+  const product = stripeConfig.products[0];
 
   useEffect(() => {
     if (!isSuperAdmin) {
@@ -410,20 +437,161 @@ export const SuperAdminDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* En-tête Admin */}
         <div className="text-center mb-8">
+          {/* Bannière d'impersonation */}
+          {isImpersonating && impersonationInfo && (
+            <Card className="mb-6 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
+                      Mode Impersonation Actif
+                    </h3>
+                    <p className="text-sm text-purple-700 dark:text-purple-400">
+                      Connecté en tant que: <strong>{impersonationInfo.target_email}</strong>
+                    </p>
+                    <div className="mt-2 flex items-center justify-center space-x-4 text-xs">
+                      <span className={`px-2 py-1 rounded-full ${
+                        isSubscribed 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                      }`}>
+                        {isSubscribed 
+                          ? hasSecretCode 
+                            ? `Premium (${secretCodeType === 'lifetime' ? 'À vie' : 'Mensuel'})`
+                            : product.name
+                          : 'Plan Gratuit'
+                        }
+                      </span>
+                      <span className="text-purple-600 dark:text-purple-400">
+                        📝 {forms.length} formulaires • 📄 {templates.length} templates
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <div className="inline-flex items-center px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-medium mb-4">
             <Shield className="h-4 w-4 mr-2" />
-            Dashboard Super Admin
+            {isImpersonating ? `Super Admin → ${impersonationInfo?.target_email}` : 'Dashboard Super Admin'}
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Administration SignFast
+            {isImpersonating ? `Vue Utilisateur: ${impersonationInfo?.target_email}` : 'Administration SignFast'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Gestion des utilisateurs et statistiques globales
+            {isImpersonating 
+              ? 'Données en temps réel de l\'utilisateur impersonné'
+              : 'Gestion des utilisateurs et statistiques globales'
+            }
           </p>
         </div>
 
-        {/* Statistiques globales */}
+        {/* Statistiques - globales ou utilisateur impersonné */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {isImpersonating ? (
+            // Statistiques de l'utilisateur impersonné
+            <>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Formulaires
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {forms.length}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formsLimits.max === Infinity ? 'Illimité' : `${formsLimits.current}/${formsLimits.max}`}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Templates PDF
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {templates.length}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {templatesLimits.max === Infinity ? 'Illimité' : `${templatesLimits.current}/${templatesLimits.max}`}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <FileText className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        PDFs Sauvegardés
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {savedPdfsLimits.current}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {savedPdfsLimits.max === Infinity ? 'Illimité' : `${savedPdfsLimits.current}/${savedPdfsLimits.max}`}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <HardDrive className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Statut Abonnement
+                      </p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        {isSubscribed 
+                          ? hasSecretCode 
+                            ? 'Premium'
+                            : 'Pro'
+                          : 'Gratuit'
+                        }
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {isSubscribed 
+                          ? hasSecretCode 
+                            ? `Code ${secretCodeType}`
+                            : product.name
+                          : 'Plan gratuit'
+                        }
+                      </p>
+                    </div>
+                    <div className="p-3 bg-yellow-100 rounded-full">
+                      <Crown className="h-6 w-6 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            // Statistiques globales normales
+            <>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -508,9 +676,12 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
         </div>
 
-        {/* Actions rapides */}
+        {/* Actions rapides - masquées en mode impersonation */}
+        {!isImpersonating && (
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader>
@@ -590,8 +761,10 @@ export const SuperAdminDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Filtres et recherche */}
+        {/* Filtres et recherche - masqués en mode impersonation */}
+        {!isImpersonating && (
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -622,8 +795,10 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* Liste des utilisateurs */}
+        {/* Liste des utilisateurs - masquée en mode impersonation */}
+        {!isImpersonating && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -752,6 +927,164 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {/* Panneau utilisateur impersonné */}
+        {isImpersonating && impersonationInfo && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+                  <UserCheck className="h-5 w-5 text-purple-600" />
+                  <span>Utilisateur Impersonné</span>
+                </h3>
+                <Button
+                  onClick={() => {
+                    localStorage.removeItem('admin_impersonation');
+                    window.location.href = '/admin';
+                  }}
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Arrêter l'impersonation
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Informations utilisateur */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-purple-900 dark:text-purple-300 mb-3">
+                      Informations Utilisateur
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Email:</span>
+                        <span className="font-medium">{impersonationInfo.target_email}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">ID Utilisateur:</span>
+                        <span className="font-mono text-xs">{impersonationInfo.target_user_id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Session depuis:</span>
+                        <span className="font-medium">
+                          {new Date(impersonationInfo.timestamp).toLocaleTimeString('fr-FR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-purple-900 dark:text-purple-300 mb-3">
+                      Statut Abonnement
+                    </h4>
+                    <div className="space-y-3">
+                      {isSubscribed ? (
+                        <div className="flex items-center space-x-2">
+                          <Crown className="h-5 w-5 text-green-600" />
+                          <span className="text-green-600 font-medium">
+                            {hasSecretCode 
+                              ? `Premium (${secretCodeType === 'lifetime' ? 'À vie' : 'Mensuel'})`
+                              : product.name
+                            }
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                          <span className="text-gray-600">Plan gratuit</span>
+                        </div>
+                      )}
+                      
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                        <div className="grid grid-cols-3 gap-4 text-xs">
+                          <div className="text-center">
+                            <div className="font-bold text-blue-600">{forms.length}</div>
+                            <div className="text-gray-500">Formulaires</div>
+                            <div className="text-gray-400">
+                              {formsLimits.max === Infinity ? '∞' : `/${formsLimits.max}`}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-purple-600">{templates.length}</div>
+                            <div className="text-gray-500">Templates</div>
+                            <div className="text-gray-400">
+                              {templatesLimits.max === Infinity ? '∞' : `/${templatesLimits.max}`}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-green-600">{savedPdfsLimits.current}</div>
+                            <div className="text-gray-500">PDFs</div>
+                            <div className="text-gray-400">
+                              {savedPdfsLimits.max === Infinity ? '∞' : `/${savedPdfsLimits.max}`}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Actions rapides pour l'utilisateur impersonné */}
+              <div className="grid md:grid-cols-4 gap-4">
+                <a href="/dashboard" className="block">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4 text-center">
+                      <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-600 rounded-full mb-3">
+                        <BarChart3 className="h-5 w-5" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        Dashboard
+                      </h4>
+                    </CardContent>
+                  </Card>
+                </a>
+                
+                <a href="/forms" className="block">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4 text-center">
+                      <div className="inline-flex items-center justify-center w-10 h-10 bg-green-100 text-green-600 rounded-full mb-3">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        Formulaires
+                      </h4>
+                    </CardContent>
+                  </Card>
+                </a>
+                
+                <a href="/pdf/templates" className="block">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4 text-center">
+                      <div className="inline-flex items-center justify-center w-10 h-10 bg-purple-100 text-purple-600 rounded-full mb-3">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        Templates
+                      </h4>
+                    </CardContent>
+                  </Card>
+                </a>
+                
+                <a href="/pdf/manager" className="block">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4 text-center">
+                      <div className="inline-flex items-center justify-center w-10 h-10 bg-orange-100 text-orange-600 rounded-full mb-3">
+                        <HardDrive className="h-5 w-5" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        Stockage
+                      </h4>
+                    </CardContent>
+                  </Card>
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Modal détails utilisateur */}
         {showUserModal && selectedUser && (
