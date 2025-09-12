@@ -200,6 +200,31 @@ export const Settings: React.FC = () => {
     }
 
     // Vérifier la taille (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Le fichier ne doit pas dépasser 5MB');
+      return;
+    }
+
+    setLogoUploading(true);
+
+    try {
+      const logoUrl = await uploadLogo(file);
+      if (logoUrl) {
+        const success = await updateProfile({ logo_url: logoUrl });
+        if (success) {
+          toast.success('Logo mis à jour avec succès !');
+        } else {
+          toast.error('Erreur lors de la mise à jour du logo');
+        }
+      } else {
+        toast.error('Erreur lors de l\'upload du logo');
+      }
+    } catch (error) {
+      toast.error('Erreur lors de l\'upload du logo');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   const handleSubscribe = async () => {
     setSaving(true);
