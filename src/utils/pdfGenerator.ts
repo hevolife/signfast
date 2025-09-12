@@ -610,7 +610,11 @@ export class PDFGenerator {
     
     try {
       const date = new Date(value);
-      return date.toLocaleDateString('fr-FR');
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
     } catch {
       return value;
     }
