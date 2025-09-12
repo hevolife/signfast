@@ -336,9 +336,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
                   willChange: 'transform',
                   transform: 'translateZ(0)',
                   display: (loading || isRendering) ? 'none' : 'block'
-                  if (el) {
-                    console.log(`📄 Canvas ${index + 1} créé avec succès`);
-                  }
                 }}
                 data-page={index + 1}
               />
