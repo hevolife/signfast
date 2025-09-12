@@ -17,41 +17,21 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   availableVariables,
   linkedFormId,
 }) => {
-  console.log('🎨 PDFFieldProperties render');
-  console.log('🎨 availableVariables reçues:', availableVariables);
-  console.log('🎨 linkedFormId:', linkedFormId);
-  console.log('🎨 Nombre de variables disponibles:', availableVariables.length);
-  
-  // Afficher des informations sur le formulaire lié
   const getLinkedFormInfo = () => {
     if (!linkedFormId) return null;
     
     try {
-      // Essayer plusieurs sources
       let forms = [];
       
-      // 1. Variable globale
-      if (typeof window !== 'undefined' && (window as any).currentUserForms) {
+      if ((window as any).currentUserForms) {
         forms = (window as any).currentUserForms;
-        console.log('🎨 Forms depuis window.currentUserForms');
-      }
-      // 2. localStorage
-      else if (localStorage.getItem('currentUserForms')) {
+      } else if (localStorage.getItem('currentUserForms')) {
         forms = JSON.parse(localStorage.getItem('currentUserForms') || '[]');
-        console.log('🎨 Forms depuis localStorage.currentUserForms');
-      }
-      // 3. sessionStorage
-      else if (sessionStorage.getItem('currentUserForms')) {
+      } else if (sessionStorage.getItem('currentUserForms')) {
         forms = JSON.parse(sessionStorage.getItem('currentUserForms') || '[]');
-        console.log('🎨 Forms depuis sessionStorage.currentUserForms');
       }
       
       const linkedForm = forms.find((f: any) => f.id === linkedFormId);
-      console.log('🎨 Formulaire lié trouvé:', !!linkedForm);
-      if (linkedForm) {
-        console.log('🎨 Titre:', linkedForm.title);
-        console.log('🎨 Champs:', linkedForm.fields?.map((f: any) => f.label));
-      }
       return linkedForm ? `${linkedForm.title} (${linkedForm.fields?.length || 0} champs)` : 'Formulaire non trouvé';
     } catch {
       return 'Erreur de chargement';
@@ -61,30 +41,25 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Propriétés du champ
         </h3>
         {linkedFormId && (
-          <p className="text-xs text-blue-600 dark:text-blue-400 break-words">
+          <p className="text-xs text-blue-600 dark:text-blue-400">
             📋 Lié au formulaire: {getLinkedFormInfo()}
           </p>
         )}
       </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+      <CardContent className="space-y-4">
+        {/* Variable */}
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Variable liée
           </label>
-          <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">
-            💡 Astuce: Les variables sont générées automatiquement depuis les champs du formulaire
-          </p>
-          <p className="text-xs text-gray-500 mb-2 break-words">
-            Variables disponibles: {availableVariables.length}
-          </p>
           <select
             value={field.variable}
             onChange={(e) => onUpdate({ variable: e.target.value })}
-            className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
             <option value="">Sélectionner une variable</option>
             <optgroup label="Variables du formulaire">
@@ -102,28 +77,18 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               ))}
             </optgroup>
           </select>
-          {linkedFormId && (
-            <p className="text-xs text-gray-500 mt-1 break-words">
-              ✅ Variables générées depuis les champs du formulaire lié ({availableVariables.length - 3} champs + 3 système)
-            </p>
-          )}
-          {!linkedFormId && (
-            <p className="text-xs text-orange-600 mt-1 break-words">
-              ⚠️ Aucun formulaire lié - Variables par défaut utilisées
-            </p>
-          )}
           
-          {/* Aperçu de la variable sélectionnée */}
           {field.variable && (
             <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
               <p className="text-xs text-green-800 dark:text-green-200">
-                ✅ Variable sélectionnée: <code className="font-mono bg-white dark:bg-gray-800 px-1 rounded">{field.variable}</code>
+                ✅ Variable: <code className="font-mono bg-white dark:bg-gray-800 px-1 rounded">{field.variable}</code>
               </p>
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+        {/* Position */}
+        <div className="grid grid-cols-2 gap-4">
           <Input
             label="Position X"
             type="number"
@@ -144,7 +109,8 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+        {/* Taille */}
+        <div className="grid grid-cols-2 gap-4">
           <Input
             label="Largeur"
             type="number"
@@ -165,130 +131,106 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           />
         </div>
 
-        {/* Boutons de positionnement rapide */}
+        {/* Positionnement rapide */}
         <div className="space-y-2">
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Positionnement rapide
           </label>
           <div className="grid grid-cols-3 gap-1">
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 20, y: 40 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
+              onClick={() => onUpdate({ x: 50, y: 50 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↖
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 250, y: 40 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
+              onClick={() => onUpdate({ x: 250, y: 50 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↑
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 450, y: 40 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
+              onClick={() => onUpdate({ x: 450, y: 50 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↗
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 20, y: 350 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
+              onClick={() => onUpdate({ x: 50, y: 400 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↙
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 250, y: 350 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
+              onClick={() => onUpdate({ x: 250, y: 400 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↓
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 450, y: 350 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 p-1"
+              onClick={() => onUpdate({ x: 450, y: 400 })}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↘
             </Button>
           </div>
         </div>
-        
-        {/* Boutons de taille et alignement */}
+
+        {/* Tailles prédéfinies */}
         <div className="space-y-2">
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-            Actions rapides
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Tailles prédéfinies
           </label>
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-2">
             <Button
-              type="button"
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ width: 80, height: 20 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-1"
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
-              📏 S
+              Petit
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 120, height: 25 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-1"
+              onClick={() => onUpdate({ width: 150, height: 25 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
-              📏 M
+              Moyen
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 160, height: 30 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-1"
+              onClick={() => onUpdate({ width: 200, height: 30 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
-              📏 L
+              Grand
             </Button>
             <Button
-              type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ width: 180, height: 50 })}
-              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 p-1"
+              onClick={() => onUpdate({ width: 200, height: 60 })}
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100"
             >
-              ✍️
+              Signature
             </Button>
           </div>
-          
-          {/* Alignement sur grille */}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              const gridSize = 10;
-              const snappedX = Math.round(field.x / gridSize) * gridSize;
-              const snappedY = Math.round(field.y / gridSize) * gridSize;
-              onUpdate({ x: snappedX, y: snappedY });
-            }}
-            className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300"
-          >
-            📐 Aligner sur grille (10px)
-          </Button>
         </div>
-        {(field.type === 'text' || field.type === 'number') && (
+
+        {/* Propriétés de style pour texte */}
+        {(field.type === 'text' || field.type === 'number' || field.type === 'date') && (
           <>
             <Input
               label="Taille de police"
@@ -301,34 +243,32 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             />
             
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Couleur du texte
               </label>
               <input
                 type="color"
                 value={field.fontColor || '#000000'}
                 onChange={(e) => onUpdate({ fontColor: e.target.value })}
-                className="w-full h-8 sm:h-10 border border-gray-300 rounded-lg"
+                className="w-full h-10 border border-gray-300 rounded-lg"
               />
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Couleur de fond
               </label>
               <input
                 type="color"
                 value={field.backgroundColor || '#ffffff'}
                 onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
-                className="w-full h-8 sm:h-10 border border-gray-300 rounded-lg"
+                className="w-full h-10 border border-gray-300 rounded-lg"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Utilisez blanc (#ffffff) pour un fond transparent
-              </p>
             </div>
           </>
         )}
 
+        {/* Champ obligatoire */}
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
@@ -337,30 +277,45 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             onChange={(e) => onUpdate({ required: e.target.checked })}
             className="text-blue-600"
           />
-          <label htmlFor="required" className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+          <label htmlFor="required" className="text-sm text-gray-700 dark:text-gray-300">
             Champ obligatoire
           </label>
         </div>
 
+        {/* Placeholder */}
         <Input
           label="Texte d'aide"
           value={field.placeholder || ''}
           onChange={(e) => onUpdate({ placeholder: e.target.value })}
           placeholder="Texte affiché si la variable est vide"
         />
-        
-        {/* Informations d'aide */}
+
+        {/* Alignement sur grille */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            const gridSize = 10;
+            const snappedX = Math.round(field.x / gridSize) * gridSize;
+            const snappedY = Math.round(field.y / gridSize) * gridSize;
+            onUpdate({ x: snappedX, y: snappedY });
+          }}
+          className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100"
+        >
+          📐 Aligner sur grille (10px)
+        </Button>
+
+        {/* Informations du champ */}
         <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border">
           <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            💡 Conseils de positionnement
+            Informations du champ
           </h4>
-          <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-            <li>• Utilisez les coordonnées pour un placement précis</li>
-            <li>• Les boutons de positionnement rapide placent aux coins</li>
-            <li>• Glissez-déposez directement sur le PDF pour ajuster</li>
-            <li>• Le coin bleu permet de redimensionner</li>
-            <li>• L'aperçu montre comment le champ apparaîtra</li>
-          </ul>
+          <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+            <div>Type: {field.type}</div>
+            <div>Page: {field.page}</div>
+            <div>Position: ({Math.round(field.x)}, {Math.round(field.y)})</div>
+            <div>Taille: {Math.round(field.width)} × {Math.round(field.height)}</div>
+          </div>
         </div>
       </CardContent>
     </Card>
