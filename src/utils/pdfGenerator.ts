@@ -263,8 +263,10 @@ export class PDFGenerator {
                 console.error(`🖼️ Stack trace:`, error.stack);
                 console.error(`🖼️ Variable problématique: ${field.variable}`);
                 console.error(`🖼️ Données: ${value.substring(0, 100)}...`);
+                if (isMobile) {
                   console.log('📱 ❌ Image ignorée sur mobile (erreur)');
                 }
+              }
             } else {
               console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ:`);
               console.log(`🖼️   - Champ: ${field.variable}`);
@@ -276,7 +278,6 @@ export class PDFGenerator {
             }
             break;
         }
-        }
         
         processedFields++;
         
@@ -287,6 +288,7 @@ export class PDFGenerator {
       }
 
       console.log('🎨 Tous les champs traités, sauvegarde du PDF...');
+      
       // Retourner le PDF généré
       let finalPdf;
       try {
@@ -352,6 +354,7 @@ export class PDFGenerator {
       color: rgb(0, 0, 0), // Couleur fixe
     });
   }
+
   private static getFieldValue(field: PDFField, data: Record<string, any>): string {
     // Extraire le nom de la variable (enlever ${})
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
@@ -395,12 +398,7 @@ export class PDFGenerator {
   }
   
   private static normalizeKey(key: string): string {
-    retu
-      }
-      )
-    }
-  }
-}rn key
+    return key
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
