@@ -176,6 +176,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         ref={containerRef}
         className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-2 sm:p-4"
         id="pdf-container"
+        style={{ position: 'relative' }}
       >
         <div className="flex flex-col items-center space-y-4 min-w-0">
           {Array.from({ length: numPages }, (_, index) => (
@@ -203,16 +204,16 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             />
             </div>
           ))}
-          
-          {/* Overlay global pour tous les champs */}
-          {!loading && !error && (
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="relative w-full h-full pointer-events-auto">
-                {children}
-              </div>
-            </div>
-          )}
         </div>
+        
+        {/* Overlay global pour tous les champs - positionné par rapport au conteneur */}
+        {!loading && !error && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="relative w-full h-full pointer-events-auto">
+              {children}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

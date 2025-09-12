@@ -35,28 +35,31 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   // Calculer la position absolue en tenant compte de toutes les pages
   const getAbsolutePosition = () => {
-    // Trouver le conteneur de la page cible
-    const pageContainer = document.querySelector(`[data-page="${field.page}"]`) as HTMLElement;
-    if (!pageContainer) {
+    // Trouver le canvas de la page cible
+    const pageCanvas = document.querySelector(`canvas[data-page="${field.page}"]`) as HTMLCanvasElement;
+    if (!pageCanvas) {
+      console.warn(`Canvas pour page ${field.page} non trouvé`);
       return { left: 0, top: 0, width: 0, height: 0 };
     }
     
-    // Obtenir la position du conteneur de la page
-    const pageRect = pageContainer.getBoundingClientRect();
-    const pdfContainer = document.querySelector('#pdf-container');
-    const pdfContainerRect = pdfContainer?.getBoundingClientRect();
+    // Obtenir la position du canvas
+    const canvasRect = pageCanvas.getBoundingClientRect();
+    const pdfContainer = document.querySelector('#pdf-container') as HTMLElement;
     
-    if (!pdfContainerRect) {
+    if (!pdfContainer) {
+      console.warn('Conteneur PDF non trouvé');
       return { left: 0, top: 0, width: 0, height: 0 };
     }
     
-    // Calculer la position relative au conteneur PDF
-    const relativeTop = pageRect.top - pdfContainerRect.top + (pdfContainer?.scrollTop || 0);
-    const relativeLeft = pageRect.left - pdfContainerRect.left + (pdfContainer?.scrollLeft || 0);
+    const containerRect = pdfContainer.getBoundingClientRect();
+    
+    // Position relative au conteneur PDF avec scroll
+    const relativeLeft = canvasRect.left - containerRect.left + pdfContainer.scrollLeft;
+    const relativeTop = canvasRect.top - containerRect.top + pdfContainer.scrollTop;
     
     return {
-      left: relativeLeft + field.x * scale,
-      top: relativeTop + field.y * scale + 40, // Offset pour le titre de page
+      left: relativeLeft + (field.x * scale),
+      top: relativeTop + (field.y * scale),
       width: field.width * scale,
       height: field.height * scale,
     };
