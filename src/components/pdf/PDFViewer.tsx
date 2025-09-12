@@ -225,12 +225,12 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   return (
     <div className="flex flex-col h-full">
       {/* Barre d'outils */}
-      <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 min-h-[60px]">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" onClick={zoomOut} disabled={scale <= 0.5}>
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[60px] text-center">
+          <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-center font-mono">
             {Math.round(scale * 100)}%
           </span>
           <Button variant="ghost" size="sm" onClick={zoomIn} disabled={scale >= 3}>
@@ -248,7 +248,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-center">
+            <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[100px] text-center font-mono">
               Page {currentPage} / {numPages}
             </span>
             <Button 
@@ -262,17 +262,17 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
           </div>
         )}
 
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 font-medium">
           Cliquez pour placer un champ
         </div>
       </div>
 
       {/* Conteneur PDF */}
-      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 relative">
-        <div className="flex flex-col items-center space-y-4">
+      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6 relative">
+        <div className="flex flex-col items-center space-y-6">
           {Array.from({ length: numPages }, (_, index) => (
             <div key={index} className="relative">
-              <div className={`text-center mb-2 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
+              <div className={`text-center mb-3 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
                   Page {index + 1}
                   {pdfDimensions[index] && (
@@ -299,11 +299,15 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
                   canvasRefs.current[index] = el;
                 }}
                 onClick={handleCanvasClick}
-                className={`border shadow-lg cursor-crosshair bg-white ${
+                className={`border shadow-xl cursor-crosshair bg-white max-w-none ${
                   currentPage === index + 1 
                     ? 'border-blue-500 border-2 shadow-blue-200' 
                     : 'border-gray-300 dark:border-gray-600'
-                } hover:shadow-xl transition-shadow`}
+                } hover:shadow-2xl transition-shadow`}
+                style={{ 
+                  minWidth: '600px',
+                  minHeight: '800px'
+                }}
                 data-page={index + 1}
               />
             </div>
@@ -312,7 +316,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
         
         {/* Overlay des champs */}
         {children && (
-          <div className="absolute inset-0 pointer-events-none" style={{ top: '60px', left: '16px', zIndex: 20 }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ top: '70px', left: '24px', zIndex: 20 }}>
             {children}
           </div>
         )}

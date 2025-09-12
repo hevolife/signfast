@@ -385,7 +385,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
               {/* Visualiseur PDF */}
               <div className="lg:col-span-2">
-                <Card className="h-[700px]">
+                <Card className="h-[800px]">
                   <PDFViewer
                     ref={pdfViewerRef}
                     file={pdfFile}
