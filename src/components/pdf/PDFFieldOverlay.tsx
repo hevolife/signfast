@@ -23,7 +23,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   canvasRefs,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragPosition, setDragPosition] = useState({ x: field.x, y: field.y });
   const fieldRef = useRef<HTMLDivElement>(null);
 
   // Calculer la position du champ par rapport au canvas de sa page
@@ -43,8 +43,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     if (!containerRect) {
       return { left: 0, top: 0 };
     }
-
-    // Position relative au conteneur
+    const currentX = isDragging ? dragPosition.x : field.x;
+    const currentY = isDragging ? dragPosition.y : field.y;
+    
+    const left = canvasRect.left - containerRect.left + (currentX * scale);
+    const top = canvasRect.top - containerRect.top + (currentY * scale);
     const left = canvasRect.left - containerRect.left + (field.x * scale);
     const top = canvasRect.top - containerRect.top + (field.y * scale);
 
@@ -60,6 +63,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     e.preventDefault();
     onSelect();
     setIsDragging(true);
+    setDragPosition({ x: field.x, y: field.y });
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -73,20 +77,22 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const deltaY = (e.clientY - startY) / scale;
       
       // Update drag offset for immediate visual feedback
-      setDragOffset({ x: deltaX * scale, y: deltaY * scale });
+      const newX = Math.max(0, startFieldX + deltaX);
+      const newY = Math.max(0, startFieldY + deltaY);
       
       // Throttle actual position updates
-      requestAnimationFrame(() => {
-        onUpdate({ 
-          x: Math.max(0, startFieldX + deltaX), 
-          y: Math.max(0, startFieldY + deltaY)
-        });
-      });
+      // Mise à jour immédiate de la position visuelle
+      setDragPosition({ x: newX, y: newY });
     };
 
     const handleMouseUp = () => {
+      // Appliquer la position finale une seule fois
+      onUpdate({ 
+        x: dragPosition.x, 
+        y: dragPosition.y
+      });
+      
       setIsDragging(false);
-      setDragOffset({ x: 0, y: 0 });
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -119,6 +125,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     minHeight: '20px',
     zIndex: isSelected ? 1000 : 500,
     pointerEvents: 'auto' as const,
+    transform: isDragging ? 'scale(1.05)' : 'scale(1)',
+    transition: isDragging ? 'none' : 'transform 0.1s ease',
   };
 
   return (
