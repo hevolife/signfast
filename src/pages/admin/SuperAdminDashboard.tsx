@@ -100,9 +100,34 @@ export const SuperAdminDashboard: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      console.log('🔧 Chargement des utilisateurs de test...');
+      console.log('🔧 Chargement des vrais utilisateurs...');
       
-      // Utiliser directement des données de test pour éviter les erreurs de permissions
+      // Appeler la fonction edge pour récupérer les vrais utilisateurs
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const realUsers = await response.json();
+      
+      if (Array.isArray(realUsers)) {
+        setUsers(realUsers);
+        console.log('✅ Vrais utilisateurs chargés:', realUsers.length, 'utilisateurs');
+      } else {
+        throw new Error('Format de réponse invalide');
+      }
+    } catch (error) {
+      console.error('❌ Erreur chargement utilisateurs:', error);
+      
+      // Fallback vers des données de test en cas d'erreur
+      console.log('🔄 Fallback vers données de test...');
       const testUsers: UserData[] = [
         {
           id: 'admin-user',
@@ -148,96 +173,11 @@ export const SuperAdminDashboard: React.FC = () => {
             pdfs_count: 15,
             responses_count: 47
           }
-        },
-        {
-          id: 'demo-user-2',
-          email: 'jean.dupont@immobilier.com',
-          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          last_sign_in_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          email_confirmed_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          profile: {
-            first_name: 'Jean',
-            last_name: 'Dupont',
-            company_name: 'Agence Immobilière Dupont'
-          },
-          stats: {
-            forms_count: 3,
-            templates_count: 2,
-            pdfs_count: 8,
-            responses_count: 23
-          }
-        },
-        {
-          id: 'demo-user-3',
-          email: 'sophie.bernard@freelance.fr',
-          created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-          last_sign_in_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          email_confirmed_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-          profile: {
-            first_name: 'Sophie',
-            last_name: 'Bernard',
-            company_name: 'Freelance Design'
-          },
-          secretCode: {
-            type: 'monthly',
-            expires_at: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          stats: {
-            forms_count: 1,
-            templates_count: 1,
-            pdfs_count: 3,
-            responses_count: 12
-          }
-        },
-        {
-          id: 'demo-user-4',
-          email: 'contact@startup-tech.com',
-          created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          last_sign_in_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          email_confirmed_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          profile: {
-            first_name: 'Thomas',
-            last_name: 'Leroy',
-            company_name: 'StartupTech Solutions'
-          },
-          stats: {
-            forms_count: 5,
-            templates_count: 2,
-            pdfs_count: 12,
-            responses_count: 34
-          }
-        },
-        {
-          id: 'demo-user-5',
-          email: 'cabinet@avocat-dubois.fr',
-          created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          last_sign_in_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          email_confirmed_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          profile: {
-            first_name: 'Maître',
-            last_name: 'Dubois',
-            company_name: 'Cabinet d\'Avocats Dubois & Associés'
-          },
-          subscription: {
-            status: 'active',
-            price_id: 'price_1S6HwBKiNbWQJGP35byRSSBn',
-            current_period_end: Math.floor((Date.now() + 15 * 24 * 60 * 60 * 1000) / 1000)
-          },
-          stats: {
-            forms_count: 12,
-            templates_count: 6,
-            pdfs_count: 28,
-            responses_count: 89
-          }
         }
       ];
-
+      
       setUsers(testUsers);
-      console.log('✅ Données de test chargées:', testUsers.length, 'utilisateurs');
-    } catch (error) {
-      console.error('❌ Erreur chargement utilisateurs:', error);
-      toast.error('Erreur lors du chargement des utilisateurs');
-      setUsers([]);
+      toast.error('Erreur chargement - données de test utilisées');
     } finally {
       setLoading(false);
     }
