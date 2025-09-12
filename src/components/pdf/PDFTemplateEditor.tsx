@@ -105,28 +105,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     }
   }, [currentLinkedFormId, formVariables]);
 
-  // Bloquer sur mobile - après tous les hooks
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="text-center py-16">
-            <FileText className="h-16 w-16 text-blue-600 mx-auto mb-6" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Éditeur de Template PDF
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              L'éditeur de template PDF nécessite un écran plus larger pour une expérience optimale.
-            </p>
-            <Link to="/pdf/templates">
-              <Button>Retour aux templates</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const loadExistingPdf = async () => {
     if (!existingPdfUrl) return;
     
@@ -390,6 +368,28 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   };
 
   const selectedFieldData = selectedField ? fields.find(f => f.id === selectedField) : null;
+
+  // Bloquer sur mobile - après tous les hooks
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="text-center py-16">
+            <FileText className="h-16 w-16 text-blue-600 mx-auto mb-6" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Éditeur de Template PDF
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              L'éditeur de template PDF nécessite un écran plus larger pour une expérience optimale.
+            </p>
+            <Link to="/pdf/templates">
+              <Button>Retour aux templates</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
