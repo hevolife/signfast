@@ -200,21 +200,6 @@ export const Settings: React.FC = () => {
     }
 
     // Vérifier la taille (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Le fichier ne doit pas dépasser 5MB');
-      return;
-    }
-
-    setLogoUploading(true);
-
-    try {
-      const logoUrl = await uploadLogo(file);
-      
-      if (logoUrl) {
-        const success = await updateProfile({ logo_url: logoUrl });
-        
-        if (success) {
-          toast.success('Logo mis à jour avec succès !');
         } else {
           toast.error('Erreur lors de la sauvegarde du logo');
         }
@@ -359,6 +344,18 @@ export const Settings: React.FC = () => {
             </nav>
           </div>
         </div>
+
+        {/* Bouton Admin pour super admins */}
+        {isSuperAdmin && (
+          <div className="mb-8 text-center">
+            <Link to="/admin">
+              <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
+                <Shield className="h-4 w-4" />
+                <span>Dashboard Super Admin</span>
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {activeTab === 'profile' && (
           <div className="space-y-6">
@@ -764,34 +761,6 @@ export const Settings: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'admin' && isSuperAdmin && (
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-red-600" />
-                <span>Administration</span>
-              </h3>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 text-red-600 rounded-full mb-6">
-                <Shield className="h-8 w-8" />
-              </div>
-              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Dashboard Super Admin
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Accédez au dashboard d'administration pour gérer les utilisateurs, créer des codes secrets et consulter les statistiques globales.
-              </p>
-              <Link to="/admin">
-                <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
-                  <Shield className="h-4 w-4" />
-                  <span>Ouvrir le Dashboard Admin</span>
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-        
         {/* Modal Code Secret */}
         <SecretCodeModal
           isOpen={showSecretCodeModal}
