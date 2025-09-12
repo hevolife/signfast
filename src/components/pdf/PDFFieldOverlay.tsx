@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
 import { Trash2 } from 'lucide-react';
@@ -10,8 +10,7 @@ interface PDFFieldOverlayProps {
   onSelect: () => void;
   onUpdate: (updates: Partial<PDFField>) => void;
   onDelete: () => void;
-  containerRef: React.RefObject<HTMLDivElement>;
-  pageOffset: { top: number; left: number };
+  canvasRefs: React.RefObject<(HTMLCanvasElement | null)[]>;
 }
 
 export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
@@ -21,14 +20,35 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
-  containerRef,
-  pageOffset,
+  canvasRefs,
 }) => {
-  // Defensive check to ensure pageOffset is always a valid object
-  const safePageOffset = pageOffset || { top: 0, left: 0 };
-
   const [isDragging, setIsDragging] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
+
+  // Calculer la position du champ par rapport au canvas de sa page
+  const getFieldPosition = () => {
+    if (!canvasRefs.current || !canvasRefs.current[field.page - 1]) {
+      return { left: 0, top: 0 };
+    }
+
+    const canvas = canvasRefs.current[field.page - 1];
+    if (!canvas) {
+      return { left: 0, top: 0 };
+    }
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const containerRect = canvas.closest('.overflow-auto')?.getBoundingClientRect();
+    
+    if (!containerRect) {
+      return { left: 0, top: 0 };
+    }
+
+    // Position relative au conteneur
+    const left = canvasRect.left - containerRect.left + (field.x * scale);
+    const top = canvasRect.top - containerRect.top + (field.y * scale);
+
+    return { left, top };
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,11 +93,12 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
   };
 
-  // Position directe basée sur les coordonnées du champ
+  const position = getFieldPosition();
+
   const style = {
     position: 'absolute' as const,
-    left: safePageOffset.left + (field.x * scale) - (containerRef?.current?.scrollLeft || 0),
-    top: safePageOffset.top + (field.y * scale) - (containerRef?.current?.scrollTop || 0),
+    left: position.left,
+    top: position.top,
     width: field.width * scale,
     height: field.height * scale,
     minWidth: '40px',
@@ -89,7 +110,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   return (
     <div
       ref={fieldRef}
-      className={`border-2 cursor-move select-none ${
+      className={`border-2 cursor-move select-none transition-all ${
         isSelected 
           ? 'border-blue-500 bg-blue-100/70' 
           : 'border-gray-400 bg-gray-100/50 hover:border-blue-400'
@@ -107,7 +128,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         <span className="truncate">{field.variable || field.type}</span>
       </div>
 
-      {/* Bouton de suppression pour champ sélectionné */}
+      {/* Bouton de suppression */}
       {isSelected && (
         <Button
           variant="ghost"
