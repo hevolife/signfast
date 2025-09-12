@@ -28,6 +28,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const [numPages, setNumPages] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canvasMountedCount, setCanvasMountedCount] = useState<number>(0);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const renderTasksRef = useRef<(any | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,8 +55,9 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     console.log(`📄 pdfDoc:`, !!pdfDoc);
     console.log(`📄 numPages:`, numPages);
     console.log(`📄 scale:`, scale);
+    console.log(`📄 canvasMountedCount:`, canvasMountedCount);
     
-    if (pdfDoc && numPages > 0) {
+    if (pdfDoc && numPages > 0 && canvasMountedCount === numPages) {
       console.log(`📄 Conditions remplies, démarrage rendu dans 100ms...`);
       // Débounce le rendu pour améliorer les performances
       const timeoutId = setTimeout(() => {
@@ -65,9 +67,9 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       
       return () => clearTimeout(timeoutId);
     } else {
-      console.log(`📄 Conditions non remplies pour le rendu`);
+      console.log(`📄 Conditions non remplies pour le rendu - Canvas montés: ${canvasMountedCount}/${numPages}`);
     }
-  }, [pdfDoc, numPages, scale]);
+  }, [pdfDoc, numPages, scale, canvasMountedCount]);
 
   const cancelAllRenderTasks = () => {
     renderTasksRef.current.forEach((task, index) => {
@@ -84,6 +86,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     try {
       setLoading(true);
       setError(null);
+      setCanvasMountedCount(0);
       console.log(`📄 ===== CHARGEMENT PDF =====`);
       console.log(`📄 Type de fichier:`, file instanceof File ? 'File' : 'String/URL');
       
@@ -125,6 +128,26 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     }
   };
 
+  const handleCanvasRef = (el: HTMLCanvasElement | null, index: number) => {
+    const wasNull = canvasRefs.current[index] === null;
+    canvasRefs.current[index] = el;
+    
+    if (el && wasNull) {
+      // Un nouveau canvas a été monté
+      setCanvasMountedCount(prev => {
+        const newCount = prev + 1;
+        console.log(`📄 Canvas ${index + 1} monté - Total: ${newCount}/${numPages}`);
+        return newCount;
+      });
+    } else if (!el && !wasNull) {
+      // Un canvas a été démonté
+      setCanvasMountedCount(prev => {
+        const newCount = Math.max(0, prev - 1);
+        console.log(`📄 Canvas ${index + 1} démonté - Total: ${newCount}/${numPages}`);
+        return newCount;
+      });
+    }
+  };
   const renderAllPages = async () => {
     if (!pdfDoc) return;
     if (isRendering) return; // Éviter les rendus multiples simultanés
@@ -137,6 +160,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     console.log(`📄 ===== RENDU DE TOUTES LES PAGES =====`);
     console.log(`📄 Nombre total de pages: ${numPages}`);
     console.log(`📄 Scale actuel: ${scale}`);
+    console.log(`📄 Canvas montés: ${canvasMountedCount}`);
     
     // Rendu optimisé - une page à la fois
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
@@ -146,6 +170,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
         console.error(`📄 ❌ Canvas manquant pour page ${pageNum} - index ${pageNum - 1}`);
         console.log(`📄 Canvas refs length: ${canvasRefs.current.length}`);
         console.log(`📄 Canvas refs:`, canvasRefs.current.map((c, i) => `${i}: ${c ? 'OK' : 'NULL'}`));
+        console.log(`📄 Canvas montés: ${canvasMountedCount}/${numPages}`);
         continue;
       }
 
@@ -324,10 +349,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
               )}
               
               <canvas
-                ref={(el) => {
-                  canvasRefs.current[index] = el;
-                  console.log(`📄 Canvas ref assigné pour page ${index + 1}:`, !!el);
-                }}
+                ref={(el) => handleCanvasRef(el, index)}
                 onClick={handleCanvasClick}
                 className={`border shadow-lg cursor-crosshair bg-white ${
                   currentPage === index + 1 
