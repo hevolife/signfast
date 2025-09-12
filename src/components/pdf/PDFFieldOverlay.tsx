@@ -41,6 +41,9 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     if (!containerRect) {
       return { left: field.x * scale, top: field.y * scale };
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
