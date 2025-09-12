@@ -26,11 +26,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Afficher seulement si sur la page courante
-  if (field.page !== currentPage) {
-    return null;
-  }
-
   // Calculer la position d'affichage depuis les ratios
   const getDisplayPosition = () => {
     if (!pdfViewerRef.current) return { x: 0, y: 0, width: 100, height: 25 };
@@ -70,6 +65,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     return () => clearInterval(interval);
   }, []);
+
+  // Afficher seulement si sur la page courante
+  if (field.page !== currentPage) {
+    return null;
+  }
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.delete-button') || 
