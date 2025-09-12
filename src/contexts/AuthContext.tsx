@@ -35,18 +35,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     try {
-      // Nettoyer l'impersonation lors de la déconnexion
       localStorage.removeItem('admin_impersonation');
       setIsImpersonating(false);
-      
-      // Forcer la mise à jour de l'état immédiatement
       setUser(null);
       setSession(null);
       
       try {
-        // Tentative de déconnexion Supabase
         const { error } = await supabase.auth.signOut();
-        
         if (error) {
           console.warn('Erreur déconnexion Supabase (ignorée):', error.message);
         }
@@ -54,7 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Erreur déconnexion Supabase (ignorée):', supabaseError);
       }
       
-      // Nettoyer le localStorage
       try {
         localStorage.removeItem('sb-fscwmfrwzougwtsxpoqz-auth-token');
         localStorage.removeItem('supabase.auth.token');
@@ -67,24 +61,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Erreur nettoyage localStorage:', storageError);
       }
       
-      // Redirection forcée vers la page d'accueil
       window.location.href = '/login';
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
       setUser(null);
       setSession(null);
-      
-      try {
-        localStorage.removeItem('admin_impersonation');
-        Object.keys(localStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('auth')) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (storageError) {
-        console.warn('Erreur nettoyage localStorage:', storageError);
-      }
-      
       window.location.href = '/login';
     }
   }, []);
