@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { usePDFTemplates } from '../../hooks/usePDFTemplates';
 import { useLimits } from '../../hooks/useLimits';
@@ -21,7 +22,7 @@ export const PDFTemplates: React.FC = () => {
   const product = stripeConfig.products[0];
 
   // Gérer le chargement initial
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loading && !initialLoadDone) {
       setInitialLoadDone(true);
     }
