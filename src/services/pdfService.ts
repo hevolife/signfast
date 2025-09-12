@@ -326,57 +326,22 @@ export class PDFService {
   // COMPTER LES PDFS (optimisé pour éviter les timeouts)
   static async countPDFs(): Promise<number> {
     try {
-      // Essayer Supabase d'abord
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (!userError && user) {
-          // Vérifier si on est en mode impersonation
-          const impersonationData = localStorage.getItem('admin_impersonation');
-          let targetUserId = user.id;
-          
-          if (impersonationData) {
-            try {
-              const data = JSON.parse(impersonationData);
-              targetUserId = data.target_user_id;
-              console.log('🎭 Mode impersonation: comptage des PDFs pour', data.target_email, 'userId:', targetUserId);
-            } catch (error) {
-              console.error('Erreur parsing impersonation data:', error);
-            }
-          }
-
-          console.log('💾 Count PDFs pour userId:', targetUserId);
-          
-          const { count, error } = await supabase
-            .from('pdf_storage')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', targetUserId);
-
-          console.log('💾 Résultat count:', { count, error: error?.message });
-
-          if (!error && count !== null) {
-            console.log('💾 Nombre de PDFs Supabase pour userId', targetUserId, ':', count);
-            return count;
-          } else {
-            console.warn('💾 Erreur count Supabase:', error?.message || 'Count null');
-          }
-        } else {
-          console.log('💾 Utilisateur non connecté pour count');
-        }
-      } catch (supabaseError) {
-        console.warn('💾 Erreur Supabase count (ignorée):', supabaseError);
-      }
-
-      // Fallback localStorage
-      try {
-        const localPDFs = this.getLocalPDFs();
-        const localCount = Object.keys(localPDFs).length;
-        console.log('💾 Nombre de PDFs localStorage:', localCount);
-        return localCount;
-      } catch (localError) {
-        console.warn('💾 Erreur count local:', localError);
+      const targetUserId = await this.getTargetUserId();
+      if (!targetUserId) {
         return 0;
       }
+
+      const { count, error } = await supabase
+        .from('pdf_storage')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', targetUserId);
+
+      if (error) {
+        console.error('💾 Erreur count:', error);
+        return 0;
+      }
+
+      return count || 0;
     } catch (error) {
       console.error('💾 Erreur count PDFs:', error);
       return 0;
@@ -504,60 +469,23 @@ export class PDFService {
   // SUPPRIMER UN PDF
   static async deletePDF(fileName: string): Promise<boolean> {
     try {
-      console.log('💾 Suppression PDF:', fileName);
-      
-      let deleted = false;
-
-      // Essayer de supprimer depuis Supabase d'abord
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (!userError && user) {
-          // Vérifier si on est en mode impersonation
-          const impersonationData = localStorage.getItem('admin_impersonation');
-          let targetUserId = user.id;
-          
-          if (impersonationData) {
-            try {
-              const data = JSON.parse(impersonationData);
-              targetUserId = data.target_user_id;
-              console.log('🎭 Mode impersonation: suppression PDF pour', data.target_email);
-            } catch (error) {
-              console.error('Erreur parsing impersonation data:', error);
-            }
-          }
-
-          const { error } = await supabase
-            .from('pdf_storage')
-            .delete()
-            .eq('file_name', fileName)
-            .eq('user_id', targetUserId);
-
-          if (!error) {
-            console.log('💾 PDF supprimé de Supabase');
-            deleted = true;
-          } else {
-            console.warn('💾 Erreur suppression Supabase:', error.message);
-          }
-        }
-      } catch (supabaseError) {
-        console.warn('💾 Erreur Supabase lors suppression:', supabaseError);
+      const targetUserId = await this.getTargetUserId();
+      if (!targetUserId) {
+        return false;
       }
 
-      // Supprimer du localStorage
-      try {
-        const localPDFs = this.getLocalPDFs();
-        if (localPDFs[fileName]) {
-          delete localPDFs[fileName];
-          localStorage.setItem('allSavedPDFs', JSON.stringify(localPDFs));
-          console.log('💾 PDF supprimé du localStorage');
-          deleted = true;
-        }
-      } catch (localError) {
-        console.warn('💾 Erreur suppression locale:', localError);
+      const { error } = await supabase
+        .from('pdf_storage')
+        .delete()
+        .eq('file_name', fileName)
+        .eq('user_id', targetUserId);
+
+      if (error) {
+        console.error('💾 Erreur suppression:', error);
+        return false;
       }
 
-      return deleted;
+      return true;
     } catch (error) {
       console.error('💾 Erreur suppression PDF:', error);
       return false;
@@ -608,42 +536,19 @@ export class PDFService {
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
     try {
-      // Nettoyer depuis Supabase pour l'utilisateur connecté
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (!userError && user) {
-          // Vérifier si on est en mode impersonation
-          const impersonationData = localStorage.getItem('admin_impersonation');
-          let targetUserId = user.id;
-          
-          if (impersonationData) {
-            try {
-              const data = JSON.parse(impersonationData);
-              targetUserId = data.target_user_id;
-              console.log('🎭 Mode impersonation: nettoyage PDFs pour', data.target_email);
-            } catch (error) {
-              console.error('Erreur parsing impersonation data:', error);
-            }
-          }
-
-          const { error } = await supabase
-            .from('pdf_storage')
-            .delete()
-            .eq('user_id', targetUserId);
-
-          if (!error) {
-            console.log('💾 PDFs Supabase nettoyés pour l\'utilisateur');
-          } else {
-            console.warn('💾 Erreur nettoyage Supabase:', error.message);
-          }
-        }
-      } catch (supabaseError) {
-        console.warn('💾 Erreur Supabase lors nettoyage:', supabaseError);
+      const targetUserId = await this.getTargetUserId();
+      if (!targetUserId) {
+        return;
       }
 
-      // Nettoyer localStorage
-      localStorage.removeItem('allSavedPDFs');
+      const { error } = await supabase
+        .from('pdf_storage')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (error) {
+        console.error('💾 Erreur nettoyage:', error);
+      }
     } catch (error) {
       console.error('💾 Erreur nettoyage complet:', error);
     }
