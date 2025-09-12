@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDrop } from 'react-dnd';
+import { TouchBackend } from 'react-dnd-touch-backend';
 import { PDFViewer } from './PDFViewer';
 import type { PDFViewerRef } from './PDFViewer';
 import { PDFFieldPalette } from './PDFFieldPalette';
@@ -48,25 +48,20 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
-  // Drop zone pour le déplacement des champs
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'pdf-field',
-    drop: (item: { id: string }, monitor) => {
-      const offset = monitor.getClientOffset();
-      if (offset && pdfViewerRef.current?.canvasRefs.current) {
-        const canvas = pdfViewerRef.current.canvasRefs.current[currentPage - 1];
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect();
-          const x = (offset.x - rect.left) / scale;
-          const y = (offset.y - rect.top) / scale;
-          updateField(item.id, { x, y, page: currentPage });
-        }
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  }));
+  // Détecter si on est sur mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Backend DnD adaptatif
+  const dndBackend = isMobile ? TouchBackend : HTML5Backend;
+  const dndOptions = isMobile ? { enableMouseEvents: true } : {};
 
   // Force re-render when PDF is loaded and fields exist
   useEffect(() => {
@@ -258,17 +253,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [currentLinkedFormId, formVariables, loadLinkedFormVariables]);
 
   // Détecter si on est sur mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Détecter si on est sur mobile
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
     console.log(`🔄 Mise à jour champ ${id}:`, updates);
     setFields(prev => prev.map(field => 
@@ -456,7 +440,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={dndBackend} options={dndOptions}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* En-tête */}
@@ -560,31 +544,20 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
                 {/* Visualiseur PDF - Centre */}
                 <div className="lg:col-span-3">
-                  <Card className="h-[600px] lg:h-[700px]" ref={drop}>
-                    <PDFViewer
-                      ref={pdfViewerRef}
-                      file={pdfFile}
-                      onPageClick={handlePageClick}
-                      currentPage={currentPage}
-                      onPageChange={setCurrentPage}
-                      scale={scale}
-                      onScaleChange={setScale}
-                    >
-                      {fields.map(field => (
-                        <PDFFieldOverlay
-                          key={field.id}
-                          field={field}
-                          scale={scale}
-                          isSelected={selectedField === field.id}
-                          onSelect={(field) => setSelectedField(field.id)}
-                          onUpdate={(updates) => updateField(field.id, updates)}
-                          onDelete={() => deleteField(field.id)}
-                          canvasRefs={pdfViewerRef.current?.canvasRefs}
-                          currentPage={currentPage}
-                        />
-                      ))}
-                    </PDFViewer>
-                  </Card>
+                  <PDFCanvasWithDrop
+                    pdfFile={pdfFile}
+                    fields={fields}
+                    selectedField={selectedField}
+                    currentPage={currentPage}
+                    scale={scale}
+                    pdfViewerRef={pdfViewerRef}
+                    onPageClick={handlePageClick}
+                    onPageChange={setCurrentPage}
+                    onScaleChange={setScale}
+                    onSelectField={setSelectedField}
+                    onUpdateField={updateField}
+                    onDeleteField={deleteField}
+                  />
                 </div>
 
                 {/* Propriétés du champ - Droite */}
@@ -642,31 +615,20 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 <PDFFieldPalette onAddField={addField} />
                 
                 {/* PDF mobile */}
-                <Card className="h-[500px]" ref={drop}>
-                  <PDFViewer
-                    ref={pdfViewerRef}
-                    file={pdfFile}
-                    onPageClick={handlePageClick}
-                    scale={scale}
-                    onScaleChange={setScale}
-                    currentPage={currentPage}
-                    onPageChange={setCurrentPage}
-                  >
-                    {fields.map(field => (
-                        <PDFFieldOverlay
-                          key={field.id}
-                          field={field}
-                          scale={scale}
-                          isSelected={selectedField === field.id}
-                          onSelect={(field) => setSelectedField(field.id)}
-                          onUpdate={(updates) => updateField(field.id, updates)}
-                          currentPage={currentPage}
-                          onDelete={() => deleteField(field.id)}
-                          canvasRefs={pdfViewerRef.current?.canvasRefs}
-                        />
-                      ))}
-                  </PDFViewer>
-                </Card>
+                <PDFCanvasWithDrop
+                  pdfFile={pdfFile}
+                  fields={fields}
+                  selectedField={selectedField}
+                  currentPage={currentPage}
+                  scale={scale}
+                  pdfViewerRef={pdfViewerRef}
+                  onPageClick={handlePageClick}
+                  onPageChange={setCurrentPage}
+                  onScaleChange={setScale}
+                  onSelectField={setSelectedField}
+                  onUpdateField={updateField}
+                  onDeleteField={deleteField}
+                />
                 
                 {/* Propriétés mobile */}
                 {selectedFieldData && (
@@ -692,5 +654,83 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         </div>
       </div>
     </DndProvider>
+  );
+};
+
+// Composant séparé pour gérer le drop zone dans le contexte DND
+interface PDFCanvasWithDropProps {
+  pdfFile: File | null;
+  fields: PDFField[];
+  selectedField: string | null;
+  currentPage: number;
+  scale: number;
+  pdfViewerRef: React.RefObject<PDFViewerRef>;
+  onPageClick: (x: number, y: number, page: number) => void;
+  onPageChange: (page: number) => void;
+  onScaleChange: (scale: number) => void;
+  onSelectField: (fieldId: string) => void;
+  onUpdateField: (id: string, updates: Partial<PDFField>) => void;
+  onDeleteField: (id: string) => void;
+}
+
+const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
+  pdfFile,
+  fields,
+  selectedField,
+  currentPage,
+  scale,
+  pdfViewerRef,
+  onPageClick,
+  onPageChange,
+  onScaleChange,
+  onSelectField,
+  onUpdateField,
+  onDeleteField,
+}) => {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'pdf-field',
+    drop: (item: { id: string }, monitor) => {
+      const offset = monitor.getClientOffset();
+      if (offset && pdfViewerRef.current?.canvasRefs.current) {
+        const canvas = pdfViewerRef.current.canvasRefs.current[currentPage - 1];
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const x = (offset.x - rect.left) / scale;
+          const y = (offset.y - rect.top) / scale;
+          onUpdateField(item.id, { x, y, page: currentPage });
+        }
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
+
+  return (
+    <Card className="h-[600px] lg:h-[700px]" ref={drop}>
+      <PDFViewer
+        ref={pdfViewerRef}
+        file={pdfFile}
+        onPageClick={onPageClick}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        scale={scale}
+        onScaleChange={onScaleChange}
+      >
+        {fields.map(field => (
+          <PDFFieldOverlay
+            key={field.id}
+            field={field}
+            scale={scale}
+            isSelected={selectedField === field.id}
+            onSelect={(field) => onSelectField(field.id)}
+            onUpdate={(updates) => onUpdateField(field.id, updates)}
+            onDelete={() => onDeleteField(field.id)}
+            canvasRefs={pdfViewerRef.current?.canvasRefs.current || []}
+            currentPage={currentPage}
+          />
+        ))}
+      </PDFViewer>
+    </Card>
   );
 };
