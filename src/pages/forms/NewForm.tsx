@@ -43,7 +43,7 @@ export const NewForm: React.FC = () => {
           collectEmail: false,
           generatePdf: true,
           emailPdf: false,
-          savePdfToServer: false,
+          savePdfToServer: true,
         },
         is_published: false,
       });
