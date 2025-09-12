@@ -113,10 +113,16 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     // Cancel all existing render tasks before starting new ones
     cancelAllRenderTasks();
     
+    console.log(`📄 Rendu de ${numPages} pages...`);
+    
     // Rendu optimisé - une page à la fois
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      console.log(`📄 Rendu page ${pageNum}/${numPages}`);
       const canvas = canvasRefs.current[pageNum - 1];
-      if (!canvas) continue;
+      if (!canvas) {
+        console.warn(`📄 Canvas manquant pour page ${pageNum}`);
+        continue;
+      }
 
       try {
         // Cancel existing render task for this page if any
@@ -147,6 +153,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         renderTasksRef.current[pageNum - 1] = renderTask;
         
         await renderTask.promise;
+        console.log(`📄 ✅ Page ${pageNum} rendue avec succès`);
         
         // Clear the render task reference once completed
         renderTasksRef.current[pageNum - 1] = null;

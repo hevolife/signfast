@@ -43,25 +43,35 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
     
     // Pour les autres pages, calculer l'offset
-    // Chaque page a une hauteur + un espacement
-    const pageSpacing = 16; // 4 * 4 (gap entre les pages)
     const pageIndex = field.page - 1;
     
-    // Trouver la hauteur de la page précédente
     let pageOffset = 0;
-    if (canvasRefs?.current && canvasRefs.current[pageIndex]) {
-      // Calculer l'offset basé sur les pages précédentes
+    
+    // Calculer l'offset basé sur les pages précédentes
+    if (canvasRefs?.current) {
       for (let i = 0; i < pageIndex; i++) {
         const canvas = canvasRefs.current[i];
         if (canvas) {
-          pageOffset += canvas.height + pageSpacing + 32; // +32 pour le label "Page X"
+          // Hauteur du canvas + espacement + label
+          pageOffset += canvas.height + 48; // 16px gap + 32px label
+        } else {
+          // Si le canvas n'est pas encore rendu, utiliser une estimation
+          pageOffset += 600; // Estimation de hauteur de page
         }
       }
     }
     
+    console.log(`🎯 Position calculée pour page ${field.page}:`, {
+      originalX: field.x,
+      originalY: field.y,
+      pageOffset,
+      finalLeft: field.x * scale,
+      finalTop: pageOffset + field.y * scale + 32
+    });
+    
     return {
       left: field.x * scale,
-      top: pageOffset + field.y * scale + 32, // +32 pour le label "Page X"
+      top: pageOffset + field.y * scale + 32,
     };
   };
 

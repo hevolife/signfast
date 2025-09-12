@@ -285,6 +285,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const handlePageClick = useCallback((x: number, y: number, page: number) => {
     console.log(`🖱️ Clic sur page ${page} à la position (${x}, ${y})`);
     
+    // Mettre à jour la page courante
+    setCurrentPage(page);
+    
     // Si on a un type de champ sélectionné dans la palette, créer un nouveau champ
     // Sinon, déselectionner le champ actuel
     setSelectedField(null);
