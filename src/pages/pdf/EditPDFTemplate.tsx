@@ -174,6 +174,7 @@ export const EditPDFTemplate: React.FC = () => {
         fields: fields,
         originalPdfUrl: pdfDataUrl,
         pages: 1, // Placeholder
+        linkedFormId: template.linkedFormId, // Préserver la liaison existante
       };
 
       // Mettre à jour dans Supabase
@@ -193,6 +194,25 @@ export const EditPDFTemplate: React.FC = () => {
     }
   };
 
+  const handleFormLinkChange = async (formId: string | null) => {
+    if (!template || !id) return;
+
+    try {
+      // Mettre à jour la liaison dans Supabase
+      const success = await PDFTemplateService.linkTemplateToForm(id, formId || '');
+      
+      if (success) {
+        // Mettre à jour le template local
+        setTemplate({ ...template, linkedFormId: formId });
+        toast.success(formId ? 'Formulaire lié avec succès !' : 'Formulaire délié avec succès !');
+      } else {
+        toast.error('Erreur lors de la mise à jour de la liaison');
+      }
+    } catch (error) {
+      console.error('Erreur liaison formulaire:', error);
+      toast.error('Erreur lors de la liaison du formulaire');
+    }
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -222,6 +242,7 @@ export const EditPDFTemplate: React.FC = () => {
       existingPdfUrl={template.originalPdfUrl}
       templateName={template.name}
       linkedFormId={template.linkedFormId}
+      onFormLinkChange={handleFormLinkChange}
     />
   );
 };

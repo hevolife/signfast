@@ -5,10 +5,11 @@ import { PDFViewer } from './PDFViewer';
 import { PDFFieldPalette } from './PDFFieldPalette';
 import { PDFFieldOverlay } from './PDFFieldOverlay';
 import { PDFFieldProperties } from './PDFFieldProperties';
+import { FormSelector } from './FormSelector';
 import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
-import { Upload, Save, Eye, Download } from 'lucide-react';
+import { Upload, Save, Eye, Download, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { FileText } from 'lucide-react';
@@ -21,6 +22,7 @@ interface PDFTemplateEditorProps {
   existingPdfUrl?: string;
   templateName?: string;
   linkedFormId?: string;
+  onFormLinkChange?: (formId: string | null) => void;
 }
 
 export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
@@ -30,6 +32,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   existingPdfUrl,
   templateName,
   linkedFormId,
+  onFormLinkChange,
 }) => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [fields, setFields] = useState<PDFField[]>(initialFields);
@@ -39,10 +42,11 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [loadingExistingPdf, setLoadingExistingPdf] = useState(false);
   const [actualFormVariables, setActualFormVariables] = useState<string[]>(formVariables);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentLinkedFormId, setCurrentLinkedFormId] = useState<string | null>(linkedFormId || null);
 
   const loadLinkedFormVariables = useCallback(() => {
-    console.log('🔗 loadLinkedFormVariables appelée avec linkedFormId:', linkedFormId);
-    if (!linkedFormId) return;
+    console.log('🔗 loadLinkedFormVariables appelée avec currentLinkedFormId:', currentLinkedFormId);
+    if (!currentLinkedFormId) return;
     
     try {
       // Essayer toutes les sources possibles
@@ -88,9 +92,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         const forms = JSON.parse(formsData);
         console.log('🔗 Forms parsés:', forms.length, 'formulaires');
         console.log('🔗 IDs disponibles:', forms.map((f: any) => f.id));
-        console.log('🔗 Recherche de linkedFormId:', linkedFormId);
+        console.log('🔗 Recherche de currentLinkedFormId:', currentLinkedFormId);
         
-        const linkedForm = forms.find((f: any) => f.id === linkedFormId);
+        const linkedForm = forms.find((f: any) => f.id === currentLinkedFormId);
         console.log('🔗 Formulaire lié trouvé:', !!linkedForm);
         
         if (linkedForm && linkedForm.fields) {
@@ -136,7 +140,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     // Fallback vers les variables par défaut
     console.log('🔗 Fallback vers variables par défaut');
     setActualFormVariables(formVariables);
-  }, [linkedFormId, formVariables]);
+  }, [currentLinkedFormId, formVariables]);
   
   const loadExistingPdf = useCallback(async () => {
     if (!existingPdfUrl) return;
@@ -172,13 +176,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     console.log('🔗 sessionStorage currentUserForms:', sessionStorage.getItem('currentUserForms'));
     console.log('🔗 localStorage forms:', localStorage.getItem('forms'));
     
-    if (linkedFormId) {
+    if (currentLinkedFormId) {
       loadLinkedFormVariables();
     } else {
       console.log('🔗 Pas de formulaire lié, utilisation variables par défaut');
       setActualFormVariables(formVariables);
     }
-  }, [linkedFormId, formVariables, loadLinkedFormVariables]);
+  }, [currentLinkedFormId, formVariables, loadLinkedFormVariables]);
 
   // Détecter si on est sur mobile
   useEffect(() => {
@@ -262,6 +266,16 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     onSave?.(fields, pdfFile);
   };
 
+  const handleFormLinkChange = (formId: string | null) => {
+    setCurrentLinkedFormId(formId);
+    onFormLinkChange?.(formId);
+    
+    if (formId) {
+      toast.success('Formulaire lié mis à jour ! Les variables vont être rechargées.');
+    } else {
+      toast.info('Formulaire délié. Variables par défaut utilisées.');
+    }
+  };
   const selectedFieldData = selectedField ? fields.find(f => f.id === selectedField) : null;
 
   // Bloquer sur mobile
@@ -321,6 +335,27 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
             </Button>
           </div>
 
+          {/* Sélecteur de formulaire lié */}
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <LinkIcon className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Formulaire lié
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Liez ce template à un formulaire pour générer automatiquement les variables
+              </p>
+            </CardHeader>
+            <CardContent>
+              <FormSelector
+                selectedFormId={currentLinkedFormId}
+                onFormChange={handleFormLinkChange}
+                showVariablesPreview={true}
+              />
+            </CardContent>
+          </Card>
           {!pdfFile && !loadingExistingPdf ? (
             <Card>
               <CardContent className="text-center py-16">
@@ -414,7 +449,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                         field={selectedFieldData}
                         onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
                         availableVariables={actualFormVariables}
-                        linkedFormId={linkedFormId}
+                        linkedFormId={currentLinkedFormId}
                       />
                     ) : (
                       <Card>
@@ -490,7 +525,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     field={selectedFieldData}
                     onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
                     availableVariables={actualFormVariables}
-                    linkedFormId={linkedFormId}
+                    linkedFormId={currentLinkedFormId}
                   />
                 )}
               </div>

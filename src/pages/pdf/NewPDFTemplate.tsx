@@ -10,6 +10,7 @@ export const NewPDFTemplate: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [linkedFormId, setLinkedFormId] = useState<string | null>(null);
 
   // Variables disponibles depuis les formulaires
   const formVariables = [
@@ -51,6 +52,7 @@ export const NewPDFTemplate: React.FC = () => {
         fields: fields,
         originalPdfUrl: pdfDataUrl,
         pages: 1, // Placeholder pour le nombre de pages
+        linkedFormId: linkedFormId,
       };
 
       // Sauvegarder dans Supabase
@@ -71,10 +73,15 @@ export const NewPDFTemplate: React.FC = () => {
     }
   };
 
+  const handleFormLinkChange = (formId: string | null) => {
+    setLinkedFormId(formId);
+  };
   return (
     <PDFTemplateEditor
       onSave={handleSave}
       formVariables={formVariables}
+      linkedFormId={linkedFormId}
+      onFormLinkChange={handleFormLinkChange}
     />
   );
 };
