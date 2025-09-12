@@ -262,13 +262,53 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const addField = useCallback((type: PDFField['type']) => {
     console.log(`➕ Ajout nouveau champ type: ${type}`);
     
+    // Calculer une position intelligente pour éviter les chevauchements
+    const existingFields = fields.filter(f => f.page === currentPage);
+    let newX = 50;
+    let newY = 50;
+    
+    // Si il y a déjà des champs, placer le nouveau en dessous du dernier
+    if (existingFields.length > 0) {
+      const lastField = existingFields[existingFields.length - 1];
+      newX = lastField.x;
+      newY = lastField.y + lastField.height + 20; // 20px d'espacement
+      
+      // Si on dépasse la hauteur de la page, revenir en haut et décaler à droite
+      if (newY > 500) {
+        newY = 50;
+        newX = lastField.x + lastField.width + 20;
+      }
+    }
+    
+    // Dimensions par défaut selon le type de champ
+    const getDefaultDimensions = (type: PDFField['type']) => {
+      switch (type) {
+        case 'text':
+          return { width: 150, height: 25 };
+        case 'date':
+          return { width: 100, height: 25 };
+        case 'number':
+          return { width: 80, height: 25 };
+        case 'signature':
+          return { width: 200, height: 60 };
+        case 'checkbox':
+          return { width: 20, height: 20 };
+        case 'image':
+          return { width: 120, height: 80 };
+        default:
+          return { width: 120, height: 30 };
+      }
+    };
+    
+    const dimensions = getDefaultDimensions(type);
+    
     const newField: PDFField = {
       id: uuidv4(),
       type,
-      x: 50, // Position initiale plus proche du bord
-      y: 50,
-      width: 120,
-      height: 30,
+      x: newX,
+      y: newY,
+      width: dimensions.width,
+      height: dimensions.height,
       page: currentPage,
       variable: '',
       fontSize: 12,
@@ -281,6 +321,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     setFields(prev => [...prev, newField]);
     setSelectedField(newField.id);
   }, [currentPage]);
+  }, [currentPage, fields]);
 
   const handlePageClick = useCallback((x: number, y: number, page: number) => {
     console.log(`🖱️ Clic sur page ${page} à la position (${x}, ${y})`);
@@ -289,10 +330,19 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     setCurrentPage(page);
     console.log(`📄 Page courante mise à jour: ${page}`);
     
-    // Si on a un type de champ sélectionné dans la palette, créer un nouveau champ
-    // Sinon, déselectionner le champ actuel
-    setSelectedField(null);
+    // Créer un nouveau champ à la position cliquée si aucun champ n'est sélectionné
+    if (!selectedField) {
+      // Vous pouvez décommenter cette ligne pour créer automatiquement un champ texte au clic
+      // addField('text');
+    } else {
+      // Déplacer le champ sélectionné à la position cliquée
+      const field = fields.find(f => f.id === selectedField);
+      if (field && field.page === page) {
+        updateField(selectedField, { x, y });
+      }
+    }
   }, []);
+  }, [selectedField, fields, updateField]);
 
   // Détecter si on est sur mobile
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {

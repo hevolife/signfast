@@ -180,6 +180,18 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
   };
 
+  const getExampleText = () => {
+    switch (field.type) {
+      case 'text': return field.variable ? field.variable : 'Exemple de texte';
+      case 'date': return '15/01/2025';
+      case 'number': return '1234';
+      case 'signature': return 'Signature';
+      case 'checkbox': return '☑';
+      case 'image': return 'Image';
+      default: return field.variable || field.type;
+    }
+  };
+
   return (
     <div
       ref={fieldRef}
@@ -201,9 +213,14 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       onMouseDown={handleMouseDown}
     >
       {/* Contenu du champ */}
-      <div className="flex items-center justify-start h-full text-xs font-medium text-gray-700 px-2 pointer-events-none">
-        <span className="mr-1">{getFieldIcon()}</span>
-        <span className="truncate">{field.variable || field.type}</span>
+      <div className="flex flex-col justify-center h-full text-xs font-medium text-gray-700 px-2 pointer-events-none overflow-hidden">
+        <div className="flex items-center justify-start mb-1">
+          <span className="mr-1 text-blue-600">{getFieldIcon()}</span>
+          <span className="truncate text-blue-800 font-semibold">{field.variable || field.type}</span>
+        </div>
+        <div className="text-xs text-gray-600 italic truncate">
+          {getExampleText()}
+        </div>
       </div>
 
       {/* Bouton de suppression */}
@@ -216,7 +233,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
             e.preventDefault();
             onDelete();
           }}
-          className="absolute -top-8 -right-2 bg-red-500 text-white hover:bg-red-600 text-xs px-2 py-1 shadow-lg z-10 pointer-events-auto"
+          className="absolute -top-8 -right-2 bg-red-500 text-white hover:bg-red-600 text-xs px-2 py-1 shadow-lg z-10 pointer-events-auto rounded-md"
         >
           <Trash2 className="h-3 w-3" />
         </Button>
@@ -225,9 +242,20 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       {/* Coin de redimensionnement */}
       {isSelected && (
         <div
-          className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-se-resize pointer-events-auto"
+          className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 border-2 border-white cursor-se-resize pointer-events-auto rounded-sm shadow-md hover:bg-blue-600 transition-colors"
           onMouseDown={handleResizeMouseDown}
-        />
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-1 h-1 bg-white rounded-full"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Indicateur de position pour debug */}
+      {isSelected && (
+        <div className="absolute -top-6 left-0 bg-black text-white text-xs px-1 py-0.5 rounded text-center pointer-events-none">
+          {Math.round(field.x)},{Math.round(field.y)}
+        </div>
       )}
     </div>
   );
