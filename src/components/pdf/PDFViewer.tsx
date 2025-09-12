@@ -207,7 +207,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
         
         {/* Overlay global pour tous les champs - positionné par rapport au conteneur */}
-        {!loading && !error && (
+        {!loading && !error && numPages > 0 && (
           <div className="absolute inset-0 pointer-events-none">
             <div className="relative w-full h-full pointer-events-auto">
               {children}

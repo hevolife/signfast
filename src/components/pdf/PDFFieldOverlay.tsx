@@ -35,19 +35,24 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
   // Calculer la position absolue en tenant compte de toutes les pages
   const getAbsolutePosition = () => {
+    console.log(`🎯 getAbsolutePosition pour champ ${field.variable} page ${field.page}`);
+    
     // Trouver le canvas de la page cible
     const pageCanvas = document.querySelector(`canvas[data-page="${field.page}"]`) as HTMLCanvasElement;
     if (!pageCanvas) {
-      console.warn(`Canvas pour page ${field.page} non trouvé`);
+      console.warn(`🎯 Canvas pour page ${field.page} non trouvé`);
+      console.log(`🎯 Canvas disponibles:`, Array.from(document.querySelectorAll('canvas')).map(c => c.getAttribute('data-page')));
       return { left: 0, top: 0, width: 0, height: 0 };
     }
+    
+    console.log(`🎯 Canvas trouvé pour page ${field.page}`);
     
     // Obtenir la position du canvas
     const canvasRect = pageCanvas.getBoundingClientRect();
     const pdfContainer = document.querySelector('#pdf-container') as HTMLElement;
     
     if (!pdfContainer) {
-      console.warn('Conteneur PDF non trouvé');
+      console.warn('🎯 Conteneur PDF non trouvé');
       return { left: 0, top: 0, width: 0, height: 0 };
     }
     
@@ -57,12 +62,15 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const relativeLeft = canvasRect.left - containerRect.left + pdfContainer.scrollLeft;
     const relativeTop = canvasRect.top - containerRect.top + pdfContainer.scrollTop;
     
-    return {
+    const position = {
       left: relativeLeft + (field.x * scale),
       top: relativeTop + (field.y * scale),
       width: field.width * scale,
       height: field.height * scale,
     };
+    
+    console.log(`🎯 Position calculée:`, position);
+    return position;
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
