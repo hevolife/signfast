@@ -359,11 +359,16 @@ export class PDFService {
     formData: Record<string, any>;
   }>> {
     try {
+      console.log('💾 === DÉBUT listPDFs ===');
       const targetUserId = await PDFService.getTargetUserId();
+      console.log('💾 Target user ID récupéré:', targetUserId);
+      
       if (!targetUserId) {
+        console.log('💾 Aucun target user ID, retour liste vide');
         return [];
       }
 
+      console.log('💾 Requête Supabase pour user_id:', targetUserId);
       const { data, error } = await supabase
         .from('pdf_storage')
         .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
@@ -371,10 +376,20 @@ export class PDFService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('💾 Erreur Supabase:', error);
+        console.error('💾 Erreur Supabase listPDFs:', error);
         return [];
       }
 
+      console.log('💾 Données Supabase reçues:', data?.length || 0, 'PDFs');
+      data?.forEach((item, index) => {
+        console.log(`💾 PDF ${index + 1}:`, {
+          fileName: item.file_name,
+          formTitle: item.form_title,
+          templateName: item.template_name,
+          userId: targetUserId,
+          createdAt: item.created_at
+        });
+      });
       return (data || []).map(item => ({
         fileName: item.file_name,
         responseId: item.response_id || 'supabase',
@@ -481,20 +496,30 @@ export class PDFService {
   // RÉCUPÉRER L'ID DE L'UTILISATEUR CIBLE (avec gestion impersonation)
   private static async getTargetUserId(): Promise<string | null> {
     try {
+      console.log('💾 === getTargetUserId ===');
+      
       // Récupérer l'utilisateur actuel
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        console.warn('💾 Utilisateur non connecté');
+        console.log('💾 Utilisateur non connecté:', userError?.message);
         return null;
       }
 
+      console.log('💾 Utilisateur auth connecté:', user.id, user.email);
+
       // Vérifier si on est en mode impersonation
       const impersonationData = localStorage.getItem('admin_impersonation');
+      console.log('💾 Données impersonation brutes:', impersonationData);
+      
       if (impersonationData) {
         try {
           const data = JSON.parse(impersonationData);
-          console.log('💾 🎭 Mode impersonation détecté, target_user_id:', data.target_user_id);
+          console.log('💾 🎭 Mode impersonation détecté:', {
+            target_user_id: data.target_user_id,
+            target_email: data.target_email,
+            admin_user_id: data.admin_user_id
+          });
           return data.target_user_id;
         } catch (error) {
           console.error('Erreur parsing impersonation data:', error);
@@ -502,6 +527,7 @@ export class PDFService {
       }
 
       // Mode normal
+      console.log('💾 Mode normal, user_id:', user.id);
       return user.id;
     } catch (error) {
       console.error('💾 Erreur récupération target user ID:', error);

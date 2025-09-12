@@ -33,8 +33,68 @@ export const PDFManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'template'>('date');
   const product = stripeConfig.products[0];
 
+  // Debug function to check PDF data
+  const debugPDFData = async () => {
+    console.log('🔍 === DEBUG PDF STORAGE ===');
+    
+    try {
+      // 1. Vérifier l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('🔍 Utilisateur auth:', user?.id, user?.email);
+      
+      // 2. Vérifier l'impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        const data = JSON.parse(impersonationData);
+        console.log('🔍 Impersonation active:', data.target_user_id, data.target_email);
+      } else {
+        console.log('🔍 Pas d\'impersonation');
+      }
+      
+      // 3. Lister TOUS les PDFs dans la table
+      const { data: allPdfs, error: allError } = await supabase
+        .from('pdf_storage')
+        .select('file_name, user_id, form_title, created_at')
+        .order('created_at', { ascending: false });
+      
+      console.log('🔍 TOUS les PDFs dans la table:', allPdfs?.length || 0);
+      allPdfs?.forEach((pdf, index) => {
+        console.log(`🔍 PDF ${index + 1}:`, {
+          fileName: pdf.file_name,
+          userId: pdf.user_id,
+          formTitle: pdf.form_title,
+          createdAt: pdf.created_at
+        });
+      });
+      
+      // 4. Vérifier les PDFs pour l'utilisateur cible
+      const targetUserId = impersonationData ? JSON.parse(impersonationData).target_user_id : user?.id;
+      console.log('🔍 Target user ID:', targetUserId);
+      
+      if (targetUserId) {
+        const { data: userPdfs, error: userError } = await supabase
+          .from('pdf_storage')
+          .select('*')
+          .eq('user_id', targetUserId);
+        
+        console.log('🔍 PDFs pour target user:', userPdfs?.length || 0);
+        userPdfs?.forEach((pdf, index) => {
+          console.log(`🔍 User PDF ${index + 1}:`, {
+            fileName: pdf.file_name,
+            formTitle: pdf.form_title,
+            templateName: pdf.template_name,
+            createdAt: pdf.created_at
+          });
+        });
+      }
+      
+    } catch (error) {
+      console.error('🔍 Erreur debug:', error);
+    }
+  };
 
   useEffect(() => {
+    debugPDFData();
     loadPDFs();
   }, []);
 
