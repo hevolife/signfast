@@ -173,8 +173,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
               e.stopPropagation();
               onDelete();
             }}
-        <div className="absolute inset-0" style={{ zIndex: 1000 }}>
-          <div className="relative w-full h-full">
+          >
             <Trash2 className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
           </Button>
         </div>
