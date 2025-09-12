@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
-import { Trash2, Move, Settings } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface PDFFieldOverlayProps {
   field: PDFField;
@@ -10,8 +10,6 @@ interface PDFFieldOverlayProps {
   onSelect: () => void;
   onUpdate: (updates: Partial<PDFField>) => void;
   onDelete: () => void;
-  containerWidth?: number;
-  containerHeight?: number;
 }
 
 export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
@@ -21,11 +19,10 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
-  containerWidth,
-  containerHeight,
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
   React.useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -39,30 +36,52 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Calculer la position absolue en tenant compte de toutes les pages
   const getAbsolutePosition = () => {
     // Trouver le conteneur de la page cible
-    // Trouver le conteneur de la page cible
     const pageContainer = document.querySelector(`[data-page="${field.page}"]`) as HTMLElement;
     if (!pageContainer) {
       return { left: 0, top: 0, width: 0, height: 0 };
     }
     
-    // Trouver le canvas de cette page
+    // Obtenir la position du conteneur de la page
+    const pageRect = pageContainer.getBoundingClientRect();
+    const pdfContainer = document.querySelector('#pdf-container');
+    const pdfContainerRect = pdfContainer?.getBoundingClientRect();
+    
+    if (!pdfContainerRect) {
+      return { left: 0, top: 0, width: 0, height: 0 };
+    }
+    
+    // Calculer la position relative au conteneur PDF
+    const relativeTop = pageRect.top - pdfContainerRect.top + (pdfContainer?.scrollTop || 0);
+    const relativeLeft = pageRect.left - pdfContainerRect.left + (pdfContainer?.scrollLeft || 0);
+    
+    return {
+      left: relativeLeft + field.x * scale,
+      top: relativeTop + field.y * scale + 40, // Offset pour le titre de page
+      width: field.width * scale,
+      height: field.height * scale,
+    };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isResizing) return;
+    
+    onSelect();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startFieldX = field.x;
+    const startFieldY = field.y;
+    const startPage = field.page;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = (e.clientX - startX) / scale;
+      const deltaY = (e.clientY - startY) / scale;
       
+      const newX = startFieldX + deltaX;
       const newY = startFieldY + deltaY;
       
-      // Déterminer la page en fonction de la position Y
-      let targetPage = field.page;
-      let relativeY = newY;
-      
-      // Si on dépasse vers le bas, passer à la page suivante
-      if (newY > 600) {
-        targetPage = Math.min(field.page + Math.floor(newY / 600), 10);
-        relativeY = newY % 600;
-      }
-      // Si on remonte, revenir à la page précédente
-      else if (newY < 0 && field.page > 1) {
-        targetPage = Math.max(1, field.page - 1);
-        relativeY = 600 + newY;
-      }
       // Déterminer la page en fonction de la position Y
       let targetPage = startPage;
       let relativeY = newY;
@@ -77,6 +96,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         targetPage = Math.max(1, startPage - 1);
         relativeY = 600 + newY;
       }
+
       onUpdate({ 
         x: Math.max(0, newX), 
         y: Math.max(0, relativeY),
@@ -101,47 +121,59 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     onSelect();
 
     const touch = e.touches[0];
-      document.removeEventListener('touchmove', handleTouchMove);
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    const startFieldX = field.x;
+    const startFieldY = field.y;
+    const startPage = field.page;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = (touch.clientX - startX) / scale;
+      const deltaY = (touch.clientY - startY) / scale;
+      
+      const newX = startFieldX + deltaX;
       const newY = startFieldY + deltaY;
       
       // Déterminer la page en fonction de la position Y
-      let targetPage = field.page;
+      let targetPage = startPage;
       let relativeY = newY;
       
       // Si on dépasse vers le bas, passer à la page suivante
       if (newY > 600) {
-        targetPage = Math.min(field.page + Math.floor(newY / 600), 10);
+        targetPage = Math.min(startPage + Math.floor(newY / 600), 10);
         relativeY = newY % 600;
       }
       // Si on remonte, revenir à la page précédente
-      else if (newY < 0 && field.page > 1) {
-        targetPage = Math.max(1, field.page - 1);
+      else if (newY < 0 && startPage > 1) {
+        targetPage = Math.max(1, startPage - 1);
         relativeY = 600 + newY;
       }
+
+      onUpdate({ 
+        x: Math.max(0, newX), 
+        y: Math.max(0, relativeY),
+        page: targetPage
+      });
+    };
+
+    const handleTouchEnd = () => {
+      document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
 
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
   };
-    // Obtenir la position du conteneur de la page
-    const pageRect = pageContainer.getBoundingClientRect();
-    const pdfContainer = document.querySelector('#pdf-container');
-    const pdfContainerRect = pdfContainer?.getBoundingClientRect();
-    
-    if (!pdfContainerRect) {
-      return { left: 0, top: 0, width: 0, height: 0 };
-    }
-    
-    // Calculer la position relative au conteneur PDF
-    const relativeTop = pageRect.top - pdfContainerRect.top + (pdfContainer?.scrollTop || 0);
-    const relativeLeft = pageRect.left - pdfContainerRect.left + (pdfContainer?.scrollLeft || 0);
+
+  const getFieldIcon = () => {
     switch (field.type) {
       case 'text': return 'T';
       case 'date': return '📅';
-        left: relativeLeft + field.x * scale * 0.8,
-      left: relativeLeft + field.x * scale,
-      top: relativeTop + field.y * scale + 40, // Offset pour le titre de page
+      case 'number': return '#';
+      case 'signature': return '✍️';
+      case 'checkbox': return '☑️';
       case 'image': return '🖼️';
       default: return '?';
     }
@@ -163,7 +195,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         height: adjustedPosition.height,
         minWidth: isMobile ? '40px' : '60px',
         minHeight: isMobile ? '20px' : '30px',
-        zIndex: isSelected ? 1000 : 500,
+        zIndex: isSelected ? 1000 : 500 + (field.page * 10),
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
