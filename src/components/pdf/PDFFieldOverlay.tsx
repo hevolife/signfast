@@ -358,12 +358,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         </>
       )}
       
-      {/* Indicateur de ratios */}
-      {isSelected && (
-        <div className="absolute -top-8 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg z-30">
-          ({(field.xRatio || 0).toFixed(3)}, {(field.yRatio || 0).toFixed(3)})
-        </div>
-      )}
     </div>
   );
 };
