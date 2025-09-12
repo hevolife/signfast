@@ -293,7 +293,7 @@ export class PDFService {
         if (!userError && user) {
           const { count, error } = await supabase
             .from('pdf_storage')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id);
 
           if (!error && count !== null) {
