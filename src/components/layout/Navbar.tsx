@@ -47,21 +47,14 @@ export const Navbar: React.FC = () => {
               <>
                 {/* Bannière d'impersonation */}
                 {isImpersonating && (
-                  <div className="bg-red-100 dark:bg-red-900/20 px-4 py-2 text-center border-b border-red-200 dark:border-red-800">
-                    <div className="flex items-center justify-center space-x-4">
-                      <span className="text-sm text-red-800 dark:text-red-300">
-                        🎭 Mode impersonation actif: {user.email}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={stopImpersonation}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800"
-                      >
-                        Arrêter l'impersonation
-                      </Button>
-                    </div>
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={stopImpersonation}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800"
+                  >
+                    Arrêter l'impersonation
+                  </Button>
                 )}
                 <Link to="/dashboard">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
