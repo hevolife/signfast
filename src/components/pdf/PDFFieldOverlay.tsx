@@ -11,6 +11,7 @@ interface PDFFieldOverlayProps {
   onUpdate: (updates: Partial<PDFField>) => void;
   onDelete: () => void;
   canvasRefs?: React.RefObject<(HTMLCanvasElement | null)[]>;
+  currentPage?: number;
 }
 
 export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
@@ -20,11 +21,51 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
+  currentPage = 1,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
 
+  // Ne pas afficher le champ s'il n'est pas sur la page courante
+  if (field.page !== currentPage) {
+    return null;
+  }
+
+  // Calculer la position en tenant compte de la page
+  const getFieldPosition = () => {
+    // Pour la page 1, position normale
+    if (field.page === 1) {
+      return {
+        left: field.x * scale,
+        top: field.y * scale,
+      };
+    }
+    
+    // Pour les autres pages, calculer l'offset
+    // Chaque page a une hauteur + un espacement
+    const pageSpacing = 16; // 4 * 4 (gap entre les pages)
+    const pageIndex = field.page - 1;
+    
+    // Trouver la hauteur de la page précédente
+    let pageOffset = 0;
+    if (canvasRefs?.current && canvasRefs.current[pageIndex]) {
+      // Calculer l'offset basé sur les pages précédentes
+      for (let i = 0; i < pageIndex; i++) {
+        const canvas = canvasRefs.current[i];
+        if (canvas) {
+          pageOffset += canvas.height + pageSpacing + 32; // +32 pour le label "Page X"
+        }
+      }
+    }
+    
+    return {
+      left: field.x * scale,
+      top: pageOffset + field.y * scale + 32, // +32 pour le label "Page X"
+    };
+  };
+
+  const position = getFieldPosition();
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -117,8 +158,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
           : 'border-gray-400 bg-gray-100/50 hover:border-blue-400 z-10'
       } ${isDragging ? 'opacity-75 shadow-xl z-30' : ''}`}
       style={{
-        left: field.x * scale,
-        top: field.y * scale,
+        left: position.left,
+        top: position.top,
         width: field.width * scale,
         height: field.height * scale,
         minWidth: '40px',

@@ -561,10 +561,12 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     onPageClick={handlePageClick}
                     scale={scale}
                     onScaleChange={setScale}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
                   >
-                    {fields
-                      .filter(field => field.page === currentPage)
-                      .map(field => (
+                    {fields.map(field => (
                         <PDFFieldOverlay
                           key={field.id}
                           field={field}
@@ -572,8 +574,10 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                           isSelected={selectedField === field.id}
                           onSelect={() => setSelectedField(field.id)}
                           onUpdate={(updates) => updateField(field.id, updates)}
+                        currentPage={currentPage}
                           onDelete={() => deleteField(field.id)}
                           canvasRefs={pdfViewerRef.current?.canvasRefs}
+                          currentPage={currentPage}
                         />
                       ))}
                   </PDFViewer>

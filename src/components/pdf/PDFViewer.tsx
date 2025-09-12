@@ -8,6 +8,8 @@ interface PDFViewerProps {
   children?: React.ReactNode;
   scale?: number;
   onScaleChange?: (scale: number) => void;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export interface PDFViewerRef {
@@ -20,6 +22,8 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
   children,
   scale = 1,
   onScaleChange,
+  currentPage = 1,
+  onPageChange,
 }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -169,6 +173,11 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     const canvas = event.currentTarget;
     const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
 
+    // Mettre à jour la page courante si on clique sur une autre page
+    if (onPageChange && pageNumber !== currentPage) {
+      onPageChange(pageNumber);
+    }
+
     const rect = canvas.getBoundingClientRect();
     
     // Position relative au canvas (système top-left de l'éditeur)
@@ -177,6 +186,7 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
     
     console.log(`🖱️ Clic sur canvas: position brute (${event.clientX - rect.left}, ${event.clientY - rect.top})`);
     console.log(`🖱️ Position avec scale: (${x}, ${y}), scale: ${scale}`);
+    console.log(`🖱️ Page cliquée: ${pageNumber}, page courante: ${currentPage}`);
     
     onPageClick(x, y, pageNumber);
   };
@@ -251,9 +261,9 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
         <div className="flex flex-col items-center space-y-4">
           {Array.from({ length: numPages }, (_, index) => (
             <div key={index} className="relative">
-              <div className="text-center mb-2">
+              <div className={`text-center mb-2 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-                  Page {index + 1}
+                  Page {index + 1} {currentPage === index + 1 ? '(active)' : ''}
                 </span>
               </div>
               
@@ -271,14 +281,18 @@ export const PDFViewer = forwardRef<PDFViewerRef, PDFViewerProps>(({
               <canvas
                 ref={(el) => (canvasRefs.current[index] = el)}
                 onClick={handleCanvasClick}
-                className="border border-gray-300 dark:border-gray-600 shadow-lg cursor-crosshair bg-white"
+                className={`border shadow-lg cursor-crosshair bg-white ${
+                  currentPage === index + 1 
+                    ? 'border-blue-500 border-2' 
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
                 style={{
                   // Optimisations de performance
                   willChange: 'transform',
                   transform: 'translateZ(0)',
+                  display: (loading || isRendering) ? 'none' : 'block'
                 }}
                 data-page={index + 1}
-                style={{ display: (loading || isRendering) ? 'none' : 'block' }}
               />
             </div>
           ))}
