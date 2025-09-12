@@ -140,22 +140,27 @@ export class PDFGenerator {
         // Pour les champs image, utiliser automatiquement les fichiers du formulaire
         if (field.type === 'image') {
           console.log(`🖼️ ===== TRAITEMENT CHAMP IMAGE =====`);
-          console.log(`🖼️ Index fichier actuel: ${fileIndex}`);
-          console.log(`🖼️ Fichiers disponibles: ${formFiles.length}`);
+          console.log(`🖼️ Variable recherchée: "${field.variable}"`);
+          console.log(`🖼️ Données disponibles:`, Object.keys(data));
           
-          if (fileIndex < formFiles.length) {
-            value = formFiles[fileIndex][1]; // Prendre le fichier suivant
-            console.log(`🖼️ ✅ FICHIER ASSIGNÉ:`);
+          // D'abord essayer de récupérer la valeur via la variable normale
+          value = this.getFieldValue(field, data);
+          
+          // Si pas trouvé et qu'on a des fichiers disponibles, utiliser l'assignation automatique
+          if (!value && fileIndex < formFiles.length) {
+            value = formFiles[fileIndex][1];
+            console.log(`🖼️ ✅ ASSIGNATION AUTOMATIQUE:`);
             console.log(`🖼️   - Champ: ${field.variable}`);
-            console.log(`🖼️   - Fichier: ${fileIndex + 1}/${formFiles.length}`);
+            console.log(`🖼️   - Fichier auto: ${fileIndex + 1}/${formFiles.length}`);
             console.log(`🖼️   - Clé source: "${formFiles[fileIndex][0]}"`);
-            console.log(`🖼️   - Taille données: ${typeof value === 'string' ? value.length : 0} caractères`);
-            console.log(`🖼️   - Format: ${typeof value === 'string' ? value.substring(0, 30) + '...' : 'N/A'}`);
             fileIndex++;
+          } else if (value) {
+            console.log(`🖼️ ✅ VALEUR TROUVÉE VIA VARIABLE:`);
+            console.log(`🖼️   - Champ: ${field.variable}`);
+            console.log(`🖼️   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
           } else {
             console.log(`🖼️ ❌ AUCUN FICHIER DISPONIBLE:`);
             console.log(`🖼️   - Champ: ${field.variable}`);
-            console.log(`🖼️   - Index demandé: ${fileIndex}`);
             console.log(`🖼️   - Fichiers disponibles: ${formFiles.length}`);
             value = null;
           }
@@ -224,14 +229,20 @@ export class PDFGenerator {
           case 'signature':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
               try {
+                console.log(`✍️ ===== TRAITEMENT SIGNATURE =====`);
+                console.log(`✍️ Variable: ${field.variable}`);
+                console.log(`✍️ Taille données: ${value.length} caractères`);
                 await this.drawSignature(pdfDoc, page, value, x, y, field);
-                console.log(`🎨 ✅ Signature dessinée`);
+                console.log(`✍️ ✅ Signature dessinée avec succès`);
               } catch (error) {
-                console.error(`🎨 ❌ Erreur dessin signature pour ${field.variable}:`, error);
+                console.error(`✍️ ❌ Erreur dessin signature pour ${field.variable}:`, error);
                 if (isMobile) {
                   console.log('📱 Signature ignorée sur mobile (trop complexe)');
                 }
               }
+            } else {
+              console.log(`✍️ ❌ Champ signature ignoré - pas de données valides`);
+              console.log(`✍️ Variable: ${field.variable}, Value type: ${typeof value}`);
             }
             break;
             
@@ -239,23 +250,26 @@ export class PDFGenerator {
             if (value && typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))) {
               try {
                 console.log(`🖼️ ===== DÉBUT DESSIN IMAGE =====`);
-                console.log(`🖼️ Champ: ${field.variable}`);
+                console.log(`🖼️ Variable: ${field.variable}`);
                 console.log(`🖼️ Position: (${x}, ${y})`);
                 console.log(`🖼️ Taille: ${field.width}x${field.height}`);
                 console.log(`🖼️ Type de données: ${value.startsWith('data:image') ? 'base64' : 'URL'}`);
+                console.log(`🖼️ Début données: ${value.substring(0, 50)}...`);
                 await this.drawImage(pdfDoc, page, value, x, y, field);
                 console.log(`🖼️ ✅ IMAGE DESSINÉE AVEC SUCCÈS`);
               } catch (error) {
                 console.error(`🖼️ ❌ ERREUR DESSIN IMAGE:`, error);
                 console.error(`🖼️ Stack trace:`, error.stack);
-                if (isMobile) {
+                console.error(`🖼️ Variable problématique: ${field.variable}`);
+                console.error(`🖼️ Données: ${value.substring(0, 100)}...`);
                   console.log('📱 ❌ Image ignorée sur mobile (erreur)');
                 }
               }
             } else {
               console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ:`);
               console.log(`🖼️   - Champ: ${field.variable}`);
-              console.log(`🖼️   - Valeur reçue: ${typeof value} - "${value}"`);
+              console.log(`🖼️   - Type valeur: ${typeof value}`);
+              console.log(`🖼️   - Valeur: ${typeof value === 'string' ? value.substring(0, 50) + '...' : value}`);
               console.log(`🖼️   - Est string: ${typeof value === 'string'}`);
               console.log(`🖼️   - Commence par data:image: ${typeof value === 'string' && value.startsWith('data:image')}`);
               console.log(`🖼️   - Commence par http: ${typeof value === 'string' && value.startsWith('http')}`);
@@ -362,10 +376,16 @@ export class PDFGenerator {
       }
     }
     
-    // Pour les champs image, retourner la valeur base64 directement
-    if (field.type === 'image' && value && typeof value === 'string' && value.startsWith('data:image')) {
-      console.log(`🔍 Image field found: ${variableName}, length: ${value.length}`);
-      return value;
+    // Pour les champs image, s'assurer qu'on a bien une image
+    if (field.type === 'image') {
+      if (value && typeof value === 'string' && value.startsWith('data:image')) {
+        console.log(`🔍 ✅ Image field found: ${variableName}, length: ${value.length}`);
+        return value;
+      } else {
+        console.log(`🔍 ❌ Image field "${variableName}" but no valid image data found`);
+        console.log(`🔍 Value type: ${typeof value}, starts with data:image: ${typeof value === 'string' && value.startsWith('data:image')}`);
+        return '';
+      }
     }
     
     console.log(`🔍 Final value for ${variableName}:`, typeof value === 'string' && value.startsWith('data:') ? 'base64_data' : (value || field.placeholder || 'EMPTY'));
