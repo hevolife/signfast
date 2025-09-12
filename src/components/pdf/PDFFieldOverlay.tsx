@@ -41,15 +41,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     
     if (!containerRect) {
       return { left: field.x * scale, top: field.y * scale };
-    }
-    
-    // Position absolue par rapport au canvas
-    const left = canvasRect.left - containerRect.left + (field.x * scale);
-    const top = canvasRect.top - containerRect.top + (field.y * scale);
-
-    return { left, top };
-  };
-
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -62,7 +53,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const startFieldY = field.y;
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
+      e.preventDefault();
       
       const deltaX = (e.clientX - startX) / scale;
       const deltaY = (e.clientY - startY) / scale;
@@ -70,7 +61,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const newX = Math.max(0, startFieldX + deltaX);
       const newY = Math.max(0, startFieldY + deltaY);
       
-      // Mise à jour immédiate de la position
       onUpdate({ x: newX, y: newY });
     };
 
@@ -96,18 +86,15 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
   };
 
-  const position = getFieldPosition();
-
   const style = {
     position: 'absolute' as const,
-    left: position.left,
-    top: position.top,
+    left: field.x * scale,
+    top: field.y * scale,
     width: field.width * scale,
     height: field.height * scale,
     minWidth: '40px',
     minHeight: '20px',
     zIndex: isSelected ? 1000 : 500,
-    pointerEvents: 'auto' as const,
     transform: isDragging ? 'scale(1.05)' : 'scale(1)',
     transition: isDragging ? 'none' : 'transform 0.1s ease',
   };
