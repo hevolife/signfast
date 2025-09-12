@@ -31,13 +31,21 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     if (!pdfViewerRef.current) return { x: 0, y: 0, width: 100, height: 25 };
 
     const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
-    if (!canvasDimensions) return { x: 0, y: 0, width: 100, height: 25 };
+    if (!canvasDimensions) {
+      console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage);
+      return { x: 0, y: 0, width: 100, height: 25 };
+    }
 
     const x = (field.xRatio || 0) * canvasDimensions.width;
     const y = (field.yRatio || 0) * canvasDimensions.height;
     const width = (field.widthRatio || 0.1) * canvasDimensions.width;
     const height = (field.heightRatio || 0.05) * canvasDimensions.height;
 
+    console.log(`📐 Position calculée pour ${field.variable}:`, {
+      ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
+      canvas: canvasDimensions,
+      position: { x, y, width, height }
+    });
     return { x, y, width, height };
   };
 

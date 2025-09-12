@@ -115,7 +115,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       // Forcer un re-render après chargement complet
       setTimeout(() => {
         renderAllPages();
-      }, 200);
+      }, 100);
     } catch (error) {
       console.error('Erreur chargement PDF:', error);
       setError('Erreur lors du chargement du PDF');

@@ -64,8 +64,12 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   useEffect(() => {
     if (pdfFile && initialFields.length > 0 && !isInitialized) {
       console.log('🎯 Initialisation des champs existants');
-      setFields(initialFields);
-      setIsInitialized(true);
+      // Délai pour s'assurer que le PDF est complètement rendu
+      setTimeout(() => {
+        setFields(initialFields);
+        setIsInitialized(true);
+        console.log('🎯 Champs initialisés avec délai');
+      }, 500);
     }
   }, [pdfFile, initialFields, isInitialized]);
 
