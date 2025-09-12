@@ -326,11 +326,30 @@ export class PDFService {
   // COMPTER LES PDFS (optimisé pour éviter les timeouts)
   static async countPDFs(): Promise<number> {
     try {
-      const targetUserId = await PDFService.getTargetUserId();
-      if (!targetUserId) {
+      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.log('💾 Utilisateur non connecté pour count');
         return 0;
       }
 
+      let targetUserId = user.id;
+      
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('💾 🎭 Mode impersonation: count PDFs pour', data.target_email);
+        } catch (error) {
+          console.error('💾 Erreur parsing impersonation data pour count:', error);
+        }
+      }
+
+      console.log('💾 Count PDFs pour user_id:', targetUserId);
+      
       const { count, error } = await supabase
         .from('pdf_storage')
         .select('id', { count: 'exact', head: true })
@@ -341,6 +360,7 @@ export class PDFService {
         return 0;
       }
 
+      console.log('💾 Count résultat:', count);
       return count || 0;
     } catch (error) {
       console.error('💾 Erreur count PDFs:', error);
@@ -360,13 +380,30 @@ export class PDFService {
   }>> {
     try {
       console.log('💾 === DÉBUT listPDFs ===');
-      const targetUserId = await PDFService.getTargetUserId();
-      console.log('💾 Target user ID récupéré:', targetUserId);
       
-      if (!targetUserId) {
-        console.log('💾 Aucun target user ID, retour liste vide');
+      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.log('💾 Utilisateur non connecté');
         return [];
       }
+
+      let targetUserId = user.id;
+      
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('💾 🎭 Mode impersonation: récupération PDFs pour', data.target_email, 'userId:', targetUserId);
+        } catch (error) {
+          console.error('💾 Erreur parsing impersonation data:', error);
+        }
+      }
+      
+      console.log('💾 Target user ID final:', targetUserId);
 
       console.log('💾 Requête Supabase pour user_id:', targetUserId);
       const { data, error } = await supabase
@@ -390,6 +427,7 @@ export class PDFService {
           createdAt: item.created_at
         });
       });
+      
       return (data || []).map(item => ({
         fileName: item.file_name,
         responseId: item.response_id || 'supabase',
@@ -408,9 +446,26 @@ export class PDFService {
   // SUPPRIMER UN PDF
   static async deletePDF(fileName: string): Promise<boolean> {
     try {
-      const targetUserId = await PDFService.getTargetUserId();
-      if (!targetUserId) {
+      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.log('💾 Utilisateur non connecté pour delete');
         return false;
+      }
+
+      let targetUserId = user.id;
+      
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('💾 🎭 Mode impersonation: suppression PDF pour', data.target_email);
+        } catch (error) {
+          console.error('💾 Erreur parsing impersonation data pour delete:', error);
+        }
       }
 
       const { error } = await supabase
@@ -475,9 +530,26 @@ export class PDFService {
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
     try {
-      const targetUserId = await PDFService.getTargetUserId();
-      if (!targetUserId) {
+      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.log('💾 Utilisateur non connecté pour clear');
         return;
+      }
+
+      let targetUserId = user.id;
+      
+      // Vérifier si on est en mode impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('💾 🎭 Mode impersonation: nettoyage PDFs pour', data.target_email);
+        } catch (error) {
+          console.error('💾 Erreur parsing impersonation data pour clear:', error);
+        }
       }
 
       const { error } = await supabase
@@ -490,48 +562,6 @@ export class PDFService {
       }
     } catch (error) {
       console.error('💾 Erreur nettoyage complet:', error);
-    }
-  }
-
-  // RÉCUPÉRER L'ID DE L'UTILISATEUR CIBLE (avec gestion impersonation)
-  private static async getTargetUserId(): Promise<string | null> {
-    try {
-      console.log('💾 === getTargetUserId ===');
-      
-      // Récupérer l'utilisateur actuel
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.log('💾 Utilisateur non connecté:', userError?.message);
-        return null;
-      }
-
-      console.log('💾 Utilisateur auth connecté:', user.id, user.email);
-
-      // Vérifier si on est en mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      console.log('💾 Données impersonation brutes:', impersonationData);
-      
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          console.log('💾 🎭 Mode impersonation détecté:', {
-            target_user_id: data.target_user_id,
-            target_email: data.target_email,
-            admin_user_id: data.admin_user_id
-          });
-          return data.target_user_id;
-        } catch (error) {
-          console.error('Erreur parsing impersonation data:', error);
-        }
-      }
-
-      // Mode normal
-      console.log('💾 Mode normal, user_id:', user.id);
-      return user.id;
-    } catch (error) {
-      console.error('💾 Erreur récupération target user ID:', error);
-      return null;
     }
   }
 
