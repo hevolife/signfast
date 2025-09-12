@@ -225,7 +225,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       fontColor: '#000000',
       backgroundColor: '#ffffff',
       required: false,
-      offsetX: 0, // Offset horizontal ajustable
+      offsetX: type === 'text' || type === 'number' || type === 'date' ? -5 : 0, // Offset horizontal ajustable
       offsetY: 0, // Offset vertical ajustable
     };
 
