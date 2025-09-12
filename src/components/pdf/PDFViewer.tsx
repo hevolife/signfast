@@ -64,6 +64,15 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     }
   }, [pdfDoc, numPages, scale]);
 
+  // Forcer un re-render quand les dimensions changent
+  useEffect(() => {
+    if (pdfDoc && numPages > 0) {
+      // Petit délai pour s'assurer que les canvas sont prêts
+      setTimeout(() => {
+        renderAllPages();
+      }, 50);
+    }
+  }, [scale]);
   const loadPDF = async () => {
     if (!file) return;
 
@@ -102,6 +111,11 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       setPdfDimensions(dimensions);
       
       setLoading(false);
+      
+      // Forcer un re-render après chargement complet
+      setTimeout(() => {
+        renderAllPages();
+      }, 200);
     } catch (error) {
       console.error('Erreur chargement PDF:', error);
       setError('Erreur lors du chargement du PDF');

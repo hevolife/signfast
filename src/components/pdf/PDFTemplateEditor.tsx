@@ -225,7 +225,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       fontColor: '#000000',
       backgroundColor: '#ffffff',
       required: false,
-      offsetX: type === 'text' || type === 'number' || type === 'date' ? -20 : 0, // Offset horizontal ajustable
       offsetX: type === 'text' || type === 'number' || type === 'date' ? -15 : 0, // Offset horizontal ajustable
       offsetY: 0, // Offset vertical ajustable
     };
@@ -239,6 +238,11 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
     setFields(prev => [...prev, newField]);
     setSelectedField(newField.id);
+    
+    // Forcer un re-render pour que le champ apparaisse immédiatement à la bonne position
+    setTimeout(() => {
+      setFields(prev => [...prev]);
+    }, 100);
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
