@@ -87,93 +87,42 @@ export const SuperAdminDashboard: React.FC = () => {
     }
     
     loadUsers();
-    loadGlobalStats();
   }, [isSuperAdmin, navigate]);
+
+  // Charger les stats globales après avoir chargé les utilisateurs
+  useEffect(() => {
+    if (users.length > 0) {
+      loadGlobalStats();
+    }
+  }, [users]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       
-      // Récupérer tous les utilisateurs avec leurs profils
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Erreur récupération utilisateurs:', authError);
-        toast.error('Erreur lors du chargement des utilisateurs');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Session expirée, veuillez vous reconnecter');
         return;
       }
 
-      // Pour chaque utilisateur, récupérer ses données complètes
-      const usersWithData = await Promise.all(
-        authUsers.users.map(async (authUser) => {
-          try {
-            // Profil utilisateur
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('user_id', authUser.id)
-              .maybeSingle();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-            // Abonnement Stripe
-            const { data: subscription } = await supabase
-              .from('stripe_user_subscriptions')
-              .select('*')
-              .eq('customer_id', authUser.id)
-              .maybeSingle();
+      const data = await response.json();
 
-            // Code secret actif
-            const { data: secretCode } = await supabase
-              .from('user_secret_codes')
-              .select(`
-                expires_at,
-                secret_codes (type)
-              `)
-              .eq('user_id', authUser.id)
-              .or('expires_at.is.null,expires_at.gt.now()')
-              .maybeSingle();
+      if (!response.ok) {
+        console.error('Erreur récupération utilisateurs:', data.error);
+        toast.error(data.error || 'Erreur lors du chargement des utilisateurs');
+        return;
+      }
 
-            // Statistiques utilisateur
-            const [formsCount, templatesCount, pdfsCount, responsesCount] = await Promise.all([
-              supabase.from('forms').select('id', { count: 'exact' }).eq('user_id', authUser.id),
-              supabase.from('pdf_templates').select('id', { count: 'exact' }).eq('user_id', authUser.id),
-              supabase.from('pdf_storage').select('id', { count: 'exact' }),
-              supabase.from('responses').select('id', { count: 'exact' })
-            ]);
-
-            return {
-              id: authUser.id,
-              email: authUser.email || '',
-              created_at: authUser.created_at,
-              last_sign_in_at: authUser.last_sign_in_at,
-              email_confirmed_at: authUser.email_confirmed_at,
-              profile,
-              subscription,
-              secretCode: secretCode ? {
-                type: secretCode.secret_codes?.type,
-                expires_at: secretCode.expires_at
-              } : undefined,
-              stats: {
-                forms_count: formsCount.count || 0,
-                templates_count: templatesCount.count || 0,
-                pdfs_count: pdfsCount.count || 0,
-                responses_count: responsesCount.count || 0,
-              }
-            };
-          } catch (error) {
-            console.error(`Erreur données utilisateur ${authUser.id}:`, error);
-            return {
-              id: authUser.id,
-              email: authUser.email || '',
-              created_at: authUser.created_at,
-              last_sign_in_at: authUser.last_sign_in_at,
-              email_confirmed_at: authUser.email_confirmed_at,
-              stats: { forms_count: 0, templates_count: 0, pdfs_count: 0, responses_count: 0 }
-            };
-          }
-        })
-      );
-
-      setUsers(usersWithData);
+      setUsers(data);
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
       toast.error('Erreur lors du chargement des utilisateurs');
@@ -184,27 +133,26 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const loadGlobalStats = async () => {
     try {
-      // Statistiques globales
-      const [usersCount, formsCount, responsesCount] = await Promise.all([
-        supabase.auth.admin.listUsers(),
-        supabase.from('forms').select('id', { count: 'exact' }),
-        supabase.from('responses').select('id', { count: 'exact' })
-      ]);
-
-      const totalUsers = usersCount.data?.users.length || 0;
+      // Calculer les stats depuis les données utilisateurs déjà chargées
+      const totalUsers = users.length;
       const thisMonth = new Date();
       thisMonth.setDate(1);
       
-      const newUsersThisMonth = usersCount.data?.users.filter(u => 
+      const newUsersThisMonth = users.filter(u => 
         new Date(u.created_at) >= thisMonth
-      ).length || 0;
+      ).length;
+      
+      const totalForms = users.reduce((sum, u) => sum + u.stats.forms_count, 0);
+      const totalResponses = users.reduce((sum, u) => sum + u.stats.responses_count, 0);
+      const subscribedUsers = users.filter(u => u.subscription?.status === 'active').length;
+      const secretCodeUsers = users.filter(u => u.secretCode).length;
 
       setGlobalStats({
         totalUsers,
-        subscribedUsers: 0, // À calculer depuis les abonnements
-        secretCodeUsers: 0, // À calculer depuis les codes secrets
-        totalForms: formsCount.count || 0,
-        totalResponses: responsesCount.count || 0,
+        subscribedUsers,
+        secretCodeUsers,
+        totalForms,
+        totalResponses,
         totalRevenue: 0, // À calculer depuis Stripe
         newUsersThisMonth,
       });
@@ -219,22 +167,7 @@ export const SuperAdminDashboard: React.FC = () => {
     }
 
     try {
-      // Créer un lien de connexion magique pour l'utilisateur
-      const { data, error } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: userEmail,
-      });
-
-      if (error) {
-        toast.error('Erreur lors de la génération du lien de connexion');
-        return;
-      }
-
-      // Ouvrir dans un nouvel onglet
-      if (data.properties?.action_link) {
-        window.open(data.properties.action_link, '_blank');
-        toast.success(`Connexion en tant que ${userEmail} ouverte dans un nouvel onglet`);
-      }
+      toast.info(`Fonctionnalité d'impersonation temporairement désactivée pour des raisons de sécurité`);
     } catch (error) {
       console.error('Erreur impersonation:', error);
       toast.error('Erreur lors de la connexion utilisateur');
@@ -243,18 +176,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      // Activer/désactiver l'utilisateur
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        ban_duration: currentStatus ? '876000h' : 'none' // ~100 ans pour bannir
-      });
-
-      if (error) {
-        toast.error('Erreur lors de la modification du statut');
-        return;
-      }
-
-      toast.success(`Utilisateur ${currentStatus ? 'désactivé' : 'activé'} avec succès`);
-      loadUsers();
+      toast.info(`Fonctionnalité de modification du statut utilisateur temporairement désactivée`);
     } catch (error) {
       console.error('Erreur toggle status:', error);
       toast.error('Erreur lors de la modification du statut');
