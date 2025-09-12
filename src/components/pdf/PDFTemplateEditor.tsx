@@ -33,6 +33,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   linkedFormId,
   onFormLinkChange,
 }) => {
+  // État pour les dimensions PDF - doit être déclaré en premier
+  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
+  
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [fields, setFields] = useState<PDFField[]>([]);
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -86,9 +89,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       }, 500);
     }
   }, [pdfFile, initialFields, isInitialized, pdfDimensions]);
-
-  // État pour les dimensions PDF
-  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
 
   // Callback pour recevoir les dimensions du PDF
   const handlePDFLoaded = useCallback((dimensions: { width: number; height: number }[]) => {
