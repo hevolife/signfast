@@ -67,10 +67,11 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   // Forcer un re-render quand les dimensions changent
   useEffect(() => {
     if (pdfDoc && numPages > 0) {
-      // Petit délai pour s'assurer que les canvas sont prêts
+      // Délai pour s'assurer que les canvas sont prêts
       setTimeout(() => {
+        console.log('📄 Force re-render de toutes les pages');
         renderAllPages();
-      }, 50);
+      }, 100);
     }
   }, [scale]);
   const loadPDF = async () => {

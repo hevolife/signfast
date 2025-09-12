@@ -32,7 +32,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 
     const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
     if (!canvasDimensions) {
-      console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage);
+      console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage, 'field:', field.variable);
       return { x: 0, y: 0, width: 100, height: 25 };
     }
 
@@ -41,7 +41,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const width = (field.widthRatio || 0.1) * canvasDimensions.width;
     const height = (field.heightRatio || 0.05) * canvasDimensions.height;
 
-    console.log(`📐 Position calculée pour ${field.variable}:`, {
+    console.log(`📐 Position calculée pour ${field.variable || field.type}:`, {
       ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
       canvas: canvasDimensions,
       position: { x, y, width, height }
