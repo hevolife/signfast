@@ -313,13 +313,15 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         id: newField.id
       });
 
-      setFields(prev => [...prev, newField]);
+      setFields(prev => {
         const newFields = [...prev, newField];
         console.log('➕ Nouveaux champs total:', newFields.length);
         console.log('➕ Champs par page:', newFields.reduce((acc, f) => {
           acc[f.page] = (acc[f.page] || 0) + 1;
           return acc;
+        }, {} as Record<number, number>));
         return newFields;
+      });
       setSelectedField(newField.id);
       
       // Changer vers la page où le champ a été placé si nécessaire
