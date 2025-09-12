@@ -166,16 +166,24 @@ export class PDFGenerator {
             break;
             
           case 'image':
+            console.log(`🖼️ Processing image field: ${field.variable}`);
+            console.log(`🖼️ Image value type:`, typeof value);
+            console.log(`🖼️ Image value starts with data:image:`, value && typeof value === 'string' && value.startsWith('data:image'));
+            console.log(`🖼️ Image value length:`, value && typeof value === 'string' ? value.length : 'not string');
+            
             if (value && typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))) {
               try {
                 await this.drawImage(pdfDoc, page, value, x, y, field);
-                console.log(`🎨 ✅ Image dessinée`);
+                console.log(`🎨 ✅ Image dessinée pour ${field.variable}`);
               } catch (error) {
-                console.error(`🎨 ❌ Erreur dessin image pour ${field.variable}:`, error);
+                console.error(`🎨 ❌ Erreur dessin image pour ${field.variable}:`, error.message);
                 if (isMobile) {
                   console.log('📱 Image ignorée sur mobile (trop complexe)');
                 }
               }
+            } else {
+              console.log(`🖼️ ❌ Image field ${field.variable} skipped - no valid image data`);
+              console.log(`🖼️ Expected data:image format, got:`, value ? typeof value : 'undefined');
             }
             break;
         }
@@ -258,7 +266,7 @@ export class PDFGenerator {
     // Extraire le nom de la variable (enlever ${})
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
     
-    console.log(`🔍 Looking for variable: ${variableName}`);
+    console.log(`🔍 Looking for variable: ${variableName} in data:`, Object.keys(data));
     
     let value = data[variableName];
     
@@ -274,17 +282,18 @@ export class PDFGenerator {
         value = data[matchingKey];
         console.log(`🔍 Found via matching key: ${matchingKey} = ${value}`);
       } else {
-        console.log(`🔍 Available keys:`, originalKeys);
+        console.log(`🔍 Variable ${variableName} not found. Available keys:`, originalKeys);
+        console.log(`🔍 Data values:`, Object.entries(data).map(([k, v]) => `${k}: ${typeof v === 'string' && v.startsWith('data:') ? 'base64_image' : v}`));
       }
     }
     
     // Pour les champs image, retourner la valeur base64 directement
     if (field.type === 'image' && value && typeof value === 'string' && value.startsWith('data:image')) {
-      console.log(`🔍 Image field found: ${variableName}`);
+      console.log(`🔍 Image field found: ${variableName}, length: ${value.length}`);
       return value;
     }
     
-    console.log(`🔍 Final value for ${variableName}:`, value || field.placeholder || 'EMPTY');
+    console.log(`🔍 Final value for ${variableName}:`, typeof value === 'string' && value.startsWith('data:') ? 'base64_data' : (value || field.placeholder || 'EMPTY'));
     
     return value || field.placeholder || '';
   }

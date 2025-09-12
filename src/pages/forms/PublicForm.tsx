@@ -181,8 +181,14 @@ export const PublicForm: React.FC = () => {
       const submissionData = { ...formData };
       
       form.fields?.forEach(field => {
-        if (formData[field.id]) {
-          submissionData[field.label] = formData[field.id];
+        const fieldValue = formData[field.id];
+        if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
+          submissionData[field.label] = fieldValue;
+          
+          // Debug pour les champs image/fichier
+          if (field.type === 'file' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+            console.log(`📷 Image field "${field.label}" saved with base64 data, length: ${fieldValue.length}`);
+          }
         }
       });
 
@@ -480,17 +486,21 @@ export const PublicForm: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    console.log(`📷 File selected for field "${field.label}":`, file.name, file.type, file.size);
+                    
                     // Pour les images, convertir en base64
                     if (file.type.startsWith('image/')) {
+                      console.log(`📷 Converting image to base64 for field: ${field.label}`);
                       const reader = new FileReader();
                       reader.onload = (event) => {
                         const base64 = event.target?.result as string;
                         handleInputChange(field.id, base64);
-                        console.log('📷 Image convertie en base64 pour:', field.label);
+                        console.log(`📷 Image converted to base64 for "${field.label}", length: ${base64.length}`);
                       };
                       reader.readAsDataURL(file);
                     } else {
                       // Pour les autres fichiers, stocker le nom
+                      console.log(`📄 Non-image file for field "${field.label}":`, file.name);
                       handleInputChange(field.id, file.name);
                     }
                   }
