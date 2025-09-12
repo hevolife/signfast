@@ -215,9 +215,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     // Fallback vers les variables par défaut
     console.log('🔗 Fallback vers variables par défaut');
     setActualFormVariables(formVariables);
-  }, [currentLinkedFormId, formVariables]);
-  
-  const loadExistingPdf = useCallback(async () => {
     if (!existingPdfUrl) return;
     
     setLoadingExistingPdf(true);
