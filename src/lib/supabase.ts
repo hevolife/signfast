@@ -124,6 +124,7 @@ export type Database = {
           form_data: any;
           pdf_content: string;
           file_size: number;
+          user_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -136,6 +137,7 @@ export type Database = {
           form_data?: any;
           pdf_content: string;
           file_size?: number;
+          user_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -148,6 +150,7 @@ export type Database = {
           form_data?: any;
           pdf_content?: string;
           file_size?: number;
+          user_id?: string;
           created_at?: string;
           updated_at?: string;
         };
