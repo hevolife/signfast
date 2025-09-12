@@ -90,7 +90,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const fieldHeight = (field.heightRatio || 0.05) * canvas.height;
       
       const constrainedX = Math.max(0, Math.min(canvas.width - fieldWidth, newX));
-      const constrainedY = Math.max(0, Math.min(canvas.height - fieldHeight, constrainedY));
+      const constrainedY = Math.max(0, Math.min(canvas.height - fieldHeight, newY));
       
       // Mettre à jour la position temporaire pour un affichage fluide
       setTempPosition({ x: constrainedX, y: constrainedY });
