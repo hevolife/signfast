@@ -316,13 +316,27 @@ export class PDFService {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!userError && user) {
+          // Vérifier si on est en mode impersonation
+          const impersonationData = localStorage.getItem('admin_impersonation');
+          let targetUserId = user.id;
+          
+          if (impersonationData) {
+            try {
+              const data = JSON.parse(impersonationData);
+              targetUserId = data.target_user_id;
+              console.log('🎭 Mode impersonation: comptage des PDFs pour', data.target_email);
+            } catch (error) {
+              console.error('Erreur parsing impersonation data:', error);
+            }
+          }
+
           const { count, error } = await supabase
             .from('pdf_storage')
             .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id);
+            .eq('user_id', targetUserId);
 
           if (!error && count !== null) {
-            console.log('💾 Nombre de PDFs Supabase:', count);
+            console.log('💾 Nombre de PDFs Supabase pour userId', targetUserId, ':', count);
             return count;
           } else {
             console.warn('💾 Erreur count Supabase:', error?.message || 'Count null');
@@ -370,6 +384,20 @@ export class PDFService {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!userError && user) {
+          // Vérifier si on est en mode impersonation
+          const impersonationData = localStorage.getItem('admin_impersonation');
+          let targetUserId = user.id;
+          
+          if (impersonationData) {
+            try {
+              const data = JSON.parse(impersonationData);
+              targetUserId = data.target_user_id;
+              console.log('🎭 Mode impersonation: récupération des PDFs pour', data.target_email);
+            } catch (error) {
+              console.error('Erreur parsing impersonation data:', error);
+            }
+          }
+
           // Timeout pour éviter les blocages
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('Timeout Supabase')), 2000);
@@ -378,13 +406,13 @@ export class PDFService {
           const queryPromise = supabase
             .from('pdf_storage')
             .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
-            .eq('user_id', user.id)
+            .eq('user_id', targetUserId)
             .order('created_at', { ascending: false });
 
           const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
           if (!error && data) {
-            console.log('💾 PDFs Supabase trouvés:', data.length);
+            console.log('💾 PDFs Supabase trouvés pour userId', targetUserId, ':', data.length);
             const supabasePDFs = data.map(item => ({
               fileName: item.file_name,
               responseId: item.response_id || 'supabase',
@@ -458,11 +486,25 @@ export class PDFService {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!userError && user) {
+          // Vérifier si on est en mode impersonation
+          const impersonationData = localStorage.getItem('admin_impersonation');
+          let targetUserId = user.id;
+          
+          if (impersonationData) {
+            try {
+              const data = JSON.parse(impersonationData);
+              targetUserId = data.target_user_id;
+              console.log('🎭 Mode impersonation: suppression PDF pour', data.target_email);
+            } catch (error) {
+              console.error('Erreur parsing impersonation data:', error);
+            }
+          }
+
           const { error } = await supabase
             .from('pdf_storage')
             .delete()
             .eq('file_name', fileName)
-            .eq('user_id', user.id);
+            .eq('user_id', targetUserId);
 
           if (!error) {
             console.log('💾 PDF supprimé de Supabase');
