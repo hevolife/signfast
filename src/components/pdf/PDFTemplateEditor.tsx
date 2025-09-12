@@ -471,20 +471,26 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       scale={scale}
                       onScaleChange={setScale}
                     >
-                      {/* Overlay des champs */}
-                      <div className="relative">
-                        {fields.map(field => (
-                          <PDFFieldOverlay
-                            key={field.id}
-                            field={field}
-                            scale={scale}
-                            isSelected={selectedField === field.id}
-                            onSelect={() => setSelectedField(field.id)}
-                            onUpdate={(updates) => updateField(field.id, updates)}
-                            onDelete={() => deleteField(field.id)}
-                          />
-                        ))}
-                      </div>
+                      {(containerRef, pageOffsets) => (
+                        <div className="relative">
+                          {fields.map(field => {
+                            const pageOffset = pageOffsets[field.page - 1] || { top: 0, left: 0 };
+                            return (
+                              <PDFFieldOverlay
+                                key={field.id}
+                                field={field}
+                                scale={scale}
+                                isSelected={selectedField === field.id}
+                                onSelect={() => setSelectedField(field.id)}
+                                onUpdate={(updates) => updateField(field.id, updates)}
+                                onDelete={() => deleteField(field.id)}
+                                containerRef={containerRef}
+                                pageOffset={pageOffset}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </PDFViewer>
                   </Card>
                 </div>

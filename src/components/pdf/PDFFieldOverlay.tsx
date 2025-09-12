@@ -10,6 +10,8 @@ interface PDFFieldOverlayProps {
   onSelect: () => void;
   onUpdate: (updates: Partial<PDFField>) => void;
   onDelete: () => void;
+  containerRef: React.RefObject<HTMLDivElement>;
+  pageOffset: { top: number; left: number };
 }
 
 export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
@@ -19,6 +21,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
+  containerRef,
+  pageOffset,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
@@ -69,8 +73,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   // Position directe basée sur les coordonnées du champ
   const style = {
     position: 'absolute' as const,
-    left: (field.x * scale) + (containerRef.current?.scrollLeft || 0),
-    top: (field.y * scale) + (containerRef.current?.scrollTop || 0) + 60, // +60 pour la barre d'outils
+    left: pageOffset.left + (field.x * scale),
+    top: pageOffset.top + (field.y * scale),
     width: field.width * scale,
     height: field.height * scale,
     minWidth: '40px',

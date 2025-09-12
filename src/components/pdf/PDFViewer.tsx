@@ -5,7 +5,7 @@ import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 interface PDFViewerProps {
   file: File | string | null;
   onPageClick?: (x: number, y: number, page: number) => void;
-  children?: React.ReactNode;
+  children?: React.ReactNode | ((containerRef: React.RefObject<HTMLDivElement>, pageOffsets: Array<{top: number, left: number}>) => React.ReactNode);
   scale?: number;
   onScaleChange?: (scale: number) => void;
 }
@@ -22,6 +22,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRootRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [pageOffsets, setPageOffsets] = useState<Array<{top: number, left: number}>>([]);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   useEffect(() => {
     if (pdfDoc && numPages > 0) {
       renderAllPages();
+      calculatePageOffsets();
     }
   }, [pdfDoc, numPages, scale]);
 
@@ -60,6 +64,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       setNumPages(pdf.numPages);
       // Initialiser les refs pour toutes les pages
       canvasRefs.current = new Array(pdf.numPages).fill(null);
+      pageRefs.current = new Array(pdf.numPages).fill(null);
       setLoading(false);
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -67,6 +72,33 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       setLoading(false);
     }
   };
+
+  const calculatePageOffsets = () => {
+    if (!viewerRootRef.current || loading) return;
+    
+    const offsets: Array<{top: number, left: number}> = [];
+    pageRefs.current.forEach((pageRef, index) => {
+      if (pageRef && viewerRootRef.current) {
+        const pageRect = pageRef.getBoundingClientRect();
+        const viewerRect = viewerRootRef.current.getBoundingClientRect();
+        offsets.push({
+          top: pageRect.top - viewerRect.top + (containerRef.current?.scrollTop || 0),
+          left: pageRect.left - viewerRect.left + (containerRef.current?.scrollLeft || 0)
+        });
+      } else {
+        offsets.push({ top: 0, left: 0 });
+      }
+    });
+    setPageOffsets(offsets);
+  };
+
+  useEffect(() => {
+    if (!loading && numPages > 0) {
+      // Délai pour s'assurer que le DOM est mis à jour
+      const timer = setTimeout(calculatePageOffsets, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, numPages, scale]);
 
   const renderAllPages = async () => {
     if (!pdfDoc) return;
@@ -149,7 +181,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div ref={viewerRootRef} className="flex flex-col h-full overflow-hidden">
       {/* Barre d'outils */}
       <div className="flex items-center justify-between p-2 sm:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="flex items-center space-x-1 sm:space-x-2">
@@ -179,7 +211,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       >
         <div className="flex flex-col items-center space-y-4 min-w-0">
           {Array.from({ length: numPages }, (_, index) => (
-            <div key={index} className="relative" data-page={index + 1}>
+            <div 
+              key={index} 
+              ref={(el) => (pageRefs.current[index] = el)}
+              className="relative" 
+              data-page={index + 1}
+            >
               <div className="text-center mb-2">
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
                   Page {index + 1}
@@ -208,8 +245,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       
       {/* Overlay des champs - positionné de manière absolue par rapport à la page */}
       {!loading && !error && numPages > 0 && children && (
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          {children}
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 1000 }}>
+          {typeof children === 'function' ? children(containerRef, pageOffsets) : children}
         </div>
       )}
     </div>
