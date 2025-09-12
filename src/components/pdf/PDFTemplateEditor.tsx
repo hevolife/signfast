@@ -689,7 +689,7 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
   onDeleteField,
 }) => {
   const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'pdf-field',
+    accept: ['pdf-field-type', 'pdf-field'],
     drop: (item: { id: string }, monitor) => {
       const offset = monitor.getClientOffset();
       if (offset && pdfViewerRef.current?.canvasRefs.current) {
@@ -698,17 +698,33 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
           const rect = canvas.getBoundingClientRect();
           const x = (offset.x - rect.left) / scale;
           const y = (offset.y - rect.top) / scale;
-          onUpdateField(item.id, { x, y, page: currentPage });
+          
+          if (item.id) {
+            // Moving existing field
+            onUpdateField(item.id, { x, y, page: currentPage });
+          }
         }
       }
+      return { moved: true };
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
   }));
 
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // Only handle clicks on the canvas itself, not on field overlays
+    if (e.target === e.currentTarget) {
+      onSelectField(''); // Deselect all fields
+    }
+  };
+
   return (
-    <Card className="h-[600px] lg:h-[700px]" ref={drop}>
+    <Card className="h-[600px] lg:h-[700px] relative" ref={drop}>
+      <div 
+        className="absolute inset-0 z-0"
+        onClick={handleCanvasClick}
+      />
       <PDFViewer
         ref={pdfViewerRef}
         file={pdfFile}
@@ -725,9 +741,9 @@ const PDFCanvasWithDrop: React.FC<PDFCanvasWithDropProps> = ({
             scale={scale}
             isSelected={selectedField === field.id}
             onSelect={(field) => onSelectField(field.id)}
-            onUpdate={(updates) => onUpdateField(field.id, updates)}
+            onUpdate={(updatedField) => onUpdateField(updatedField.id, updatedField)}
             onDelete={() => onDeleteField(field.id)}
-            canvasRefs={pdfViewerRef.current?.canvasRefs.current || []}
+            canvasRefs={pdfViewerRef.current?.canvasRefs || undefined}
             currentPage={currentPage}
           />
         ))}
