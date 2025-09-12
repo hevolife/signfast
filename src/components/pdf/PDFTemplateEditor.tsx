@@ -184,33 +184,21 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const addField = useCallback((type: PDFField['type']) => {
     if (!pdfViewerRef.current) return;
 
-    const pdfDimensions = pdfViewerRef.current.getPDFDimensions(currentPage);
-    const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
-    
-    if (!pdfDimensions || !canvasDimensions) {
-      console.warn('Dimensions PDF/Canvas non disponibles');
-      return;
-    }
+    // Position par défaut au centre (ratios fixes)
+    const xRatio = 0.3; // Légèrement à gauche du centre
+    const yRatio = 0.3; // Légèrement en haut du centre
 
-    // Position par défaut au centre (ratios)
-    const xRatio = 0.5; // Centre horizontal
-    const yRatio = 0.5; // Centre vertical
-
-    // Dimensions par défaut selon le type
-    const defaultSizes = {
-      text: { width: 150, height: 25 },
-      date: { width: 100, height: 25 },
-      number: { width: 80, height: 25 },
-      signature: { width: 200, height: 60 },
-      checkbox: { width: 20, height: 20 },
-      image: { width: 120, height: 80 },
+    // Ratios de taille fixes selon le type
+    const defaultRatios = {
+      text: { width: 0.25, height: 0.04 },
+      date: { width: 0.15, height: 0.04 },
+      number: { width: 0.12, height: 0.04 },
+      signature: { width: 0.35, height: 0.1 },
+      checkbox: { width: 0.03, height: 0.03 },
+      image: { width: 0.2, height: 0.15 },
     };
 
-    const { width: defaultWidth, height: defaultHeight } = defaultSizes[type] || { width: 120, height: 25 };
-
-    // Calculer les ratios pour la taille basés sur les dimensions PDF réelles
-    const widthRatio = defaultWidth / pdfDimensions.width;
-    const heightRatio = defaultHeight / pdfDimensions.height;
+    const { width: widthRatio, height: heightRatio } = defaultRatios[type] || { width: 0.2, height: 0.04 };
 
     const newField: PDFField = {
       id: uuidv4(),
@@ -229,20 +217,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       offsetY: 0, // Offset vertical ajustable
     };
 
-    console.log('➕ Nouveau champ avec ratios:', {
+    console.log('➕ Nouveau champ avec ratios fixes:', {
       type,
-      ratios: { xRatio, yRatio, widthRatio, heightRatio },
-      pdfDimensions,
-      canvasDimensions
+      ratios: { xRatio, yRatio, widthRatio, heightRatio }
     });
 
     setFields(prev => [...prev, newField]);
     setSelectedField(newField.id);
-    
-    // Forcer un re-render pour que le champ apparaisse immédiatement à la bonne position
-    setTimeout(() => {
-      setFields(prev => [...prev]);
-    }, 100);
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {

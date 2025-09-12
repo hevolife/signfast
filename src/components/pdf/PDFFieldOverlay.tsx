@@ -38,16 +38,38 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
     if (!canvasDimensions) return { x: 0, y: 0, width: 100, height: 25 };
 
-    // Position sur le canvas calculée depuis les ratios avec vérification
-    const x = Math.round((field.xRatio || 0) * canvasDimensions.width);
-    const y = Math.round((field.yRatio || 0) * canvasDimensions.height);
-    const width = Math.round((field.widthRatio || 0.1) * canvasDimensions.width);
-    const height = Math.round((field.heightRatio || 0.05) * canvasDimensions.height);
+    // Position sur le canvas calculée depuis les ratios
+    const x = (field.xRatio || 0) * canvasDimensions.width;
+    const y = (field.yRatio || 0) * canvasDimensions.height;
+    const width = (field.widthRatio || 0.1) * canvasDimensions.width;
+    const height = (field.heightRatio || 0.05) * canvasDimensions.height;
+
+    console.log(`📐 Field ${field.id} position calculation:`, {
+      ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
+      canvas: canvasDimensions,
+      calculated: { x, y, width, height }
+    });
 
     return { x, y, width, height };
   };
 
-  const position = getDisplayPosition();
+  const [position, setPosition] = useState(getDisplayPosition());
+
+  // Recalculer la position quand les ratios ou les dimensions changent
+  React.useEffect(() => {
+    const newPosition = getDisplayPosition();
+    setPosition(newPosition);
+  }, [field.xRatio, field.yRatio, field.widthRatio, field.heightRatio, currentPage]);
+
+  // Forcer un recalcul périodique pour s'assurer que la position est correcte
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const newPosition = getDisplayPosition();
+      setPosition(newPosition);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.delete-button') || 
