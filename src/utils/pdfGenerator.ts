@@ -450,6 +450,18 @@ export class PDFGenerator {
     console.log(`🔍 Type de champ: ${field.type}`);
     console.log(`🔍 Clés disponibles dans data:`, Object.keys(data));
     
+    // Debug spécial pour voir toutes les valeurs
+    console.log(`🔍 Toutes les données disponibles:`);
+    Object.entries(data).forEach(([key, value]) => {
+      if (typeof value === 'string' && !value.startsWith('data:image')) {
+        console.log(`🔍   "${key}" = "${value}"`);
+      } else if (typeof value === 'string' && value.startsWith('data:image')) {
+        console.log(`🔍   "${key}" = IMAGE_DATA (${value.length} chars)`);
+      } else {
+        console.log(`🔍   "${key}" = ${typeof value} (${value})`);
+      }
+    });
+    
     // Debug spécial pour les images
     if (field.type === 'image') {
       const imageKeys = Object.keys(data).filter(key => {
@@ -466,10 +478,90 @@ export class PDFGenerator {
     
     // Si pas trouvé, essayer avec différentes variations
     if (!value) {
-      // Essayer la clé originale
+      // Essayer différentes variations de la clé
       const originalKeys = Object.keys(data);
-      const matchingKey = originalKeys.find(key => 
-        this.normalizeKey(key) === variableName || key === variableName
+      
+      // 1. Recherche exacte
+      let matchingKey = originalKeys.find(key => key === variableName);
+      
+      // 2. Recherche normalisée
+      if (!matchingKey) {
+        matchingKey = originalKeys.find(key => 
+          this.normalizeKey(key) === variableName
+        );
+      }
+      
+      // 3. Recherche insensible à la casse
+      if (!matchingKey) {
+        matchingKey = originalKeys.find(key => 
+          key.toLowerCase() === variableName.toLowerCase()
+        );
+      }
+      
+      // 4. Recherche partielle (contient la variable)
+      if (!matchingKey) {
+        matchingKey = originalKeys.find(key => 
+          this.normalizeKey(key).includes(variableName) || 
+          variableName.includes(this.normalizeKey(key))
+        );
+      }
+      
+      // 5. Recherche par similarité (pour les champs conditionnels)
+      if (!matchingKey) {
+        // Essayer de trouver une clé qui ressemble à la variable
+        const variableWords = variableName.split('_').filter(w => w.length > 2);
+        matchingKey = originalKeys.find(key => {
+          const keyNormalized = this.normalizeKey(key);
+          return variableWords.some(word => keyNormalized.includes(word));
+        });
+      }
+      
+      console.log(`🔍 Recherche étendue pour "${variableName}":`);
+      console.log(`🔍   - Recherche exacte: ${originalKeys.includes(variableName) ? 'TROUVÉ' : 'NON'}`);
+      console.log(`🔍   - Recherche normalisée: ${matchingKey ? `TROUVÉ (${matchingKey})` : 'NON'}`);
+      console.log(`🔍   - Clés normalisées disponibles:`, originalKeys.map(k => `${k} → ${this.normalizeKey(k)}`));
+      
+      if (matchingKey) {
+        value = data[matchingKey];
+        console.log(`🔍 ✅ Trouvé via clé: "${matchingKey}" = ${typeof value === 'string' && value.startsWith('data:') ? 'IMAGE_DATA' : `"${value}"`}`);
+      } else {
+        console.log(`🔍 ❌ Variable "${variableName}" non trouvée avec toutes les méthodes`);
+        console.log(`🔍 Suggestions de debug:`);
+        console.log(`🔍   - Variable attendue: "${variableName}"`);
+        console.log(`🔍   - Clés disponibles:`, originalKeys);
+        console.log(`🔍   - Clés normalisées:`, originalKeys.map(k => this.normalizeKey(k)));
+        
+        // Essayer de trouver des clés similaires pour aider au debug
+        const similarKeys = originalKeys.filter(key => {
+          const keyLower = key.toLowerCase();
+          const varLower = variableName.toLowerCase();
+          return keyLower.includes(varLower.substring(0, 3)) || varLower.includes(keyLower.substring(0, 3));
+        });
+        
+        if (similarKeys.length > 0) {
+          console.log(`🔍   - Clés similaires trouvées:`, similarKeys);
+        }
+      }
+    } else {
+      console.log(`🔍 ✅ Variable trouvée directement: "${variableName}" = ${typeof value === 'string' && value.startsWith('data:') ? 'IMAGE_DATA' : `"${value}"`}`);
+    }
+    
+    // Pour les champs image, s'assurer qu'on a bien une image
+    if (field.type === 'image') {
+      if (value && typeof value === 'string' && value.startsWith('data:image')) {
+        console.log(`🔍 ✅ Champ image trouvé: ${variableName}, taille: ${value.length}`);
+        return value;
+      } else {
+        console.log(`🔍 ❌ Champ image "${variableName}" mais pas de données image valides`);
+        console.log(`🔍 Type valeur: ${typeof value}, valide: ${typeof value === 'string' && value.startsWith('data:image')}`);
+        return '';
+      }
+    }
+    
+    console.log(`🔍 Valeur finale pour ${variableName}:`, typeof value === 'string' && value.startsWith('data:') ? 'DONNÉES_BASE64' : (value || field.placeholder || 'VIDE'));
+    
+    return value || field.placeholder || '';
+  }
       );
       
       if (matchingKey) {

@@ -204,6 +204,30 @@ export const PublicForm: React.FC = () => {
             console.log(`📷 Format: ${fieldValue.substring(0, 50)}...`);
           }
         }
+        
+        // IMPORTANT: Traiter aussi les champs conditionnels
+        if (field.conditionalFields && fieldValue) {
+          console.log(`📤 Traitement champs conditionnels pour "${field.label}"`);
+          
+          // Pour les champs radio, fieldValue est une string
+          // Pour les champs checkbox, fieldValue est un array
+          const selectedValues = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+          
+          selectedValues.forEach(selectedValue => {
+            const conditionalFields = field.conditionalFields?.[selectedValue];
+            if (conditionalFields) {
+              console.log(`📤 Champs conditionnels trouvés pour "${selectedValue}":`, conditionalFields.length);
+              
+              conditionalFields.forEach(conditionalField => {
+                const conditionalValue = formData[conditionalField.id];
+                if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
+                  submissionData[conditionalField.label] = conditionalValue;
+                  console.log(`📤 Champ conditionnel ajouté: "${conditionalField.label}" = ${conditionalValue}`);
+                }
+              });
+            }
+          });
+        }
       });
 
       console.log(`📤 ===== DONNÉES FINALES SOUMISSION =====`);
