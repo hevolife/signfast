@@ -19,8 +19,14 @@ export const Navbar: React.FC = () => {
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+      // La redirection est gérée dans signOut()
+    } catch (error) {
+      console.error('Erreur déconnexion navbar:', error);
+      // Fallback: redirection manuelle
+      navigate('/');
+    }
   };
 
   return (

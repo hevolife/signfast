@@ -31,10 +31,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isImpersonating, setIsImpersonating] = useState(false);
 
   const signOut = useCallback(async () => {
-    // Nettoyer l'impersonation lors de la déconnexion
-    localStorage.removeItem('admin_impersonation');
-    setIsImpersonating(false);
-    await supabase.auth.signOut();
+    try {
+      // Nettoyer l'impersonation lors de la déconnexion
+      localStorage.removeItem('admin_impersonation');
+      setIsImpersonating(false);
+      
+      // Déconnexion Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+      }
+      
+      // Forcer la mise à jour de l'état
+      setUser(null);
+      setSession(null);
+      
+      // Redirection forcée vers la page d'accueil
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // En cas d'erreur, forcer quand même la déconnexion côté client
+      setUser(null);
+      setSession(null);
+      localStorage.clear();
+      window.location.href = '/';
+    }
   }, []);
 
   // Vérifier l'impersonation au démarrage
