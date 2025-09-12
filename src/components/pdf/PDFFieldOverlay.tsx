@@ -26,6 +26,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
 
   React.useEffect(() => {
     const checkMobile = () => {
@@ -37,6 +38,31 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Calculer la position absolue en tenant compte de toutes les pages
+  const getAbsolutePosition = () => {
+    // Hauteur approximative d'une page (sera ajustée dynamiquement)
+    const pageHeight = 800; // Hauteur de base d'une page
+    const pageSpacing = 32; // Espacement entre les pages (space-y-4 = 16px * 2)
+    
+    // Position Y absolue = position Y sur la page + (numéro de page - 1) * (hauteur page + espacement)
+    const absoluteY = field.y + (field.page - 1) * (pageHeight * scale + pageSpacing);
+    
+    if (isMobile) {
+      return {
+        left: field.x * scale * 0.8,
+        top: absoluteY * 0.8,
+        width: field.width * scale * 0.8,
+        height: field.height * scale * 0.8,
+      };
+    }
+    
+    return {
+      left: field.x * scale,
+      top: absoluteY,
+      width: field.width * scale,
+      height: field.height * scale,
+    };
+  };
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -55,10 +81,22 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const deltaX = (e.clientX - startX) / scaleAdjustment;
       const deltaY = (e.clientY - startY) / scaleAdjustment;
       
-      const newX = startFieldX + deltaX;
-      const newY = startFieldY + deltaY;
+      // Calculer la nouvelle position Y relative à la page
+      const pageHeight = 800;
+      const pageSpacing = 32;
+      const absoluteY = startFieldY + deltaY + (field.page - 1) * (pageHeight + pageSpacing / scale);
       
-      onUpdate({ x: Math.max(0, newX), y: Math.max(0, newY) });
+      // Déterminer sur quelle page le champ devrait être
+      const newPage = Math.max(1, Math.floor(absoluteY / pageHeight) + 1);
+      const relativeY = absoluteY - (newPage - 1) * pageHeight;
+      
+      const newX = startFieldX + deltaX;
+      
+      onUpdate({ 
+        x: Math.max(0, newX), 
+        y: Math.max(0, relativeY),
+        page: newPage
+      });
     };
 
     const handleMouseUp = () => {
@@ -91,10 +129,22 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const deltaX = (touch.clientX - startX) / scaleAdjustment;
       const deltaY = (touch.clientY - startY) / scaleAdjustment;
       
-      const newX = startFieldX + deltaX;
-      const newY = startFieldY + deltaY;
+      // Calculer la nouvelle position Y relative à la page
+      const pageHeight = 800;
+      const pageSpacing = 32;
+      const absoluteY = startFieldY + deltaY + (field.page - 1) * (pageHeight + pageSpacing / scale);
       
-      onUpdate({ x: Math.max(0, newX), y: Math.max(0, newY) });
+      // Déterminer sur quelle page le champ devrait être
+      const newPage = Math.max(1, Math.floor(absoluteY / pageHeight) + 1);
+      const relativeY = absoluteY - (newPage - 1) * pageHeight;
+      
+      const newX = startFieldX + deltaX;
+      
+      onUpdate({ 
+        x: Math.max(0, newX), 
+        y: Math.max(0, relativeY),
+        page: newPage
+      });
     };
 
     const handleTouchEnd = () => {
@@ -118,26 +168,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
   };
 
-  // Calcul de position ajusté pour mobile
-  const getAdjustedPosition = () => {
-    if (isMobile) {
-      return {
-        left: field.x * scale * 0.8,
-        top: field.y * scale * 0.8,
-        width: field.width * scale * 0.8,
-        height: field.height * scale * 0.8,
-      };
-    }
-    
-    return {
-      left: field.x * scale,
-      top: field.y * scale,
-      width: field.width * scale,
-      height: field.height * scale,
-    };
-  };
-
-  const adjustedPosition = getAdjustedPosition();
+  const adjustedPosition = getAbsolutePosition();
 
   return (
     <div
