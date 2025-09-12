@@ -7,8 +7,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  isImpersonating?: boolean;
-  stopImpersonation?: () => void;
+  isImpersonating: boolean;
+  stopImpersonation: () => void;
   signUp: (email: string, password: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
@@ -19,7 +19,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  }
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
@@ -49,18 +48,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (error) {
           console.warn('Erreur déconnexion Supabase (ignorée):', error.message);
-          // Ne pas bloquer la déconnexion si Supabase échoue
         }
       } catch (supabaseError) {
         console.warn('Erreur déconnexion Supabase (ignorée):', supabaseError);
-        // Continuer même si Supabase échoue
       }
       
       // Nettoyer le localStorage
       try {
         localStorage.removeItem('sb-fscwmfrwzougwtsxpoqz-auth-token');
         localStorage.removeItem('supabase.auth.token');
-        // Nettoyer d'autres clés potentielles
         Object.keys(localStorage).forEach(key => {
           if (key.includes('supabase') || key.includes('auth')) {
             localStorage.removeItem(key);
@@ -74,11 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.location.href = '/login';
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
-      // En cas d'erreur, forcer quand même la déconnexion côté client
       setUser(null);
       setSession(null);
       
-      // Nettoyer sélectivement au lieu de tout effacer
       try {
         localStorage.removeItem('admin_impersonation');
         Object.keys(localStorage).forEach(key => {
@@ -94,20 +88,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Vérifier l'impersonation au démarrage
+  const stopImpersonation = useCallback(() => {
+    localStorage.removeItem('admin_impersonation');
+    setIsImpersonating(false);
+    toast.success('Mode impersonation désactivé');
+    window.location.href = '/admin';
+  }, []);
+
+  const signUp = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    return { data, error };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  };
+
+  const checkAndSignOutIfInvalid = useCallback(async (): Promise<boolean> => {
+    if (isImpersonating) {
+      return true;
+    }
+    
+    if (!user || !session) {
+      return true;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error && (error.message.includes('session_not_found') || error.message.includes('Invalid Refresh Token'))) {
+        console.warn('Session invalide détectée, déconnexion automatique');
+        await signOut();
+        return false;
+      }
+      
+      return true;
+    } catch (error: any) {
+      if (error?.status === 403 || error?.message?.includes('session_not_found')) {
+        console.warn('Session invalide détectée, déconnexion automatique');
+        await signOut();
+        return false;
+      }
+      
+      return true;
+    }
+  }, [user, session, signOut, isImpersonating]);
+
+  const wrapSupabaseCall = useCallback(async <T>(call: () => Promise<T>): Promise<T> => {
+    try {
+      return await call();
+    } catch (error: any) {
+      if (error?.status === 403 || error?.message?.includes('session_not_found')) {
+        console.warn('Session invalide détectée dans wrapSupabaseCall, déconnexion automatique');
+        await signOut();
+        throw new Error('Session expirée, veuillez vous reconnecter');
+      }
+      throw error;
+    }
+  }, [signOut]);
+
+  const normalAuthFlow = () => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error && error.message.includes('Invalid Refresh Token')) {
+        signOut();
+        setSession(null);
+        setUser(null);
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  };
+
   useEffect(() => {
     const checkImpersonation = () => {
       try {
         const impersonationData = localStorage.getItem('admin_impersonation');
         if (impersonationData) {
           const data = JSON.parse(impersonationData);
-          const isValid = Date.now() - data.timestamp < 24 * 60 * 60 * 1000; // 24h max
+          const isValid = Date.now() - data.timestamp < 24 * 60 * 60 * 1000;
           
           if (isValid) {
             console.log('🎭 Mode impersonation détecté:', data.target_email);
             setIsImpersonating(true);
             
-            // Créer un utilisateur simulé pour l'impersonation
             const simulatedUser = {
               id: data.target_user_id,
               email: data.target_email,
@@ -135,7 +217,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
             return true;
           } else {
-            // Nettoyer les données expirées
             localStorage.removeItem('admin_impersonation');
           }
         }
@@ -146,110 +227,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     };
 
-    // Si on est en mode impersonation, ne pas faire la vérification auth normale
     if (checkImpersonation()) {
       return;
     }
 
-    // Sinon, procédure normale
     normalAuthFlow();
   }, []);
-
-  const normalAuthFlow = () => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error && error.message.includes('Invalid Refresh Token')) {
-        // Clear corrupted authentication state
-        signOut();
-        setSession(null);
-        setUser(null);
-      } else {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription?.unsubscribe();
-  };
-
-  // Fonction pour arrêter l'impersonation
-  const stopImpersonation = useCallback(() => {
-    localStorage.removeItem('admin_impersonation');
-    setIsImpersonating(false);
-    toast.success('Mode impersonation désactivé');
-    window.location.href = '/admin';
-  }, []);
-
-  const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { data, error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
-  };
-
-  const checkAndSignOutIfInvalid = useCallback(async (): Promise<boolean> => {
-    // Skip validation if in impersonation mode
-    if (isImpersonating) {
-      return true;
-    }
-    
-    if (!user || !session) {
-      return true; // No session to validate
-    }
-
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      
-      if (error && (error.message.includes('session_not_found') || error.message.includes('Invalid Refresh Token'))) {
-        console.warn('Session invalide détectée, déconnexion automatique');
-        await signOut();
-        return false;
-      }
-      
-      return true; // Session is valid
-    } catch (error: any) {
-      if (error?.status === 403 || error?.message?.includes('session_not_found')) {
-        console.warn('Session invalide détectée, déconnexion automatique');
-        await signOut();
-        return false;
-      }
-      
-      // For other errors, assume session is still valid
-      return true;
-    }
-  }, [user, session, signOut, isImpersonating]);
-
-  const wrapSupabaseCall = useCallback(async <T>(call: () => Promise<T>): Promise<T> => {
-    try {
-      return await call();
-    } catch (error: any) {
-      if (error?.status === 403 || error?.message?.includes('session_not_found')) {
-        console.warn('Session invalide détectée dans wrapSupabaseCall, déconnexion automatique');
-        await signOut();
-        throw new Error('Session expirée, veuillez vous reconnecter');
-      }
-      throw error;
-    }
-  }, [signOut]);
 
   const value = {
     user,
