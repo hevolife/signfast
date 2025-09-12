@@ -77,6 +77,8 @@ export const PublicForm: React.FC = () => {
 
   const fetchFormOwnerProfile = async (userId: string) => {
     try {
+      console.log('🔍 Récupération profil propriétaire pour userId:', userId);
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -85,12 +87,26 @@ export const PublicForm: React.FC = () => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching form owner profile:', error);
+        console.log('❌ Erreur Supabase, définition profil vide');
         setFormOwnerProfile(null);
         return;
       }
 
       if (!data) {
         console.log('ℹ️ Aucun profil configuré pour ce propriétaire de formulaire');
+        // Créer un profil vide au lieu de null pour éviter le "Chargement..."
+        setFormOwnerProfile({
+          id: '',
+          user_id: userId,
+          first_name: null,
+          last_name: null,
+          company_name: null,
+          address: null,
+          siret: null,
+          logo_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
         return;
       }
 
@@ -98,7 +114,20 @@ export const PublicForm: React.FC = () => {
       setFormOwnerProfile(data);
     } catch (error) {
       console.error('Error fetching form owner profile:', error);
-      setFormOwnerProfile(null);
+      console.log('❌ Erreur générale, création profil vide');
+      // Créer un profil vide en cas d'erreur
+      setFormOwnerProfile({
+        id: '',
+        user_id: userId,
+        first_name: null,
+        last_name: null,
+        company_name: null,
+        address: null,
+        siret: null,
+        logo_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     }
   };
 
@@ -569,7 +598,12 @@ export const PublicForm: React.FC = () => {
         {/* Logo de l'entreprise - Toujours affiché pour debug */}
         <div className="text-center mb-8">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
-            {formOwnerProfile?.logo_url ? (
+            {formOwnerProfile === null ? (
+              <div className="h-16 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="text-gray-400 text-sm ml-2">Chargement du profil...</span>
+              </div>
+            ) : formOwnerProfile?.logo_url ? (
               <img
                 src={formOwnerProfile.logo_url}
                 alt={formOwnerProfile.company_name || "Logo de l'entreprise"}
@@ -584,28 +618,33 @@ export const PublicForm: React.FC = () => {
               />
             ) : (
               <div className="h-16 flex items-center justify-center">
-                <span className="text-gray-400 text-sm">
-                  {formOwnerProfile ? 'Aucun logo configuré' : 'Chargement du profil...'}
-                </span>
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
+                    <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <span className="text-gray-400 text-xs">Aucun logo configuré</span>
+                </div>
               </div>
             )}
           </div>
           
           {/* Informations de l'entreprise */}
-          {formOwnerProfile?.company_name ? (
+          {formOwnerProfile === null ? (
+            <p className="text-xs text-gray-500 mt-2">
+              Chargement des informations...
+            </p>
+          ) : formOwnerProfile?.company_name ? (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               {formOwnerProfile.company_name}
             </p>
-          ) : formOwnerProfile ? (
+          ) : (
             <p className="text-xs text-gray-500 mt-2">
               {formOwnerProfile.first_name || formOwnerProfile.last_name 
                 ? `${formOwnerProfile.first_name || ''} ${formOwnerProfile.last_name || ''}`.trim()
                 : 'Utilisateur SignFast'
               }
-            </p>
-          ) : (
-            <p className="text-xs text-gray-500 mt-2">
-              Chargement des informations...
             </p>
           )}
         </div>
