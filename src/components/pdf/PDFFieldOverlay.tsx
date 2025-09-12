@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PDFField } from '../../types/pdf';
 import { PDFViewerRef } from './PDFViewer';
 
@@ -25,29 +25,44 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0, width: 100, height: 25 });
 
-  // Calculer la position d'affichage depuis les ratios
-  const getDisplayPosition = () => {
-    if (!pdfViewerRef.current) return { x: 0, y: 0, width: 100, height: 25 };
+  // Recalculer la position chaque fois que les ratios ou les dimensions changent
+  useEffect(() => {
+    const updatePosition = () => {
+      if (!pdfViewerRef.current) {
+        console.log('⚠️ PDFViewer ref non disponible');
+        return;
+      }
 
-    const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
-    if (!canvasDimensions) {
-      console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage, 'field:', field.variable);
-      return { x: 0, y: 0, width: 100, height: 25 };
-    }
+      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
+      if (!canvasDimensions) {
+        console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage);
+        return;
+      }
 
-    const x = (field.xRatio || 0) * canvasDimensions.width;
-    const y = (field.yRatio || 0) * canvasDimensions.height;
-    const width = (field.widthRatio || 0.1) * canvasDimensions.width;
-    const height = (field.heightRatio || 0.05) * canvasDimensions.height;
+      const x = (field.xRatio || 0) * canvasDimensions.width;
+      const y = (field.yRatio || 0) * canvasDimensions.height;
+      const width = (field.widthRatio || 0.1) * canvasDimensions.width;
+      const height = (field.heightRatio || 0.05) * canvasDimensions.height;
 
-    console.log(`📐 Position calculée pour ${field.variable || field.type}:`, {
-      ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
-      canvas: canvasDimensions,
-      position: { x, y, width, height }
-    });
-    return { x, y, width, height };
-  };
+      console.log(`📐 Position recalculée pour ${field.variable || field.type}:`, {
+        ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
+        canvas: canvasDimensions,
+        position: { x, y, width, height }
+      });
+
+      setPosition({ x, y, width, height });
+    };
+
+    // Délai pour s'assurer que le canvas est rendu
+    const timer = setTimeout(updatePosition, 100);
+    
+    // Aussi mettre à jour immédiatement
+    updatePosition();
+
+    return () => clearTimeout(timer);
+  }, [field.xRatio, field.yRatio, field.widthRatio, field.heightRatio, currentPage, scale, pdfViewerRef]);
 
   // Afficher seulement si sur la page courante
   if (field.page !== currentPage) {
@@ -71,17 +86,16 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const currentPos = getDisplayPosition();
     
     // Calculer l'offset entre la souris et le coin du champ
     const mouseCanvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const mouseCanvasY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    const offsetX = mouseCanvasX - currentPos.x;
-    const offsetY = mouseCanvasY - currentPos.y;
+    const offsetX = mouseCanvasX - position.x;
+    const offsetY = mouseCanvasY - position.y;
     
     console.log('🎯 Début drag:', {
       mouseCanvas: { x: mouseCanvasX, y: mouseCanvasY },
-      currentPos,
+      currentPos: position,
       offset: { x: offsetX, y: offsetY }
     });
     
@@ -107,23 +121,25 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const constrainedX = Math.max(0, Math.min(canvasDimensions.width - fieldWidth, newX));
       const constrainedY = Math.max(0, Math.min(canvasDimensions.height - fieldHeight, newY));
       
-      // Calculer les nouveaux ratios IMMÉDIATEMENT
+      // Calculer les nouveaux ratios
       const newXRatio = constrainedX / canvasDimensions.width;
       const newYRatio = constrainedY / canvasDimensions.height;
       
-      // Mettre à jour le champ DIRECTEMENT avec les nouveaux ratios
-      const updatedField = {
+      console.log('🎯 Nouveaux ratios calculés:', { x: newXRatio, y: newYRatio });
+      
+      // Mettre à jour immédiatement la position locale pour un feedback visuel fluide
+      setPosition(prev => ({
+        ...prev,
+        x: constrainedX,
+        y: constrainedY
+      }));
+      
+      // Mettre à jour les ratios dans le champ
+      onUpdate({
         ...field,
         xRatio: newXRatio,
         yRatio: newYRatio
-      };
-      
-      console.log('🎯 Mise à jour position:', {
-        canvas: { x: constrainedX, y: constrainedY },
-        ratios: { x: newXRatio, y: newYRatio }
       });
-      
-      onUpdate(updatedField);
     };
 
     const handleMouseUp = () => {
@@ -148,9 +164,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     setIsResizing(true);
     const startX = e.clientX;
     const startY = e.clientY;
-    const currentPos = getDisplayPosition();
-    const startWidth = currentPos.width;
-    const startHeight = currentPos.height;
+    const startWidth = position.width;
+    const startHeight = position.height;
     
     const handleResizeMove = (e: MouseEvent) => {
       if (!pdfViewerRef.current) return;
@@ -192,6 +207,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       // Calculer les nouveaux ratios de taille
       const newWidthRatio = newWidth / canvasDimensions.width;
       const newHeightRatio = newHeight / canvasDimensions.height;
+      
+      // Mettre à jour la position locale pour feedback visuel
+      setPosition(prev => ({
+        ...prev,
+        width: newWidth,
+        height: newHeight
+      }));
       
       onUpdate({
         ...field,
@@ -235,7 +257,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   };
 
   const renderFieldContent = () => {
-    const position = getDisplayPosition();
     const fontSize = Math.max(8, (field.fontSize || 12) * scale * 0.8);
     
     switch (field.type) {
@@ -307,8 +328,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     }
   };
 
-  const position = getDisplayPosition();
-
   return (
     <div
       className={`absolute select-none border-2 transition-colors rounded ${
@@ -365,7 +384,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
           />
         </>
       )}
-      
     </div>
   );
 };

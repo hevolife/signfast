@@ -5,6 +5,7 @@ import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 interface PDFViewerProps {
   file: File | string | null;
   onPageClick?: (canvasX: number, canvasY: number, page: number) => void;
+  onPDFLoaded?: (dimensions: { width: number; height: number }[]) => void;
   children?: React.ReactNode;
   scale?: number;
   onScaleChange?: (scale: number) => void;
@@ -21,6 +22,7 @@ export interface PDFViewerRef {
 const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewerProps> = ({
   file,
   onPageClick,
+  onPDFLoaded,
   children,
   scale = 1,
   onScaleChange,
@@ -111,10 +113,14 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       }
       setPdfDimensions(dimensions);
       
+      // Notifier le parent que le PDF est chargé avec ses dimensions
+      onPDFLoaded?.(dimensions);
+      
       setLoading(false);
       
       // Forcer un re-render après chargement complet
       setTimeout(() => {
+        console.log('📄 Force re-render après chargement complet');
         renderAllPages();
       }, 100);
     } catch (error) {

@@ -62,24 +62,39 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
   // Initialiser les champs après chargement du PDF
   useEffect(() => {
-    if (pdfFile && initialFields.length > 0 && !isInitialized) {
+    if (pdfFile && initialFields.length > 0 && !isInitialized && pdfDimensions.length > 0) {
       console.log('🎯 Initialisation des champs existants');
       console.log('🎯 Initial fields:', initialFields);
+      console.log('🎯 PDF dimensions disponibles:', pdfDimensions.length, 'pages');
       
-      // Délai plus long pour s'assurer que le PDF est complètement rendu
+      // Délai pour s'assurer que le PDF est complètement rendu
       setTimeout(() => {
         setFields(initialFields);
         setIsInitialized(true);
-        console.log('🎯 Champs initialisés avec délai');
+        console.log('🎯 Champs initialisés:', initialFields.length, 'champs');
         
-        // Force un re-render après initialisation
+        // Force plusieurs re-renders pour s'assurer du positionnement
         setTimeout(() => {
-          console.log('🎯 Force refresh des champs');
-          setFields(prev => [...prev]); // Force re-render
-        }, 200);
-      }, 1000);
+          console.log('🎯 Force refresh 1');
+          setFields(prev => [...prev]);
+          
+          setTimeout(() => {
+            console.log('🎯 Force refresh 2');
+            setFields(prev => [...prev]);
+          }, 200);
+        }, 100);
+      }, 500);
     }
-  }, [pdfFile, initialFields, isInitialized]);
+  }, [pdfFile, initialFields, isInitialized, pdfDimensions]);
+
+  // État pour les dimensions PDF
+  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
+
+  // Callback pour recevoir les dimensions du PDF
+  const handlePDFLoaded = useCallback((dimensions: { width: number; height: number }[]) => {
+    console.log('📄 PDF dimensions reçues:', dimensions);
+    setPdfDimensions(dimensions);
+  }, []);
 
   // Charger variables du formulaire lié
   useEffect(() => {
@@ -424,6 +439,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                   <PDFViewer
                     ref={pdfViewerRef}
                     file={pdfFile}
+                    onPDFLoaded={handlePDFLoaded}
                     onPageClick={handlePageClick}
                     currentPage={currentPage}
                     onPageChange={setCurrentPage}
