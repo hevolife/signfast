@@ -11,11 +11,24 @@ export const useForms = () => {
   const fetchForms = async () => {
     if (!user) return;
 
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+        console.log('🎭 Mode impersonation: récupération des formulaires pour', data.target_email);
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+      }
+    }
     try {
       const { data, error } = await supabase
         .from('forms')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
