@@ -101,30 +101,57 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
           console.log('🔗 Titre du formulaire lié:', linkedForm.title);
           console.log('🔗 Champs du formulaire lié:', linkedForm.fields.map((f: any) => f.label));
           
-          const generatedVariables = linkedForm.fields.map((field: any) => {
-            console.log('🔗 Traitement champ:', field.label, 'type:', field.type);
-            const variableName = field.label
-              .toLowerCase()
-              .normalize('NFD')
-              .replace(/[\u0300-\u036f]/g, '')
-              .replace(/[^a-z0-9]/g, '_')
-              .replace(/_+/g, '_')
-              .replace(/^_|_$/g, '');
-            
-            const variable = `\${${variableName}}`;
-            console.log('🔗 Variable générée:', field.label, '→', variable);
-            return variable;
-          });
+          const generatedVariables: string[] = [];
+          
+          // Fonction récursive pour extraire toutes les variables
+          const extractVariables = (fields: any[]) => {
+            fields.forEach((field: any) => {
+              console.log('🔗 Traitement champ:', field.label, 'type:', field.type);
+              
+              // Variable du champ principal
+              const variableName = field.label
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+              
+              const variable = `\${${variableName}}`;
+              console.log('🔗 Variable générée:', field.label, '→', variable);
+              generatedVariables.push(variable);
+              
+              // Variables des champs conditionnels
+              if (field.conditionalFields) {
+                console.log('🔗 Champs conditionnels trouvés pour:', field.label);
+                console.log('🔗 Options conditionnelles:', Object.keys(field.conditionalFields));
+                Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+                  if (Array.isArray(conditionalFieldsArray)) {
+                    console.log('🔗 Extraction champs conditionnels:', conditionalFieldsArray.length, 'champs');
+                    console.log('🔗 Champs conditionnels:', conditionalFieldsArray.map((cf: any) => cf.label));
+                    extractVariables(conditionalFieldsArray);
+                  }
+                });
+              }
+            });
+          };
+          
+          // Extraire toutes les variables (principales + conditionnelles)
+          extractVariables(linkedForm.fields);
           
           // Ajouter des variables système
           generatedVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
           
-          console.log('🔗 Variables générées:', generatedVariables);
+          // Supprimer les doublons
+          const uniqueVariables = [...new Set(generatedVariables)];
+          
+          console.log('🔗 Variables générées (avec conditionnels):', uniqueVariables);
+          console.log('🔗 Nombre total de variables:', uniqueVariables.length);
           setActualFormVariables(generatedVariables);
           
           // Forcer un re-render
           setTimeout(() => {
-            console.log('🔗 Variables définies dans le state:', generatedVariables);
+            console.log('🔗 Variables définies dans le state:', uniqueVariables);
           }, 100);
           return;
         } else {

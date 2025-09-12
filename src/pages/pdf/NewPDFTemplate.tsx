@@ -67,11 +67,16 @@ export const NewPDFTemplate: React.FC = () => {
               .replace(/^_|_$/g, '');
             
             formVariables.push(`\${${variableName}}`);
+            console.log('📋 Variable ajoutée:', `\${${variableName}}`, 'depuis champ:', field.label);
             
             // Ajouter les champs conditionnels s'ils existent
             if (field.conditionalFields) {
+              console.log('📋 Champs conditionnels trouvés pour:', field.label);
+              console.log('📋 Options conditionnelles:', Object.keys(field.conditionalFields));
               Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
                 if (Array.isArray(conditionalFieldsArray)) {
+                  console.log('📋 Extraction champs conditionnels:', conditionalFieldsArray.length, 'champs');
+                  console.log('📋 Champs conditionnels:', conditionalFieldsArray.map((cf: any) => cf.label));
                   extractFieldVariables(conditionalFieldsArray);
                 }
               });
@@ -84,6 +89,9 @@ export const NewPDFTemplate: React.FC = () => {
         
         // Supprimer les doublons
         const uniqueVariables = [...new Set(formVariables)];
+        
+        console.log('📋 Variables extraites (avec conditionnels):', uniqueVariables);
+        console.log('📋 Nombre total de variables:', uniqueVariables.length);
         
         // Ajouter des variables système
         uniqueVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');

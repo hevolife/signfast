@@ -33,22 +33,44 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
     const selectedForm = forms.find(f => f.id === formId);
     
     if (selectedForm && selectedForm.fields) {
-      const variables = selectedForm.fields.map((field: any) => {
-        const variableName = field.label
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '');
-        
-        return `\${${variableName}}`;
-      });
+      const variables: string[] = [];
+      
+      // Fonction récursive pour extraire toutes les variables
+      const extractVariables = (fields: any[]) => {
+        fields.forEach((field: any) => {
+          // Variable du champ principal
+          const variableName = field.label
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          
+          variables.push(`\${${variableName}}`);
+          
+          // Variables des champs conditionnels
+          if (field.conditionalFields) {
+            Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+              if (Array.isArray(conditionalFieldsArray)) {
+                extractVariables(conditionalFieldsArray);
+              }
+            });
+          }
+        });
+      };
+      
+      // Extraire toutes les variables (principales + conditionnelles)
+      extractVariables(selectedForm.fields);
       
       // Ajouter des variables système
       variables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
       
-      setPreviewVariables(variables);
+      // Supprimer les doublons
+      const uniqueVariables = [...new Set(variables)];
+      setPreviewVariables(uniqueVariables);
+      
+      console.log('🔍 Variables générées (avec conditionnels):', uniqueVariables);
     }
   };
 

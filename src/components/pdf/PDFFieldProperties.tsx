@@ -19,6 +19,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   console.log('🎨 PDFFieldProperties render');
   console.log('🎨 availableVariables reçues:', availableVariables);
   console.log('🎨 linkedFormId:', linkedFormId);
+  console.log('🎨 Nombre de variables disponibles:', availableVariables.length);
   
   // Afficher des informations sur le formulaire lié
   const getLinkedFormInfo = () => {
