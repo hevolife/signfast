@@ -13,6 +13,15 @@ export class PDFGenerator {
       console.log('🎨 Data keys:', Object.keys(data));
       console.log('🎨 Template fields:', template.fields?.length || 0);
       
+      // Collecter tous les fichiers/images du formulaire
+      const formFiles = Object.entries(data).filter(([key, value]) => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      console.log('📁 Fichiers trouvés dans le formulaire:', formFiles.length);
+      formFiles.forEach(([key, value]) => {
+        console.log(`📁 - ${key}: ${typeof value === 'string' ? value.substring(0, 50) + '...' : value}`);
+      });
+      
       // Détection mobile pour ajustements spécifiques
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       if (isMobile) {
@@ -83,6 +92,7 @@ export class PDFGenerator {
       // Traiter chaque champ
       let processedFields = 0;
       const totalFields = template.fields.length;
+      let fileIndex = 0; // Index pour lier automatiquement les fichiers
       
       for (const field of template.fields) {
         console.log(`🎨 Traitement champ: ${field.variable} (${field.type})`);
@@ -96,7 +106,22 @@ export class PDFGenerator {
         const page = pages[field.page - 1];
         if (!page) continue;
 
-        const value = this.getFieldValue(field, data);
+        let value;
+        
+        // Pour les champs image, utiliser automatiquement les fichiers du formulaire
+        if (field.type === 'image') {
+          if (fileIndex < formFiles.length) {
+            value = formFiles[fileIndex][1]; // Prendre le fichier suivant
+            console.log(`🖼️ Champ image ${field.variable}: utilisation fichier ${fileIndex + 1}/${formFiles.length}`);
+            fileIndex++;
+          } else {
+            console.log(`🖼️ Champ image ${field.variable}: aucun fichier disponible (index ${fileIndex})`);
+            value = null;
+          }
+        } else {
+          value = this.getFieldValue(field, data);
+        }
+        
         console.log(`🎨 Valeur trouvée: "${value}"`);
         
         if (!value && !field.required) {
@@ -166,24 +191,18 @@ export class PDFGenerator {
             break;
             
           case 'image':
-            console.log(`🖼️ Processing image field: ${field.variable}`);
-            console.log(`🖼️ Image value type:`, typeof value);
-            console.log(`🖼️ Image value starts with data:image:`, value && typeof value === 'string' && value.startsWith('data:image'));
-            console.log(`🖼️ Image value length:`, value && typeof value === 'string' ? value.length : 'not string');
-            
             if (value && typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))) {
               try {
                 await this.drawImage(pdfDoc, page, value, x, y, field);
-                console.log(`🎨 ✅ Image dessinée pour ${field.variable}`);
+                console.log(`🎨 ✅ Image dessinée automatiquement pour ${field.variable}`);
               } catch (error) {
-                console.error(`🎨 ❌ Erreur dessin image pour ${field.variable}:`, error.message);
+                console.error(`🎨 ❌ Erreur dessin image pour ${field.variable}:`, error);
                 if (isMobile) {
                   console.log('📱 Image ignorée sur mobile (trop complexe)');
                 }
               }
             } else {
-              console.log(`🖼️ ❌ Image field ${field.variable} skipped - no valid image data`);
-              console.log(`🖼️ Expected data:image format, got:`, value ? typeof value : 'undefined');
+              console.log(`🖼️ ❌ Champ image ${field.variable} ignoré - pas de données image valides`);
             }
             break;
         }
