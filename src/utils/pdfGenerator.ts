@@ -93,6 +93,20 @@ export class PDFGenerator {
       const { width: pageWidth, height: pageHeight } = firstPage.getSize();
       console.log('🎨 Dimensions page PDF:', { width: pageWidth, height: pageHeight });
       
+      // Collecter tous les fichiers/images du formulaire AVANT le traitement
+      const formFiles = Object.entries(data).filter(([key, value]) => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      console.log('📁 ===== FICHIERS FORMULAIRE DISPONIBLES =====');
+      console.log('📁 Nombre total de fichiers image:', formFiles.length);
+      formFiles.forEach(([key, value], index) => {
+        console.log(`📁 Fichier ${index + 1}:`);
+        console.log(`📁   - Clé: "${key}"`);
+        console.log(`📁   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
+      });
+      
+      let fileIndex = 0; // Index pour l'assignation automatique des images
+      
       // Police par défaut
       let font, boldFont;
       try {
@@ -121,21 +135,7 @@ export class PDFGenerator {
       let processedFields = 0;
       const totalFields = template.fields.length;
       
-      let fileIndex = 0; // Index pour lier automatiquement les fichiers
-      
       console.log('🎨 ===== TRAITEMENT DES CHAMPS =====');
-      
-      // Collecter tous les fichiers/images du formulaire AVANT le traitement
-      const formFiles = Object.entries(data).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log('📁 ===== FICHIERS FORMULAIRE DISPONIBLES =====');
-      console.log('📁 Nombre total de fichiers image:', formFiles.length);
-      formFiles.forEach(([key, value], index) => {
-        console.log(`📁 Fichier ${index + 1}:`);
-        console.log(`📁   - Clé: "${key}"`);
-        console.log(`📁   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
-      });
       
       for (const field of template.fields) {
         console.log(`🎨 ===== CHAMP ${processedFields + 1}/${totalFields} =====`);
