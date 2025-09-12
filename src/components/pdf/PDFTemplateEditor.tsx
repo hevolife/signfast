@@ -287,6 +287,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     
     // Mettre à jour la page courante
     setCurrentPage(page);
+    console.log(`📄 Page courante mise à jour: ${page}`);
     
     // Si on a un type de champ sélectionné dans la palette, créer un nouveau champ
     // Sinon, déselectionner le champ actuel
@@ -483,6 +484,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                       ref={pdfViewerRef}
                       file={pdfFile}
                       onPageClick={handlePageClick}
+                      currentPage={currentPage}
+                      onPageChange={setCurrentPage}
                       scale={scale}
                       onScaleChange={setScale}
                     >
@@ -496,6 +499,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                           onUpdate={(updates) => updateField(field.id, updates)}
                           onDelete={() => deleteField(field.id)}
                           canvasRefs={pdfViewerRef.current?.canvasRefs}
+                          currentPage={currentPage}
                         />
                       ))}
                     </PDFViewer>
@@ -566,8 +570,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     onScaleChange={setScale}
                     currentPage={currentPage}
                     onPageChange={setCurrentPage}
-                    currentPage={currentPage}
-                    onPageChange={setCurrentPage}
                   >
                     {fields.map(field => (
                         <PDFFieldOverlay
@@ -576,11 +578,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                           scale={scale}
                           isSelected={selectedField === field.id}
                           onSelect={() => setSelectedField(field.id)}
-                          onUpdate={(updates) => updateField(field.id, updates)}
                         currentPage={currentPage}
                           onDelete={() => deleteField(field.id)}
                           canvasRefs={pdfViewerRef.current?.canvasRefs}
-                          currentPage={currentPage}
                         />
                       ))}
                   </PDFViewer>

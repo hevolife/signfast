@@ -210,9 +210,12 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
 
     const canvas = event.currentTarget;
     const pageNumber = canvasRefs.current.findIndex(ref => ref === canvas) + 1;
+    
+    console.log(`🖱️ Clic détecté sur canvas page ${pageNumber}`);
 
     // Mettre à jour la page courante si on clique sur une autre page
     if (onPageChange && pageNumber !== currentPage) {
+      console.log(`🖱️ Changement de page: ${currentPage} → ${pageNumber}`);
       onPageChange(pageNumber);
     }
 
@@ -305,7 +308,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
               {console.log(`📄 Rendu container page ${index + 1}`)}
               <div className={`text-center mb-2 ${currentPage === index + 1 ? 'font-bold text-blue-600' : ''}`}>
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-                  Page {index + 1} {currentPage === index + 1 ? '(active)' : ''}
+                  Page {index + 1} {currentPage === index + 1 ? '(active)' : '(cliquez pour activer)'}
                 </span>
               </div>
               
