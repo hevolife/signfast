@@ -176,6 +176,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
         height: adjustedPosition.height,
         minWidth: isMobile ? '40px' : '60px',
         minHeight: isMobile ? '20px' : '30px',
+        zIndex: isSelected ? 1000 : 100 + field.page * 10,
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
