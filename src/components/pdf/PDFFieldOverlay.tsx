@@ -68,17 +68,14 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const deltaX = (e.clientX - startX) / scale;
       const deltaY = (e.clientY - startY) / scale;
       
-      // Update drag offset for immediate visual feedback
       const newX = Math.max(0, startFieldX + deltaX);
       const newY = Math.max(0, startFieldY + deltaY);
       
-      // Throttle actual position updates
-      // Mise à jour immédiate de la position visuelle
       setDragPosition({ x: newX, y: newY });
     };
 
     const handleMouseUp = () => {
-      // Appliquer la position finale une seule fois
+      // Appliquer la position finale immédiatement
       onUpdate({ 
         x: dragPosition.x, 
         y: dragPosition.y
