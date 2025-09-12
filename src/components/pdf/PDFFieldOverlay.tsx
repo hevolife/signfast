@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-+import { PDFField } from '../../types/pdf';
-+import { Button } from '../ui/Button';
-+import { Trash2 } from 'lucide-react';
-+
+import { PDFField } from '../../types/pdf';
+import { Button } from '../ui/Button';
+import { Trash2 } from 'lucide-react';
+
 +interface PDFFieldOverlayProps {
 +  field: PDFField;
 +  scale: number;
