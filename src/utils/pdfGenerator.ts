@@ -614,25 +614,26 @@ export class PDFGenerator {
     field: PDFField
   ) {
     const isChecked = value === true || value === 'true' || value === '1';
+    const size = Math.min(field.width, field.height, 16); // Limiter la taille max à 16px
     
     // Dessiner la case
     page.drawRectangle({
       x,
-      y,
-      width: Math.min(field.width, field.height),
-      height: Math.min(field.width, field.height),
+      y: y + (field.height - size) / 2, // Centrer verticalement
+      width: size,
+      height: size,
       borderColor: rgb(0, 0, 0),
       borderWidth: 1,
+      color: rgb(1, 1, 1), // Fond blanc
     });
 
     // Dessiner la coche si nécessaire
     if (isChecked) {
-      const size = Math.min(field.width, field.height);
       page.drawText('✓', {
-        x: x + size / 4,
-        y: y + size / 4,
-        size: size * 0.6,
-        color: rgb(0, 0, 0),
+        x: x + 2,
+        y: y + (field.height - size) / 2 + 2,
+        size: size * 0.7,
+        color: rgb(0, 0.6, 0), // Vert pour la coche
       });
     }
   }

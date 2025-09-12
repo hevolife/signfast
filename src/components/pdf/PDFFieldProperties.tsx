@@ -128,6 +128,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             type="number"
             step="1"
             min="0"
+            max="600"
             value={Math.round(field.x)}
             onChange={(e) => onUpdate({ x: parseInt(e.target.value) || 0 })}
           />
@@ -136,6 +137,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             type="number"
             step="1"
             min="0"
+            max="800"
             value={Math.round(field.y)}
             onChange={(e) => onUpdate({ y: parseInt(e.target.value) || 0 })}
           />
@@ -146,17 +148,19 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             label="Largeur"
             type="number"
             step="1"
-            min="10"
+            min="20"
+            max="400"
             value={Math.round(field.width)}
-            onChange={(e) => onUpdate({ width: parseInt(e.target.value) || 60 })}
+            onChange={(e) => onUpdate({ width: parseInt(e.target.value) || 120 })}
           />
           <Input
             label="Hauteur"
             type="number"
             step="1"
-            min="10"
+            min="15"
+            max="200"
             value={Math.round(field.height)}
-            onChange={(e) => onUpdate({ height: parseInt(e.target.value) || 30 })}
+            onChange={(e) => onUpdate({ height: parseInt(e.target.value) || 25 })}
           />
         </div>
 
@@ -170,7 +174,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 50, y: 50 })}
+              onClick={() => onUpdate({ x: 30, y: 50 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
             >
               ↖ Haut gauche
@@ -179,7 +183,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 250, y: 50 })}
+              onClick={() => onUpdate({ x: 200, y: 50 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
             >
               ↑ Haut centre
@@ -188,7 +192,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 450, y: 50 })}
+              onClick={() => onUpdate({ x: 370, y: 50 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
             >
               ↗ Haut droite
@@ -197,7 +201,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 50, y: 400 })}
+              onClick={() => onUpdate({ x: 30, y: 600 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
             >
               ↙ Bas gauche
@@ -206,7 +210,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 250, y: 400 })}
+              onClick={() => onUpdate({ x: 200, y: 600 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
             >
               ↓ Bas centre
@@ -215,10 +219,55 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => onUpdate({ x: 450, y: 400 })}
+              onClick={() => onUpdate({ x: 370, y: 600 })}
               className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
             >
               ↘ Bas droite
+            </Button>
+          </div>
+        </div>
+        
+        {/* Boutons de taille rapide */}
+        <div className="space-y-2">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+            Tailles prédéfinies
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onUpdate({ width: 100, height: 20 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+            >
+              📏 Petit
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onUpdate({ width: 150, height: 25 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+            >
+              📏 Moyen
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onUpdate({ width: 200, height: 30 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+            >
+              📏 Grand
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onUpdate({ width: 180, height: 60 })}
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300"
+            >
+              ✍️ Signature
             </Button>
           </div>
         </div>

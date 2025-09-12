@@ -264,19 +264,31 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     
     // Calculer une position intelligente pour éviter les chevauchements
     const existingFields = fields.filter(f => f.page === currentPage);
-    let newX = 50;
-    let newY = 50;
+    let newX = 30;
+    let newY = 80; // Commencer plus bas pour éviter les en-têtes
     
-    // Si il y a déjà des champs, placer le nouveau en dessous du dernier
+    // Si il y a déjà des champs, placer le nouveau intelligemment
     if (existingFields.length > 0) {
-      const lastField = existingFields[existingFields.length - 1];
-      newX = lastField.x;
-      newY = lastField.y + lastField.height + 20; // 20px d'espacement
+      // Trier les champs par position Y puis X
+      const sortedFields = existingFields.sort((a, b) => a.y - b.y || a.x - b.x);
+      const lastField = sortedFields[sortedFields.length - 1];
       
-      // Si on dépasse la hauteur de la page, revenir en haut et décaler à droite
-      if (newY > 500) {
-        newY = 50;
-        newX = lastField.x + lastField.width + 20;
+      // Placer en dessous avec espacement
+      newX = lastField.x;
+      newY = lastField.y + lastField.height + 15; // Espacement réduit
+      
+      // Si on dépasse la hauteur de la page, créer une nouvelle colonne
+      if (newY > 700) {
+        // Trouver la position X la plus à droite
+        const rightmostX = Math.max(...existingFields.map(f => f.x + f.width));
+        newX = rightmostX + 20;
+        newY = 80;
+        
+        // Si on dépasse aussi la largeur, revenir au début
+        if (newX > 400) {
+          newX = 30;
+          newY = 80;
+        }
       }
     }
     
@@ -284,19 +296,19 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     const getDefaultDimensions = (type: PDFField['type']) => {
       switch (type) {
         case 'text':
-          return { width: 150, height: 25 };
+          return { width: 140, height: 22 };
         case 'date':
-          return { width: 100, height: 25 };
+          return { width: 90, height: 22 };
         case 'number':
-          return { width: 80, height: 25 };
+          return { width: 80, height: 22 };
         case 'signature':
-          return { width: 200, height: 60 };
+          return { width: 180, height: 50 };
         case 'checkbox':
-          return { width: 20, height: 20 };
+          return { width: 18, height: 18 };
         case 'image':
-          return { width: 120, height: 80 };
+          return { width: 100, height: 70 };
         default:
-          return { width: 120, height: 30 };
+          return { width: 120, height: 25 };
       }
     };
     
