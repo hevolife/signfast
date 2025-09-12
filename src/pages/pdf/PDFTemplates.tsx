@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { formatDateFR } from '../../utils/dateFormatter';
 import { usePDFTemplates } from '../../hooks/usePDFTemplates';
 import { useLimits } from '../../hooks/useLimits';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -178,7 +179,7 @@ export const PDFTemplates: React.FC = () => {
                       {template.fields.length} champs
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Créé le {new Date(template.created_at).toLocaleDateString()}
+                      Créé le {formatDateFR(template.created_at)}
                     </span>
                   </div>
                   

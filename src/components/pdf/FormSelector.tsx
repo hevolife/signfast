@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDateFR } from '../../utils/dateFormatter';
 import { useForms } from '../../hooks/useForms';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -200,7 +201,7 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
           
           <div className="flex items-center justify-between">
             <span className="text-xs text-blue-600 dark:text-blue-400">
-              Créé le {new Date(selectedForm.created_at).toLocaleDateString('fr-FR')}
+              Créé le {formatDateFR(selectedForm.created_at)}
             </span>
             <a
               href={`/forms/${selectedForm.id}/edit`}

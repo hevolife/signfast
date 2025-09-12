@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { formatDateFR } from '../utils/dateFormatter';
 import { useForms } from '../hooks/useForms';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
@@ -177,7 +178,7 @@ export const MyForms: React.FC = () => {
                       {form.fields?.length || 0} champs
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Créé le {new Date(form.created_at).toLocaleDateString()}
+                      Créé le {formatDateFR(form.created_at)}
                     </span>
                   </div>
                   

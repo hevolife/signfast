@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase, createClient } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
@@ -689,10 +690,10 @@ export const SuperAdminDashboard: React.FC = () => {
                       </td>
                       <td className="py-3 px-2">
                         <div className="text-xs space-y-1">
-                          <div>Créé: {new Date(userData.created_at).toLocaleDateString('fr-FR')}</div>
+                          <div>Créé: {formatDateFR(userData.created_at)}</div>
                           <div>
                             Dernière connexion: {userData.last_sign_in_at 
-                              ? new Date(userData.last_sign_in_at).toLocaleDateString('fr-FR')
+                              ? formatDateFR(userData.last_sign_in_at)
                               : 'Jamais'
                             }
                           </div>
@@ -790,7 +791,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-gray-600 dark:text-gray-400">Inscription:</span>
-                      <div className="font-medium">{new Date(selectedUser.created_at).toLocaleDateString('fr-FR')}</div>
+                      <div className="font-medium">{formatDateFR(selectedUser.created_at)}</div>
                     </div>
                   </div>
                 </div>

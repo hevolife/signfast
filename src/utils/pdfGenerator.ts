@@ -718,13 +718,18 @@ export class PDFGenerator {
     if (!value) return '';
     
     try {
+      // Détecter si c'est déjà au format ISO (YYYY-MM-DD)
+      if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = value.split('-');
+        return `${day}/${month}/${year}`;
+      }
+      
+      // Sinon, essayer de parser comme date normale
       const date = new Date(value);
-      // Vérifier si la date est valide
       if (isNaN(date.getTime())) {
         return value; // Retourner la valeur originale si ce n'est pas une date valide
       }
       
-      // Format français DD/MM/YYYY
       const day = date.getDate().toString().padStart(2, '0');
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();

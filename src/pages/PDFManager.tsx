@@ -387,9 +387,7 @@ export const PDFManager: React.FC = () => {
                     <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                       <Calendar className="h-4 w-4 mr-2" />
                       <span>
-                        {new Date(pdf.createdAt).toLocaleDateString('fr-FR')}
-                        {' à '}
-                        {new Date(pdf.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {formatDateTimeFR(pdf.createdAt)}
                       </span>
                     </div>
                     

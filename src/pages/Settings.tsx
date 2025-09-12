@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDateFR } from '../utils/dateFormatter';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubscription } from '../hooks/useSubscription';
 import { useLimits } from '../hooks/useLimits';
@@ -273,7 +274,7 @@ export const Settings: React.FC = () => {
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString('fr-FR');
+    return formatDateFR(new Date(timestamp * 1000));
   };
 
   const handleSecretCodeSuccess = () => {

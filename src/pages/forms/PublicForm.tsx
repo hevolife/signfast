@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useForms } from '../../hooks/useForms';
@@ -207,6 +208,15 @@ export const PublicForm: React.FC = () => {
 
       console.log(`📤 ===== DONNÉES FINALES SOUMISSION =====`);
       console.log(`📤 Clés dans submissionData:`, Object.keys(submissionData));
+      
+      // Formater les dates au format français avant soumission
+      Object.keys(submissionData).forEach(key => {
+        const value = submissionData[key];
+        if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          submissionData[key] = formatDateFR(value);
+          console.log(`📅 Date formatée: ${key} = ${value} → ${submissionData[key]}`);
+        }
+      });
       
       // Debug spécial pour les images
       const imagesInSubmission = Object.entries(submissionData).filter(([key, value]) => 
