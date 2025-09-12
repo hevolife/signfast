@@ -38,11 +38,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
     if (!canvasDimensions) return { x: 0, y: 0, width: 100, height: 25 };
 
-    // Position sur le canvas affiché calculée depuis les ratios
-    const x = field.xRatio * canvasDimensions.width;
-    const y = field.yRatio * canvasDimensions.height;
-    const width = field.widthRatio * canvasDimensions.width;
-    const height = field.heightRatio * canvasDimensions.height;
+    // Position sur le canvas calculée depuis les ratios avec vérification
+    const x = (field.xRatio || 0) * canvasDimensions.width;
+    const y = (field.yRatio || 0) * canvasDimensions.height;
+    const width = (field.widthRatio || 0.1) * canvasDimensions.width;
+    const height = (field.heightRatio || 0.05) * canvasDimensions.height;
 
     return { x, y, width, height };
   };
@@ -67,17 +67,25 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const canvas = pdfViewerRef.current.getCanvasElement(currentPage);
       if (!canvas) return;
       
+      // Utiliser les dimensions réelles du canvas pour le calcul des ratios
       const rect = canvas.getBoundingClientRect();
-      const canvasX = e.clientX - rect.left;
-      const canvasY = e.clientY - rect.top;
+      const displayX = e.clientX - rect.left;
+      const displayY = e.clientY - rect.top;
+      
+      // Convertir en coordonnées canvas réelles
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const canvasX = displayX * scaleX;
+      const canvasY = displayY * scaleY;
       
       // Contraindre dans les limites du canvas
-      const constrainedX = Math.max(0, Math.min(rect.width - position.width, canvasX));
-      const constrainedY = Math.max(0, Math.min(rect.height - position.height, canvasY));
+      const constrainedX = Math.max(0, Math.min(canvas.width - position.width * scaleX, canvasX));
+      const constrainedY = Math.max(0, Math.min(canvas.height - position.height * scaleY, canvasY));
       
       // Calculer les nouveaux ratios
-      const newXRatio = constrainedX / rect.width;
-      const newYRatio = constrainedY / rect.height;
+      const newXRatio = constrainedX / canvas.width;
+      const newYRatio = constrainedY / canvas.height;
       
       console.log(`🖱️ Déplacement: ratios (${newXRatio.toFixed(4)}, ${newYRatio.toFixed(4)})`);
       
@@ -115,8 +123,12 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const handleResizeMove = (e: MouseEvent) => {
       if (!isResizing || !pdfViewerRef.current) return;
       
-      const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
-      if (!canvasDimensions) return;
+      const canvas = pdfViewerRef.current.getCanvasElement(currentPage);
+      if (!canvas) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
       
       const deltaX = e.clientX - startX;
       const deltaY = e.clientY - startY;
@@ -125,11 +137,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       let newHeight = startHeight;
       
       if (handle === 'se' || handle === 'e') {
-        newWidth = Math.max(20, startWidth + deltaX);
+        newWidth = Math.max(20, startWidth + deltaX * scaleX);
       }
       
       if (handle === 'se' || handle === 's') {
-        newHeight = Math.max(15, startHeight + deltaY);
+        newHeight = Math.max(15, startHeight + deltaY * scaleY);
       }
       
       // Contraintes par type
@@ -145,8 +157,8 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       newHeight = Math.max(constraint.minHeight, Math.min(constraint.maxHeight, newHeight));
       
       // Calculer les nouveaux ratios de taille
-      const newWidthRatio = newWidth / canvasDimensions.width;
-      const newHeightRatio = newHeight / canvasDimensions.height;
+      const newWidthRatio = newWidth / canvas.width;
+      const newHeightRatio = newHeight / canvas.height;
       
       onUpdate({
         ...field,

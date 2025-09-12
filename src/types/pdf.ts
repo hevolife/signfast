@@ -12,6 +12,8 @@ export interface PDFField {
   backgroundColor?: string;
   required?: boolean;
   placeholder?: string;
+  offsetX?: number; // Offset horizontal en points pour ajustement fin
+  offsetY?: number; // Offset vertical en points pour ajustement fin
 }
 
 export interface PDFTemplate {

@@ -43,8 +43,8 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       const index = pageNumber - 1;
       const canvas = canvasRefs.current[index];
       if (!canvas) return null;
-      const rect = canvas.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
+      // Retourner les dimensions réelles du canvas, pas celles affichées
+      return { width: canvas.width, height: canvas.height };
     },
     getCanvasElement: (pageNumber: number) => {
       const index = pageNumber - 1;
@@ -153,14 +153,28 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       onPageChange(pageNumber);
     }
 
+    // Utiliser les dimensions réelles du canvas pour calculer les coordonnées
     const rect = canvas.getBoundingClientRect();
     const canvasX = event.clientX - rect.left;
     const canvasY = event.clientY - rect.top;
     
-    console.log(`🖱️ Clic canvas: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
-    console.log(`🖱️ Canvas rect: ${rect.width} × ${rect.height}`);
+    // Utiliser les dimensions réelles du canvas (pas du rect)
+    const realCanvasWidth = canvas.width;
+    const realCanvasHeight = canvas.height;
     
-    onPageClick(canvasX, canvasY, pageNumber);
+    // Ajuster les coordonnées selon le ratio d'affichage
+    const scaleX = realCanvasWidth / rect.width;
+    const scaleY = realCanvasHeight / rect.height;
+    
+    const adjustedX = canvasX * scaleX;
+    const adjustedY = canvasY * scaleY;
+    
+    console.log(`🖱️ Clic canvas: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
+    console.log(`🖱️ Canvas réel: ${realCanvasWidth} × ${realCanvasHeight}`);
+    console.log(`🖱️ Canvas affiché: ${rect.width} × ${rect.height}`);
+    console.log(`🖱️ Coordonnées ajustées: (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
+    
+    onPageClick(adjustedX, adjustedY, pageNumber);
   };
 
   const zoomIn = () => {

@@ -95,7 +95,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             step="0.001"
             min="0"
             max="1"
-            value={field.xRatio.toFixed(4)}
+            value={(field.xRatio || 0).toFixed(4)}
             onChange={(e) => onUpdate({ xRatio: parseFloat(e.target.value) || 0 })}
           />
           <Input
@@ -104,7 +104,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             step="0.001"
             min="0"
             max="1"
-            value={field.yRatio.toFixed(4)}
+            value={(field.yRatio || 0).toFixed(4)}
             onChange={(e) => onUpdate({ yRatio: parseFloat(e.target.value) || 0 })}
           />
         </div>
@@ -117,7 +117,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             step="0.001"
             min="0.01"
             max="1"
-            value={field.widthRatio.toFixed(4)}
+            value={(field.widthRatio || 0.1).toFixed(4)}
             onChange={(e) => onUpdate({ widthRatio: parseFloat(e.target.value) || 0.1 })}
           />
           <Input
@@ -126,9 +126,37 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             step="0.001"
             min="0.01"
             max="1"
-            value={field.heightRatio.toFixed(4)}
+            value={(field.heightRatio || 0.05).toFixed(4)}
             onChange={(e) => onUpdate({ heightRatio: parseFloat(e.target.value) || 0.03 })}
           />
+        </div>
+
+        {/* Offsets pour ajustement fin */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Ajustement fin (en points PDF)
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Offset X"
+              type="number"
+              step="1"
+              value={field.offsetX || 0}
+              onChange={(e) => onUpdate({ offsetX: parseInt(e.target.value) || 0 })}
+              placeholder="0"
+            />
+            <Input
+              label="Offset Y"
+              type="number"
+              step="1"
+              value={field.offsetY || 0}
+              onChange={(e) => onUpdate({ offsetY: parseInt(e.target.value) || 0 })}
+              placeholder="0"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Ajustez ces valeurs si les champs ne sont pas parfaitement alignés
+          </p>
         </div>
 
         {/* Positionnement rapide */}
@@ -296,8 +324,8 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           variant="ghost"
           onClick={() => {
             const gridSize = 0.01; // Grille de 1% pour les ratios
-            const snappedXRatio = Math.round(field.xRatio / gridSize) * gridSize;
-            const snappedYRatio = Math.round(field.yRatio / gridSize) * gridSize;
+            const snappedXRatio = Math.round((field.xRatio || 0) / gridSize) * gridSize;
+            const snappedYRatio = Math.round((field.yRatio || 0) / gridSize) * gridSize;
             onUpdate({ xRatio: snappedXRatio, yRatio: snappedYRatio });
           }}
           className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100"
@@ -313,8 +341,11 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <div>Type: {field.type}</div>
             <div>Page: {field.page}</div>
-            <div>Ratios position: ({field.xRatio.toFixed(3)}, {field.yRatio.toFixed(3)})</div>
-            <div>Ratios taille: {field.widthRatio.toFixed(3)} × {field.heightRatio.toFixed(3)}</div>
+            <div>Ratios position: ({(field.xRatio || 0).toFixed(3)}, {(field.yRatio || 0).toFixed(3)})</div>
+            <div>Ratios taille: {(field.widthRatio || 0.1).toFixed(3)} × {(field.heightRatio || 0.05).toFixed(3)}</div>
+            {(field.offsetX || field.offsetY) && (
+              <div>Offsets: ({field.offsetX || 0}, {field.offsetY || 0}) points</div>
+            )}
           </div>
         </div>
       </CardContent>

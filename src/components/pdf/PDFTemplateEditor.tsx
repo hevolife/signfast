@@ -192,13 +192,9 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       return;
     }
 
-    // Position par défaut au centre
-    const centerX = canvasDimensions.width / 2;
-    const centerY = canvasDimensions.height / 2;
-
-    // Calculer les ratios pour la position
-    const xRatio = centerX / canvasDimensions.width;
-    const yRatio = centerY / canvasDimensions.height;
+    // Position par défaut au centre (ratios)
+    const xRatio = 0.5; // Centre horizontal
+    const yRatio = 0.5; // Centre vertical
 
     // Dimensions par défaut selon le type
     const defaultSizes = {
@@ -212,7 +208,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
     const { width: defaultWidth, height: defaultHeight } = defaultSizes[type] || { width: 120, height: 25 };
 
-    // Calculer les ratios pour la taille
+    // Calculer les ratios pour la taille basés sur les dimensions PDF réelles
     const widthRatio = defaultWidth / pdfDimensions.width;
     const heightRatio = defaultHeight / pdfDimensions.height;
 
@@ -229,6 +225,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       fontColor: '#000000',
       backgroundColor: '#ffffff',
       required: false,
+      offsetX: 0, // Offset horizontal ajustable
+      offsetY: 0, // Offset vertical ajustable
     };
 
     console.log('➕ Nouveau champ avec ratios:', {
@@ -258,21 +256,23 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
     if (!pdfViewerRef.current) return;
 
+    const pdfDimensions = pdfViewerRef.current.getPDFDimensions(page);
     const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
-    if (!canvasDimensions) return;
+    
+    if (!pdfDimensions || !canvasDimensions) return;
 
-    console.log(`🖱️ Clic page ${page} à canvas (${canvasX}, ${canvasY})`);
+    // Calculer les ratios directement depuis les coordonnées canvas réelles
+    const xRatio = canvasX / canvasDimensions.width;
+    const yRatio = canvasY / canvasDimensions.height;
+    
+    console.log(`🖱️ Clic page ${page} à canvas (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
     console.log(`🖱️ Canvas dimensions: ${canvasDimensions.width} × ${canvasDimensions.height}`);
+    console.log(`🖱️ PDF dimensions: ${pdfDimensions.width} × ${pdfDimensions.height} points`);
+    console.log(`🖱️ Ratios calculés: (${xRatio.toFixed(4)}, ${yRatio.toFixed(4)})`);
 
     setCurrentPage(page);
 
     if (selectedField) {
-      // Calculer les ratios depuis les coordonnées canvas
-      const xRatio = canvasX / canvasDimensions.width;
-      const yRatio = canvasY / canvasDimensions.height;
-
-      console.log(`🖱️ Ratios calculés: (${xRatio.toFixed(4)}, ${yRatio.toFixed(4)})`);
-
       updateField(selectedField, {
         page,
         xRatio,

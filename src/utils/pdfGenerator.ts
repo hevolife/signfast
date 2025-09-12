@@ -36,14 +36,15 @@ export class PDFGenerator {
         const { width: pdfWidth, height: pdfHeight } = page.getSize();
         console.log(`📐 Page ${field.page} dimensions: ${pdfWidth} × ${pdfHeight} points`);
         
-        // Calculer les coordonnées PDF depuis les ratios
-        const pdfX = field.xRatio * pdfWidth;
-        const pdfY = (1 - field.yRatio - field.heightRatio) * pdfHeight; // Inversion axe Y
-        const pdfFieldWidth = field.widthRatio * pdfWidth;
-        const pdfFieldHeight = field.heightRatio * pdfHeight;
+        // Calculer les coordonnées PDF depuis les ratios avec offset ajustable
+        const pdfX = (field.xRatio || 0) * pdfWidth + (field.offsetX || 0);
+        const pdfY = (1 - (field.yRatio || 0) - (field.heightRatio || 0.05)) * pdfHeight + (field.offsetY || 0);
+        const pdfFieldWidth = (field.widthRatio || 0.1) * pdfWidth;
+        const pdfFieldHeight = (field.heightRatio || 0.05) * pdfHeight;
         
         console.log(`🎨 Champ ${field.variable}:`);
-        console.log(`🎨   Ratios: (${field.xRatio.toFixed(4)}, ${field.yRatio.toFixed(4)}, ${field.widthRatio.toFixed(4)}, ${field.heightRatio.toFixed(4)})`);
+        console.log(`🎨   Ratios: (${(field.xRatio || 0).toFixed(4)}, ${(field.yRatio || 0).toFixed(4)}, ${(field.widthRatio || 0.1).toFixed(4)}, ${(field.heightRatio || 0.05).toFixed(4)})`);
+        console.log(`🎨   Offsets: (${field.offsetX || 0}, ${field.offsetY || 0}) points`);
         console.log(`🎨   PDF: (${Math.round(pdfX)}, ${Math.round(pdfY)}) ${Math.round(pdfFieldWidth)}×${Math.round(pdfFieldHeight)}`);
         
         const value = this.getFieldValue(field, data);
