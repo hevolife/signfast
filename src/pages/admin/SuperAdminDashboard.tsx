@@ -227,10 +227,53 @@ export const SuperAdminDashboard: React.FC = () => {
     }
 
     try {
-      toast(`Fonctionnalité d'impersonation temporairement désactivée pour des raisons de sécurité`);
+      toast.loading('Connexion en cours...', { id: 'impersonation' });
+      
+      // Créer une session temporaire pour l'utilisateur cible
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: userEmail,
+      });
+      
+      if (error) {
+        console.error('Erreur génération lien:', error);
+        toast.error('Erreur lors de la génération du lien de connexion', { id: 'impersonation' });
+        return;
+      }
+      
+      if (data.properties?.action_link) {
+        // Extraire le token du lien magique
+        const url = new URL(data.properties.action_link);
+        const token = url.searchParams.get('token');
+        
+        if (token) {
+          // Utiliser le token pour se connecter
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'magiclink'
+          });
+          
+          if (verifyError) {
+            console.error('Erreur vérification token:', verifyError);
+            toast.error('Erreur lors de la connexion', { id: 'impersonation' });
+            return;
+          }
+          
+          toast.success(`Connecté en tant que ${userEmail}`, { id: 'impersonation' });
+          
+          // Rediriger vers le dashboard de l'utilisateur
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1000);
+        } else {
+          toast.error('Token non trouvé dans le lien', { id: 'impersonation' });
+        }
+      } else {
+        toast.error('Lien de connexion non généré', { id: 'impersonation' });
+      }
     } catch (error) {
       console.error('Erreur impersonation:', error);
-      toast.error('Erreur lors de la connexion utilisateur');
+      toast.error('Erreur lors de la connexion utilisateur', { id: 'impersonation' });
     }
   };
 
