@@ -229,73 +229,20 @@ export const SuperAdminDashboard: React.FC = () => {
     try {
       toast.loading('Connexion en cours...', { id: 'impersonation' });
       
-      // Utiliser l'API admin pour créer une session directe
-      const supabaseAdmin = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-      );
+      // Sauvegarder l'ID admin actuel pour l'impersonation
+      localStorage.setItem('admin_impersonation', JSON.stringify({
+        admin_id: user?.id,
+        target_user_id: userId,
+        target_email: userEmail,
+        timestamp: Date.now()
+      }));
       
-      // Créer un token d'accès temporaire pour l'utilisateur
-      const { data, error } = await supabaseAdmin.auth.admin.createUser({
-        email: userEmail,
-        password: 'temp-password-' + Date.now(),
-        email_confirm: true,
-        user_metadata: { impersonated_by: user?.id }
-      });
+      toast.success(`Mode impersonation activé pour ${userEmail}`, { id: 'impersonation' });
       
-      if (error && !error.message.includes('already registered')) {
-        console.error('Erreur impersonation:', error);
-        toast.error('Erreur lors de la connexion utilisateur', { id: 'impersonation' });
-        return;
-      }
-      
-      // Se connecter directement avec l'email de l'utilisateur
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: userEmail,
-        password: 'temp-password-' + Date.now()
-      });
-      
-      // Si l'utilisateur existe déjà, essayer une méthode alternative
-      if (signInError) {
-        // Méthode alternative : utiliser signInWithOtp
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: userEmail,
-          options: {
-            shouldCreateUser: false
-          }
-        });
-        
-        if (otpError) {
-          // Dernière méthode : simulation d'impersonation
-          console.warn('Impersonation directe impossible, simulation...');
-          
-          // Sauvegarder l'ID admin actuel
-          localStorage.setItem('admin_impersonation', JSON.stringify({
-            admin_id: user?.id,
-            target_user_id: userId,
-            target_email: userEmail,
-            timestamp: Date.now()
-          }));
-          
-          toast.success(`Mode impersonation activé pour ${userEmail}`, { id: 'impersonation' });
-          
-          // Rediriger vers le dashboard
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 1000);
-          return;
-        }
-        
-        toast.success(`Lien de connexion envoyé à ${userEmail}`, { id: 'impersonation' });
-        toast('Vérifiez la boîte email pour vous connecter', { icon: '📧' });
-      } else {
-        toast.success(`Connecté en tant que ${userEmail}`, { id: 'impersonation' });
-        
-        // Rediriger vers le dashboard de l'utilisateur
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1000);
-      }
+      // Rediriger vers le dashboard
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
     } catch (error) {
       console.error('Erreur impersonation:', error);
       toast.error('Erreur lors de la connexion utilisateur', { id: 'impersonation' });
