@@ -5,6 +5,7 @@ import { PDFField, PDFTemplate } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useForms } from '../../hooks/useForms';
+import { usePDFTemplates } from '../../hooks/usePDFTemplates';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,7 @@ export const EditPDFTemplate: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { forms, refetch: refetchForms } = useForms();
+  const { templates, loading: templatesLoading } = usePDFTemplates();
   const [template, setTemplate] = useState<PDFTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -125,10 +127,10 @@ export const EditPDFTemplate: React.FC = () => {
   };
 
   useEffect(() => {
-    if (id) {
+    if (id && !templatesLoading && templates) {
       loadTemplate();
     }
-  }, [id]);
+  }, [id, templates, templatesLoading]);
 
   const loadTemplate = async () => {
     if (!id) return;
@@ -136,37 +138,12 @@ export const EditPDFTemplate: React.FC = () => {
     try {
       console.log('📄 Chargement template pour édition:', id);
       
-      // Essayer de charger depuis Supabase d'abord
-      let foundTemplate = null;
-      
-      if (user) {
-        console.log('📄 Chargement depuis Supabase...');
-        const supabaseTemplates = await PDFTemplateService.getUserTemplates(user.id);
-        foundTemplate = supabaseTemplates.find(t => t.id === id);
-        
-        if (foundTemplate) {
-          console.log('✅ Template trouvé dans Supabase:', foundTemplate.name);
-        }
-      }
-      
-      // Fallback vers localStorage si pas trouvé dans Supabase
-      if (!foundTemplate) {
-        console.log('📄 Fallback vers localStorage...');
-        try {
-          const localTemplates = JSON.parse(localStorage.getItem('pdfTemplates') || '[]');
-          foundTemplate = localTemplates.find((t: PDFTemplate) => t.id === id);
-          
-          if (foundTemplate) {
-            console.log('✅ Template trouvé dans localStorage:', foundTemplate.name);
-          }
-        } catch (localError) {
-          console.warn('⚠️ Erreur lecture localStorage:', localError);
-        }
-      }
+      // Utiliser les templates du hook qui gère déjà l'impersonation
+      const foundTemplate = templates.find(t => t.id === id);
       
       if (foundTemplate) {
+        console.log('✅ Template trouvé:', foundTemplate.name);
         setTemplate(foundTemplate);
-        console.log('✅ Template chargé avec succès');
         // Marquer les champs comme prêts après un délai
         setTimeout(() => {
           console.log('🎯 Champs marqués comme prêts pour affichage');
