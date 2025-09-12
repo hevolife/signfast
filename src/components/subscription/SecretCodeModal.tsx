@@ -4,6 +4,7 @@ import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import { X, Key, Gift, Crown, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface SecretCodeModalProps {
@@ -19,6 +20,7 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
 }) => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   if (!isOpen) return null;
 
@@ -34,7 +36,8 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
     
     try {
       const { data, error } = await supabase.rpc('activate_secret_code', {
-        p_code: code.trim().toUpperCase()
+        p_code: code.trim().toUpperCase(),
+        p_user_id: user?.id
       });
 
       if (error) {
