@@ -241,20 +241,32 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [selectedField]);
 
   const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
-    console.log('🖱️ Clic sur page:', page, 'Page courante:', currentPage);
+    console.log('🖱️ === CLIC SUR PAGE ===');
+    console.log('🖱️ Page cliquée:', page);
+    console.log('🖱️ Page courante:', currentPage);
     console.log('🖱️ Mode placement actif:', !!draggedFieldType, 'Type:', draggedFieldType);
+    console.log('🖱️ Coordonnées:', { canvasX, canvasY });
     
     // Si on est en mode placement de champ
     if (draggedFieldType) {
+      console.log('🖱️ === MODE PLACEMENT ACTIF ===');
       if (!pdfViewerRef.current) return;
 
-      // IMPORTANT: Utiliser la page cliquée, pas currentPage
+      console.log('🖱️ Récupération dimensions pour page:', page);
       const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
-      if (!canvasDimensions) return;
+      if (!canvasDimensions) {
+        console.error('🖱️ ❌ Dimensions canvas non disponibles pour page:', page);
+        toast.error(`Impossible de placer le champ sur la page ${page}`);
+        return;
+      }
+      
+      console.log('🖱️ Dimensions canvas page', page, ':', canvasDimensions);
 
       // Calculer les ratios depuis la position de clic
       const xRatio = canvasX / canvasDimensions.width;
       const yRatio = canvasY / canvasDimensions.height;
+      
+      console.log('🖱️ Ratios calculés:', { xRatio, yRatio });
 
       // Ratios de taille selon le type
       const defaultRatios = {
@@ -267,11 +279,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       };
 
       const { width: widthRatio, height: heightRatio } = defaultRatios[draggedFieldType] || { width: 0.2, height: 0.04 };
+      
+      console.log('🖱️ Ratios de taille:', { widthRatio, heightRatio });
 
       const newField: PDFField = {
         id: uuidv4(),
         type: draggedFieldType,
-        page, // Utiliser la page cliquée
+        page: page, // IMPORTANT: Utiliser la page cliquée
         variable: '',
         xRatio,
         yRatio,
@@ -285,26 +299,36 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         offsetY: 0,
       };
 
-      console.log('➕ Nouveau champ placé manuellement:', {
+      console.log('🖱️ === NOUVEAU CHAMP CRÉÉ ===');
+      console.log('➕ Champ:', {
         type: draggedFieldType,
-        page,
+        page: page,
         position: { xRatio, yRatio },
-        size: { widthRatio, heightRatio }
+        size: { widthRatio, heightRatio },
+        id: newField.id
       });
 
       setFields(prev => [...prev, newField]);
       setSelectedField(newField.id);
-      // Changer vers la page où le champ a été placé
-      setCurrentPage(page);
+      
+      // Changer vers la page où le champ a été placé si nécessaire
+      if (currentPage !== page) {
+        console.log('🖱️ Changement de page vers:', page);
+        setCurrentPage(page);
+      }
+      
       setDraggedFieldType(null);
       toast.success(`Champ ajouté sur la page ${page} !`);
       return;
     }
 
     // Mode normal - changer de page
-    console.log('🖱️ Changement de page vers:', page);
-    setCurrentPage(page);
-    setSelectedField(null);
+    if (currentPage !== page) {
+      console.log('🖱️ === CHANGEMENT DE PAGE ===');
+      console.log('🖱️ Changement de page vers:', page);
+      setCurrentPage(page);
+      setSelectedField(null);
+    }
   }, [selectedField, updateField, draggedFieldType, currentPage]);
 
   // Annuler le mode placement si on appuie sur Échap
