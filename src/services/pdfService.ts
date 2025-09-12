@@ -294,42 +294,10 @@ export class PDFService {
     formData: Record<string, any>;
   }>> {
     try {
-      // Récupérer l'utilisateur actuel pour filtrer les PDFs
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
       const allPDFs: any[] = [];
 
-      // Récupérer depuis Supabase
-      if (user) {
-        try {
-        console.log('💾 Récupération liste PDFs depuis Supabase...');
-        const { data: supabasePDFs, error } = await supabase
-          .from('pdf_storage')
-          .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
-          .eq('user_id', user.id) // IMPORTANT: Filtrer par utilisateur connecté
-          .order('created_at', { ascending: false });
-
-        if (!error && supabasePDFs) {
-          console.log('💾 PDFs Supabase trouvés:', supabasePDFs.length);
-          allPDFs.push(...supabasePDFs.map(pdf => ({
-            fileName: pdf.file_name,
-            responseId: pdf.response_id || 'unknown',
-            templateName: pdf.template_name,
-            formTitle: pdf.form_title,
-            createdAt: pdf.created_at,
-            size: pdf.file_size || 0,
-            formData: pdf.form_data || {},
-            source: 'supabase'
-          })));
-        } else if (error) {
-          console.warn('💾 Erreur récupération Supabase:', error);
-        }
-        } catch (supabaseError) {
-        console.warn('💾 Erreur récupération Supabase:', supabaseError);
-        }
-      } else {
-        console.log('💾 Utilisateur non connecté, pas de récupération Supabase');
-      }
+      // Temporairement désactivé jusqu'à ce que la colonne user_id soit ajoutée
+      console.log('💾 Récupération Supabase temporairement désactivée (colonne user_id manquante)');
 
       // Récupérer depuis localStorage
       try {
@@ -376,29 +344,10 @@ export class PDFService {
     try {
       console.log('💾 Suppression PDF:', fileName);
       
-      // Récupérer l'utilisateur actuel
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
       let deleted = false;
 
-      // Supprimer de Supabase
-      if (user) {
-        try {
-        const { error } = await supabase
-          .from('pdf_storage')
-          .delete()
-          .eq('file_name', fileName)
-          .eq('user_id', user.id); // IMPORTANT: S'assurer qu'on supprime seulement ses propres PDFs
-
-        if (!error) {
-          console.log('💾 PDF supprimé de Supabase');
-          deleted = true;
-        } else {
-          console.warn('💾 Erreur suppression Supabase:', error);
-        }
-        } catch (supabaseError) {
-        console.warn('💾 Erreur suppression Supabase:', supabaseError);
-        }
-      }
+      // Temporairement désactivé jusqu'à ce que la colonne user_id soit ajoutée
+      console.log('💾 Suppression Supabase temporairement désactivée (colonne user_id manquante)');
 
       // Supprimer du localStorage
       try {
