@@ -118,34 +118,6 @@ export const EditPDFTemplate: React.FC = () => {
     console.log('📋 Retour aux variables par défaut');
     return ['${nom}', '${email}', '${date_creation}'];
   };
-          const variableName = field.label
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-          
-          return `\${${variableName}}`;
-        });
-        
-        // Ajouter des variables système
-        formVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
-        
-        console.log('📋 Variables générées:', formVariables);
-        return formVariables;
-      } else {
-        console.warn('📋 Formulaire lié non trouvé ou sans champs');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la récupération du formulaire lié:', error);
-    }
-    
-    // Variables par défaut en cas d'erreur
-    console.log('📋 Retour aux variables par défaut');
-    return ['${nom}', '${email}', '${date_creation}'];
-  };
-
   useEffect(() => {
     if (id) {
       loadTemplate();
