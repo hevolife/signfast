@@ -1,6 +1,7 @@
 import React from 'react';
 import { PDFField } from '../../types/pdf';
 import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 
 interface PDFFieldPropertiesProps {
