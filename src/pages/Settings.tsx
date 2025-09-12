@@ -208,13 +208,20 @@ export const Settings: React.FC = () => {
     setLogoUploading(true);
 
     try {
-      const logoUrl = await uploadLogo(file);
-      if (logoUrl) {
-        const success = await updateProfile({ logo_url: logoUrl });
-        if (success) {
+      const success = await uploadLogo(file);
+      if (success) {
+        const updatedSuccess = await updateProfile({
+          first_name: firstName,
+          last_name: lastName,
+          company_name: companyName,
+          address: address,
+          siret: siret,
+        });
+        
+        if (updatedSuccess) {
           toast.success('Logo mis à jour avec succès !');
         } else {
-          toast.error('Erreur lors de la mise à jour du logo');
+          toast.error('Erreur lors de la sauvegarde du logo');
         }
       } else {
         toast.error('Erreur lors de l\'upload du logo');
@@ -345,7 +352,7 @@ export const Settings: React.FC = () => {
 
         {/* Bouton Admin pour super admins */}
         {isSuperAdmin && (
-          <div className="mb-8 flex justify-center">
+          <div className="mb-8 text-center">
             <Link to="/admin">
               <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
                 <Shield className="h-4 w-4" />
@@ -732,26 +739,17 @@ export const Settings: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      
-                      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium">Plan actuel:</span> {hasSecretCode ? 'Premium (Code Secret)' : product.name}
-                      </div>
                     </div>
                   ) : (
-                    <Button
-                      onClick={handleSubscribe}
-                      disabled={saving}
-                      className="w-full flex items-center justify-center space-x-2"
-                    >
-                      {saving ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <>
-                          <Zap className="h-4 w-4" />
-                          <span>Passer Pro</span>
-                        </>
-                      )}
-                    </Button>
+                    <div className="pt-4">
+                      <Button
+                        onClick={handleSubscribe}
+                        disabled={saving}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {saving ? 'Redirection...' : 'S\'abonner maintenant'}
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
