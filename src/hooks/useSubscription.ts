@@ -107,14 +107,32 @@ export const useSubscription = () => {
             )
           `)
           .eq('user_id', targetUserId)
-          .or('expires_at.is.null,expires_at.gt.now()')
           .limit(1);
 
         if (!secretCodeError && secretCodeData && secretCodeData.length > 0) {
-          const activeCode = secretCodeData[0];
-          hasActiveSecretCode = true;
-          secretCodeType = activeCode.secret_codes?.type || null;
-          secretCodeExpiresAt = activeCode.expires_at;
+          // Vérifier chaque code pour trouver un code actif
+          for (const codeData of secretCodeData) {
+            const codeType = codeData.secret_codes?.type;
+            const expiresAt = codeData.expires_at;
+            
+            // Un code est actif si :
+            // - C'est un code à vie (expires_at est null)
+            // - OU c'est un code mensuel non expiré
+            const isLifetime = codeType === 'lifetime' && !expiresAt;
+            const isValidMonthly = codeType === 'monthly' && expiresAt && new Date(expiresAt) > new Date();
+            
+            if (isLifetime || isValidMonthly) {
+              hasActiveSecretCode = true;
+              secretCodeType = codeType;
+              secretCodeExpiresAt = expiresAt;
+              console.log('🔑 Code secret actif détecté:', {
+                type: codeType,
+                isLifetime,
+                expiresAt: expiresAt || 'jamais'
+              });
+              break; // Prendre le premier code actif trouvé
+            }
+          }
         }
       } catch (secretCodeError) {
         console.warn('Erreur codes secrets (ignorée):', secretCodeError);
