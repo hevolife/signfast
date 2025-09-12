@@ -21,6 +21,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
+  canvasRefs,
   currentPage = 1,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
