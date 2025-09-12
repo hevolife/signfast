@@ -719,11 +719,17 @@ export class PDFGenerator {
     
     try {
       const date = new Date(value);
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      // Vérifier si la date est valide
+      if (isNaN(date.getTime())) {
+        return value; // Retourner la valeur originale si ce n'est pas une date valide
+      }
+      
+      // Format français DD/MM/YYYY
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      
+      return `${day}/${month}/${year}`;
     } catch {
       return value;
     }
