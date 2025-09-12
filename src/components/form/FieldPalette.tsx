@@ -40,13 +40,13 @@ const FieldType: React.FC<FieldTypeProps> = ({ type, icon, label, onAdd }) => {
     <div
       ref={drag}
       onClick={onAdd}
-      className={`p-3 lg:p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors active:scale-95 ${
+      className={`p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all active:scale-95 hover:shadow-md ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
-      <div className="flex flex-col lg:flex-row items-center lg:space-x-3 space-y-1 lg:space-y-0">
+      <div className="flex flex-col items-center space-y-2">
         <div className="text-blue-600">{icon}</div>
-        <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white text-center lg:text-left">
+        <span className="text-xs font-medium text-gray-900 dark:text-white text-center leading-tight">
           {label}
         </span>
       </div>
@@ -72,15 +72,15 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white lg:block hidden">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Éléments de formulaire
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 lg:block hidden">
-          Glissez ou cliquez pour ajouter un champ
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Cliquez pour ajouter un champ au formulaire
         </p>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-3 lg:space-y-0">
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
           {fieldTypes.map(({ type, icon, label }) => (
             <FieldType
               key={type}
