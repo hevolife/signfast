@@ -116,21 +116,6 @@ export class PDFGenerator {
       let processedFields = 0;
       const totalFields = template.fields.length;
       
-      // Collecter tous les fichiers/images du formulaire au début
-      const formFiles = Object.entries(data).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log('📁 ===== FICHIERS FORMULAIRE =====');
-      console.log('📁 Nombre total de fichiers image:', formFiles.length);
-      formFiles.forEach(([key, value], index) => {
-        console.log(`📁 Fichier ${index + 1}:`);
-        console.log(`📁   - Clé: "${key}"`);
-        console.log(`📁   - Type: ${typeof value}`);
-        console.log(`📁   - Est base64: ${typeof value === 'string' && value.startsWith('data:image')}`);
-        console.log(`📁   - Taille: ${typeof value === 'string' ? value.length : 0} caractères`);
-        console.log(`📁   - Format: ${typeof value === 'string' ? value.substring(0, 30) + '...' : 'N/A'}`);
-      });
-      
       let fileIndex = 0; // Index pour lier automatiquement les fichiers
       
       console.log('🎨 ===== TRAITEMENT DES CHAMPS =====');
@@ -280,7 +265,6 @@ export class PDFGenerator {
                 console.error(`🖼️ Données: ${value.substring(0, 100)}...`);
                   console.log('📱 ❌ Image ignorée sur mobile (erreur)');
                 }
-              }
             } else {
               console.log(`🖼️ ❌ CHAMP IMAGE IGNORÉ:`);
               console.log(`🖼️   - Champ: ${field.variable}`);
