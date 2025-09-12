@@ -60,11 +60,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging) return;
     
-    const deltaX = (e.clientX - dragStart.x) / scale;
-    const deltaY = (e.clientY - dragStart.y) / scale;
+    // Calculer la position directe de la souris par rapport au canvas
+    const canvas = document.querySelector('.pdf-canvas-container canvas') as HTMLCanvasElement;
+    if (!canvas) return;
     
-    const newX = Math.max(0, Math.min(600, originalPosition.x + deltaX));
-    const newY = Math.max(0, Math.min(800, originalPosition.y + deltaY));
+    const rect = canvas.getBoundingClientRect();
+    const newX = Math.max(0, Math.min(600, (e.clientX - rect.left) / scale));
+    const newY = Math.max(0, Math.min(800, (e.clientY - rect.top) / scale));
     
     console.log('🖱️ MouseMove - nouvelle position:', { newX, newY });
     

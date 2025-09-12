@@ -362,15 +362,12 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     setCurrentPage(page);
     console.log(`📄 Page courante mise à jour: ${page}`);
     
-    // Créer un nouveau champ à la position cliquée si aucun champ n'est sélectionné
-    if (!selectedField) {
-      // Vous pouvez décommenter cette ligne pour créer automatiquement un champ texte au clic
-      // addField('text');
-    } else {
-      // Déplacer le champ sélectionné à la position cliquée
+    // Si un champ est sélectionné, le déplacer à la position cliquée
+    if (selectedField) {
       const field = fields.find(f => f.id === selectedField);
-      if (field && field.page === page) {
-        updateField(selectedField, { x, y });
+      if (field) {
+        console.log(`🎯 Déplacement champ ${selectedField} vers (${x}, ${y}) sur page ${page}`);
+        updateField(selectedField, { x: Math.round(x), y: Math.round(y), page });
       }
     }
   }, [selectedField, fields, updateField]);
