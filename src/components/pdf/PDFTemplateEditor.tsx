@@ -500,56 +500,23 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* En-tête */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white text-lg">📄</span>
-              </div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Éditeur de Template PDF
               </h1>
-            </div>
-            <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
                 Créez des templates PDF avec positionnement précis par ratios
               </p>
-            
-            {/* Statistiques du template */}
-            {fields.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-6">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">{fields.length}</div>
-                    <div className="text-sm text-blue-700 dark:text-blue-400">Champs totaux</div>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 mb-1">{fields.filter(f => f.required).length}</div>
-                    <div className="text-sm text-green-700 dark:text-green-400">Obligatoires</div>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600 mb-1">{fields.filter(f => f.type === 'signature').length}</div>
-                    <div className="text-sm text-purple-700 dark:text-purple-400">Signatures</div>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600 mb-1">{currentPage}</div>
-                    <div className="text-sm text-orange-700 dark:text-orange-400">Page actuelle</div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-center space-x-3">
+            </div>
+            <div className="flex items-center space-x-3">
               <Button
                 onClick={handlePreviewPDF}
                 disabled={!pdfFile || fields.length === 0 || previewLoading}
-                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg"
+                variant="secondary"
+                className="flex items-center space-x-2"
               >
                 {previewLoading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
@@ -561,7 +528,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
               <Button
                 onClick={handleSave}
                 disabled={!pdfFile || fields.length === 0}
-                className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg"
+                className="flex items-center space-x-2"
               >
                 <Save className="h-4 w-4" />
                 <span>Sauvegarder</span>
@@ -570,20 +537,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
           </div>
 
           {/* Sélecteur de formulaire */}
-          <Card className="mb-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-lg">
+          <Card className="mb-6">
             <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-white text-lg">🔗</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-300">
-                    Formulaire lié
-                  </h3>
-                  <p className="text-sm text-indigo-700 dark:text-indigo-400">
-                    Associez ce template à un formulaire pour générer les variables
-                  </p>
-                </div>
+              <div className="flex items-center space-x-2">
+                <LinkIcon className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Formulaire lié
+                </h3>
               </div>
             </CardHeader>
             <CardContent>
@@ -596,91 +556,149 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
           </Card>
 
           {!pdfFile ? (
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 shadow-lg">
+            <Card>
               <CardContent className="text-center py-16">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl mb-6 shadow-lg">
-                  <Upload className="h-8 w-8" />
-                </div>
+                <Upload className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   Chargez votre template PDF
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Sélectionnez un fichier PDF qui servira de base à votre template
                 </p>
-                <label className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl">
-                  <Upload className="h-5 w-5 mr-2" />
+                <Button onClick={() => document.getElementById('pdf-file-input')?.click()}>
                   Choisir un fichier PDF
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </label>
+                </Button>
+                <input
+                  id="pdf-file-input"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Palette des champs - au-dessus du visualiseur */}
-              <div className="lg:col-span-4 mb-6">
-                <PDFFieldPalette onAddField={addField} />
-              </div>
-
-              {/* Visualiseur PDF et propriétés */}
-              <div className="lg:col-span-3">
-                <Card className="bg-white dark:bg-gray-800 shadow-lg">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {templateName || 'Template PDF'}
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Page {currentPage}
-                        </span>
-                        {draggedFieldType && (
-                          <div className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Visualiseur PDF avec palette au-dessus */}
+              <div className="lg:col-span-2">
+                {/* Palette des champs au-dessus */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <PDFFieldPalette onAddField={addField} />
+                    {draggedFieldType && (
+                      <div className="absolute inset-0 bg-blue-100/90 dark:bg-blue-900/90 rounded-lg flex items-center justify-center border-2 border-blue-500 border-dashed">
+                        <div className="text-center">
+                          <p className="text-blue-800 dark:text-blue-200 font-medium">
                             Mode placement: {draggedFieldType}
-                          </div>
-                        )}
+                          </p>
+                          <p className="text-blue-600 dark:text-blue-400 text-sm">
+                            Cliquez sur le PDF pour placer le champ
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDraggedFieldType(null)}
+                            className="mt-2 text-blue-600 hover:text-blue-700"
+                          >
+                            Annuler (Échap)
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="relative">
-                      <PDFViewer
-                        ref={pdfViewerRef}
-                        file={pdfFile}
-                        currentPage={currentPage}
-                        onPageChange={setCurrentPage}
-                        onPageClick={handlePageClick}
-                        onPDFLoaded={handlePDFLoaded}
-                        scale={scale}
-                        onScaleChange={setScale}
-                      />
+                    )}
+                  </div>
+                </div>
+                
+                {/* Visualiseur PDF */}
+                <Card className={`h-[800px] ${draggedFieldType ? 'ring-2 ring-blue-500' : ''}`}>
+                  <PDFViewer
+                    ref={pdfViewerRef}
+                    file={pdfFile}
+                    onPDFLoaded={handlePDFLoaded}
+                    onPageClick={handlePageClick}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                    scale={scale}
+                    onScaleChange={setScale}
+                    draggedFieldType={draggedFieldType}
+                    hideZoomControls={true}
+                  >
+                    {fields.map(field => (
                       <PDFFieldOverlay
-                        fields={fields}
-                        selectedField={selectedField}
-                        onFieldSelect={setSelectedField}
-                        onFieldUpdate={updateField}
+                        key={field.id}
+                        field={field}
+                        scale={scale}
+                        isSelected={selectedField === field.id}
+                        onSelect={(field) => setSelectedField(field.id)}
+                        onUpdate={(updatedField) => updateField(updatedField.id, updatedField)}
+                        onDelete={deleteField}
                         currentPage={currentPage}
                         pdfViewerRef={pdfViewerRef}
-                        scale={scale}
                       />
-                    </div>
-                  </CardContent>
+                    ))}
+                  </PDFViewer>
                 </Card>
               </div>
 
-              {/* Propriétés du champ */}
+              {/* Propriétés */}
               <div className="lg:col-span-1">
-                <PDFFieldProperties
-                  field={selectedFieldData}
-                  onUpdate={updateField}
-                  onDelete={deleteField}
-                  onDelete={deleteField}
-                  availableVariables={actualFormVariables}
-                />
+                <div className="sticky top-4">
+                  {selectedFieldData ? (
+                    <PDFFieldProperties
+                      field={selectedFieldData}
+                      onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
+                      availableVariables={actualFormVariables}
+                      linkedFormId={currentLinkedFormId}
+                    />
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Propriétés
+                          </h3>
+                          <Button
+                            onClick={handlePreviewPDF}
+                            disabled={!pdfFile || fields.length === 0 || previewLoading}
+                            variant="secondary"
+                            size="sm"
+                            className="flex items-center space-x-1"
+                          >
+                            {previewLoading ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                            ) : (
+                              <Eye className="h-3 w-3" />
+                            )}
+                            <span className="text-xs">{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Cliquez sur le PDF pour ajouter un champ ou sélectionnez un champ existant
+                        </p>
+                        
+                        {fields.length > 0 && (
+                          <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+                              Champs ajoutés ({fields.length})
+                            </h4>
+                            <div className="space-y-1">
+                              {fields.map(field => (
+                                <div 
+                                  key={field.id}
+                                  className="text-xs text-blue-700 dark:text-blue-400 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-800 p-1 rounded"
+                                  onClick={() => setSelectedField(field.id)}
+                                >
+                                  {field.variable || field.type} (page {field.page})
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </div>
             </div>
           )}

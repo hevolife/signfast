@@ -6,9 +6,8 @@ import { Card, CardContent, CardHeader } from '../ui/Card';
 import { Eye } from 'lucide-react';
 
 interface PDFFieldPropertiesProps {
-  field: PDFField | null;
+  field: PDFField;
   onUpdate: (updates: Partial<PDFField>) => void;
-  onDelete?: (fieldId: string) => void;
   availableVariables: string[];
   linkedFormId?: string;
   onPreviewPDF?: () => void;
@@ -18,30 +17,11 @@ interface PDFFieldPropertiesProps {
 export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   field,
   onUpdate,
-  onDelete,
   availableVariables,
   linkedFormId,
   onPreviewPDF,
   previewLoading,
 }) => {
-  if (!field) {
-    return (
-      <Card className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-gray-200 dark:border-gray-700 shadow-lg">
-        <CardContent className="p-6 text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-            <span className="text-white text-lg">👆</span>
-          </div>
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-            Sélectionnez un champ
-          </h4>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            Cliquez sur un champ dans le PDF pour modifier ses propriétés
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const getLinkedFormInfo = () => {
     if (!linkedFormId) return null;
     
@@ -64,38 +44,32 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   };
 
   return (
-    <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-lg">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-              <span className="text-white text-sm">⚙️</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-300">
-                Propriétés du champ
-              </h3>
-              {linkedFormId && (
-                <p className="text-xs text-indigo-700 dark:text-indigo-400">
-                  📋 Lié au formulaire: {getLinkedFormInfo()}
-                </p>
-              )}
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Propriétés du champ
+          </h3>
           <Button
             onClick={onPreviewPDF}
             disabled={previewLoading}
+            variant="secondary"
             size="sm"
-            className="flex items-center space-x-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md"
+            className="flex items-center space-x-1"
           >
             {previewLoading ? (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
             ) : (
               <Eye className="h-3 w-3" />
             )}
             <span className="text-xs">{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
           </Button>
         </div>
+        {linkedFormId && (
+          <p className="text-xs text-blue-600 dark:text-blue-400">
+            📋 Lié au formulaire: {getLinkedFormInfo()}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Variable */}
@@ -126,9 +100,9 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           </select>
           
           {field.variable && (
-            <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800 shadow-sm">
+            <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
               <p className="text-xs text-green-800 dark:text-green-200">
-                ✅ Variable: <code className="font-mono bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">{field.variable}</code>
+                ✅ Variable: <code className="font-mono bg-white dark:bg-gray-800 px-1 rounded">{field.variable}</code>
               </p>
             </div>
           )}
@@ -216,7 +190,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.1, yRatio: 0.1 })}
-              className="text-xs bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 border border-blue-200 shadow-sm"
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↖
             </Button>
@@ -224,7 +198,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.5, yRatio: 0.1 })}
-              className="text-xs bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 border border-blue-200 shadow-sm"
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↑
             </Button>
@@ -232,7 +206,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.8, yRatio: 0.1 })}
-              className="text-xs bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 border border-blue-200 shadow-sm"
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↗
             </Button>
@@ -240,7 +214,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.1, yRatio: 0.7 })}
-              className="text-xs bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 border border-blue-200 shadow-sm"
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↙
             </Button>
@@ -248,7 +222,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.5, yRatio: 0.7 })}
-              className="text-xs bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 border border-blue-200 shadow-sm"
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↓
             </Button>
@@ -256,7 +230,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.8, yRatio: 0.7 })}
-              className="text-xs bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 border border-blue-200 shadow-sm"
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
             >
               ↘
             </Button>
@@ -273,7 +247,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.15, heightRatio: 0.03 })}
-              className="text-xs bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 border border-gray-200 shadow-sm"
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
               Petit
             </Button>
@@ -281,7 +255,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.25, heightRatio: 0.04 })}
-              className="text-xs bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 border border-gray-200 shadow-sm"
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
               Moyen
             </Button>
@@ -289,7 +263,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.35, heightRatio: 0.05 })}
-              className="text-xs bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 border border-gray-200 shadow-sm"
+              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
               Grand
             </Button>
@@ -297,7 +271,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.35, heightRatio: 0.1 })}
-              className="text-xs bg-gradient-to-br from-purple-50 to-purple-100 text-purple-700 hover:from-purple-100 hover:to-purple-200 border border-purple-200 shadow-sm"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100"
             >
               Signature
             </Button>
@@ -375,43 +349,23 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             const snappedYRatio = Math.round((field.yRatio || 0) / gridSize) * gridSize;
             onUpdate({ xRatio: snappedXRatio, yRatio: snappedYRatio });
           }}
-          className="w-full text-xs bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 hover:from-green-100 hover:to-emerald-100 border border-green-200 shadow-sm"
+          className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100"
         >
           📐 Aligner sur grille (1%)
         </Button>
 
         {/* Informations du champ */}
-        <div className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="w-5 h-5 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs">ℹ️</span>
-            </div>
-            <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Informations du champ
-            </h4>
-          </div>
+        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border">
+          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Informations du champ
+          </h4>
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-            <div className="flex justify-between">
-              <span>Type:</span>
-              <span className="font-medium">{field.type}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Page:</span>
-              <span className="font-medium">{field.page}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Position:</span>
-              <span className="font-mono">({(field.xRatio || 0).toFixed(3)}, {(field.yRatio || 0).toFixed(3)})</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Taille:</span>
-              <span className="font-mono">{(field.widthRatio || 0.1).toFixed(3)} × {(field.heightRatio || 0.05).toFixed(3)}</span>
-            </div>
+            <div>Type: {field.type}</div>
+            <div>Page: {field.page}</div>
+            <div>Ratios position: ({(field.xRatio || 0).toFixed(3)}, {(field.yRatio || 0).toFixed(3)})</div>
+            <div>Ratios taille: {(field.widthRatio || 0.1).toFixed(3)} × {(field.heightRatio || 0.05).toFixed(3)}</div>
             {(field.offsetX || field.offsetY) && (
-              <div className="flex justify-between">
-                <span>Offsets:</span>
-                <span className="font-mono">({field.offsetX || 0}, {field.offsetY || 0}) pts</span>
-              </div>
+              <div>Offsets: ({field.offsetX || 0}, {field.offsetY || 0}) points</div>
             )}
           </div>
         </div>
