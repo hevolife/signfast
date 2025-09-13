@@ -104,16 +104,6 @@ export const Login: React.FC = () => {
                   S'inscrire
                 </Link>
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                Ou{' '}
-                <Link
-                  to="/"
-                  state={{ from: { pathname: '/login' } }}
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  voir la présentation
-                </Link>
-              </p>
             </div>
           </CardContent>
         </Card>
