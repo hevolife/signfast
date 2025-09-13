@@ -670,11 +670,15 @@ export const SuperAdminDashboard: React.FC = () => {
                 </Card>
               ) : (
               secretCodes.map((code) => (
-                <Card key={code.id}>
+                <Card key={code.id} className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-800 shadow-lg">
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
+                          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white text-lg">🔑</span>
+                          </div>
+                          <div>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             code.type === 'lifetime' 
                               ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
@@ -705,18 +709,28 @@ export const SuperAdminDashboard: React.FC = () => {
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
+                          </div>
                         </div>
                         
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-1">
                           {code.description}
                         </p>
                         
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                          <span>Utilisations: {code.current_uses}/{code.max_uses || '∞'}</span>
-                          <span>Créé le {formatDateFR(code.created_at)}</span>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded dark:bg-yellow-900/30 dark:text-yellow-300">
+                            Utilisations: {code.current_uses}/{code.max_uses || '∞'}
+                          </span>
+                          <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                            Créé le {formatDateFR(code.created_at)}
+                          </span>
                           {code.expires_at && (
-                            <span>Expire le {formatDateFR(code.expires_at)}</span>
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                              Expire le {formatDateFR(code.expires_at)}
+                            </span>
                           )}
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             code.is_active 
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
@@ -731,7 +745,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteSecretCode(code.id, code.code)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        className="bg-gradient-to-r from-red-100 to-pink-100 text-red-700 hover:from-red-200 hover:to-pink-200 dark:from-red-900/30 dark:to-pink-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 shadow-sm hover:shadow-md transition-all"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
