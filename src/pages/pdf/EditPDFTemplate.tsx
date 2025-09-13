@@ -279,6 +279,12 @@ export const EditPDFTemplate: React.FC = () => {
     }
   };
 
+  const handleTemplateNameChange = (name: string) => {
+    if (template) {
+      setTemplate({ ...template, name });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">

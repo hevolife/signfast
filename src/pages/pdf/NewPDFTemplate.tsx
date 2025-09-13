@@ -11,6 +11,7 @@ export const NewPDFTemplate: React.FC = () => {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [linkedFormId, setLinkedFormId] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState<string>('');
 
   // Générer les variables disponibles depuis les formulaires
   const getFormVariables = () => {
@@ -125,7 +126,7 @@ export const NewPDFTemplate: React.FC = () => {
 
       // Créer le nouveau template
       const newTemplate = {
-        name: pdfFile.name.replace('.pdf', ''),
+        name: templateName || pdfFile.name.replace('.pdf', ''),
         description: `Template PDF avec ${fields.length} champs`,
         fields: fields,
         originalPdfUrl: pdfDataUrl,
@@ -161,12 +162,18 @@ export const NewPDFTemplate: React.FC = () => {
       console.log('🔗 Formulaire délié');
     }
   };
+
+  const handleTemplateNameChange = (name: string) => {
+    setTemplateName(name);
+  };
+
   return (
     <PDFTemplateEditor
       onSave={handleSave}
       formVariables={getFormVariables()}
       linkedFormId={linkedFormId}
       onFormLinkChange={handleFormLinkChange}
+      templateName={templateName}
       onTemplateNameChange={handleTemplateNameChange}
     />
   );
