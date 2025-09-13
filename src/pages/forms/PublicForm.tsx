@@ -204,43 +204,52 @@ export const PublicForm: React.FC = () => {
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
             console.log(`✍️ === TRAITEMENT SIGNATURE SPÉCIAL ===`);
             console.log(`✍️ Champ: ${field.label}`);
-            console.log(`✍️ Données originales: ${fieldValue.length} caractères`);
+            console.log(`✍️ ID champ: ${field.id}`);
+            console.log(`✍️ Données signature: ${fieldValue.length} caractères`);
+            console.log(`✍️ Format: ${fieldValue.substring(0, 50)}...`);
             
-            // Valider et optimiser la signature pour le PDF
+            // Validation stricte de la signature
             try {
-              // Vérifier que c'est bien du PNG
-              if (!fieldValue.includes('data:image/png')) {
-                console.log(`✍️ Conversion vers PNG...`);
-                // Convertir vers PNG si ce n'est pas déjà le cas
-                const img = new Image();
-                img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  if (ctx) {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    const pngData = canvas.toDataURL('image/png', 1.0);
-                    pdfSubmissionData[field.label] = pngData;
-                    console.log(`✍️ Signature convertie en PNG: ${pngData.length} caractères`);
-                  }
-                };
-                img.src = fieldValue;
-              } else {
-                console.log(`✍️ Déjà en PNG, utilisation directe`);
-                pdfSubmissionData[field.label] = fieldValue;
+              // Valider le format base64
+              const [header, base64Data] = fieldValue.split(',');
+              if (!header || !base64Data) {
+                throw new Error('Format signature invalide');
               }
               
-              // Pour la DB, toujours un marqueur
-              dbSubmissionData[field.label] = `[SIGNATURE_${field.label}]`;
+              console.log(`✍️ Header validé: ${header}`);
+              console.log(`✍️ Base64 length: ${base64Data.length}`);
+              
+              // Test de décodage base64
+              try {
+                atob(base64Data);
+                console.log(`✍️ ✅ Base64 valide`);
+              } catch (base64Error) {
+                throw new Error('Données base64 corrompues');
+              }
+              
+              // Utiliser la signature telle quelle si elle est valide
+              console.log(`✍️ ✅ Signature validée, utilisation directe`);
+              
+              // IMPORTANT: Utiliser le LABEL du champ comme clé pour le PDF
+              pdfSubmissionData[field.label] = fieldValue;
+              console.log(`✍️ ✅ Signature ajoutée avec clé: "${field.label}"`);
+              
+              // Vérification immédiate
+              if (pdfSubmissionData[field.label]) {
+                console.log(`✍️ ✅ VÉRIFICATION: Signature bien présente dans pdfSubmissionData`);
+              } else {
+                console.error(`✍️ ❌ ERREUR: Signature non trouvée après ajout!`);
+              }
+              
+              // Pour la DB, utiliser un marqueur
+              dbSubmissionData[field.label] = `[SIGNATURE_${field.id}]`;
               
             } catch (signatureError) {
               console.error(`✍️ Erreur traitement signature:`, signatureError);
-              // En cas d'erreur, utiliser les données originales
+              // En cas d'erreur, essayer quand même d'utiliser les données
               pdfSubmissionData[field.label] = fieldValue;
-              dbSubmissionData[field.label] = `[SIGNATURE_ERROR_${field.label}]`;
+              dbSubmissionData[field.label] = `[SIGNATURE_ERROR_${field.id}]`;
+              console.log(`✍️ ⚠️ Signature ajoutée malgré l'erreur de validation`);
             }
           }
           // Pour la base de données : remplacer les images par des marqueurs

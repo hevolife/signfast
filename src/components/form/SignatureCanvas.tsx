@@ -107,29 +107,132 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Convertir en image PNG de haute qualité
+    console.log('✍️ === CONVERSION SIGNATURE EN IMAGE ===');
+    
     try {
-      // Créer un canvas temporaire avec fond blanc pour une meilleure qualité
+      // Vérifier que le canvas contient quelque chose
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('✍️ Contexte canvas non disponible');
+        return;
+      }
+      
+      // Vérifier si le canvas est vide
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const isEmpty = imageData.data.every((value, index) => {
+        // Ignorer le canal alpha (chaque 4ème valeur)
+        if ((index + 1) % 4 === 0) return true;
+        return value === 255; // Blanc
+      });
+      
+      if (isEmpty) {
+        console.log('✍️ Canvas vide, pas de signature à sauvegarder');
+        setIsEmpty(true);
+        onSignatureChange('');
+        return;
+      }
+      
+      console.log('✍️ Canvas contient une signature, conversion...');
+      
+      // Créer un canvas temporaire optimisé pour PDF
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       
       if (tempCtx) {
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
+        // Utiliser une résolution plus élevée pour une meilleure qualité
+        const scale = 2;
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+        
+        // Configurer le contexte pour une meilleure qualité
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        tempCtx.scale(scale, scale);
+        
+        // Fond blanc opaque
+        tempCtx.fillStyle = '#FFFFFF';
+        tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Dessiner la signature par-dessus avec antialiasing
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // Convertir en PNG haute qualité
+        const signature = tempCanvas.toDataURL('image/png', 1.0);
+        console.log('✍️ ✅ Signature convertie (haute qualité):', signature.length, 'caractères');
+        console.log('✍️ Format final:', signature.substring(0, 30) + '...');
+        
+        setIsEmpty(false);
+        onSignatureChange(signature);
+      } else {
+        console.warn('✍️ Contexte temporaire non disponible, fallback...');
+        // Fallback simple
+        const signature = canvas.toDataURL('image/png', 1.0);
+        console.log('✍️ ⚠️ Signature convertie (fallback):', signature.length, 'caractères');
+        setIsEmpty(false);
+        onSignatureChange(signature);
+      }
+    } catch (error) {
+      console.error('✍️ Erreur conversion signature:', error);
+      // Fallback d'urgence
+      try {
+        const signature = canvas.toDataURL('image/png');
+        console.log('✍️ 🆘 Signature convertie (urgence):', signature.length, 'caractères');
+        setIsEmpty(false);
+        onSignatureChange(signature);
+      } catch (fallbackError) {
+        console.error('✍️ Échec total conversion signature:', fallbackError);
+        setIsEmpty(true);
+        onSignatureChange('');
+      }
+    }
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    console.log('✍️ === SAUVEGARDE MANUELLE SIGNATURE ===');
+    
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Vérifier si le canvas contient quelque chose
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const isEmpty = imageData.data.every((value, index) => {
+        if ((index + 1) % 4 === 0) return true;
+        return value === 255;
+      });
+      
+      if (isEmpty) {
+        console.log('✍️ Canvas vide lors de la sauvegarde manuelle');
+        setIsEmpty(true);
+        onSignatureChange('');
+        return;
+      }
+      
+      // Même processus que stopDrawing pour la cohérence
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      if (tempCtx) {
+        const scale = 2;
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+        
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        tempCtx.scale(scale, scale);
         
         // Fond blanc
         tempCtx.fillStyle = '#FFFFFF';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Dessiner la signature par-dessus
+        // Dessiner la signature
         tempCtx.drawImage(canvas, 0, 0);
         
-        // Convertir en PNG de haute qualité
         const signature = tempCanvas.toDataURL('image/png', 1.0);
-        console.log('✍️ Signature convertie:', signature.length, 'caractères');
-        onSignatureChange(signature);
-      } else {
-        // Fallback
+        console.log('✍️ ✅ Signature sauvegardée manuellement:', signature.length, 'caractères');
         const signature = canvas.toDataURL('image/png', 1.0);
         onSignatureChange(signature);
       }
@@ -137,53 +240,8 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       console.error('Erreur conversion signature:', error);
       // Fallback simple
       const signature = canvas.toDataURL('image/png');
-      onSignatureChange(signature);
-    }
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setIsEmpty(true);
-    onSignatureChange('');
-  };
-
-  const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    try {
-      // Même processus que stopDrawing pour la cohérence
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      if (tempCtx) {
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        
-        // Fond blanc
-        tempCtx.fillStyle = '#FFFFFF';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // Dessiner la signature
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        const signature = tempCanvas.toDataURL('image/png', 1.0);
-        console.log('✍️ Signature sauvegardée manuellement:', signature.length, 'caractères');
-        onSignatureChange(signature);
-      } else {
-        const signature = canvas.toDataURL('image/png', 1.0);
-        onSignatureChange(signature);
-      }
-    } catch (error) {
-      console.error('Erreur sauvegarde signature:', error);
-      const signature = canvas.toDataURL('image/png');
-      onSignatureChange(signature);
+      console.error('✍️ Erreur sauvegarde manuelle signature:', error);
+      toast.error('Erreur lors de la sauvegarde de la signature');
     }
   };
 
