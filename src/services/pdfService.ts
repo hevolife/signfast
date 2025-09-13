@@ -167,10 +167,10 @@ export class PDFService {
     const cleaned: Record<string, any> = {};
     
     Object.entries(formData).forEach(([key, value]) => {
-      // Garder les images sans compression pour éviter la corruption
+      // Compresser les images si elles sont trop grosses
       if (typeof value === 'string' && value.startsWith('data:image')) {
         const originalSize = Math.round(value.length / 1024);
-        console.log(`💾 Image ${key}: ${originalSize}KB (sans compression)`);
+        console.log(`💾 Image ${key}: ${originalSize}KB`);
         
         // Si l'image est très grosse (> 2MB), essayer de la compresser intelligemment
         if (value.length > 2000000) {
@@ -183,231 +183,49 @@ export class PDFService {
           } catch (error) {
             console.warn(`💾 ❌ Compression échouée, remplacement par placeholder:`, error);
             cleaned[key] = '[IMAGE_TOO_LARGE_REMOVED]';
-          }
-        } else if (value.length > 1000000) {
-          console.log(`💾 🔧 Image grosse (${originalSize}KB), compression légère...`);
-          try {
-            const compressed = this.intelligentImageCompression(value, 800); // Max 800KB
-            const compressedSize = Math.round(compressed.length / 1024);
-            console.log(`💾 ✅ Compression légère réussie: ${originalSize}KB → ${compressedSize}KB`);
-            cleaned[key] = compressed;
-          } catch (error) {
-            console.warn(`💾 ❌ Compression légère échouée, image originale conservée:`, error);
-            cleaned[key] = value; // Garder l'original en cas d'erreur
-          }
+        // Compresser seulement si > 1MB
+        if (value.length > 1000000) {
+          console.log(`💾 🔧 Compression image (${originalSize}KB)...`);
+          const compressed = this.compressImageSimple(value);
+          const compressedSize = Math.round(compressed.length / 1024);
+          console.log(`💾 ✅ Compression: ${originalSize}KB → ${compressedSize}KB`);
+          cleaned[key] = compressed;
         } else {
-          // Garder l'image originale sans compression
           cleaned[key] = value;
         }
-      } else if (typeof value === 'string' && value.length > 200) {
-        // Tronquer les textes très longs
-        cleaned[key] = value.substring(0, 200) + '...';
       } else {
-        // Garder toutes les autres données normales
         cleaned[key] = value;
       }
     });
     
-    // Calculer la taille totale pour debug
-    const totalSize = JSON.stringify(cleaned).length;
-    const totalSizeKB = Math.round(totalSize / 1024);
-    console.log(`💾 Taille totale des données après nettoyage: ${totalSizeKB}KB`);
-    
-    // Si encore trop gros, mesures d'urgence (seuil très augmenté)
-    if (totalSize > 3000000) { // Plus de 3MB (très tolérant)
-      console.log(`💾 🚨 MESURES D'URGENCE: ${totalSizeKB}KB > 3MB`);
-      
-      // Étape 1: Compresser davantage les images non-signatures les plus grosses
-      Object.keys(cleaned).forEach(key => {
-        const value = cleaned[key];
-        if (typeof value === 'string' && value.startsWith('data:image')) {
-          const isSignature = key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign');
-          
-          if (!isSignature && value.length > 1500000) { // 1.5MB pour images normales
-            // Compression ultra-agressive pour les très grosses images
-            console.log(`💾 Compression ultra-agressive image: ${key} (${Math.round(value.length/1024)}KB)`);
-            try {
-              cleaned[key] = this.intelligentImageCompression(value, 800); // Compresser vers 800KB
-            } catch (error) {
-              console.log(`💾 Compression échouée, remplacement par placeholder: ${key}`);
-              cleaned[key] = '[IMAGE_COMPRESSION_FAILED]';
-            }
-          } else if (isSignature && value.length > 2000000) { // 2MB pour signatures
-            // Compression agressive pour les signatures énormes
-            console.log(`💾 Compression signature énorme: ${key} (${Math.round(value.length/1024)}KB)`);
-            try {
-              cleaned[key] = this.intelligentImageCompression(value, 1000); // Compresser vers 1MB
-            } catch (error) {
-              console.log(`💾 Compression signature échouée, remplacement par placeholder: ${key}`);
-              cleaned[key] = '[SIGNATURE_COMPRESSION_FAILED]';
-            }
-          }
-        }
-      });
-      
-      // Étape 2: Tronquer les textes encore plus
-      Object.keys(cleaned).forEach(key => {
-        const value = cleaned[key];
-        if (typeof value === 'string' && !value.startsWith('data:image') && value.length > 100) {
-          cleaned[key] = value.substring(0, 100) + '...';
-        }
-      });
-      
-      const newSize = JSON.stringify(cleaned).length;
-      const newSizeKB = Math.round(newSize / 1024);
-      console.log(`💾 Taille après mesures d'urgence: ${totalSizeKB}KB → ${newSizeKB}KB`);
-      
-      // Si ENCORE trop gros (très rare maintenant), garder seulement l'essentiel
-      if (newSize > 4000000) { // 4MB - seuil très élevé
-        console.log(`💾 🆘 RÉDUCTION DRASTIQUE: ${newSizeKB}KB > 4MB - cas extrême`);
-        const essentialData: Record<string, any> = {};
-        let signatureCount = 0;
-        let imageCount = 0;
-        for (const key of Object.keys(cleaned)) {
-          if (typeof cleaned[key] === 'string' && cleaned[key].startsWith('data:image')) {
-            if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
-              if (signatureCount < 5 && cleaned[key].length < 1000000) { // Max 5 signatures < 1MB
-                essentialData[key] = cleaned[key]; // Garder sans compression
-                signatureCount++;
-              }
-            } else {
-              // Garder les images normales importantes
-              if (imageCount < 3 && cleaned[key].length < 800000) { // Max 3 images < 800KB
-                essentialData[key] = cleaned[key];
-                imageCount++;
-              }
-            }
-          } else if (typeof cleaned[key] === 'string' && cleaned[key].length <= 50) {
-            // Garder seulement les textes courts
-            essentialData[key] = cleaned[key];
-          } else if (typeof cleaned[key] !== 'string') {
-            // Garder les autres types de données
-            essentialData[key] = cleaned[key];
-          }
-        }
-        
-        const finalSize = JSON.stringify(essentialData).length;
-        console.log(`💾 Taille finale après mesures extrêmes: ${Math.round(finalSize / 1024)}KB`);
-        
-        return essentialData;
-      }
-    }
-    
     return cleaned;
   }
 
-  // COMPRESSION INTELLIGENTE PAR ÉCHANTILLONNAGE (évite les images noires)
-  private static intelligentImageCompression(base64Image: string, maxSizeKB: number): string {
+  // COMPRESSION SIMPLE PAR ÉCHANTILLONNAGE
+  private static compressImageSimple(base64Image: string): string {
     try {
-      console.log(`🔧 Compression intelligente - Cible: ${maxSizeKB}KB`);
-      
       const [header, data] = base64Image.split(',');
       if (!data) throw new Error('Format base64 invalide');
       
-      const originalSizeKB = Math.round(base64Image.length / 1024);
-      console.log(`🔧 Taille originale: ${originalSizeKB}KB`);
+      // Compression simple par échantillonnage (réduire de 50%)
+      const [header, data] = base64Image.split(',');
+      if (!data) return base64Image;
       
-      // Si déjà assez petit, ne pas compresser
-      if (originalSizeKB <= maxSizeKB) {
-        console.log(`🔧 ✅ Image déjà assez petite, pas de compression`);
-        return base64Image;
+      // Prendre 1 caractère sur 2 pour réduire la taille
+      let compressedData = '';
+      for (let i = 0; i < data.length; i += 2) {
+        compressedData += data[i];
       }
       
-      // Utiliser canvas pour une vraie compression d'image
-      return new Promise<string>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error('Canvas context non disponible');
-            
-            // Calculer les nouvelles dimensions pour atteindre la taille cible
-            const targetRatio = Math.sqrt(maxSizeKB / originalSizeKB);
-            const newWidth = Math.floor(img.width * targetRatio);
-            const newHeight = Math.floor(img.height * targetRatio);
-            
-            console.log(`🔧 Redimensionnement: ${img.width}×${img.height} → ${newWidth}×${newHeight}`);
-            
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-            
-            // Dessiner l'image redimensionnée avec qualité optimale
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, newWidth, newHeight);
-            
-            // Essayer différents niveaux de qualité JPEG
-            let quality = 0.8;
-            let compressedImage = canvas.toDataURL('image/jpeg', quality);
-            let compressedSizeKB = Math.round(compressedImage.length / 1024);
-            
-            console.log(`🔧 Première tentative qualité ${quality}: ${compressedSizeKB}KB`);
-            
-            // Ajuster la qualité si nécessaire
-            while (compressedSizeKB > maxSizeKB && quality > 0.3) {
-              quality -= 0.1;
-              compressedImage = canvas.toDataURL('image/jpeg', quality);
-              compressedSizeKB = Math.round(compressedImage.length / 1024);
-              console.log(`🔧 Tentative qualité ${quality.toFixed(1)}: ${compressedSizeKB}KB`);
-            }
-            
-            console.log(`🔧 ✅ Compression canvas terminée: ${originalSizeKB}KB → ${compressedSizeKB}KB (qualité: ${quality.toFixed(1)})`);
-            resolve(compressedImage);
-          } catch (error) {
-            console.error(`🔧 ❌ Erreur compression canvas:`, error);
-            reject(error);
-          }
-        };
-        
-        img.onerror = () => {
-          console.error(`🔧 ❌ Erreur chargement image pour compression`);
-          reject(new Error('Impossible de charger l\'image'));
-        };
-        
-        img.src = base64Image;
-      });
+      const compressedImage = `${header},${compressedData}`;
+      const compressedSize = Math.round(compressedImage.length / 1024);
+      console.log(`💾 ✅ Compression: ${originalSize}KB → ${compressedSize}KB`);
       
+      return compressedImage;
     } catch (error) {
-      console.error(`🔧 ❌ Erreur compression intelligente:`, error);
-      throw error;
+      console.error(`💾 ❌ Erreur compression:`, error);
+      return base64Image; // Retourner l'original en cas d'erreur
     }
-  }
-
-  // GÉNÉRER ET TÉLÉCHARGER LE PDF (uniquement au moment du téléchargement)
-  static async generateAndDownloadPDF(fileName: string): Promise<boolean> {
-    try {
-      console.log('📄 🚀 DÉBUT Génération PDF à la demande:', fileName);
-      
-      // 1. Récupérer les métadonnées
-      console.log('📄 🔍 Étape 1: Récupération métadonnées...');
-      const metadata = await this.getPDFMetadata(fileName);
-      if (!metadata) {
-        console.error('📄 ❌ ÉCHEC: Métadonnées non trouvées pour:', fileName);
-        
-        // Debug: lister tous les PDFs disponibles
-        console.log('📄 🔍 DEBUG: Listage de tous les PDFs disponibles...');
-        const allPDFs = await this.listPDFs();
-        console.log('📄 📋 PDFs disponibles:', allPDFs.map(p => p.fileName));
-        
-        return false;
-      }
-
-      console.log('📄 ✅ Étape 1 OK: Métadonnées récupérées:', {
-        templateName: metadata.template_name,
-        formTitle: metadata.form_title,
-        dataKeys: Object.keys(metadata.form_data || {}),
-        signaturesCount: Object.values(metadata.form_data || {}).filter(v => 
-          typeof v === 'string' && v.startsWith('data:image')
-        ).length,
-      });
-
-      console.log('📄 🔧 Étape 2: Génération du PDF...');
-      let pdfBytes: Uint8Array;
-
-      // 2. Générer le PDF selon le type
-      let templateData = null;
-      
       // Récupérer les métadonnées du template depuis pdf_content
       if (metadata.pdf_content) {
         try {
