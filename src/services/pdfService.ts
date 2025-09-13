@@ -347,88 +347,51 @@ export class PDFService {
   }
 
   // COMPRESSER LES DONNÉES IMAGE POUR ÉVITER LES TIMEOUTS
-  private static async compressImageData(imageData: string): Promise<string> {
+  private static compressImageData(imageData: string): string {
     try {
       const originalSizeKB = Math.round(imageData.length / 1024);
       console.log(`💾 Compression image: ${originalSizeKB}KB`);
       
-      // Compression progressive selon la taille - seuils plus élevés pour éviter les images noires
-      if (imageData.length > 100000) { // Plus de 100KB
+      // Nouvelle approche : compression par échantillonnage base64 pour éviter les images noires
+      if (imageData.length > 100000) { // Plus de 100KB seulement
         console.log(`💾 Compression nécessaire pour ${originalSizeKB}KB...`);
         
-        // Créer un canvas pour compresser l'image
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
+        const [header, base64Data] = imageData.split(',');
         
-        return new Promise<string>((resolve) => {
-          img.onload = () => {
-            // Compression plus douce pour éviter les images noires
-            let maxWidth = 1200;
-            let maxHeight = 900;
-            let quality = 0.8;
-            
-            // Compression plus agressive pour les très gros fichiers
-            if (originalSizeKB > 500) {
-              maxWidth = 800;
-              maxHeight = 600;
-              quality = 0.7;
-              console.log(`💾 Compression agressive: ${maxWidth}x${maxHeight}, qualité ${quality}`);
-            } else if (originalSizeKB > 300) {
-              maxWidth = 1000;
-              maxHeight = 750;
-              quality = 0.75;
-              console.log(`💾 Compression modérée: ${maxWidth}x${maxHeight}, qualité ${quality}`);
-            }
-            
-            let { width, height } = img;
-            
-            if (width > maxWidth || height > maxHeight) {
-              const ratio = Math.min(maxWidth / width, maxHeight / height);
-              width *= ratio;
-              height *= ratio;
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            if (ctx) {
-              // Fond blanc pour éviter la transparence qui peut causer des problèmes
-              ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, 0, width, height);
-              
-              ctx.drawImage(img, 0, 0, width, height);
-              
-              // Essayer PNG d'abord pour préserver la qualité
-              const compressedData = canvas.toDataURL('image/jpeg', quality);
-              const newSizeKB = Math.round(compressedData.length / 1024);
-              console.log(`💾 Image compressée: ${originalSizeKB}KB → ${newSizeKB}KB (${Math.round((1 - newSizeKB/originalSizeKB) * 100)}% de réduction)`);
-              
-              // Si encore trop gros, compression supplémentaire mais plus douce
-              if (newSizeKB > 200) {
-                console.log(`💾 Compression ultra-agressive nécessaire...`);
-                canvas.width = Math.min(width * 0.7, 600);
-                canvas.height = Math.min(height * 0.7, 450);
-                
-                // Redessiner avec fond blanc
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                const ultraCompressed = canvas.toDataURL('image/jpeg', 0.6);
-                const ultraSizeKB = Math.round(ultraCompressed.length / 1024);
-                console.log(`💾 Ultra-compression: ${newSizeKB}KB → ${ultraSizeKB}KB`);
-                resolve(ultraCompressed);
-              } else {
-                resolve(compressedData);
-              }
-            } else {
-              resolve(imageData);
-            }
-          };
-          img.onerror = () => resolve(imageData);
-          img.src = imageData;
-        });
+        if (!base64Data) {
+          return imageData;
+        }
+        
+        // Compression par échantillonnage intelligent
+        let compressionRatio = 0.8; // Commencer plus doux
+        
+        if (originalSizeKB > 500) {
+          compressionRatio = 0.5; // 50% pour les très gros fichiers
+        } else if (originalSizeKB > 300) {
+          compressionRatio = 0.6; // 60% pour les gros fichiers
+        } else if (originalSizeKB > 200) {
+          compressionRatio = 0.7; // 70% pour les fichiers moyens
+        }
+        
+        const targetLength = Math.floor(base64Data.length * compressionRatio);
+        let compressedBase64 = '';
+        const step = base64Data.length / targetLength;
+        
+        for (let i = 0; i < targetLength; i++) {
+          const index = Math.floor(i * step);
+          compressedBase64 += base64Data[index] || 'A';
+        }
+        
+        // Assurer base64 valide
+        while (compressedBase64.length % 4 !== 0) {
+          compressedBase64 += '=';
+        }
+        
+        const result = `${header},${compressedBase64}`;
+        const finalSizeKB = Math.round(result.length / 1024);
+        console.log(`💾 Image compressée par échantillonnage: ${originalSizeKB}KB → ${finalSizeKB}KB`);
+        
+        return result;
       }
       
       console.log(`💾 Image conservée sans compression: ${originalSizeKB}KB`);
