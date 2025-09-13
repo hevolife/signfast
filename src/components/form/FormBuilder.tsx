@@ -371,7 +371,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                           Propriétés du champ
                           </h3>
                         </div>
-                        </h3>
                         <Button
                           variant="ghost"
                           size="sm"
