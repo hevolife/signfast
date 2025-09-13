@@ -294,6 +294,34 @@ export const SuperAdminDashboard: React.FC = () => {
     }
   };
 
+  const getTabColorClasses = (tabName: string, isActive: boolean) => {
+    const colorMap = {
+      users: isActive 
+        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 border-blue-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600 hover:shadow-md',
+      codes: isActive 
+        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 border-purple-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600 hover:shadow-md',
+      affiliates: isActive 
+        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border-green-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600 hover:shadow-md',
+      stats: isActive 
+        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600 hover:shadow-md',
+    };
+    return colorMap[tabName] || colorMap.users;
+  };
+
+  const getTabEmoji = (tabName: string) => {
+    const emojiMap = {
+      users: '👥',
+      codes: '🔑',
+      affiliates: '🤝',
+      stats: '📊',
+    };
+    return emojiMap[tabName] || '⚙️';
+  };
+
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.profile?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -412,58 +440,50 @@ export const SuperAdminDashboard: React.FC = () => {
 
         {/* Onglets */}
         <div className="mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8 justify-center">
+          <div>
+            <nav className="flex space-x-3 justify-center">
               <button
                 onClick={() => setActiveTab('users')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'users'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('users', activeTab === 'users')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4" />
-                  <span>Utilisateurs ({users.length})</span>
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('users')}</span>
+                  </div>
+                  <span className="font-semibold">Utilisateurs ({users.length})</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('codes')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'codes'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('codes', activeTab === 'codes')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <Key className="h-4 w-4" />
-                  <span>Codes Secrets ({secretCodes.length})</span>
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('codes')}</span>
+                  </div>
+                  <span className="font-semibold">Codes Secrets ({secretCodes.length})</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('affiliates')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'affiliates'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliates', activeTab === 'affiliates')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4" />
-                  <span>Affiliations</span>
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('affiliates')}</span>
+                  </div>
+                  <span className="font-semibold">Affiliations</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('stats')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'stats'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('stats', activeTab === 'stats')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <BarChart3 className="h-4 w-4" />
-                  <span>Statistiques</span>
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('stats')}</span>
+                  </div>
+                  <span className="font-semibold">Statistiques</span>
                 </div>
               </button>
             </nav>
