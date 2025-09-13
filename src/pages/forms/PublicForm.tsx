@@ -187,6 +187,9 @@ export const PublicForm: React.FC = () => {
       console.log(`📤 ===== SOUMISSION FORMULAIRE =====`);
       console.log(`📤 FormData avant traitement:`, formData);
       
+      // Traitement spécial pour les signatures
+      console.log(`📤 === TRAITEMENT SIGNATURES ===`);
+      
       // Nettoyer les données pour la base de données (remplacer les images par des marqueurs)
       form.fields?.forEach(field => {
         const fieldValue = formData[field.id];
@@ -197,16 +200,59 @@ export const PublicForm: React.FC = () => {
         );
         
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
+          // Traitement spécial pour les signatures
+          if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+            console.log(`✍️ === TRAITEMENT SIGNATURE SPÉCIAL ===`);
+            console.log(`✍️ Champ: ${field.label}`);
+            console.log(`✍️ Données originales: ${fieldValue.length} caractères`);
+            
+            // Valider et optimiser la signature pour le PDF
+            try {
+              // Vérifier que c'est bien du PNG
+              if (!fieldValue.includes('data:image/png')) {
+                console.log(`✍️ Conversion vers PNG...`);
+                // Convertir vers PNG si ce n'est pas déjà le cas
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    const pngData = canvas.toDataURL('image/png', 1.0);
+                    pdfSubmissionData[field.label] = pngData;
+                    console.log(`✍️ Signature convertie en PNG: ${pngData.length} caractères`);
+                  }
+                };
+                img.src = fieldValue;
+              } else {
+                console.log(`✍️ Déjà en PNG, utilisation directe`);
+                pdfSubmissionData[field.label] = fieldValue;
+              }
+              
+              // Pour la DB, toujours un marqueur
+              dbSubmissionData[field.label] = `[SIGNATURE_${field.label}]`;
+              
+            } catch (signatureError) {
+              console.error(`✍️ Erreur traitement signature:`, signatureError);
+              // En cas d'erreur, utiliser les données originales
+              pdfSubmissionData[field.label] = fieldValue;
+              dbSubmissionData[field.label] = `[SIGNATURE_ERROR_${field.label}]`;
+            }
+          }
           // Pour la base de données : remplacer les images par des marqueurs
-          if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+          else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
             dbSubmissionData[field.label] = `[IMAGE_UPLOADED_${field.label}]`;
             console.log(`📤 Image remplacée par marqueur pour DB: ${field.label}`);
+            // Pour le PDF : garder les données complètes
+            pdfSubmissionData[field.label] = fieldValue;
           } else {
             dbSubmissionData[field.label] = fieldValue;
+            pdfSubmissionData[field.label] = fieldValue;
           }
-          
-          // Pour le PDF : garder les données complètes
-          pdfSubmissionData[field.label] = fieldValue;
           
           // Debug pour les champs image/fichier
           if (field.type === 'file' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
@@ -234,15 +280,20 @@ export const PublicForm: React.FC = () => {
               conditionalFields.forEach(conditionalField => {
                 const conditionalValue = formData[conditionalField.id];
                 if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
-                  // Pour la base de données
-                  if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                  // Traitement spécial pour les signatures conditionnelles
+                  if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                    console.log(`✍️ Signature conditionnelle: ${conditionalField.label}`);
+                    dbSubmissionData[conditionalField.label] = `[SIGNATURE_${conditionalField.label}]`;
+                    pdfSubmissionData[conditionalField.label] = conditionalValue;
+                  }
+                  // Pour les autres images
+                  else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
                     dbSubmissionData[conditionalField.label] = `[IMAGE_UPLOADED_${conditionalField.label}]`;
+                    pdfSubmissionData[conditionalField.label] = conditionalValue;
                   } else {
                     dbSubmissionData[conditionalField.label] = conditionalValue;
+                    pdfSubmissionData[conditionalField.label] = conditionalValue;
                   }
-                  
-                  // Pour le PDF
-                  pdfSubmissionData[conditionalField.label] = conditionalValue;
                   console.log(`📤 Champ conditionnel ajouté: "${conditionalField.label}" = ${conditionalValue}`);
                 }
               });
@@ -269,9 +320,12 @@ export const PublicForm: React.FC = () => {
       const imagesInPdfData = Object.entries(pdfSubmissionData).filter(([key, value]) => 
         typeof value === 'string' && value.startsWith('data:image')
       );
-      console.log(`📤 Images dans pdfSubmissionData: ${imagesInPdfData.length}`);
+      console.log(`📤 === IMAGES FINALES DANS PDF DATA ===`);
+      console.log(`📤 Nombre total d'images: ${imagesInPdfData.length}`);
       imagesInPdfData.forEach(([key, value], index) => {
-        console.log(`📤 Image ${index + 1}: clé="${key}", taille=${typeof value === 'string' ? value.length : 0}`);
+        const isSignature = key.toLowerCase().includes('signature') || 
+                           form.fields.some(f => f.label === key && f.type === 'signature');
+        console.log(`📤 Image ${index + 1}: clé="${key}", type=${isSignature ? 'SIGNATURE' : 'IMAGE'}, taille=${typeof value === 'string' ? value.length : 0}`);
       });
 
       // Sauvegarder dans la base avec les données allégées
