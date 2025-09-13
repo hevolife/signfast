@@ -394,9 +394,6 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               </div>
             )}
           </div>
-            Informations du champ
-          </h4>
-        </div>
       </CardContent>
     </Card>
   );
