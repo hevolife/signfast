@@ -103,97 +103,87 @@ export const useSubscription = () => {
       let secretCodeExpiresAt = null;
       
       try {
+        console.log('🔑 Recherche codes secrets pour userId:', targetUserId);
+        
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
           .select(`
-            expires_at,
-            activated_at,
+            id,
+            user_id,
             code_id,
-            secret_codes (
+            activated_at,
+            expires_at,
+            secret_codes!inner (
+              id,
               type,
               code,
-              is_active
+              is_active,
+              description
             )
           `)
           .eq('user_id', targetUserId)
+          .eq('secret_codes.is_active', true)
           .order('activated_at', { ascending: false });
 
-        console.log('🔑 Codes secrets pour userId', targetUserId, ':', secretCodeData?.length || 0);
-        console.log('🔑 Erreur requête:', secretCodeError);
-        console.log('🔑 Données brutes:', secretCodeData);
+        if (secretCodeError) {
+          console.error('🔑 Erreur requête codes secrets:', secretCodeError);
+        } else {
+          console.log('🔑 Codes secrets trouvés:', secretCodeData?.length || 0);
+          console.log('🔑 Données complètes:', secretCodeData);
+        }
         
         if (secretCodeData && secretCodeData.length > 0) {
-          console.log('🔑 Détails des codes trouvés:');
-          secretCodeData.forEach((code, index) => {
-            const secretCodeInfo = Array.isArray(code.secret_codes) ? code.secret_codes[0] : code.secret_codes;
-            console.log(`🔑 Code ${index + 1}:`, {
-              type: secretCodeInfo?.type,
-              code: secretCodeInfo?.code,
-              is_active: secretCodeInfo?.is_active,
-              expires_at: code.expires_at,
-              activated_at: code.activated_at,
-              isLifetime: secretCodeInfo?.type === 'lifetime' && !code.expires_at,
-              isValidMonthly: secretCodeInfo?.type === 'monthly' && code.expires_at && new Date(code.expires_at) > new Date()
-            });
-          });
-          
           // Vérifier chaque code pour trouver un code actif
           for (const codeData of secretCodeData) {
-            const secretCodeInfo = Array.isArray(codeData.secret_codes) ? codeData.secret_codes[0] : codeData.secret_codes;
-            const codeType = secretCodeInfo?.type;
+            const secretCodeInfo = codeData.secret_codes;
+            
+            if (!secretCodeInfo) {
+              console.log('🔑 ❌ Pas de données secret_codes pour ce code');
+              continue;
+            }
+            
+            const codeType = secretCodeInfo.type;
             const expiresAt = codeData.expires_at;
             
-            console.log('🔑 Vérification code:', { 
-              type: codeType, 
+            console.log('🔑 Analyse code:', {
+              code: secretCodeInfo.code,
+              type: codeType,
+              is_active: secretCodeInfo.is_active,
               expires_at: expiresAt,
-              code: secretCodeInfo?.code,
-              is_active: secretCodeInfo?.is_active
+              activated_at: codeData.activated_at
             });
             
-            // Vérifier que le code est actif (normalement déjà filtré par la requête)
-            if (!secretCodeInfo?.is_active) {
-             console.log('🔑 ❌ Code inactif dans secret_codes');
-             continue;
-           }
-           
-            // Un code est actif si :
-            // - C'est un code à vie (expires_at est null)
-            // - OU c'est un code mensuel non expiré
-            const isLifetime = codeType === 'lifetime' && !expiresAt;
-            const isValidMonthly = codeType === 'monthly' && expiresAt && new Date(expiresAt) > new Date();
+            // Vérifier si le code est valide
+            const now = new Date();
+            const isLifetime = codeType === 'lifetime';
+            const isValidMonthly = codeType === 'monthly' && (!expiresAt || new Date(expiresAt) > now);
+            const isValid = isLifetime || isValidMonthly;
             
-            console.log('🔑 État du code:', { 
-              isLifetime, 
+            console.log('🔑 Validation code:', {
+              isLifetime,
               isValidMonthly,
-              now: new Date().toISOString(),
-              expiresAt 
+              isValid,
+              now: now.toISOString(),
+              expiresAt
             });
             
-            if (isLifetime || isValidMonthly) {
+            if (isValid) {
               hasActiveSecretCode = true;
               secretCodeType = codeType;
               secretCodeExpiresAt = expiresAt;
-              console.log('🔑 ✅ CODE SECRET ACTIF DÉTECTÉ:', {
+              
+              console.log('🔑 ✅ CODE SECRET VALIDE TROUVÉ:', {
                 type: codeType,
                 isLifetime,
-                expiresAt: expiresAt || 'jamais',
-                code: secretCodeInfo?.code
+                expiresAt: expiresAt || 'jamais'
               });
-              break; // Prendre le premier code actif trouvé
-            } else {
-              console.log('🔑 ❌ Code inactif ou expiré');
+              
+              // Prendre le premier code valide (codes triés par date d'activation desc)
+              break;
             }
-          }
-          
-          // Si aucun code actif trouvé mais qu'il y a des codes, c'est qu'ils sont expirés
-          if (!hasActiveSecretCode && secretCodeData.length > 0) {
-            console.log('🔑 ⚠️ Codes trouvés mais tous expirés ou inactifs');
           }
         } else {
           console.log('🔑 Aucun code secret trouvé pour userId:', targetUserId);
-          if (secretCodeError) {
-            console.error('🔑 Erreur requête codes secrets:', secretCodeError);
-          }
         }
       } catch (secretCodeError) {
         console.error('🔑 Erreur codes secrets:', secretCodeError);
