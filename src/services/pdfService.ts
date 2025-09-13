@@ -29,82 +29,10 @@ export class PDFService {
       console.log('💾 Sauvegarde PDF pour le propriétaire du formulaire:', targetUserId);
 
       // Vérifier les limites avant de sauvegarder
-      let currentPdfsCount = 0;
-      try {
-        currentPdfsCount = await this.countPDFsForUser(targetUserId);
-      } catch (error) {
-        console.warn('💾 Impossible de compter les PDFs, on continue:', error);
-      }
-      
-      // Vérifier si l'utilisateur est abonné (via les données Supabase)
-      let isSubscribed = false;
-      try {
-        // Vérifier l'abonnement Stripe
-        const { data: stripeSubscription } = await supabase
-          .from('stripe_user_subscriptions')
-          .select('subscription_status')
-          .eq('customer_id', targetUserId)
-          .maybeSingle();
-        
-        const hasStripeAccess = stripeSubscription && 
-                               (stripeSubscription.subscription_status === 'active' || 
-                                stripeSubscription.subscription_status === 'trialing');
-        
-        // Vérifier les codes secrets
-        const { data: secretCodeData, error: secretError } = await supabase
-          .from('user_secret_codes')
-          .select('expires_at, secret_codes!inner(type, is_active)')
-          .eq('user_id', targetUserId)
-          .eq('secret_codes.is_active', true);
-
-        if (secretError) {
-          console.warn('💾 Erreur vérification codes secrets:', secretError);
-        }
-
-        let hasActiveSecretCode = false;
-        if (secretCodeData && secretCodeData.length > 0) {
-          // Vérifier chaque code
-          for (const codeData of secretCodeData) {
-            const codeType = codeData.secret_codes?.type;
-            const expiresAt = codeData.expires_at;
-            
-            if (codeType === 'lifetime') {
-              hasActiveSecretCode = true;
-              break;
-            } else if (codeType === 'monthly') {
-              if (!expiresAt || new Date(expiresAt) > new Date()) {
-                hasActiveSecretCode = true;
-                break;
-              }
-            }
-          }
-        }
-        
-        // L'utilisateur est considéré comme abonné s'il a un abonnement Stripe OU un code secret actif
-        isSubscribed = hasStripeAccess || hasActiveSecretCode;
-        
-        console.log('💾 Vérification abonnement:', {
-          hasStripeAccess,
-          hasActiveSecretCode,
-          isSubscribed,
-          currentPdfsCount,
-          limit: stripeConfig.freeLimits.maxSavedPdfs
-        });
-      } catch (error) {
-        console.warn('💾 Erreur vérification abonnement:', error);
-        isSubscribed = false;
-      }
-      
-      // Vérifier les limites pour les utilisateurs gratuits
-      if (!isSubscribed && currentPdfsCount >= stripeConfig.freeLimits.maxSavedPdfs) {
-        console.warn('💾 Limite de PDFs sauvegardés atteinte pour utilisateur gratuit');
-        throw new Error(`Limite de ${stripeConfig.freeLimits.maxSavedPdfs} PDFs sauvegardés atteinte. Passez Pro pour un stockage illimité.`);
-      }
-      
       console.log('💾 Sauvegarde métadonnées PDF:', fileName);
       
       // Nettoyer les données du formulaire pour éviter les problèmes de quota
-      const cleanFormData = await this.cleanFormDataForStorage(metadata.formData);
+      const cleanFormData = this.cleanFormDataForStorage(metadata.formData);
       
       // Stocker seulement l'ID du template pour éviter les gros volumes
       let templateId = null;
