@@ -207,10 +207,10 @@ export class PDFService {
       console.log('📄 ✅ Étape 1 OK: Métadonnées récupérées:', {
         templateName: metadata.template_name,
         formTitle: metadata.form_title,
-        hasTemplateData: !!metadata.form_data?._template,
-        hasTemplateId: !!metadata.form_data?._template?.templateId,
-        hasTemplateFields: !!metadata.form_data?._template?.templateFields?.length,
-        hasTemplatePdfContent: !!metadata.form_data?._template?.templatePdfContent,
+        dataKeys: Object.keys(metadata.form_data || {}),
+        signaturesCount: Object.values(metadata.form_data || {}).filter(v => 
+          typeof v === 'string' && v.startsWith('data:image')
+        ).length,
       });
 
       console.log('📄 🔧 Étape 2: Génération du PDF...');

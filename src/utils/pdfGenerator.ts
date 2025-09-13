@@ -143,92 +143,85 @@ export class PDFGenerator {
   private static getFieldValue(field: PDFField, data: Record<string, any>): string {
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
     
-    console.log(`🔍 === RECHERCHE VARIABLE ===`);
-    console.log(`🔍 Variable recherchée: "${variableName}"`);
-    console.log(`🔍 Type de champ: ${field.type}`);
-    console.log(`🔍 Toutes les clés disponibles:`, Object.keys(data));
-    console.log(`🔍 Données complètes:`, data);
+    console.log(`🔍 === RECHERCHE VARIABLE SIGNATURE ===`);
+    console.log(`🔍 Variable template: "${variableName}"`);
+    console.log(`🔍 Type champ: ${field.type}`);
+    console.log(`🔍 Clés disponibles:`, Object.keys(data));
     
-    let value = data[variableName];
-    
-    // Recherche étendue si pas trouvé
-    if (!value) {
-      const originalKeys = Object.keys(data);
+    // Pour les signatures, recherche spéciale et prioritaire
+    if (field.type === 'signature') {
+      console.log(`✍️ === RECHERCHE SIGNATURE SPÉCIALE ===`);
       
-      // 1. Recherche exacte
-      let matchingKey = originalKeys.find(key => key === variableName);
-      console.log(`🔍 Recherche exacte "${variableName}":`, matchingKey ? `trouvé (${matchingKey})` : 'non trouvé');
+      // 1. Recherche directe par variable
+      let signatureValue = data[variableName];
+      console.log(`✍️ 1. Recherche directe "${variableName}":`, signatureValue ? 'TROUVÉ' : 'NON TROUVÉ');
       
-      // 2. Recherche insensible à la casse
-      if (!matchingKey) {
-        matchingKey = originalKeys.find(key => 
-          key.toLowerCase() === variableName.toLowerCase()
-        );
-        console.log(`🔍 Recherche insensible casse "${variableName}":`, matchingKey ? `trouvé (${matchingKey})` : 'non trouvé');
-      }
-      
-      // 3. Recherche normalisée (accents, espaces, etc.)
-      if (!matchingKey) {
-        matchingKey = originalKeys.find(key => 
-          this.normalizeKey(key) === this.normalizeKey(variableName)
-        );
-        console.log(`🔍 Recherche normalisée "${this.normalizeKey(variableName)}":`, matchingKey ? `trouvé (${matchingKey})` : 'non trouvé');
-      }
-      
-      // 4. Recherche spéciale pour signatures (par type de champ)
-      if (!matchingKey && field.type === 'signature') {
-        console.log(`🔍 === RECHERCHE SPÉCIALE SIGNATURE ===`);
-        
-        // Chercher toutes les clés qui contiennent "signature"
-        const signatureKeys = originalKeys.filter(key => 
+      // 2. Recherche par toutes les clés contenant "signature"
+      if (!signatureValue) {
+        const signatureKeys = Object.keys(data).filter(key => 
           key.toLowerCase().includes('signature') ||
-          key.toLowerCase().includes('sign') ||
-          this.normalizeKey(key).includes('signature')
+          key.toLowerCase().includes('sign')
         );
-        console.log(`🔍 Clés contenant "signature":`, signatureKeys);
+        console.log(`✍️ 2. Clés signature trouvées:`, signatureKeys);
         
-        // Prendre la première signature trouvée
-        if (signatureKeys.length > 0) {
-          matchingKey = signatureKeys[0];
-          console.log(`🔍 ✅ Signature trouvée via recherche spéciale: ${matchingKey}`);
-        }
-        
-        // Recherche par valeur (chercher les données qui ressemblent à des signatures)
-        if (!matchingKey) {
-          const signatureDataKeys = originalKeys.filter(key => {
-            const val = data[key];
-            return typeof val === 'string' && val.startsWith('data:image');
-          });
-          console.log(`🔍 Clés avec données image (potentielles signatures):`, signatureDataKeys);
-          
-          if (signatureDataKeys.length > 0) {
-            matchingKey = signatureDataKeys[0];
-            console.log(`🔍 ✅ Signature trouvée via données image: ${matchingKey}`);
+        for (const key of signatureKeys) {
+          const val = data[key];
+          if (typeof val === 'string' && val.startsWith('data:image')) {
+            signatureValue = val;
+            console.log(`✍️ ✅ Signature trouvée via clé: "${key}"`);
+            break;
           }
         }
       }
       
+      // 3. Recherche par toutes les images disponibles (fallback)
+      if (!signatureValue) {
+        const imageKeys = Object.keys(data).filter(key => {
+          const val = data[key];
+          return typeof val === 'string' && val.startsWith('data:image');
+        });
+        console.log(`✍️ 3. Images disponibles:`, imageKeys);
+        
+        if (imageKeys.length > 0) {
+          signatureValue = data[imageKeys[0]];
+          console.log(`✍️ ✅ Signature trouvée via première image: "${imageKeys[0]}"`);
+        }
+      }
+      
+      if (signatureValue) {
+        console.log(`✍️ ✅ SIGNATURE FINALE TROUVÉE (${signatureValue.length} chars)`);
+        return signatureValue;
+      } else {
+        console.log(`✍️ ❌ AUCUNE SIGNATURE TROUVÉE`);
+        return '';
+      }
+    }
+    
+    // Pour les autres types de champs, recherche normale
+    let value = data[variableName];
+    
+    if (!value) {
+      const originalKeys = Object.keys(data);
+      
+      // Recherche insensible à la casse
+      let matchingKey = originalKeys.find(key => 
+        key.toLowerCase() === variableName.toLowerCase()
+      );
+      
+      if (!matchingKey) {
+        matchingKey = originalKeys.find(key => 
+          this.normalizeKey(key) === this.normalizeKey(variableName)
+        );
+      }
+      
       if (matchingKey) {
         value = data[matchingKey];
-        console.log(`🔍 ✅ TROUVÉ via clé: "${matchingKey}"`);
-        console.log(`🔍 Type de valeur:`, typeof value);
-        console.log(`🔍 Est une image:`, typeof value === 'string' && value.startsWith('data:image'));
-        if (typeof value === 'string' && value.startsWith('data:image')) {
-          console.log(`🔍 Taille image: ${value.length} caractères`);
-        }
-      } else {
-        console.log(`🔍 ❌ Variable "${variableName}" NON TROUVÉE`);
-        console.log(`🔍 Suggestions de clés similaires:`, originalKeys.filter(key => 
-          key.toLowerCase().includes(variableName.toLowerCase()) ||
-          variableName.toLowerCase().includes(key.toLowerCase())
-        ));
+        console.log(`🔍 ✅ Trouvé via clé: "${matchingKey}"`);
       }
     }
     
     const finalValue = value || field.placeholder || '';
-    console.log(`🔍 === VALEUR FINALE ===`);
-    console.log(`🔍 Variable: ${variableName}`);
-    console.log(`🔍 Valeur: ${typeof finalValue === 'string' && finalValue.startsWith('data:image') ? 'IMAGE_DATA' : finalValue}`);
+    console.log(`🔍 Valeur finale pour "${variableName}":`, typeof finalValue === 'string' && finalValue.startsWith('data:image') ? 'IMAGE_DATA' : finalValue);
     
     return finalValue;
   }
