@@ -338,8 +338,8 @@ export const Settings: React.FC = () => {
 
         {/* Onglets */}
         <div className="mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-3 justify-center">
+          <div>
+            <nav className="flex space-x-3 justify-center">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
