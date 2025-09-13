@@ -21,6 +21,16 @@ export const useLimits = () => {
   const [savedPdfsCount, setSavedPdfsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Debug pour vérifier l'état de l'abonnement
+  useEffect(() => {
+    console.log('🔍 useLimits - État abonnement:', {
+      isSubscribed,
+      formsCount: forms.length,
+      templatesCount: templates.length,
+      savedPdfsCount
+    });
+  }, [isSubscribed, forms.length, templates.length, savedPdfsCount]);
+
   const refreshLimits = async () => {
     try {
       const count = await PDFService.countPDFs();
@@ -41,6 +51,14 @@ export const useLimits = () => {
   const getFormsLimits = (): LimitData => {
     const current = forms.length;
     const max = isSubscribed ? Infinity : stripeConfig.freeLimits.maxForms;
+    
+    console.log('🔍 getFormsLimits:', {
+      isSubscribed,
+      current,
+      max,
+      canCreate: isSubscribed || current < max
+    });
+    
     return {
       current,
       max,
@@ -51,6 +69,14 @@ export const useLimits = () => {
   const getPdfTemplatesLimits = (): LimitData => {
     const current = templates.length;
     const max = isSubscribed ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
+    
+    console.log('🔍 getPdfTemplatesLimits:', {
+      isSubscribed,
+      current,
+      max,
+      canCreate: isSubscribed || current < max
+    });
+    
     return {
       current,
       max,

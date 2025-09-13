@@ -120,7 +120,6 @@ export const useSubscription = () => {
             )
           `)
           .eq('user_id', targetUserId)
-          .or('expires_at.is.null,expires_at.gt.now()')
           .order('activated_at', { ascending: false });
 
         console.log('🔑 Codes secrets pour userId', targetUserId, ':', secretCodeData?.length || 0);
