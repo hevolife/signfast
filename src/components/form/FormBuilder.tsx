@@ -231,35 +231,43 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
           {/* Barre d'outils multi-sélection */}
           {isMultiSelectMode && selectedFields.size > 0 && !showPreview && (
-            <Card className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <Card className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
               <CardContent className="p-4">
-                <div className="flex flex-wrap items-center gap-2 lg:gap-4">
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                <div className="flex flex-wrap items-center gap-3 lg:gap-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">{selectedFields.size}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">
                     {selectedFields.size} champ(s) sélectionné(s)
                   </span>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={copyLabelsToPlaceholders}
-                      className="text-xs bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
+                      className="text-xs bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300 border border-green-200 dark:border-green-800 shadow-sm hover:shadow-md transition-all"
                     >
+                      📋
                       Copier libellés → placeholders
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => bulkSetRequired(true)}
-                      className="text-xs bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300"
+                      className="text-xs bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 hover:from-orange-200 hover:to-red-200 dark:from-orange-900/30 dark:to-red-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800 shadow-sm hover:shadow-md transition-all"
                     >
+                      ✅
                       Marquer obligatoires
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => bulkSetRequired(false)}
-                      className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                      className="text-xs bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 hover:from-gray-200 hover:to-slate-200 dark:from-gray-800 dark:to-slate-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
                     >
+                      ⭕
                       Marquer optionnels
                     </Button>
                   </div>
@@ -323,15 +331,22 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 {/* Palette mobile - overlay */}
                 {showMobilePalette && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-                    <div className="absolute bottom-16 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-xl max-h-[60vh] overflow-y-auto">
-                      <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl max-h-[60vh] overflow-y-auto border-t-4 border-blue-500">
+                      <div className="flex justify-between items-center p-4 border-b border-blue-200 dark:border-blue-700">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-lg">🎨</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300">
                           Ajouter un champ
+                          </h3>
+                        </div>
                         </h3>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowMobilePalette(false)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -346,15 +361,22 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 {/* Propriétés mobile - overlay */}
                 {showMobileProperties && selectedFieldData && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-                    <div className="absolute bottom-16 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-xl max-h-[60vh] overflow-y-auto">
-                      <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-t-xl max-h-[60vh] overflow-y-auto border-t-4 border-purple-500">
+                      <div className="flex justify-between items-center p-4 border-b border-purple-200 dark:border-purple-700">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-lg">⚙️</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
                           Propriétés du champ
+                          </h3>
+                        </div>
                         </h3>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowMobileProperties(false)}
+                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:hover:bg-purple-800"
                         >
                           <X className="h-4 w-4" />
                         </Button>
