@@ -230,12 +230,10 @@ export class PDFService {
       // Si ENCORE trop gros, mesures extrêmes
       if (newSize > 600000) {
         console.log(`💾 🆘 MESURES EXTRÊMES: ${newSizeKB}KB encore trop gros`);
-      if (totalSize > 600000) { // Plus de 600KB
-        console.log(`💾 🚨 COMPRESSION D'URGENCE: ${totalSizeKB}KB > 600KB`);
         const essentialData: Record<string, any> = {};
         let signatureCount = 0;
         for (const key of Object.keys(cleaned)) {
-        Object.entries(cleaned).forEach(([key, value]) => {
+          const value = cleaned[key];
           if (typeof value === 'string' && value.startsWith('data:image')) {
             if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
               if (signatureCount < 2) { // Max 2 signatures
@@ -250,7 +248,7 @@ export class PDFService {
             // Garder les autres types de données
             essentialData[key] = value;
           }
-        });
+        }
         
         const finalSize = JSON.stringify(essentialData).length;
         console.log(`💾 Taille finale après mesures extrêmes: ${Math.round(finalSize / 1024)}KB`);
@@ -263,7 +261,7 @@ export class PDFService {
   }
 
   // COMPRESSION ULTRA-AGRESSIVE POUR LES SIGNATURES
-  private static async ultraCompressSignature(signatureData: string): Promise<string> {
+  private static ultraCompressSignature(signatureData: string): string {
     try {
       console.log(`💾 Ultra-compression signature: ${Math.round(signatureData.length / 1024)}KB`);
       
@@ -296,74 +294,13 @@ export class PDFService {
         };
         img.onerror = () => {
           console.warn('💾 Erreur ultra-compression, signature supprimée');
-          resolve(signatureData);
+          resolve('[SIGNATURE_COMPRESSION_FAILED]');
         };
         img.src = signatureData;
       });
     } catch (error) {
       console.warn('💾 Erreur ultra-compression signature:', error);
-      return signatureData;
-    }
-  }
-
-  // COMPRESSION AGRESSIVE POUR LES AUTRES IMAGES
-  private static async aggressiveImageCompression(imageData: string): Promise<string> {
-    try {
-      console.log(`💾 Compression agressive image: ${Math.round(imageData.length / 1024)}KB`);
-      
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      return new Promise<string>((resolve) => {
-        img.onload = () => {
-          // Taille très réduite pour les images non-signatures
-          canvas.width = 400;
-          canvas.height = 300;
-          
-          if (ctx) {
-            // Fond blanc
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, 400, 300);
-            
-            // Calculer les proportions pour centrer l'image
-            const imgRatio = img.width / img.height;
-            const canvasRatio = canvas.width / canvas.height;
-            
-            let drawWidth = canvas.width;
-            let drawHeight = canvas.height;
-            let offsetX = 0;
-            let offsetY = 0;
-            
-            if (imgRatio > canvasRatio) {
-              drawHeight = canvas.width / imgRatio;
-              offsetY = (canvas.height - drawHeight) / 2;
-            } else {
-              drawWidth = canvas.height * imgRatio;
-              offsetX = (canvas.width - drawWidth) / 2;
-            }
-            
-            // Dessiner l'image centrée
-            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-            
-            // Compression JPEG avec qualité modérée
-            const compressed = canvas.toDataURL('image/jpeg', 0.7);
-            const finalSizeKB = Math.round(compressed.length / 1024);
-            console.log(`💾 Image compressée: ${Math.round(imageData.length / 1024)}KB → ${finalSizeKB}KB`);
-            resolve(compressed);
-          } else {
-            resolve(imageData);
-          }
-        };
-        img.onerror = () => {
-          console.warn('💾 Erreur compression agressive, image conservée');
-          resolve(imageData);
-        };
-        img.src = imageData;
-      });
-    } catch (error) {
-      console.warn('💾 Erreur compression agressive:', error);
-      return imageData;
+      return '[SIGNATURE_COMPRESSION_ERROR]';
     }
   }
 
@@ -442,7 +379,7 @@ export class PDFService {
                 resolve(ultraCompressed);
               } else {
                 resolve(compressedData);
-              cleaned[key] = await this.ultraCompressSignature(value);
+              }
             } else {
               resolve(imageData);
             }
@@ -567,12 +504,11 @@ export class PDFService {
       } else {
         console.log('📄 📝 Génération PDF simple - template non disponible');
         console.log('📄 Debug template data:', {
-              // Compression très agressive des autres images
-              console.log(`💾 Compression très agressive image: ${key}`);
-              cleaned[key] = await this.aggressiveImageCompression(value);
+          hasTemplateData: !!templateData,
+          hasTemplateId: !!templateData?.templateId,
           hasFields: !!templateData?.templateFields?.length,
           hasContent: !!templateData?.templatePdfContent
-        }
+        });
         
         
         // Nettoyer les données du formulaire
@@ -863,11 +799,11 @@ export class PDFService {
             doc.addPage();
             yPosition = 20;
           }
-          for (const [key, value] of Object.entries(cleaned)) {
+        }
       });
       
       return new Uint8Array(doc.output('arraybuffer'));
-                  essentialData[key] = await this.ultraCompressSignature(value);
+    } catch (error) {
       console.error('🎯 Erreur génération PDF simple:', error);
       throw error;
     }
@@ -889,7 +825,7 @@ export class PDFService {
       // Vérifier si on est en mode impersonation
       const impersonationData = localStorage.getItem('admin_impersonation');
       if (impersonationData) {
-          }
+        try {
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
           console.log('💾 🎭 Mode impersonation: nettoyage PDFs pour', data.target_email);
