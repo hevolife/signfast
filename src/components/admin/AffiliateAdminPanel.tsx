@@ -31,13 +31,19 @@ export const AffiliateAdminPanel: React.FC = () => {
     setNewCommissionRate(currentRate);
   };
 
-  const handleSaveCommission = async (userId: string) => {
+  const handleSaveCommission = async (programId: string) => {
     if (newCommissionRate < 0 || newCommissionRate > 50) {
       toast.error('Le taux de commission doit être entre 0% et 50%');
       return;
     }
 
-    const success = await updateCommissionRate(userId, newCommissionRate);
+    const program = filteredPrograms.find(p => p.id === programId);
+    if (!program) {
+      toast.error('Programme non trouvé');
+      return;
+    }
+
+    const success = await updateCommissionRate(program.user_id, newCommissionRate);
     
     if (success) {
       toast.success('Taux de commission mis à jour !');
@@ -170,7 +176,7 @@ export const AffiliateAdminPanel: React.FC = () => {
           </Card>
         ) : (
           filteredPrograms.map((program) => (
-            <Card key={program.user_id} className="hover:shadow-md transition-shadow">
+            <Card key={program.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                   {/* Informations utilisateur */}
@@ -223,7 +229,7 @@ export const AffiliateAdminPanel: React.FC = () => {
 
                   {/* Gestion de la commission */}
                   <div className="flex-shrink-0 lg:ml-6">
-                    {editingUserId === program.user_id ? (
+                    {editingUserId === program.id ? (
                       <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                         <Percent className="h-4 w-4 text-gray-500" />
                         <Input
@@ -238,7 +244,7 @@ export const AffiliateAdminPanel: React.FC = () => {
                         <span className="text-sm text-gray-600">%</span>
                         <Button
                           size="sm"
-                          onClick={() => handleSaveCommission(program.user_id)}
+                          onClick={() => handleSaveCommission(program.id)}
                           className="bg-green-600 hover:bg-green-700 text-white"
                         >
                           <Save className="h-3 w-3" />
@@ -263,7 +269,7 @@ export const AffiliateAdminPanel: React.FC = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleEditCommission(program.user_id, program.commission_rate)}
+                          onClick={() => handleEditCommission(program.id, program.commission_rate)}
                           className="flex items-center space-x-1 text-blue-600 hover:text-blue-700"
                         >
                           <Edit className="h-3 w-3" />
