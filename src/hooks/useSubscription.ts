@@ -130,7 +130,7 @@ export const useSubscription = () => {
               .select('*')
               .eq('id', userCode.code_id)
               .eq('is_active', true)
-              .single();
+              .maybeSingle();
 
             if (detailsError) {
               console.log('🔑 Erreur récupération détails code:', detailsError);
