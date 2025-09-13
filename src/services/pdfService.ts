@@ -3,18 +3,18 @@ import { stripeConfig } from '../stripe-config';
 import { PDFGenerator } from '../utils/pdfGenerator';
 
 export class PDFService {
-  // SAUVEGARDER LES MÉTADONNÉES PDF (sans générer le PDF)
-  static async savePDFMetadata(
+  // SAUVEGARDER LES MÉTADONNÉES PDF POUR GÉNÉRATION ULTÉRIEURE
+  static async savePDFMetadataForLaterGeneration(
     fileName: string,
     metadata: {
       responseId: string;
       templateName: string;
       formTitle: string;
       formData: Record<string, any>;
-      templateId?: string;
-      templateFields?: any[];
-      templatePdfContent?: string;
       userId?: string;
+      templateId?: string | null;
+      templateFields?: any[] | null;
+      templatePdfContent?: string | null;
     }
   ): Promise<boolean> {
     try {
@@ -89,13 +89,14 @@ export class PDFService {
       }
       
       // Nettoyer drastiquement les données pour éviter les timeouts
-      const cleanFormData = this.cleanFormDataForStorageSync(metadata.formData);
+      const cleanFormData = this.cleanFormDataForStorage(metadata.formData);
       
-      // Stocker seulement l'ID du template pour éviter les gros volumes
-      let templateId = null;
-      if (metadata.templateId) {
-        templateId = metadata.templateId;
-      }
+      // Préparer les métadonnées du template pour stockage
+      const templateMetadata = metadata.templateId ? {
+        templateId: metadata.templateId,
+        templateFields: metadata.templateFields,
+        templatePdfContent: metadata.templatePdfContent,
+      } : null;
 
       const pdfData = {
         file_name: fileName,
@@ -103,8 +104,8 @@ export class PDFService {
         template_name: metadata.templateName,
         form_title: metadata.formTitle,
         form_data: cleanFormData,
-        pdf_content: templateId || '', // Stocker seulement l'ID du template
-        file_size: 0, // Sera calculé au téléchargement
+        pdf_content: templateMetadata ? JSON.stringify(templateMetadata) : '', // Stocker les métadonnées du template
+        file_size: 0, // Sera calculé lors de la génération
         user_id: targetUserId,
       };
 
@@ -112,16 +113,18 @@ export class PDFService {
       const { error } = await Promise.race([
         supabase.from('pdf_storage').insert([pdfData]),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout sauvegarde PDF')), 5000)
+          setTimeout(() => reject(new Error('Timeout sauvegarde métadonnées PDF')), 3000)
         )
       ]);
 
       if (error) {
-        throw new Error(`Erreur de sauvegarde: ${error.message}`);
+        throw new Error(`Erreur sauvegarde métadonnées: ${error.message}`);
       }
 
+      console.log('✅ Métadonnées PDF sauvegardées:', fileName);
       return true;
     } catch (error) {
+      console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
       throw error;
     }
   }
@@ -145,19 +148,19 @@ export class PDFService {
   }
 
   // NETTOYER LES DONNÉES DU FORMULAIRE POUR LE STOCKAGE (VERSION SYNCHRONE)
-  private static cleanFormDataForStorageSync(formData: Record<string, any>): Record<string, any> {
+  private static cleanFormDataForStorage(formData: Record<string, any>): Record<string, any> {
     const cleaned: Record<string, any> = {};
     
     for (const [key, value] of Object.entries(formData)) {
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        // Les images sont déjà compressées par ImageCompressor
+        // Conserver les images pour génération ultérieure
         const originalSize = Math.round(value.length / 1024);
-        console.log(`💾 Sauvegarde image ${key}: ${originalSize}KB`);
+        console.log(`💾 Conservation image ${key}: ${originalSize}KB`);
         
-        if (originalSize > 1000) {
-          // Compression d'urgence si encore trop gros
-          console.warn(`⚠️ Image ${key} encore trop grosse (${originalSize}KB), compression d'urgence`);
-          cleaned[key] = this.emergencyCompress(value);
+        if (originalSize > 2000) {
+          // Compression légère si très gros (garde la qualité pour le PDF final)
+          console.warn(`⚠️ Image ${key} très grosse (${originalSize}KB), compression légère`);
+          cleaned[key] = this.lightCompress(value);
         } else {
           cleaned[key] = value;
         }
@@ -170,23 +173,25 @@ export class PDFService {
   }
 
   // COMPRESSION D'URGENCE POUR IMAGES TRÈS VOLUMINEUSES
-  private static emergencyCompress(base64Image: string): string {
+  private static lightCompress(base64Image: string): string {
     try {
       const [header, data] = base64Image.split(',');
       if (!data) return base64Image;
       
-      // Prendre seulement 1 caractère sur 3 pour réduction drastique
+      // Compression légère : prendre 3 caractères sur 4
       let compressedData = '';
-      for (let i = 0; i < data.length; i += 3) {
+      for (let i = 0; i < data.length; i += 4) {
         compressedData += data[i];
+        if (i + 1 < data.length) compressedData += data[i + 1];
+        if (i + 2 < data.length) compressedData += data[i + 2];
       }
       
       const result = `${header},${compressedData}`;
-      console.log(`🚨 Compression d'urgence: ${Math.round(base64Image.length / 1024)}KB → ${Math.round(result.length / 1024)}KB`);
+      console.log(`🗜️ Compression légère: ${Math.round(base64Image.length / 1024)}KB → ${Math.round(result.length / 1024)}KB`);
       
       return result;
     } catch (error) {
-      console.error('Erreur compression d\'urgence:', error);
+      console.error('Erreur compression légère:', error);
       return base64Image;
     }
   }
@@ -272,51 +277,68 @@ export class PDFService {
   // GÉNÉRER ET TÉLÉCHARGER UN PDF
   static async generateAndDownloadPDF(fileName: string): Promise<boolean> {
     try {
+      console.log('📄 === GÉNÉRATION PDF À LA DEMANDE ===');
+      console.log('📄 Fichier demandé:', fileName);
+      
       // 1. Récupérer les métadonnées
       const metadata = await this.getPDFMetadata(fileName);
       if (!metadata) {
+        console.error('❌ Métadonnées non trouvées pour:', fileName);
         return false;
       }
 
+      console.log('📄 Métadonnées récupérées:', {
+        templateName: metadata.template_name,
+        formTitle: metadata.form_title,
+        hasFormData: !!metadata.form_data,
+        hasPdfContent: !!metadata.pdf_content
+      });
       // 2. Générer le PDF
       let pdfBytes: Uint8Array;
       let templateData: any = null;
       
-      // Récupérer les métadonnées du template depuis pdf_content
+      // Récupérer les métadonnées du template
       if (metadata.pdf_content) {
         try {
-          // Si pdf_content contient un ID de template, le récupérer depuis Supabase
-          const templateId = metadata.pdf_content;
-          if (templateId && templateId.length < 100) { // C'est probablement un ID
-            const { data: templateFromDb, error: templateError } = await supabase
-              .from('pdf_templates')
-              .select('id, name, pdf_content, fields')
-              .eq('id', templateId)
-              .eq('is_public', true)
-              .single();
-            
-            if (!templateError && templateFromDb) {
-              templateData = {
-                templateId: templateFromDb.id,
-                templateFields: templateFromDb.fields,
-                templatePdfContent: templateFromDb.pdf_content,
-              };
-            }
-          } else {
-            // Ancien format JSON
-            templateData = JSON.parse(metadata.pdf_content);
-          }
+          // Essayer de parser les métadonnées du template
+          templateData = JSON.parse(metadata.pdf_content);
+          console.log('📄 Template data récupéré:', {
+            hasTemplateId: !!templateData?.templateId,
+            hasFields: !!templateData?.templateFields,
+            hasContent: !!templateData?.templatePdfContent
+          });
         } catch (error) {
-          // Silent error
+          console.warn('⚠️ Erreur parsing template metadata:', error);
+          
+          // Fallback: essayer comme ID de template simple
+          const templateId = metadata.pdf_content;
+          if (templateId && templateId.length < 100) {
+            console.log('📄 Tentative récupération template par ID:', templateId);
+            try {
+              const { data: templateFromDb, error: templateError } = await supabase
+                .from('pdf_templates')
+                .select('id, name, pdf_content, fields')
+                .eq('id', templateId)
+                .eq('is_public', true)
+                .single();
+              
+              if (!templateError && templateFromDb) {
+                templateData = {
+                  templateId: templateFromDb.id,
+                  templateFields: templateFromDb.fields,
+                  templatePdfContent: templateFromDb.pdf_content,
+                };
+                console.log('📄 Template récupéré depuis Supabase');
+              }
+            } catch (dbError) {
+              console.warn('⚠️ Erreur récupération template depuis DB:', dbError);
+            }
+          }
         }
       }
       
-      // Fallback vers form_data si disponible
-      if (!templateData && metadata.form_data?._template) {
-        templateData = metadata.form_data._template;
-      }
-      
       if (templateData?.templateId && templateData?.templateFields && templateData?.templatePdfContent) {
+        console.log('📄 Génération avec template personnalisé');
         // Reconstituer le template
         const template = {
           id: templateData.templateId,
@@ -331,22 +353,14 @@ export class PDFService {
         const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
 
         // Générer avec le template
-        
-        // Nettoyer les données du formulaire (enlever les métadonnées du template)
-        const cleanFormData = { ...metadata.form_data };
-        delete cleanFormData._template;
-        delete cleanFormData._templateId;
-        
-        pdfBytes = await PDFGenerator.generatePDF(template, cleanFormData, originalPdfBytes);
+        pdfBytes = await PDFGenerator.generatePDF(template, metadata.form_data, originalPdfBytes);
       } else {
-        // Nettoyer les données du formulaire
-        const cleanFormData = { ...metadata.form_data };
-        delete cleanFormData._template;
-        delete cleanFormData._templateId;
-        
+        console.log('📄 Génération PDF simple');
         // Générer un PDF simple
-        pdfBytes = await this.generateSimplePDF(cleanFormData, metadata.form_title);
+        pdfBytes = await this.generateSimplePDF(metadata.form_data, metadata.form_title);
       }
+
+      console.log('📄 PDF généré, taille:', Math.round(pdfBytes.length / 1024), 'KB');
 
       // 3. Télécharger directement
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -362,8 +376,10 @@ export class PDFService {
       // 4. Optionnel : mettre à jour la taille du fichier en base
       await this.updatePDFSize(fileName, pdfBytes.length);
 
+      console.log('✅ PDF généré et téléchargé avec succès');
       return true;
     } catch (error) {
+      console.error('❌ Erreur génération PDF à la demande:', error);
       return false;
     }
   }

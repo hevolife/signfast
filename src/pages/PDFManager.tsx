@@ -115,18 +115,23 @@ export const PDFManager: React.FC = () => {
 
   const handleDownload = async (pdf: SavedPDF) => {
     try {
-      toast.loading('📄 Génération du PDF en cours...');
+      toast.loading('📄 Génération et téléchargement du PDF en cours...', {
+        duration: 10000, // 10 secondes max
+      });
       
       const success = await PDFService.generateAndDownloadPDF(pdf.fileName);
       
+      toast.dismiss(); // Fermer le toast de loading
+      
       if (success) {
-        toast.success('📄 PDF téléchargé avec succès');
+        toast.success('📄 PDF généré et téléchargé avec succès !');
       } else {
-        toast.error('❌ Erreur lors de la génération du PDF');
+        toast.error('❌ Erreur lors de la génération du PDF. Vérifiez que toutes les données sont disponibles.');
       }
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      toast.error('❌ Erreur lors du téléchargement');
+      toast.dismiss();
+      toast.error('❌ Erreur lors de la génération du PDF');
     }
   };
 
@@ -431,17 +436,23 @@ export const PDFManager: React.FC = () => {
                     </div>
                   )}
                   
+                  {/* Indicateur de statut PDF */}
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center space-x-1">
+                    <span>📋</span>
+                    <span>Métadonnées sauvegardées - PDF à générer</span>
+                  </div>
+                  
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDownload(pdf)}
                       className="flex-1 flex items-center space-x-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300 border border-green-200 dark:border-green-800 shadow-sm hover:shadow-md transition-all"
-                      title="Télécharger le PDF"
+                      title="Générer et télécharger le PDF"
                       disabled={isLocked}
                     >
                       <Download className="h-4 w-4" />
-                      <span className="hidden lg:inline">Télécharger</span>
+                      <span className="hidden lg:inline">Générer PDF</span>
                     </Button>
                     
                     <Button
