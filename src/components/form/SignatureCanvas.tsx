@@ -243,6 +243,10 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       onSignatureChange(signature);
     } catch (error) {
       console.error('✍️ Erreur sauvegarde manuelle signature:', error);
+      onSignatureChange('');
+    }
+    } catch (error) {
+      console.error('✍️ Erreur sauvegarde manuelle signature:', error);
     }
   };
 
