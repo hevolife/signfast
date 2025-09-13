@@ -141,7 +141,7 @@ export const PDFTemplates: React.FC = () => {
               const isLocked = !isSubscribed && index >= templatesLimits.max;
               
               return (
-              <Card key={template.id} hover className={`group relative ${isLocked ? 'opacity-75 border-2 border-yellow-400' : ''}`}>
+              <Card key={template.id} hover className={`group relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 shadow-lg ${isLocked ? 'opacity-75 border-2 border-yellow-400' : ''}`}>
                 {isLocked && (
                   <div className="absolute inset-0 bg-gradient-to-br from-orange-900/70 to-yellow-900/70 rounded-lg flex items-center justify-center z-10">
                     <div className="text-center p-4">
@@ -163,6 +163,84 @@ export const PDFTemplates: React.FC = () => {
                 )}
                 <CardHeader>
                   <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white text-lg">📄</span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
+                          {template.name}
+                        </h3>
+                        <p className="text-sm text-purple-700 dark:text-purple-400 line-clamp-2">
+                          {template.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded dark:bg-purple-900/30 dark:text-purple-300">
+                      {template.fields.length} champs
+                    </span>
+                    <span className="text-xs text-purple-600 dark:text-purple-400">
+                      Créé le {formatDateFR(template.created_at)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Link to={`/pdf/templates/${template.id}/edit`} className="flex-1">
+                      <Button
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full flex items-center space-x-1 bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 hover:from-orange-200 hover:to-red-200 dark:from-orange-900/30 dark:to-red-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800 shadow-sm hover:shadow-md transition-all"
+                        disabled={isLocked}
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span className="hidden lg:inline">Modifier</span>
+                      </Button>
+                    </Link>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex items-center space-x-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300 border border-green-200 dark:border-green-800 shadow-sm hover:shadow-md transition-all"
+                      title="Télécharger le template"
+                      disabled={isLocked}
+                    >
+                      <Download className="h-4 w-4" />
+                      <span className="hidden lg:inline">Télécharger</span>
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(template.id, template.name)}
+                      className="bg-gradient-to-r from-red-100 to-pink-100 text-red-700 hover:from-red-200 hover:to-pink-200 dark:from-red-900/30 dark:to-pink-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 shadow-sm hover:shadow-md transition-all"
+                      title="Supprimer le template"
+                      disabled={isLocked}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+            })}
+          </div>
+        )}
+        
+        <LimitReachedModal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          limitType="pdfTemplates"
+          currentCount={templatesLimits.current}
+          maxCount={templatesLimits.max}
+        />
+      </div>
+    </div>
+  );
+};
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                         {template.name}
