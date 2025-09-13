@@ -223,5 +223,78 @@ export type Database = {
         updated_at?: string;
       };
     };
+    affiliate_programs: {
+      Row: {
+        id: string;
+        user_id: string;
+        affiliate_code: string;
+        commission_rate: number;
+        total_referrals: number;
+        total_earnings: number;
+        monthly_earnings: number;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+      };
+      Insert: {
+        id?: string;
+        user_id: string;
+        affiliate_code: string;
+        commission_rate?: number;
+        total_referrals?: number;
+        total_earnings?: number;
+        monthly_earnings?: number;
+        is_active?: boolean;
+        created_at?: string;
+        updated_at?: string;
+      };
+      Update: {
+        id?: string;
+        user_id?: string;
+        affiliate_code?: string;
+        commission_rate?: number;
+        total_referrals?: number;
+        total_earnings?: number;
+        monthly_earnings?: number;
+        is_active?: boolean;
+        created_at?: string;
+        updated_at?: string;
+      };
+    };
+    affiliate_referrals: {
+      Row: {
+        id: string;
+        affiliate_user_id: string;
+        referred_user_id: string;
+        subscription_id: string | null;
+        commission_amount: number;
+        commission_rate: number;
+        status: string;
+        created_at: string;
+        paid_at: string | null;
+      };
+      Insert: {
+        id?: string;
+        affiliate_user_id: string;
+        referred_user_id: string;
+        subscription_id?: string | null;
+        commission_amount?: number;
+        commission_rate?: number;
+        status?: string;
+        created_at?: string;
+        paid_at?: string | null;
+      };
+      Update: {
+        id?: string;
+        affiliate_user_id?: string;
+        referred_user_id?: string;
+        subscription_id?: string | null;
+        commission_amount?: number;
+        commission_rate?: number;
+        status?: string;
+        created_at?: string;
+        paid_at?: string | null;
+      };
+    };
   };
 };

@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { SecretCodeModal } from '../components/subscription/SecretCodeModal';
+import { AffiliatePanel } from '../components/affiliate/AffiliatePanel';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -50,6 +51,7 @@ export const Settings: React.FC = () => {
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
   
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'admin'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'affiliate' | 'subscription' | 'admin'>('profile');
   const [showSecretCodeModal, setShowSecretCodeModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -337,6 +339,19 @@ export const Settings: React.FC = () => {
                 </div>
               </button>
               <button
+                onClick={() => setActiveTab('affiliate')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'affiliate'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4" />
+                  <span>Affiliation</span>
+                </div>
+              </button>
+              <button
                 onClick={() => setActiveTab('subscription')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'subscription'
@@ -584,6 +599,10 @@ export const Settings: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {activeTab === 'affiliate' && (
+          <AffiliatePanel />
         )}
 
         {activeTab === 'subscription' && (

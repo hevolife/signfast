@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMaintenanceMode } from '../../hooks/useMaintenanceMode';
+import { AffiliateAdminPanel } from '../../components/admin/AffiliateAdminPanel';
 
 interface AdminUser {
   id: string;
@@ -80,6 +81,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'users' | 'codes' | 'stats'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'codes' | 'affiliates' | 'stats'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   const [newCodeType, setNewCodeType] = useState<'monthly' | 'lifetime'>('monthly');
   const [newCodeDescription, setNewCodeDescription] = useState('');
@@ -421,6 +423,19 @@ export const SuperAdminDashboard: React.FC = () => {
                 </div>
               </button>
               <button
+                onClick={() => setActiveTab('affiliates')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'affiliates'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4" />
+                  <span>Affiliations</span>
+                </div>
+              </button>
+              <button
                 onClick={() => setActiveTab('stats')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'stats'
@@ -690,6 +705,10 @@ export const SuperAdminDashboard: React.FC = () => {
               )}
             </div>
           </div>
+        )}
+
+        {activeTab === 'affiliates' && (
+          <AffiliateAdminPanel />
         )}
 
         {activeTab === 'stats' && (

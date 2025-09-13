@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,6 +8,7 @@ import { FormInput } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Signup: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,6 +16,9 @@ export const Signup: React.FC = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Récupérer le code d'affiliation depuis l'URL
+  const affiliateCode = searchParams.get('ref');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +41,39 @@ export const Signup: React.FC = () => {
       if (error) {
         toast.error(error.message);
       } else {
+        // Si inscription réussie et code d'affiliation présent, tracker le parrainage
+        if (data.user && affiliateCode) {
+          try {
+            console.log('🔗 Tracking affiliate signup:', affiliateCode, 'for user:', data.user.id);
+            
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-affiliate-signup`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                affiliate_code: affiliateCode,
+                referred_user_id: data.user.id
+              }),
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+              toast.success(`🎉 Inscription réussie ! Vous avez été parrainé avec ${result.commission_rate}% de commission pour votre parrain.`);
+            } else {
+              console.warn('⚠️ Erreur tracking affiliation:', result.error);
+              toast.success('Compte créé avec succès !');
+            }
+          } catch (affiliateError) {
+            console.error('❌ Erreur tracking affiliation:', affiliateError);
+            toast.success('Compte créé avec succès !');
+          }
+        } else {
+          toast.success('Compte créé avec succès !');
+        }
+        
         toast.success('Compte créé avec succès !');
         // Rediriger vers la page demandée ou le dashboard
         const from = location.state?.from?.pathname || '/dashboard';
@@ -61,6 +98,22 @@ export const Signup: React.FC = () => {
           </Link>
         </div>
 
+        {/* Bannière de parrainage */}
+        {affiliateCode && (
+          <Card className="mb-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <span className="text-2xl">🎉</span>
+                <span className="font-semibold text-green-900 dark:text-green-300">
+                  Vous avez été parrainé !
+                </span>
+              </div>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Code de parrainage : <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded font-mono">{affiliateCode}</code>
+              </p>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white">
