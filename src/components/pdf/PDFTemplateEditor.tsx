@@ -686,7 +686,11 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                         )}
                       </CardContent>
                     </Card>
-          />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DndProvider>
