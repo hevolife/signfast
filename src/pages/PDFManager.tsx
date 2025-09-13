@@ -262,12 +262,12 @@ export const PDFManager: React.FC = () => {
               }
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
               <HardDrive className="h-4 w-4" />
               <span>{savedPdfsLimits.current}/{savedPdfsLimits.max === Infinity ? '∞' : savedPdfsLimits.max}</span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 order-1 sm:order-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -289,7 +289,6 @@ export const PDFManager: React.FC = () => {
                 <span className="hidden sm:inline">Tout supprimer</span>
               </Button>
             </div>
-          </div>
           </div>
 
         <SubscriptionBanner />
