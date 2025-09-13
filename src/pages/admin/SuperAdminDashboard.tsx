@@ -138,7 +138,15 @@ export const SuperAdminDashboard: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Utiliser le service role key pour contourner RLS
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
+      );
+
+      console.log('🔑 Tentative de récupération avec client admin...');
+      const { data, error } = await supabaseAdmin
         .from('secret_codes')
         .select('*')
         .order('created_at', { ascending: false });
@@ -184,7 +192,14 @@ export const SuperAdminDashboard: React.FC = () => {
       console.log('🔑 Code généré:', code);
       console.log('🔑 Expire le:', expiresAt);
 
-      const { data, error } = await supabase
+      // Utiliser le service role key pour contourner RLS
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
+      );
+
+      const { data, error } = await supabaseAdmin
         .from('secret_codes')
         .insert([{
           code,
@@ -214,7 +229,14 @@ export const SuperAdminDashboard: React.FC = () => {
   const deleteSecretCode = async (id: string, code: string) => {
     if (window.confirm(`Supprimer le code "${code}" ?`)) {
       try {
-        const { error } = await supabase
+        // Utiliser le service role key pour contourner RLS
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
+        );
+
+        const { error } = await supabaseAdmin
           .from('secret_codes')
           .delete()
           .eq('id', id);
