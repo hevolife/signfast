@@ -41,8 +41,7 @@ export const MobileBottomNav: React.FC = () => {
   ] : [
     { path: '/', icon: Home, label: 'Accueil', show: true },
     { path: '/login', icon: LogIn, label: 'Connexion', show: true },
-    { path: '/signup', icon: UserPlus, label: 'Inscription', show: true },
-    { path: '/#demo', icon: Info, label: 'Démo', show: true }
+    { path: '/signup', icon: UserPlus, label: 'Inscription', show: true }
   ];
 
   return (
