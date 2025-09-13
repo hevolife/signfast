@@ -682,6 +682,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                   field={selectedFieldData}
                   onUpdate={updateField}
                   onDelete={deleteField}
+                  onDelete={deleteField}
                   variables={actualFormVariables}
                 />
               </div>

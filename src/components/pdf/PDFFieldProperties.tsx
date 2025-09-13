@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader } from '../ui/Card';
 import { Eye } from 'lucide-react';
 
 interface PDFFieldPropertiesProps {
-  field: PDFField;
+  field: PDFField | null;
   onUpdate: (updates: Partial<PDFField>) => void;
+  onDelete?: (fieldId: string) => void;
   availableVariables: string[];
   linkedFormId?: string;
   onPreviewPDF?: () => void;
@@ -17,11 +18,30 @@ interface PDFFieldPropertiesProps {
 export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   field,
   onUpdate,
+  onDelete,
   availableVariables,
   linkedFormId,
   onPreviewPDF,
   previewLoading,
 }) => {
+  if (!field) {
+    return (
+      <Card className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-gray-200 dark:border-gray-700 shadow-lg">
+        <CardContent className="p-6 text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+            <span className="text-white text-lg">👆</span>
+          </div>
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+            Sélectionnez un champ
+          </h4>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            Cliquez sur un champ dans le PDF pour modifier ses propriétés
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const getLinkedFormInfo = () => {
     if (!linkedFormId) return null;
     
