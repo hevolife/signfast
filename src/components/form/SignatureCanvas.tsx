@@ -215,6 +215,7 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       
+      let signature;
       if (tempCtx) {
         const scale = 2;
         tempCanvas.width = canvas.width * scale;
@@ -231,17 +232,16 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
         // Dessiner la signature
         tempCtx.drawImage(canvas, 0, 0);
         
-        const signature = tempCanvas.toDataURL('image/png', 1.0);
+        signature = tempCanvas.toDataURL('image/png', 1.0);
         console.log('✍️ ✅ Signature sauvegardée manuellement:', signature.length, 'caractères');
-        onSignatureChange(signature);
       } else {
         // Fallback si le contexte temporaire n'est pas disponible
-        const signature = canvas.toDataURL('image/png', 1.0);
+        signature = canvas.toDataURL('image/png', 1.0);
         console.log('✍️ ⚠️ Signature sauvegardée (fallback):', signature.length, 'caractères');
-        onSignatureChange(signature);
       }
-      console.error('Erreur conversion signature:', error);
-      const signature = canvas.toDataURL('image/png');
+      
+      onSignatureChange(signature);
+    } catch (error) {
       console.error('✍️ Erreur sauvegarde manuelle signature:', error);
     }
   };
