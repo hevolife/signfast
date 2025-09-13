@@ -9,6 +9,7 @@ import { FormSelector } from './FormSelector';
 import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
+import { Input } from '../ui/Input';
 import { Upload, Save, FileText, Link as LinkIcon } from 'lucide-react';
 import { Eye, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
