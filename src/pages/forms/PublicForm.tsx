@@ -251,6 +251,11 @@ export const PublicForm: React.FC = () => {
             keys.push('signature', 'Signature', 'SIGNATURE');
           }
           
+          // Pour les images, ajouter des clés spéciales
+          if (field.type === 'file' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+            keys.push('image', 'Image', 'IMAGE', 'photo', 'Photo', 'PHOTO');
+          }
+          
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
             // Sauvegarder avec toutes les clés possibles
@@ -261,6 +266,7 @@ export const PublicForm: React.FC = () => {
           }
           // Images normales
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+            console.log('🖼️ Traitement image pour champ:', field.label, 'taille:', Math.round(fieldValue.length / 1024), 'KB');
             keys.forEach(key => {
               pdfSubmissionData[key] = fieldValue;
               dbSubmissionData[key] = `[IMAGE_${field.id}]`;
@@ -641,6 +647,11 @@ export const PublicForm: React.FC = () => {
                         }).then(compressedImage => {
                           toast.dismiss();
                           toast.success('✅ Image compressée et prête');
+                          console.log('🖼️ Image compressée pour champ:', field.label, {
+                            originalSize: Math.round(file.size / 1024) + 'KB',
+                            compressedSize: Math.round(compressedImage.length / 1024) + 'KB',
+                            format: compressedImage.substring(5, 15)
+                          });
                           handleInputChange(field.id, compressedImage);
                         }).catch(error => {
                           toast.dismiss();
@@ -652,6 +663,7 @@ export const PublicForm: React.FC = () => {
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           const base64 = event.target?.result as string;
+                          console.log('🖼️ Image chargée sans compression pour champ:', field.label);
                           handleInputChange(field.id, base64);
                         };
                         reader.readAsDataURL(file);
@@ -672,6 +684,8 @@ export const PublicForm: React.FC = () => {
                     src={formData[field.id]}
                     alt="Aperçu"
                     className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
+                    onLoad={() => console.log('🖼️ Aperçu image affiché')}
+                    onError={() => console.error('❌ Erreur affichage aperçu image')}
                   />
                 </div>
               )}

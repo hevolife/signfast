@@ -83,7 +83,28 @@ export class PDFGenerator {
             
           case 'image':
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
+              console.log('🖼️ Dessin image pour champ:', field.variable, 'taille:', Math.round(value.length / 1024), 'KB');
               await this.drawImage(pdfDoc, page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
+            } else {
+              console.warn('🖼️ Pas d\'image pour champ:', field.variable, 'valeur:', typeof value, value?.substring?.(0, 50));
+              // Dessiner un placeholder pour image manquante
+              page.drawRectangle({
+                x: pdfX,
+                y: pdfY,
+                width: pdfFieldWidth,
+                height: pdfFieldHeight,
+                borderColor: rgb(0.8, 0.8, 0.8),
+                borderWidth: 1,
+                color: rgb(0.98, 0.98, 0.98),
+              });
+              
+              page.drawText('Image manquante', {
+                x: pdfX + 2,
+                y: pdfY + pdfFieldHeight / 2,
+                size: Math.min(10, pdfFieldHeight * 0.6),
+                color: rgb(0.7, 0.7, 0.7),
+                font,
+              });
             }
             break;
         }
@@ -171,12 +192,48 @@ export class PDFGenerator {
         }
       }
       
-      // 3. ARRÊT ICI - Pas de fallback pour les images
-      // Chaque champ image doit avoir sa propre variable exacte
+      // 3. Recherche par clés contenant "image", "photo", etc.
+      if (!imageValue) {
+        const imageKeys = Object.keys(data).filter(key => 
+          key.toLowerCase().includes('image') || 
+          key.toLowerCase().includes('photo') ||
+          key.toLowerCase().includes('picture') ||
+          key.toLowerCase().includes('img')
+        );
+        
+        for (const key of imageKeys) {
+          const val = data[key];
+          if (typeof val === 'string' && val.startsWith('data:image')) {
+            imageValue = val;
+            console.log('🖼️ Image trouvée via clé:', key);
+            break;
+          }
+        }
+      }
+      
+      // 4. Fallback : chercher toute image disponible si le champ est de type image
+      if (!imageValue) {
+        console.log('🖼️ Recherche fallback pour variable:', variableName);
+        const allImages = Object.entries(data).filter(([key, val]) => 
+          typeof val === 'string' && val.startsWith('data:image') && !key.toLowerCase().includes('signature')
+        );
+        
+        console.log('🖼️ Images disponibles:', allImages.map(([key]) => key));
+        
+        if (allImages.length > 0) {
+          imageValue = allImages[0][1];
+          console.log('🖼️ Image fallback utilisée depuis:', allImages[0][0]);
+        }
+      }
       
       if (imageValue) {
+        console.log('🖼️ Image trouvée pour variable:', variableName, 'taille:', Math.round(imageValue.length / 1024), 'KB');
         return imageValue;
       } else {
+        console.warn('🖼️ Aucune image trouvée pour variable:', variableName);
+        console.log('🖼️ Données disponibles:', Object.keys(data).filter(key => 
+          typeof data[key] === 'string' && data[key].startsWith && data[key].startsWith('data:image')
+        ));
         return '';
       }
     }
@@ -408,14 +465,26 @@ export class PDFGenerator {
     height: number
   ) {
     try {
+      console.log('🖼️ Début drawImage:', {
+        hasImageData: !!imageData,
+        imageDataLength: imageData?.length || 0,
+        isDataUrl: imageData?.startsWith('data:image'),
+        position: { x, y, width, height }
+      });
+      
       if (!imageData || !imageData.startsWith('data:image')) {
+        console.warn('🖼️ Données image invalides:', imageData?.substring(0, 50));
         throw new Error('Données image invalides');
       }
       
       const [header, base64Data] = imageData.split(',');
       if (!base64Data || base64Data.length === 0) {
+        console.warn('🖼️ Données base64 vides');
         throw new Error('Données base64 image vides');
       }
+      
+      console.log('🖼️ Header image:', header);
+      console.log('🖼️ Taille base64:', base64Data.length);
       
       // Conversion base64 vers bytes
       let imageBytes: Uint8Array;
@@ -425,19 +494,43 @@ export class PDFGenerator {
         for (let i = 0; i < binaryString.length; i++) {
           imageBytes[i] = binaryString.charCodeAt(i);
         }
+        console.log('🖼️ Conversion base64 réussie, taille:', imageBytes.length, 'bytes');
       } catch (conversionError) {
+        console.error('🖼️ Erreur conversion base64:', conversionError);
         throw new Error(`Conversion base64 image échouée: ${conversionError.message}`);
       }
       
       let image;
       
       try {
-        if (header.includes('png')) {
+        // Détecter le format plus précisément
+        const isPng = header.includes('png') || header.includes('PNG');
+        const isJpeg = header.includes('jpeg') || header.includes('jpg') || header.includes('JPEG') || header.includes('JPG');
+        const isWebp = header.includes('webp') || header.includes('WEBP');
+        
+        console.log('🖼️ Format détecté:', { isPng, isJpeg, isWebp, header });
+        
+        if (isPng) {
+          console.log('🖼️ Embedding PNG...');
           image = await pdfDoc.embedPng(imageBytes);
+        } else if (isWebp) {
+          console.log('🖼️ WebP détecté, conversion en PNG...');
+          // WebP n'est pas supporté par pdf-lib, convertir en PNG
+          const convertedPng = await this.convertWebPToPng(imageData);
+          const [, convertedBase64] = convertedPng.split(',');
+          const convertedBytes = new Uint8Array(atob(convertedBase64).split('').map(c => c.charCodeAt(0)));
+          image = await pdfDoc.embedPng(convertedBytes);
         } else {
+          console.log('🖼️ Embedding JPEG...');
           image = await pdfDoc.embedJpg(imageBytes);
         }
+        
+        console.log('🖼️ Image embedded avec succès:', {
+          width: image.width,
+          height: image.height
+        });
       } catch (embedError) {
+        console.error('🖼️ Erreur embedding:', embedError);
         throw new Error(`Embedding image échoué: ${embedError.message}`);
       }
       
@@ -460,6 +553,13 @@ export class PDFGenerator {
       const offsetX = (width - drawWidth) / 2;
       const offsetY = (height - drawHeight) / 2;
       
+      console.log('🖼️ Dimensions finales:', {
+        original: { width: image.width, height: image.height },
+        field: { width, height },
+        draw: { width: drawWidth, height: drawHeight },
+        offset: { x: offsetX, y: offsetY }
+      });
+      
       page.drawImage(image, {
         x: x + offsetX,
         y: y + offsetY,
@@ -467,7 +567,10 @@ export class PDFGenerator {
         height: drawHeight,
       });
       
+      console.log('✅ Image dessinée avec succès');
+      
     } catch (error) {
+      console.error('❌ Erreur complète drawImage:', error);
       // Placeholder en cas d'erreur
       page.drawRectangle({
         x,
@@ -485,6 +588,83 @@ export class PDFGenerator {
         size: 8,
         color: rgb(0.5, 0.5, 0.5),
       });
+    }
+  }
+  
+  /**
+   * Convertit une image WebP en PNG pour compatibilité pdf-lib
+   */
+  private static async convertWebPToPng(webpDataUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              reject(new Error('Canvas context non disponible'));
+              return;
+            }
+            
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Fond blanc pour éviter la transparence
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dessiner l'image
+            ctx.drawImage(img, 0, 0);
+            
+            // Convertir en PNG
+            const pngDataUrl = canvas.toDataURL('image/png', 1.0);
+            console.log('🔄 WebP converti en PNG');
+            resolve(pngDataUrl);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        img.onerror = () => {
+          reject(new Error('Impossible de charger l\'image WebP'));
+        };
+        
+        img.src = webpDataUrl;
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Valide qu'une image est correctement formée
+   */
+  private static validateImageData(imageData: string): boolean {
+    try {
+      if (!imageData || typeof imageData !== 'string') {
+        return false;
+      }
+      
+      if (!imageData.startsWith('data:image')) {
+        return false;
+      }
+      
+      const [header, base64Data] = imageData.split(',');
+      if (!header || !base64Data) {
+        return false;
+      }
+      
+      // Vérifier que le base64 est valide
+      try {
+        atob(base64Data);
+        return true;
+      } catch {
+        return false;
+      }
+    } catch {
+      return false;
     }
   }
 
