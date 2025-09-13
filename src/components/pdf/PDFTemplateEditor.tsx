@@ -563,6 +563,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 <Button onClick={() => document.getElementById('pdf-file-input')?.click()}>
                   Choisir un fichier PDF
                 </Button>
+                <input
+                  id="pdf-file-input"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </CardContent>
             </Card>
           ) : (
@@ -639,9 +646,25 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                   ) : (
                     <Card>
                       <CardHeader>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          Propriétés
-                        </h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Propriétés
+                          </h3>
+                          <Button
+                            onClick={handlePreviewPDF}
+                            disabled={!pdfFile || fields.length === 0 || previewLoading}
+                            variant="secondary"
+                            size="sm"
+                            className="flex items-center space-x-1"
+                          >
+                            {previewLoading ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                            ) : (
+                              <Eye className="h-3 w-3" />
+                            )}
+                            <span className="text-xs">{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -674,13 +697,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
             </div>
           )}
         </div>
-        <input
-          id="pdf-file-input"
-          type="file"
-          accept=".pdf"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
       </div>
     </DndProvider>
   );
