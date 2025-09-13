@@ -202,55 +202,13 @@ export const PublicForm: React.FC = () => {
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
           // Traitement spécial pour les signatures
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log(`✍️ === TRAITEMENT SIGNATURE SPÉCIAL ===`);
-            console.log(`✍️ Champ: ${field.label}`);
-            console.log(`✍️ ID champ: ${field.id}`);
-            console.log(`✍️ Données signature: ${fieldValue.length} caractères`);
-            console.log(`✍️ Format: ${fieldValue.substring(0, 50)}...`);
+            console.log(`✍️ Traitement signature: ${field.label}`);
             
-            // Validation stricte de la signature
-            try {
-              // Valider le format base64
-              const [header, base64Data] = fieldValue.split(',');
-              if (!header || !base64Data) {
-                throw new Error('Format signature invalide');
-              }
-              
-              console.log(`✍️ Header validé: ${header}`);
-              console.log(`✍️ Base64 length: ${base64Data.length}`);
-              
-              // Test de décodage base64
-              try {
-                atob(base64Data);
-                console.log(`✍️ ✅ Base64 valide`);
-              } catch (base64Error) {
-                throw new Error('Données base64 corrompues');
-              }
-              
-              // Utiliser la signature telle quelle si elle est valide
-              console.log(`✍️ ✅ Signature validée, utilisation directe`);
-              
-              // IMPORTANT: Utiliser le LABEL du champ comme clé pour le PDF
-              pdfSubmissionData[field.label] = fieldValue;
-              console.log(`✍️ ✅ Signature ajoutée avec clé: "${field.label}"`);
-              
-              // Vérification immédiate
-              if (pdfSubmissionData[field.label]) {
-                console.log(`✍️ ✅ VÉRIFICATION: Signature bien présente dans pdfSubmissionData`);
-              } else {
-                console.error(`✍️ ❌ ERREUR: Signature non trouvée après ajout!`);
-              }
-              
-              // Pour la DB, utiliser un marqueur
-              dbSubmissionData[field.label] = `[SIGNATURE_${field.id}]`;
-              
-            } catch (signatureError) {
-              console.error(`✍️ Erreur traitement signature:`, signatureError);
-              // En cas d'erreur, essayer quand même d'utiliser les données
-              pdfSubmissionData[field.label] = fieldValue;
-              dbSubmissionData[field.label] = `[SIGNATURE_ERROR_${field.id}]`;
-              console.log(`✍️ ⚠️ Signature ajoutée malgré l'erreur de validation`);
-            }
+            // Utiliser le LABEL du champ comme clé pour le PDF
+            pdfSubmissionData[field.label] = fieldValue;
+            dbSubmissionData[field.label] = `[SIGNATURE_${field.id}]`;
+            
+            console.log(`✍️ ✅ Signature ajoutée: ${field.label}`);
           }
           // Pour la base de données : remplacer les images par des marqueurs
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
@@ -291,7 +249,6 @@ export const PublicForm: React.FC = () => {
                 if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
                   // Traitement spécial pour les signatures conditionnelles
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
-                    console.log(`✍️ Signature conditionnelle: ${conditionalField.label}`);
                     dbSubmissionData[conditionalField.label] = `[SIGNATURE_${conditionalField.label}]`;
                     pdfSubmissionData[conditionalField.label] = conditionalValue;
                   }
@@ -319,35 +276,6 @@ export const PublicForm: React.FC = () => {
       Object.keys(dbSubmissionData).forEach(key => {
         const value = dbSubmissionData[key];
         if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          // IMPORTANT: Optimiser la signature pour PDF
-          console.log(`✍️ ✅ Signature validée, optimisation pour PDF...`);
-          
-          // Créer une version optimisée de la signature pour PDF
-          const img = new Image();
-          img.onload = () => {
-            const optimizedCanvas = document.createElement('canvas');
-            const optimizedCtx = optimizedCanvas.getContext('2d');
-            
-            if (optimizedCtx) {
-              // Taille optimale pour PDF
-              optimizedCanvas.width = 400;
-              optimizedCanvas.height = 200;
-              
-              // Fond blanc opaque
-              optimizedCtx.fillStyle = '#FFFFFF';
-              optimizedCtx.fillRect(0, 0, 400, 200);
-              
-              // Dessiner la signature redimensionnée
-              optimizedCtx.drawImage(img, 0, 0, 400, 200);
-              
-              const optimizedSignature = optimizedCanvas.toDataURL('image/png', 1.0);
-              console.log(`✍️ ✅ Signature optimisée créée: ${optimizedSignature.length} caractères`);
-              
-              // Utiliser la signature optimisée
-              pdfSubmissionData[field.label] = optimizedSignature;
-            }
-          };
-          img.src = fieldValue;
           dbSubmissionData[key] = formatDateFR(value);
           pdfSubmissionData[key] = formatDateFR(value);
           console.log(`📅 Date formatée: ${key} = ${value} → ${dbSubmissionData[key]}`);

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '../ui/Button';
-import { RotateCcw, Check } from 'lucide-react';
+import { RotateCcw, Check, PenTool } from 'lucide-react';
 
 interface SignatureCanvasProps {
   onSignatureChange: (signature: string) => void;
@@ -16,32 +16,70 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!value);
+  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Configuration du canvas pour une meilleure qualité
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Configuration du canvas
+    // Définir la taille réelle du canvas
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    ctx.scale(dpr, dpr);
+    
+    // Configuration du style de dessin
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    ctx.imageSmoothingEnabled = true;
+
+    // Fond blanc
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
     // Charger la signature existante si elle existe
     if (value && value !== '') {
       const img = new Image();
       img.onload = () => {
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, canvas.width / dpr, canvas.height / dpr);
         setIsEmpty(false);
       };
       img.src = value;
     }
   }, [value]);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -51,19 +89,16 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     setIsDrawing(true);
     setIsEmpty(false);
 
-    const { x, y } = getCanvasCoordinates(e, canvas);
+    const { x, y } = getCoordinates(e);
+    setLastPoint({ x, y });
 
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-
-    // Empêcher le comportement par défaut pour les événements tactiles
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing || !lastPoint) return;
+    e.preventDefault();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -71,185 +106,62 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { x, y } = getCanvasCoordinates(e, canvas);
+    const { x, y } = getCoordinates(e);
 
+    // Dessiner une ligne lisse
+    ctx.beginPath();
+    ctx.moveTo(lastPoint.x, lastPoint.y);
     ctx.lineTo(x, y);
     ctx.stroke();
-  };
 
-  const getCanvasCoordinates = (
-    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>,
-    canvas: HTMLCanvasElement
-  ) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    let clientX, clientY;
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-
-    return { x, y };
+    setLastPoint({ x, y });
   };
 
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    console.log('✍️ === CONVERSION SIGNATURE EN IMAGE ===');
-    
-    try {
-      // Vérifier que le canvas contient quelque chose
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        console.error('✍️ Contexte canvas non disponible');
-        return;
-      }
-      
-      // Vérifier si le canvas est vide
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const isEmpty = imageData.data.every((value, index) => {
-        // Ignorer le canal alpha (chaque 4ème valeur)
-        if ((index + 1) % 4 === 0) return true;
-        return value === 255; // Blanc
-      });
-      
-      if (isEmpty) {
-        console.log('✍️ Canvas vide, pas de signature à sauvegarder');
-        setIsEmpty(true);
-        onSignatureChange('');
-        return;
-      }
-      
-      console.log('✍️ Canvas contient une signature, conversion...');
-      
-      // Créer un canvas temporaire optimisé pour PDF
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      if (tempCtx) {
-        // Utiliser une résolution plus élevée pour une meilleure qualité
-        const scale = 2;
-        tempCanvas.width = canvas.width * scale;
-        tempCanvas.height = canvas.height * scale;
-        
-        // Configurer le contexte pour une meilleure qualité
-        tempCtx.imageSmoothingEnabled = true;
-        tempCtx.imageSmoothingQuality = 'high';
-        tempCtx.scale(scale, scale);
-        
-        // Fond blanc opaque
-        tempCtx.fillStyle = '#FFFFFF';
-        tempCtx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Dessiner la signature par-dessus avec antialiasing
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        // Convertir en PNG haute qualité
-        const signature = tempCanvas.toDataURL('image/png', 1.0);
-        console.log('✍️ ✅ Signature convertie (haute qualité):', signature.length, 'caractères');
-        console.log('✍️ Format final:', signature.substring(0, 30) + '...');
-        
-        setIsEmpty(false);
-        onSignatureChange(signature);
-      } else {
-        console.warn('✍️ Contexte temporaire non disponible, fallback...');
-        // Fallback simple
-        const signature = canvas.toDataURL('image/png', 1.0);
-        console.log('✍️ ⚠️ Signature convertie (fallback):', signature.length, 'caractères');
-        setIsEmpty(false);
-        onSignatureChange(signature);
-      }
-    } catch (error) {
-      console.error('✍️ Erreur conversion signature:', error);
-      // Fallback d'urgence
-      try {
-        const signature = canvas.toDataURL('image/png');
-        console.log('✍️ 🆘 Signature convertie (urgence):', signature.length, 'caractères');
-        setIsEmpty(false);
-        onSignatureChange(signature);
-      } catch (fallbackError) {
-        console.error('✍️ Échec total conversion signature:', fallbackError);
-        setIsEmpty(true);
-        onSignatureChange('');
-      }
-    }
+    setLastPoint(null);
+    saveSignature();
   };
 
   const saveSignature = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    console.log('✍️ === SAUVEGARDE MANUELLE SIGNATURE ===');
-    
     try {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      // Créer une version optimisée pour PDF
+      const outputCanvas = document.createElement('canvas');
+      const outputCtx = outputCanvas.getContext('2d');
       
-      // Vérifier si le canvas contient quelque chose
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const isEmpty = imageData.data.every((value, index) => {
-        if ((index + 1) % 4 === 0) return true;
-        return value === 255;
-      });
+      if (!outputCtx) return;
+
+      // Taille fixe optimale pour PDF (ratio 2:1)
+      outputCanvas.width = 400;
+      outputCanvas.height = 200;
+
+      // Fond blanc opaque
+      outputCtx.fillStyle = '#FFFFFF';
+      outputCtx.fillRect(0, 0, 400, 200);
+
+      // Configuration pour une signature nette
+      outputCtx.strokeStyle = '#000000';
+      outputCtx.lineWidth = 3;
+      outputCtx.lineCap = 'round';
+      outputCtx.lineJoin = 'round';
+      outputCtx.imageSmoothingEnabled = false; // Désactiver le lissage pour des traits nets
+
+      // Redessiner la signature depuis le canvas original
+      outputCtx.drawImage(canvas, 0, 0, 400, 200);
+
+      // Convertir en PNG avec qualité maximale
+      const signatureDataUrl = outputCanvas.toDataURL('image/png', 1.0);
       
-      if (isEmpty) {
-        console.log('✍️ Canvas vide lors de la sauvegarde manuelle');
-        setIsEmpty(true);
-        onSignatureChange('');
-        return;
-      }
+      console.log('✍️ Signature sauvegardée:', signatureDataUrl.length, 'caractères');
       
-      // Même processus que stopDrawing pour la cohérence
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      let finalSignature;
-      
-      if (tempCtx) {
-        // Utiliser une résolution plus élevée pour PDF
-        const scale = 3;
-        tempCanvas.width = canvas.width * scale;
-        tempCanvas.height = canvas.height * scale;
-        
-        // Configuration haute qualité
-        tempCtx.imageSmoothingEnabled = true;
-        tempCtx.imageSmoothingQuality = 'high';
-        tempCtx.scale(scale, scale);
-        
-        // IMPORTANT: Fond blanc opaque pour contraste
-        tempCtx.fillStyle = '#FFFFFF';
-        tempCtx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Dessiner la signature avec un trait plus épais
-        tempCtx.globalCompositeOperation = 'source-over';
-        tempCtx.lineWidth = 3;
-        tempCtx.strokeStyle = '#000000';
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        finalSignature = tempCanvas.toDataURL('image/png', 1.0);
-        console.log('✍️ ✅ Signature haute qualité créée:', finalSignature.length, 'caractères');
-      } else {
-        // Fallback simple
-        finalSignature = canvas.toDataURL('image/png', 1.0);
-        console.log('✍️ ⚠️ Signature fallback créée:', finalSignature.length, 'caractères');
-      }
-      
-      onSignatureChange(finalSignature);
+      onSignatureChange(signatureDataUrl);
       setIsEmpty(false);
     } catch (error) {
-      console.error('✍️ Erreur sauvegarde manuelle signature:', error);
+      console.error('Erreur sauvegarde signature:', error);
       onSignatureChange('');
       setIsEmpty(true);
     }
@@ -262,7 +174,10 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Effacer et remettre le fond blanc
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     setIsEmpty(true);
     onSignatureChange('');
   };
@@ -270,24 +185,37 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   return (
     <div className="space-y-3">
       <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-4">
-        <canvas
-          ref={canvasRef}
-          width={400}
-          height={200}
-          className="w-full h-32 border border-gray-200 dark:border-gray-700 rounded cursor-crosshair"
-          style={{ touchAction: 'none' }}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-        />
+        <div className="relative">
+          <canvas
+            ref={canvasRef}
+            className="w-full h-32 border border-gray-200 dark:border-gray-700 rounded cursor-crosshair bg-white"
+            style={{ 
+              touchAction: 'none',
+              width: '100%',
+              height: '128px'
+            }}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+          />
+          
+          {isEmpty && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="flex items-center space-x-2 text-gray-400">
+                <PenTool className="h-5 w-5" />
+                <span className="text-sm">Signez ici</span>
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="flex justify-between items-center mt-3">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {isEmpty ? 'Dessinez votre signature ci-dessus' : 'Signature enregistrée'}
+            {isEmpty ? 'Dessinez votre signature ci-dessus' : 'Signature enregistrée ✓'}
           </p>
           <div className="flex space-x-2">
             <Button
@@ -315,6 +243,12 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           </div>
         </div>
       </div>
+      
+      {required && isEmpty && (
+        <p className="text-sm text-red-600">
+          La signature est obligatoire
+        </p>
+      )}
     </div>
   );
 };

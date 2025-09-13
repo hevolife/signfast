@@ -228,167 +228,94 @@ export class PDFGenerator {
     height: number
   ) {
     try {
-      console.log(`✍️ === DÉBUT DESSIN SIGNATURE ===`);
-      console.log(`✍️ Position: (${Math.round(x)}, ${Math.round(y)})`);
-      console.log(`✍️ Taille: ${Math.round(width)}×${Math.round(height)}`);
-      console.log(`✍️ Données signature length:`, signatureData.length);
-      console.log(`✍️ Format signature:`, signatureData.substring(0, 50) + '...');
+      console.log(`✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) ${Math.round(width)}×${Math.round(height)}`);
       
-      // Validation des données de signature
       if (!signatureData || !signatureData.startsWith('data:image')) {
-        console.error('✍️ ERREUR: Données de signature invalides');
-        throw new Error('Données de signature invalides ou manquantes');
+        throw new Error('Données de signature invalides');
       }
 
-      console.log(`✍️ ✅ Validation signature OK`);
-      
-      // Extraire et valider les données base64
       const [header, base64Data] = signatureData.split(',');
-      
       if (!base64Data || base64Data.length === 0) {
-        console.error('✍️ ERREUR: Données base64 vides');
-        throw new Error('Données base64 vides après extraction');
+        throw new Error('Données base64 vides');
       }
       
-      console.log(`✍️ Header image: ${header}`);
-      console.log(`✍️ Base64 length: ${base64Data.length}`);
-      
-      // Validation du format base64
-      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data)) {
-        console.error('✍️ ERREUR: Caractères base64 invalides');
-        throw new Error('Caractères base64 invalides détectés');
+      // Conversion base64 vers bytes
+      const binaryString = atob(base64Data);
+      const imageBytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        imageBytes[i] = binaryString.charCodeAt(i);
       }
       
-      console.log(`✍️ === CONVERSION BASE64 ===`);
-      let imageBytes: Uint8Array;
-      try {
-        const binaryString = atob(base64Data);
-        imageBytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          imageBytes[i] = binaryString.charCodeAt(i);
-        }
-        console.log(`✍️ ✅ Conversion base64 réussie: ${imageBytes.length} bytes`);
-      } catch (conversionError) {
-        console.error('✍️ ERREUR conversion base64:', conversionError);
-        throw new Error(`Échec conversion base64: ${conversionError.message}`);
-      }
-      
-      console.log(`✍️ === EMBEDDING IMAGE ===`);
+      // Embedder l'image (PNG en priorité)
       let image;
-      try {
-        // Forcer PNG pour les signatures (plus fiable)
-        console.log(`✍️ Embedding PNG (forcé pour signatures)...`);
+      if (header.includes('png')) {
         image = await pdfDoc.embedPng(imageBytes);
-        console.log(`✍️ ✅ PNG embedding réussi`);
-      } catch (embedError) {
-        console.error('✍️ ERREUR embedding PNG:', embedError);
-        
-        // Fallback JPEG si PNG échoue
-        try {
-          console.log(`✍️ Tentative fallback JPEG...`);
-          image = await pdfDoc.embedJpg(imageBytes);
-          console.log(`✍️ ✅ JPEG embedding réussi (fallback)`);
-        } catch (jpegError) {
-          console.error('✍️ ERREUR: Impossible d\'embedder l\'image');
-          console.error('✍️ PNG error:', embedError.message);
-          console.error('✍️ JPEG error:', jpegError.message);
-          throw new Error(`Impossible d'embedder l'image: PNG(${embedError.message}) JPEG(${jpegError.message})`);
-        }
-      }
-      
-      console.log(`✍️ ✅ Image embedée avec succès`);
-      console.log(`✍️ Dimensions originales: ${image.width}x${image.height}`);
-      
-      console.log(`✍️ === CALCUL DIMENSIONS ===`);
-      const aspectRatio = image.width / image.height;
-      let displayWidth = width - 4; // Marge réduite
-      let displayHeight = height - 4;
-      
-      // Ajuster pour garder les proportions
-      if (displayWidth / displayHeight > aspectRatio) {
-        displayWidth = displayHeight * aspectRatio;
       } else {
-        displayHeight = displayWidth / aspectRatio;
+        image = await pdfDoc.embedJpg(imageBytes);
       }
       
-      // S'assurer que les dimensions sont positives
-      displayWidth = Math.max(displayWidth, 10);
-      displayHeight = Math.max(displayHeight, 10);
+      // Calculer les dimensions en gardant les proportions
+      const imageAspectRatio = image.width / image.height;
+      const fieldAspectRatio = width / height;
       
-      // Centrer dans l'espace disponible
-      const offsetX = (width - displayWidth) / 2;
-      const offsetY = (height - displayHeight) / 2;
+      let drawWidth = width;
+      let drawHeight = height;
       
-      const finalX = x + offsetX;
-      const finalY = y + offsetY;
+      if (fieldAspectRatio > imageAspectRatio) {
+        // Le champ est plus large que l'image
+        drawWidth = height * imageAspectRatio;
+      } else {
+        // Le champ est plus haut que l'image
+        drawHeight = width / imageAspectRatio;
+      }
       
-      console.log(`✍️ Calculs dimensions:`);
-      console.log(`✍️   Aspect ratio: ${aspectRatio.toFixed(3)}`);
-      console.log(`✍️   Zone disponible: ${Math.round(width)}×${Math.round(height)}`);
-      console.log(`✍️   Taille affichage: ${Math.round(displayWidth)}×${Math.round(displayHeight)}`);
-      console.log(`✍️   Offset: (${Math.round(offsetX)}, ${Math.round(offsetY)})`);
-      console.log(`✍️   Position finale: (${Math.round(finalX)}, ${Math.round(finalY)})`);
+      // Centrer la signature dans le champ
+      const offsetX = (width - drawWidth) / 2;
+      const offsetY = (height - drawHeight) / 2;
       
-      console.log(`✍️ === DESSIN FOND SIGNATURE ===`);
-      // Dessiner un fond blanc avec bordure fine pour la signature
+      console.log(`✍️ Signature: ${Math.round(drawWidth)}×${Math.round(drawHeight)} à (${Math.round(x + offsetX)}, ${Math.round(y + offsetY)})`);
+      
+      // Fond blanc avec bordure
       page.drawRectangle({
-        x: finalX - 2,
-        y: finalY - 2,
-        width: displayWidth + 4,
-        height: displayHeight + 4,
+        x: x + offsetX - 1,
+        y: y + offsetY - 1,
+        width: drawWidth + 2,
+        height: drawHeight + 2,
         color: rgb(1, 1, 1),
-        borderColor: rgb(0.8, 0.8, 0.8),
-        borderWidth: 0.5,
+        borderColor: rgb(0.7, 0.7, 0.7),
+        borderWidth: 0.3,
       });
       
-      console.log(`✍️ ✅ Fond signature dessiné`);
-      
-      console.log(`✍️ === DESSIN IMAGE SIGNATURE ===`);
+      // Dessiner la signature
       page.drawImage(image, {
-        x: finalX,
-        y: finalY,
-        width: displayWidth,
-        height: displayHeight,
+        x: x + offsetX,
+        y: y + offsetY,
+        width: drawWidth,
+        height: drawHeight,
       });
       
-      console.log(`✍️ ✅ === SIGNATURE DESSINÉE AVEC SUCCÈS ===`);
-      
-      // Ajouter un label discret sous la signature
-      page.drawText('Signature électronique', {
-        x: finalX,
-        y: finalY - 8,
-        size: 6,
-        color: rgb(0.5, 0.5, 0.5),
-      });
+      console.log(`✍️ ✅ Signature dessinée avec succès`);
       
     } catch (error) {
-      console.error('✍️ === ERREUR CRITIQUE SIGNATURE ===');
-      console.error('✍️ Message d\'erreur:', error.message);
-      console.error('✍️ Type d\'erreur:', error.constructor.name);
-      console.error('✍️ Données signature length:', signatureData ? signatureData.length : 'undefined');
-      console.error('✍️ Header signature:', signatureData ? signatureData.substring(0, 50) : 'undefined');
+      console.error('Erreur dessin signature:', error);
       
-      console.log(`✍️ === DESSIN PLACEHOLDER ERREUR ===`);
-      // Dessiner un placeholder d'erreur visible
+      // Placeholder d'erreur
       page.drawRectangle({
         x,
         y,
         width,
         height,
-        borderColor: rgb(1, 0, 0),
-        borderWidth: 2,
-        color: rgb(1, 0.9, 0.9),
+        color: rgb(0.95, 0.95, 0.95),
+        borderColor: rgb(0.8, 0.8, 0.8),
+        borderWidth: 1,
       });
       
-      // Texte d'erreur
-      page.drawText('ERREUR SIGNATURE', {
-        x: x + 2,
+      page.drawText('Signature non disponible', {
+        x: x + 5,
         y: y + height / 2,
-        size: Math.min(8, height / 4),
-        color: rgb(1, 0, 0),
+        size: 8,
+        color: rgb(0.5, 0.5, 0.5),
       });
-      
-      console.log(`✍️ ✅ Placeholder d'erreur dessiné`);
     }
   }
 
