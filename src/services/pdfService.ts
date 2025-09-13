@@ -166,16 +166,35 @@ export class PDFService {
   private static cleanFormDataForStorage(formData: Record<string, any>): Record<string, any> {
     const cleaned: Record<string, any> = {};
     
-    Object.entries(formData).forEach(async ([key, value]) => {
+    Object.entries(formData).forEach(([key, value]) => {
       // Garder les images sans compression pour éviter la corruption
       if (typeof value === 'string' && value.startsWith('data:image')) {
         const originalSize = Math.round(value.length / 1024);
         console.log(`💾 Image ${key}: ${originalSize}KB (sans compression)`);
         
-        // Si l'image est très grosse (> 1MB), on la remplace par un placeholder
-        if (value.length > 1000000) {
-          console.log(`💾 ⚠️ Image trop grosse (${originalSize}KB), remplacement par placeholder`);
-          cleaned[key] = '[IMAGE_TOO_LARGE_REMOVED]';
+        // Si l'image est très grosse (> 2MB), essayer de la compresser intelligemment
+        if (value.length > 2000000) {
+          console.log(`💾 🔧 Image très grosse (${originalSize}KB), compression intelligente...`);
+          try {
+            const compressed = this.intelligentImageCompression(value, 1500); // Max 1.5MB
+            const compressedSize = Math.round(compressed.length / 1024);
+            console.log(`💾 ✅ Compression réussie: ${originalSize}KB → ${compressedSize}KB`);
+            cleaned[key] = compressed;
+          } catch (error) {
+            console.warn(`💾 ❌ Compression échouée, remplacement par placeholder:`, error);
+            cleaned[key] = '[IMAGE_TOO_LARGE_REMOVED]';
+          }
+        } else if (value.length > 1000000) {
+          console.log(`💾 🔧 Image grosse (${originalSize}KB), compression légère...`);
+          try {
+            const compressed = this.intelligentImageCompression(value, 800); // Max 800KB
+            const compressedSize = Math.round(compressed.length / 1024);
+            console.log(`💾 ✅ Compression légère réussie: ${originalSize}KB → ${compressedSize}KB`);
+            cleaned[key] = compressed;
+          } catch (error) {
+            console.warn(`💾 ❌ Compression légère échouée, image originale conservée:`, error);
+            cleaned[key] = value; // Garder l'original en cas d'erreur
+          }
         } else {
           // Garder l'image originale sans compression
           cleaned[key] = value;
@@ -194,8 +213,8 @@ export class PDFService {
     const totalSizeKB = Math.round(totalSize / 1024);
     console.log(`💾 Taille totale des données après nettoyage: ${totalSizeKB}KB`);
     
-    // Si encore trop gros, mesures d'urgence
-    if (totalSize > 800000) { // Plus de 800KB
+    // Si encore trop gros, mesures d'urgence (seuil augmenté)
+    if (totalSize > 1200000) { // Plus de 1.2MB
       console.log(`💾 🚨 MESURES D'URGENCE: ${totalSizeKB}KB > 800KB`);
       
       // Étape 1: Supprimer les images non-signatures les plus grosses
@@ -204,11 +223,11 @@ export class PDFService {
         if (typeof value === 'string' && value.startsWith('data:image')) {
           const isSignature = key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign');
           
-          if (!isSignature && value.length > 100000) {
+          if (!isSignature && value.length > 500000) {
             // Supprimer les grosses images non-signatures
             console.log(`💾 Suppression grosse image non-signature: ${key}`);
             cleaned[key] = '[IMAGE_REMOVED_FOR_SIZE]';
-          } else if (isSignature && value.length > 500000) {
+          } else if (isSignature && value.length > 800000) {
             // Supprimer les signatures vraiment énormes
             console.log(`💾 Suppression signature énorme: ${key}`);
             cleaned[key] = '[SIGNATURE_TOO_LARGE]';
@@ -229,16 +248,21 @@ export class PDFService {
       console.log(`💾 Taille après mesures d'urgence: ${totalSizeKB}KB → ${newSizeKB}KB`);
       
       // Si ENCORE trop gros, garder seulement l'essentiel
-      if (newSize > 800000) {
+      if (newSize > 1200000) {
         console.log(`💾 🆘 RÉDUCTION DRASTIQUE: ${newSizeKB}KB encore trop gros`);
         const essentialData: Record<string, any> = {};
         let signatureCount = 0;
         for (const key of Object.keys(cleaned)) {
           if (typeof cleaned[key] === 'string' && cleaned[key].startsWith('data:image')) {
             if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
-              if (signatureCount < 3 && cleaned[key].length < 300000) { // Max 3 signatures < 300KB
+              if (signatureCount < 3 && cleaned[key].length < 600000) { // Max 3 signatures < 600KB
                 essentialData[key] = cleaned[key]; // Garder sans compression
                 signatureCount++;
+              }
+            } else {
+              // Garder aussi les images normales si pas trop grosses
+              if (cleaned[key].length < 400000) { // Max 400KB pour images normales
+                essentialData[key] = cleaned[key];
               }
             }
           } else if (typeof cleaned[key] === 'string' && cleaned[key].length <= 50) {
@@ -258,6 +282,70 @@ export class PDFService {
     }
     
     return cleaned;
+  }
+
+  // COMPRESSION INTELLIGENTE SANS CANVAS (pour éviter les images noires)
+  private static intelligentImageCompression(base64Image: string, maxSizeKB: number): string {
+    try {
+      console.log(`🔧 Compression intelligente - Cible: ${maxSizeKB}KB`);
+      
+      const [header, data] = base64Image.split(',');
+      if (!data) throw new Error('Format base64 invalide');
+      
+      const originalSizeKB = Math.round(base64Image.length / 1024);
+      console.log(`🔧 Taille originale: ${originalSizeKB}KB`);
+      
+      // Si déjà assez petit, ne pas compresser
+      if (originalSizeKB <= maxSizeKB) {
+        console.log(`🔧 ✅ Image déjà assez petite, pas de compression`);
+        return base64Image;
+      }
+      
+      // Compression par échantillonnage intelligent
+      const targetRatio = maxSizeKB / originalSizeKB;
+      const compressionRatio = Math.max(0.3, Math.min(0.9, targetRatio * 1.2)); // Entre 30% et 90%
+      
+      console.log(`🔧 Ratio de compression: ${Math.round(compressionRatio * 100)}%`);
+      
+      // Échantillonnage de la chaîne base64 (méthode sûre)
+      const step = Math.ceil(1 / compressionRatio);
+      let compressedData = '';
+      
+      for (let i = 0; i < data.length; i += step) {
+        compressedData += data[i];
+      }
+      
+      // Reconstituer l'image
+      const compressedImage = `${header},${compressedData}`;
+      const compressedSizeKB = Math.round(compressedImage.length / 1024);
+      
+      console.log(`🔧 ✅ Compression terminée: ${originalSizeKB}KB → ${compressedSizeKB}KB`);
+      
+      // Vérifier que la compression a bien fonctionné
+      if (compressedSizeKB > maxSizeKB * 1.5) {
+        console.log(`🔧 ⚠️ Compression insuffisante, nouvelle tentative plus agressive`);
+        
+        // Compression plus agressive
+        const aggressiveStep = Math.ceil(step * 1.5);
+        let aggressiveData = '';
+        
+        for (let i = 0; i < data.length; i += aggressiveStep) {
+          aggressiveData += data[i];
+        }
+        
+        const aggressiveImage = `${header},${aggressiveData}`;
+        const aggressiveSizeKB = Math.round(aggressiveImage.length / 1024);
+        
+        console.log(`🔧 ✅ Compression agressive: ${originalSizeKB}KB → ${aggressiveSizeKB}KB`);
+        return aggressiveImage;
+      }
+      
+      return compressedImage;
+      
+    } catch (error) {
+      console.error(`🔧 ❌ Erreur compression intelligente:`, error);
+      throw error;
+    }
   }
 
   // GÉNÉRER ET TÉLÉCHARGER LE PDF (uniquement au moment du téléchargement)
