@@ -607,9 +607,88 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Sélectionnez un fichier PDF qui servira de base à votre template
                 </p>
-    </DndProvider>
-  );
-};
+                <label className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl">
+                  <Upload className="h-5 w-5 mr-2" />
+                  Choisir un fichier PDF
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Palette des champs */}
+              <div className="lg:col-span-1">
+                <PDFFieldPalette
+                  onAddField={addField}
+                  variables={actualFormVariables}
+                  draggedFieldType={draggedFieldType}
+                />
+              </div>
+
+              {/* Visualiseur PDF */}
+              <div className="lg:col-span-2">
+                <Card className="bg-white dark:bg-gray-800 shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {templateName || 'Template PDF'}
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Page {currentPage}
+                        </span>
+                        {draggedFieldType && (
+                          <div className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                            Mode placement: {draggedFieldType}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="relative">
+                      <PDFViewer
+                        ref={pdfViewerRef}
+                        file={pdfFile}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageClick={handlePageClick}
+                        onPDFLoaded={handlePDFLoaded}
+                        scale={scale}
+                        onScaleChange={setScale}
+                      />
+                      <PDFFieldOverlay
+                        fields={fields}
+                        selectedField={selectedField}
+                        onFieldSelect={setSelectedField}
+                        onFieldUpdate={updateField}
+                        currentPage={currentPage}
+                        pdfViewerRef={pdfViewerRef}
+                        scale={scale}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Propriétés du champ */}
+              <div className="lg:col-span-1">
+                <PDFFieldProperties
+                  field={selectedFieldData}
+                  onUpdate={updateField}
+                  onDelete={deleteField}
+                  variables={actualFormVariables}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </DndProvider>
   );
 };
