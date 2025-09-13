@@ -107,30 +107,21 @@ export const useSubscription = () => {
         console.log('🔑 Recherche codes secrets pour userId:', targetUserId);
         console.log('🔑 Mode impersonation actif:', !!impersonationData);
         
-        // Chercher les codes secrets actifs pour l'utilisateur avec requête simplifiée
+        // Chercher les codes secrets actifs pour l'utilisateur
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
-          .select(`
-            expires_at, 
-            activated_at,
-            code_id,
-            secret_codes!inner (
-              type,
-              code,
-              is_active,
-              description
-            )
-          `)
+          .select('expires_at, activated_at, code_id, secret_codes(*)')
           .eq('user_id', targetUserId)
-          .eq('secret_codes.is_active', true)
           .order('activated_at', { ascending: false });
 
         console.log('🔑 Codes secrets pour userId', targetUserId, ':', secretCodeData?.length || 0);
+        console.log('🔑 Erreur requête:', secretCodeError);
+        console.log('🔑 Données brutes:', secretCodeData);
         
         if (secretCodeData && secretCodeData.length > 0) {
           console.log('🔑 Détails des codes trouvés:');
           secretCodeData.forEach((code, index) => {
-            const secretCodeInfo = code.secret_codes as any;
+            const secretCodeInfo = Array.isArray(code.secret_codes) ? code.secret_codes[0] : code.secret_codes;
             console.log(`🔑 Code ${index + 1}:`, {
               type: secretCodeInfo?.type,
               code: secretCodeInfo?.code,
@@ -144,7 +135,7 @@ export const useSubscription = () => {
           
           // Vérifier chaque code pour trouver un code actif
           for (const codeData of secretCodeData) {
-            const secretCodeInfo = codeData.secret_codes as any;
+            const secretCodeInfo = Array.isArray(codeData.secret_codes) ? codeData.secret_codes[0] : codeData.secret_codes;
             const codeType = secretCodeInfo?.type;
             const expiresAt = codeData.expires_at;
             
@@ -182,7 +173,7 @@ export const useSubscription = () => {
                 type: codeType,
                 isLifetime,
                 expiresAt: expiresAt || 'jamais',
-               code: (codeData.secret_codes as any)?.code
+                code: secretCodeInfo?.code
               });
               break; // Prendre le premier code actif trouvé
             } else {

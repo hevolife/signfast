@@ -37,28 +37,28 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
     try {
       console.log('🔑 Activation code secret:', code.trim().toUpperCase(), 'pour user:', user?.id);
       
-      const { data, error } = await supabase.rpc('activate_secret_code', {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('activate_secret_code', {
         p_code: code.trim().toUpperCase(),
         p_user_id: user?.id
       });
       
-      console.log('🔑 Réponse activation:', { data, error });
+      console.log('🔑 Réponse activation:', { data: rpcData, error: rpcError });
 
-      if (error) {
-        console.error('Erreur activation code:', error);
-        toast.error(`Erreur lors de l'activation du code: ${error.message}`);
+      if (rpcError) {
+        console.error('Erreur activation code:', rpcError);
+        toast.error(`Erreur lors de l'activation du code: ${rpcError.message}`);
         return;
       }
 
-      if (data.success) {
-        const isLifetime = data.type === 'lifetime';
-        const expiresAt = data.expires_at ? new Date(data.expires_at).toLocaleDateString('fr-FR') : null;
+      if (rpcData?.success) {
+        const isLifetime = rpcData.type === 'lifetime';
+        const expiresAt = rpcData.expires_at ? new Date(rpcData.expires_at).toLocaleDateString('fr-FR') : null;
         
         console.log('🔑 ✅ Code activé avec succès:', {
-          type: data.type,
+          type: rpcData.type,
           isLifetime,
           expiresAt,
-          message: data.message
+          message: rpcData.message
         });
         
         toast.success(
@@ -70,8 +70,8 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
         onSuccess();
         onClose();
       } else {
-        console.log('🔑 ❌ Échec activation:', data.error);
-        toast.error(data.error || 'Code secret invalide');
+        console.log('🔑 ❌ Échec activation:', rpcData?.error);
+        toast.error(rpcData?.error || 'Code secret invalide');
       }
     } catch (error) {
       console.error('Erreur:', error);
