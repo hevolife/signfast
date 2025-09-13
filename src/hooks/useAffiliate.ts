@@ -133,6 +133,16 @@ export const useAffiliate = () => {
       return data;
     } catch (error) {
       console.error('❌ Erreur création programme:', error);
+      
+      // Si c'est une erreur de contrainte de clé étrangère, déconnecter l'utilisateur
+      if (error.code === '23503') {
+        console.log('🔄 Contrainte de clé étrangère violée, déconnexion de l\'utilisateur...');
+        // Forcer la déconnexion pour résoudre les incohérences de session
+        await supabase.auth.signOut();
+        window.location.reload();
+        return null;
+      }
+      
       return null;
     }
   };
