@@ -14,6 +14,7 @@ export const useAffiliate = () => {
     if (user) {
       fetchAffiliateData();
     } else {
+      setTablesExist(true);
       setProgram(null);
       setReferrals([]);
       setLoading(false);
@@ -24,13 +25,52 @@ export const useAffiliate = () => {
     if (!user) return;
 
     try {
-      // Pour l'instant, les tables d'affiliation ne sont pas encore créées
-      // On simule un état où les tables n'existent pas
-      setTablesExist(false);
-      setProgram(null);
-      setReferrals([]);
+      // Tester d'abord si les tables existent
+      const { error: testError } = await supabase
+        .from('affiliate_programs')
+        .select('id')
+        .limit(1);
+
+      if (testError && testError.code === 'PGRST205') {
+        console.log('📊 Tables d\'affiliation non créées');
+        setTablesExist(false);
+        setProgram(null);
+        setReferrals([]);
+        return;
+      }
+
+      setTablesExist(true);
+
+      // Récupérer le programme d'affiliation de l'utilisateur
+      const { data: programData, error: programError } = await supabase
+        .from('affiliate_programs')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (programError && programError.code !== 'PGRST116') {
+        console.error('Erreur récupération programme:', programError);
+        setProgram(null);
+      } else {
+        setProgram(programData);
+      }
+
+      // Récupérer les parrainages
+      const { data: referralsData, error: referralsError } = await supabase
+        .from('affiliate_referrals')
+        .select('*')
+        .eq('affiliate_user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (referralsError) {
+        console.error('Erreur récupération parrainages:', referralsError);
+        setReferrals([]);
+      } else {
+        setReferrals(referralsData || []);
+      }
     } catch (error) {
-      setTablesExist(false);
+      console.error('Erreur générale affiliation:', error);
+      setTablesExist(true);
       setProgram(null);
       setReferrals([]);
     } finally {
@@ -64,11 +104,25 @@ export const useAffiliateAdmin = () => {
   useEffect(() => {
     if (isSuperAdmin) {
       fetchAllPrograms();
+    } else {
+      setLoading(false);
     }
   }, [isSuperAdmin]);
 
   const fetchAllPrograms = async () => {
     try {
+      // Tester d'abord si les tables existent
+      const { error: testError } = await supabase
+        .from('affiliate_programs')
+        .select('id')
+        .limit(1);
+
+      if (testError && testError.code === 'PGRST205') {
+        console.log('📊 Tables d\'affiliation non créées pour admin');
+        setAllPrograms([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('affiliate_stats')
         .select('*')
@@ -76,11 +130,13 @@ export const useAffiliateAdmin = () => {
 
       if (error) {
         console.error('Error fetching affiliate stats:', error);
+        setAllPrograms([]);
       } else {
         setAllPrograms(data || []);
       }
     } catch (error) {
       console.error('Error fetching affiliate programs:', error);
+      setAllPrograms([]);
     } finally {
       setLoading(false);
     }
