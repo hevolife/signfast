@@ -78,8 +78,10 @@ export const useAffiliate = () => {
           .from('affiliate_referrals')
           .select(`
             *,
-            referred_user:users!referred_user_id(email),
-            referred_profile:user_profiles!referred_user_id(first_name, last_name, company_name)
+            referred_user:users!referred_user_id(
+              email,
+              user_profiles(first_name, last_name, company_name)
+            )
           `)
           .eq('affiliate_user_id', user.id)
           .order('created_at', { ascending: false });

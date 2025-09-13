@@ -373,8 +373,8 @@ export const AffiliatePanel: React.FC = () => {
                       {getStatusIcon(referral.status)}
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">
-                          {(referral as any).referred_profile?.company_name || 
-                           `${(referral as any).referred_profile?.first_name || ''} ${(referral as any).referred_profile?.last_name || ''}`.trim() ||
+                         {(referral as any).referred_user?.user_profiles?.company_name || 
+                          `${(referral as any).referred_user?.user_profiles?.first_name || ''} ${(referral as any).referred_user?.user_profiles?.last_name || ''}`.trim() ||
                            (referral as any).referred_user?.email || 'Utilisateur'}
                         </div>
                         <div className="text-sm text-gray-500">
