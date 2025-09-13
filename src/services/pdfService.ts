@@ -163,21 +163,92 @@ export class PDFService {
   }
 
   // NETTOYER LES DONNÉES DU FORMULAIRE POUR LE STOCKAGE
-  private static cleanFormDataForStorage(formData: Record<string, any>): Record<string, any> {
+  private static async cleanFormDataForStorage(formData: Record<string, any>): Promise<Record<string, any>> {
     const cleaned: Record<string, any> = {};
     
-    Object.entries(formData).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(formData)) {
       if (typeof value === 'string' && value.startsWith('data:image')) {
         const originalSize = Math.round(value.length / 1024);
         console.log(`💾 Image ${key}: ${originalSize}KB`);
-        // Garder l'image originale sans compression
-        cleaned[key] = value;
+        
+        // Compresser si > 500KB pour éviter les timeouts Supabase
+        if (originalSize > 500) {
+          console.log(`💾 🔧 Compression image ${key} (${originalSize}KB)...`);
+          try {
+            const compressedImage = await this.compressImageWithCanvas(value, 0.7);
+            const compressedSize = Math.round(compressedImage.length / 1024);
+            console.log(`💾 ✅ Image compressée: ${originalSize}KB → ${compressedSize}KB`);
+            cleaned[key] = compressedImage;
+          } catch (error) {
+            console.error(`💾 ❌ Erreur compression ${key}:`, error);
+            // En cas d'erreur, garder l'original
+            cleaned[key] = value;
+          }
+        } else {
+          // Image déjà petite, garder l'original
+          cleaned[key] = value;
+        }
       } else {
         cleaned[key] = value;
       }
-    });
+    }
     
     return cleaned;
+  }
+
+  // COMPRESSION D'IMAGE AVEC CANVAS
+  private static async compressImageWithCanvas(base64Image: string, quality: number = 0.7): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              reject(new Error('Canvas context non disponible'));
+              return;
+            }
+            
+            // Calculer les nouvelles dimensions (réduire si trop grand)
+            let { width, height } = img;
+            const maxDimension = 1200; // Limite raisonnable
+            
+            if (width > maxDimension || height > maxDimension) {
+              const ratio = Math.min(maxDimension / width, maxDimension / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+              console.log(`💾 🔧 Redimensionnement: ${img.width}×${img.height} → ${width}×${height}`);
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Fond blanc pour éviter la transparence
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Dessiner l'image redimensionnée
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convertir en JPEG avec qualité spécifiée
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressedDataUrl);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        img.onerror = () => {
+          reject(new Error('Impossible de charger l\'image'));
+        };
+        
+        img.src = base64Image;
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   // COMPRESSION SIMPLE PAR ÉCHANTILLONNAGE
