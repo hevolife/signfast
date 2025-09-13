@@ -206,7 +206,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                   className="flex items-center space-x-1 lg:space-x-2"
                 >
                   <span className="text-xs lg:text-sm">
-                    {isMultiSelectMode ? `Multi (${selectedFields.size})` : 'Multi'}
+                    {isMultiSelectMode ? `Sélection (${selectedFields.size})` : 'Sélection'}
                   </span>
                 </Button>
                 <Button
