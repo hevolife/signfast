@@ -19,11 +19,6 @@ export const Navbar: React.FC = () => {
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
-  // Fonction helper pour vérifier si un lien est actif
-  const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path);
-  };
-
   const getColorClasses = (color: string, active: boolean) => {
     const colorMap = {
       blue: active 
@@ -205,6 +200,14 @@ export const Navbar: React.FC = () => {
               </>
             )}
           </div>
+
+          {/* Fonction helper pour vérifier si un lien est actif */}
+          {(() => {
+            const isActive = (path: string) => {
+              return location.pathname === path || location.pathname.startsWith(path);
+            };
+            return null; // Cette fonction ne rend rien, elle définit juste isActive
+          })()}
 
           {/* Mobile: Only dark mode toggle and logo */}
           <div className="md:hidden flex items-center space-x-2">
