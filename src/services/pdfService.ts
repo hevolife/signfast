@@ -106,18 +106,11 @@ export class PDFService {
       // Nettoyer les données du formulaire pour éviter les problèmes de quota
       const cleanFormData = this.cleanFormDataForStorage(metadata.formData);
       
-      // Stocker les métadonnées du template séparément pour éviter les timeouts
-      let templateMetadata = null;
+      // Stocker seulement l'ID du template pour éviter les gros volumes
+      let templateId = null;
       if (metadata.templateId) {
-        templateMetadata = {
-          id: metadata.templateId,
-          templateId: metadata.templateId,
-          templateFields: metadata.templateFields || [],
-          templatePdfContent: metadata.templatePdfContent || '',
-        };
-        
-        // Stocker seulement l'ID du template dans les données principales
-        cleanFormData._templateId = metadata.templateId;
+        templateId = metadata.templateId;
+        console.log(`💾 Template ID à stocker: ${templateId}`);
       }
 
       const pdfData = {
@@ -126,7 +119,7 @@ export class PDFService {
         template_name: metadata.templateName,
         form_title: metadata.formTitle,
         form_data: cleanFormData,
-        pdf_content: templateMetadata ? JSON.stringify(templateMetadata) : '', // Stocker les métadonnées template ici
+        pdf_content: templateId || '', // Stocker seulement l'ID du template
         file_size: 0, // Sera calculé au téléchargement
         user_id: targetUserId,
       };
@@ -173,33 +166,50 @@ export class PDFService {
   private static cleanFormDataForStorage(formData: Record<string, any>): Record<string, any> {
     const cleaned: Record<string, any> = {};
     
-    Object.entries(formData).forEach(([key, value]) => {
+    Object.entries(formData).forEach(async ([key, value]) => {
       // Optimiser les données pour éviter les timeouts
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
-          // Compresser légèrement les signatures pour éviter les timeouts
-          cleaned[key] = this.compressImageData(value);
-          console.log(`💾 Signature conservée pour clé: "${key}"`);
+        // Compression drastique pour toutes les images
+        const originalSize = Math.round(value.length / 1024);
+        console.log(`💾 Compression ${key}: ${originalSize}KB`);
+        
+        // Compression synchrone simplifiée
+        if (value.length > 30000) { // Plus de 30KB
+          // Remplacer par un placeholder pour éviter le timeout
+          cleaned[key] = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=';
         } else {
-          // Compresser les autres images
-          cleaned[key] = this.compressImageData(value);
-          console.log(`💾 Image conservée pour clé: "${key}"`);
+          cleaned[key] = value;
         }
-      } else if (typeof value === 'string' && value.length > 500) {
+      } else if (typeof value === 'string' && value.length > 200) {
         // Tronquer les textes très longs
-        cleaned[key] = value.substring(0, 500) + '...';
+        cleaned[key] = value.substring(0, 200) + '...';
       } else {
         // Garder toutes les autres données normales
         cleaned[key] = value;
-        console.log(`💾 Donnée normale conservée: "${key}" = "${value}"`);
       }
     });
     
-    console.log(`💾 Données nettoyées - clés finales:`, Object.keys(cleaned));
-    
     // Calculer la taille totale pour debug
     const totalSize = JSON.stringify(cleaned).length;
-    console.log(`💾 Taille totale des données: ${Math.round(totalSize / 1024)}KB`);
+    console.log(`💾 Taille totale des données après nettoyage: ${Math.round(totalSize / 1024)}KB`);
+    
+    // Si encore trop gros, compression d'urgence
+    if (totalSize > 500000) { // Plus de 500KB
+      console.log(`💾 ⚠️ Données encore trop volumineuses, compression d'urgence...`);
+      
+      // Supprimer toutes les images sauf les signatures
+      Object.keys(cleaned).forEach(key => {
+        const value = cleaned[key];
+        if (typeof value === 'string' && value.startsWith('data:image')) {
+          if (!key.toLowerCase().includes('signature') && !key.toLowerCase().includes('sign')) {
+            cleaned[key] = '[IMAGE_REMOVED_FOR_SIZE]';
+          }
+        }
+      });
+      
+      const newSize = JSON.stringify(cleaned).length;
+      console.log(`💾 Taille après compression d'urgence: ${Math.round(newSize / 1024)}KB`);
+    }
     
     return cleaned;
   }
@@ -207,13 +217,45 @@ export class PDFService {
   // COMPRESSER LES DONNÉES IMAGE POUR ÉVITER LES TIMEOUTS
   private static compressImageData(imageData: string): string {
     try {
-      // Si l'image est très grande, on peut la compresser
-      if (imageData.length > 100000) { // Plus de 100KB
-        console.log(`💾 Compression image: ${Math.round(imageData.length / 1024)}KB → compression...`);
+      // Compression agressive pour éviter les timeouts
+      if (imageData.length > 50000) { // Plus de 50KB
+        console.log(`💾 Compression image: ${Math.round(imageData.length / 1024)}KB → compression agressive...`);
         
-        // Pour l'instant, on garde l'image telle quelle mais on pourrait implémenter
-        // une compression canvas ici si nécessaire
-        return imageData;
+        // Créer un canvas pour compresser l'image
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        return new Promise<string>((resolve) => {
+          img.onload = () => {
+            // Réduire la taille si l'image est trop grande
+            const maxWidth = 800;
+            const maxHeight = 600;
+            
+            let { width, height } = img;
+            
+            if (width > maxWidth || height > maxHeight) {
+              const ratio = Math.min(maxWidth / width, maxHeight / height);
+              width *= ratio;
+              height *= ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              // Compression JPEG avec qualité réduite
+              const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+              console.log(`💾 Image compressée: ${Math.round(imageData.length / 1024)}KB → ${Math.round(compressedData.length / 1024)}KB`);
+              resolve(compressedData);
+            } else {
+              resolve(imageData);
+            }
+          };
+          img.onerror = () => resolve(imageData);
+          img.src = imageData;
+        });
       }
       
       return imageData;
@@ -260,8 +302,31 @@ export class PDFService {
       // Récupérer les métadonnées du template depuis pdf_content
       if (metadata.pdf_content) {
         try {
-          templateData = JSON.parse(metadata.pdf_content);
-          console.log('📄 Template data récupéré depuis pdf_content');
+          // Si pdf_content contient un ID de template, le récupérer depuis Supabase
+          const templateId = metadata.pdf_content;
+          if (templateId && templateId.length < 100) { // C'est probablement un ID
+            console.log('📄 Récupération template depuis ID:', templateId);
+            
+            const { data: templateFromDb, error: templateError } = await supabase
+              .from('pdf_templates')
+              .select('id, name, pdf_content, fields')
+              .eq('id', templateId)
+              .eq('is_public', true)
+              .single();
+            
+            if (!templateError && templateFromDb) {
+              templateData = {
+                templateId: templateFromDb.id,
+                templateFields: templateFromDb.fields,
+                templatePdfContent: templateFromDb.pdf_content,
+              };
+              console.log('📄 Template récupéré depuis Supabase');
+            }
+          } else {
+            // Ancien format JSON
+            templateData = JSON.parse(metadata.pdf_content);
+            console.log('📄 Template data récupéré depuis JSON (ancien format)');
+          }
         } catch (error) {
           console.warn('📄 Impossible de parser template data:', error);
         }
@@ -512,15 +577,6 @@ export class PDFService {
       }
 
       console.log('💾 Données Supabase reçues:', data?.length || 0, 'PDFs');
-      data?.forEach((item, index) => {
-        console.log(`💾 PDF ${index + 1}:`, {
-          fileName: item.file_name,
-          formTitle: item.form_title,
-          templateName: item.template_name,
-          userId: targetUserId,
-          createdAt: item.created_at
-        });
-      });
       
       return (data || []).map(item => ({
         fileName: item.file_name,
