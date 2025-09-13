@@ -233,11 +233,14 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
         
         const signature = tempCanvas.toDataURL('image/png', 1.0);
         console.log('✍️ ✅ Signature sauvegardée manuellement:', signature.length, 'caractères');
+        onSignatureChange(signature);
+      } else {
+        // Fallback si le contexte temporaire n'est pas disponible
         const signature = canvas.toDataURL('image/png', 1.0);
+        console.log('✍️ ⚠️ Signature sauvegardée (fallback):', signature.length, 'caractères');
         onSignatureChange(signature);
       }
       console.error('Erreur conversion signature:', error);
-      // Fallback simple
       const signature = canvas.toDataURL('image/png');
       console.error('✍️ Erreur sauvegarde manuelle signature:', error);
     }
