@@ -394,6 +394,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               </div>
             )}
           </div>
+        </div>
       </CardContent>
     </Card>
   );
