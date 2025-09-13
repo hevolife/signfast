@@ -269,6 +269,12 @@ export class PDFService {
       const img = new Image();
       
       // Approche synchrone simplifiée pour éviter les images noires
+      return signatureData; // Placeholder pour éviter l'erreur
+    } catch (error) {
+      console.error('💾 Erreur compression signature:', error);
+      return signatureData;
+    }
+  }
 
   // GÉNÉRER ET TÉLÉCHARGER LE PDF (uniquement au moment du téléchargement)
   static async generateAndDownloadPDF(fileName: string): Promise<boolean> {
