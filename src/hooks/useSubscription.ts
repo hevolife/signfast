@@ -107,29 +107,6 @@ export const useSubscription = () => {
         console.log('🔑 Recherche codes secrets pour userId:', targetUserId);
         console.log('🔑 Mode impersonation actif:', !!impersonationData);
         
-        // D'abord, lister TOUS les codes secrets pour debug
-        const { data: allSecretCodes, error: allCodesError } = await supabase
-          .from('user_secret_codes')
-          .select(`
-            user_id,
-            activated_at,
-            expires_at,
-            secret_codes (
-              code,
-              type,
-              description
-            )
-          `)
-          .limit(1);
-
-        console.log('🔑 TOUS les codes secrets dans la base:', allSecretCodes?.map(c => ({
-          user_id: c.user_id,
-          code: c.secret_codes?.code,
-          type: c.secret_codes?.type,
-          expires_at: c.expires_at,
-          activated_at: c.activated_at
-        })));
-        
         // Maintenant chercher spécifiquement pour notre utilisateur
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
@@ -159,9 +136,7 @@ export const useSubscription = () => {
               isValidMonthly: code.secret_codes?.type === 'monthly' && code.expires_at && new Date(code.expires_at) > new Date()
             });
           });
-        }
-
-        if (!secretCodeError && secretCodeData && secretCodeData.length > 0) {
+          
           // Vérifier chaque code pour trouver un code actif
           for (const codeData of secretCodeData) {
             const codeType = codeData.secret_codes?.type;
@@ -232,8 +207,7 @@ export const useSubscription = () => {
         priceId: stripeSubscription?.price_id || null,
         currentPeriodEnd: stripeSubscription?.current_period_end || null,
         cancelAtPeriodEnd: stripeSubscription?.cancel_at_period_end || false,
-        hasStripeAccess,
-        hasActiveSecretCode,
+        hasSecretCode: hasActiveSecretCode,
         secretCodeType,
         secretCodeExpiresAt,
         loading: false,
