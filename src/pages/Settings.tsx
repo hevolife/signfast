@@ -342,7 +342,7 @@ export const Settings: React.FC = () => {
             <nav className="-mb-px flex space-x-3 justify-center">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-white/50 rounded shadow-sm">
@@ -353,7 +353,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-white/50 rounded shadow-sm">
@@ -364,7 +364,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('affiliate')}
-                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-white/50 rounded shadow-sm">
@@ -375,7 +375,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('subscription')}
-                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
+                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 bg-white/50 rounded shadow-sm">
