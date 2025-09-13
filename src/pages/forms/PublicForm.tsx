@@ -182,11 +182,15 @@ export const PublicForm: React.FC = () => {
     setSubmitting(true);
     
     try {
-      const submissionData = { ...formData };
+      // Préparer les données pour la base (sans les gros fichiers)
+      const dbSubmissionData = { ...formData };
+      // Préparer les données complètes pour le PDF (avec les images)
+      const pdfSubmissionData = { ...formData };
       
       console.log(`📤 ===== SOUMISSION FORMULAIRE =====`);
       console.log(`📤 FormData avant traitement:`, formData);
       
+      // Nettoyer les données pour la base de données (remplacer les images par des marqueurs)
       form.fields?.forEach(field => {
         const fieldValue = formData[field.id];
         console.log(`📤 Traitement champ "${field.label}" (${field.type}):`, 
@@ -196,13 +200,22 @@ export const PublicForm: React.FC = () => {
         );
         
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
-          submissionData[field.label] = fieldValue;
+          // Pour la base de données : remplacer les images par des marqueurs
+          if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+            dbSubmissionData[field.label] = `[IMAGE_UPLOADED_${field.label}]`;
+            console.log(`📤 Image remplacée par marqueur pour DB: ${field.label}`);
+          } else {
+            dbSubmissionData[field.label] = fieldValue;
+          }
+          
+          // Pour le PDF : garder les données complètes
+          pdfSubmissionData[field.label] = fieldValue;
           
           // Debug pour les champs image/fichier
           if (field.type === 'file' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
             console.log(`📷 ===== IMAGE SAUVEGARDÉE =====`);
             console.log(`📷 Libellé champ: "${field.label}"`);
-            console.log(`📷 Clé dans submissionData: "${field.label}"`);
+            console.log(`📷 Clé dans pdfSubmissionData: "${field.label}"`);
             console.log(`📷 Taille base64: ${fieldValue.length} caractères`);
             console.log(`📷 Format: ${fieldValue.substring(0, 50)}...`);
           }
@@ -224,7 +237,15 @@ export const PublicForm: React.FC = () => {
               conditionalFields.forEach(conditionalField => {
                 const conditionalValue = formData[conditionalField.id];
                 if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
-                  submissionData[conditionalField.label] = conditionalValue;
+                  // Pour la base de données
+                  if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                    dbSubmissionData[conditionalField.label] = `[IMAGE_UPLOADED_${conditionalField.label}]`;
+                  } else {
+                    dbSubmissionData[conditionalField.label] = conditionalValue;
+                  }
+                  
+                  // Pour le PDF
+                  pdfSubmissionData[conditionalField.label] = conditionalValue;
                   console.log(`📤 Champ conditionnel ajouté: "${conditionalField.label}" = ${conditionalValue}`);
                 }
               });
@@ -234,31 +255,34 @@ export const PublicForm: React.FC = () => {
       });
 
       console.log(`📤 ===== DONNÉES FINALES SOUMISSION =====`);
-      console.log(`📤 Clés dans submissionData:`, Object.keys(submissionData));
+      console.log(`📤 Clés dans dbSubmissionData:`, Object.keys(dbSubmissionData));
+      console.log(`📤 Clés dans pdfSubmissionData:`, Object.keys(pdfSubmissionData));
       
       // Formater les dates au format français avant soumission
-      Object.keys(submissionData).forEach(key => {
-        const value = submissionData[key];
+      Object.keys(dbSubmissionData).forEach(key => {
+        const value = dbSubmissionData[key];
         if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          submissionData[key] = formatDateFR(value);
-          console.log(`📅 Date formatée: ${key} = ${value} → ${submissionData[key]}`);
+          dbSubmissionData[key] = formatDateFR(value);
+          pdfSubmissionData[key] = formatDateFR(value);
+          console.log(`📅 Date formatée: ${key} = ${value} → ${dbSubmissionData[key]}`);
         }
       });
       
       // Debug spécial pour les images
-      const imagesInSubmission = Object.entries(submissionData).filter(([key, value]) => 
+      const imagesInPdfData = Object.entries(pdfSubmissionData).filter(([key, value]) => 
         typeof value === 'string' && value.startsWith('data:image')
       );
-      console.log(`📤 Images dans submissionData: ${imagesInSubmission.length}`);
-      imagesInSubmission.forEach(([key, value], index) => {
+      console.log(`📤 Images dans pdfSubmissionData: ${imagesInPdfData.length}`);
+      imagesInPdfData.forEach(([key, value], index) => {
         console.log(`📤 Image ${index + 1}: clé="${key}", taille=${typeof value === 'string' ? value.length : 0}`);
       });
 
+      // Sauvegarder dans la base avec les données allégées
       const { data: responseData, error } = await supabase
         .from('responses')
         .insert([{
           form_id: id,
-          data: submissionData,
+          data: dbSubmissionData,
         }])
         .select()
         .single();
@@ -277,7 +301,7 @@ export const PublicForm: React.FC = () => {
       // Traitement PDF en arrière-plan pour éviter les timeouts
       setTimeout(async () => {
         try {
-          await handlePDFGeneration(responseData);
+          await handlePDFGeneration(responseData, pdfSubmissionData);
           console.log('🎯 Traitement PDF terminé avec succès');
         } catch (error) {
           console.error('🎯 Erreur traitement PDF:', error);
@@ -297,7 +321,7 @@ export const PublicForm: React.FC = () => {
     }
   };
 
-  const handlePDFGeneration = async (response: any) => {
+  const handlePDFGeneration = async (response: any, submissionData: Record<string, any>) => {
     console.log('🎯 Traitement PDF pour formulaire public');
     
     try {
