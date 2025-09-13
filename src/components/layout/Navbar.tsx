@@ -41,14 +41,6 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-4">
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-              title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-
             {user ? (
               <>
                 {/* Bannière d'impersonation */}
@@ -130,12 +122,6 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile: Only dark mode toggle and logo */}
           <div className="md:hidden flex items-center space-x-2">
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
             {user && (
               <Button
                 variant="ghost"

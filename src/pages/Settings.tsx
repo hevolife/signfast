@@ -27,14 +27,18 @@ import {
   FileText,
   Camera,
   Shield,
-  Users
+  Users,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { stripeConfig } from '../stripe-config';
+import { useDarkMode } from '../hooks/useDarkMode';
 import toast from 'react-hot-toast';
 
 export const Settings: React.FC = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, updateProfile, uploadLogo } = useUserProfile();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
@@ -339,7 +343,7 @@ export const Settings: React.FC = () => {
         {/* Onglets */}
         <div className="mb-8">
           <div>
-            <nav className="flex space-x-3 justify-center">
+            <nav className="flex space-x-3 justify-center flex-wrap">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
@@ -382,6 +386,18 @@ export const Settings: React.FC = () => {
                     <span className="text-sm">{getTabEmoji('subscription')}</span>
                   </div>
                   <span className="font-semibold">Abonnement</span>
+                </div>
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                className="py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-slate-100 hover:text-gray-600 hover:shadow-md"
+                title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{isDarkMode ? '☀️' : '🌙'}</span>
+                  </div>
+                  <span className="font-semibold">{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
                 </div>
               </button>
             </nav>
