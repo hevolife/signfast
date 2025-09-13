@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PDFTemplateEditor } from '../../components/pdf/PDFTemplateEditor';
+import { FormSelector } from '../../components/pdf/FormSelector';
 import { PDFField } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
+import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import toast from 'react-hot-toast';
 
 export const NewPDFTemplate: React.FC = () => {
