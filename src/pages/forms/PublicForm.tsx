@@ -230,43 +230,53 @@ export const PublicForm: React.FC = () => {
       // Traiter chaque champ du formulaire
       form.fields?.forEach(field => {
         const fieldValue = formData[field.id];
-        console.log(`📤 Traitement champ "${field.label}" (${field.type}):`, 
-          typeof fieldValue === 'string' && fieldValue.startsWith('data:image') 
-            ? `IMAGE_BASE64 (${fieldValue.length} caractères)` 
-            : fieldValue
-        );
         
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
-          // Sauvegarder avec le libellé exact du champ comme clé principale
-          const mainKey = field.label;
+          console.log(`📤 Traitement champ "${field.label}" (${field.type}):`, 
+            typeof fieldValue === 'string' && fieldValue.startsWith('data:image') 
+              ? `IMAGE_BASE64 (${fieldValue.length} caractères)` 
+              : fieldValue
+          );
+          
+          // Créer plusieurs clés pour maximiser les chances de correspondance
+          const keys = [
+            field.label, // Clé principale : libellé exact
+            field.label.toLowerCase(), // Minuscules
+            field.type, // Type du champ
+          ];
+          
+          // Pour les signatures, ajouter des clés spéciales
+          if (field.type === 'signature') {
+            keys.push('signature', 'Signature', 'SIGNATURE');
+          }
           
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log(`✍️ === SIGNATURE DÉTECTÉE ===`);
-            console.log(`✍️ Champ: "${field.label}"`);
-            console.log(`✍️ Clé principale: "${mainKey}"`);
+            console.log(`📤 ✍️ SIGNATURE DÉTECTÉE: "${field.label}"`);
             
-            // Sauvegarder avec le libellé exact comme clé principale
-            pdfSubmissionData[mainKey] = fieldValue;
-            dbSubmissionData[mainKey] = `[SIGNATURE_${field.id}]`;
+            // Sauvegarder avec toutes les clés possibles
+            keys.forEach(key => {
+              pdfSubmissionData[key] = fieldValue;
+              dbSubmissionData[key] = `[SIGNATURE_${field.id}]`;
+            });
             
-            // Ajouter aussi des clés alternatives pour compatibilité
-            pdfSubmissionData[`signature_${field.id}`] = fieldValue;
-            pdfSubmissionData['signature'] = fieldValue; // Clé générique
-            
-            console.log(`✍️ ✅ Signature sauvegardée avec clé: "${mainKey}"`);
+            console.log(`📤 ✍️ Signature sauvegardée avec clés:`, keys);
           }
           // Images normales
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            pdfSubmissionData[mainKey] = fieldValue;
-            dbSubmissionData[mainKey] = `[IMAGE_${field.id}]`;
-            console.log(`📤 Image sauvegardée avec clé: "${mainKey}"`);
+            keys.forEach(key => {
+              pdfSubmissionData[key] = fieldValue;
+              dbSubmissionData[key] = `[IMAGE_${field.id}]`;
+            });
+            console.log(`📤 Image sauvegardée avec clés:`, keys);
           } 
           // Données normales
           else {
-            pdfSubmissionData[mainKey] = fieldValue;
-            dbSubmissionData[mainKey] = fieldValue;
-            console.log(`📤 Donnée sauvegardée avec clé: "${mainKey}"`);
+            keys.forEach(key => {
+              pdfSubmissionData[key] = fieldValue;
+              dbSubmissionData[key] = fieldValue;
+            });
+            console.log(`📤 Donnée sauvegardée avec clés:`, keys);
           }
         }
         
@@ -280,18 +290,31 @@ export const PublicForm: React.FC = () => {
               conditionalFields.forEach(conditionalField => {
                 const conditionalValue = formData[conditionalField.id];
                 if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
-                  const conditionalMainKey = conditionalField.label;
+                  const conditionalKeys = [
+                    conditionalField.label,
+                    conditionalField.label.toLowerCase(),
+                    conditionalField.type,
+                  ];
+                  
+                  if (conditionalField.type === 'signature') {
+                    conditionalKeys.push('signature', 'Signature', 'SIGNATURE');
+                  }
                   
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
-                    pdfSubmissionData[conditionalMainKey] = conditionalValue;
-                    pdfSubmissionData[`signature_${conditionalField.id}`] = conditionalValue;
-                    dbSubmissionData[conditionalMainKey] = `[SIGNATURE_${conditionalField.id}]`;
+                    conditionalKeys.forEach(key => {
+                      pdfSubmissionData[key] = conditionalValue;
+                      dbSubmissionData[key] = `[SIGNATURE_${conditionalField.id}]`;
+                    });
                   } else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
-                    pdfSubmissionData[conditionalMainKey] = conditionalValue;
-                    dbSubmissionData[conditionalMainKey] = `[IMAGE_${conditionalField.id}]`;
+                    conditionalKeys.forEach(key => {
+                      pdfSubmissionData[key] = conditionalValue;
+                      dbSubmissionData[key] = `[IMAGE_${conditionalField.id}]`;
+                    });
                   } else {
-                    pdfSubmissionData[conditionalMainKey] = conditionalValue;
-                    dbSubmissionData[conditionalMainKey] = conditionalValue;
+                    conditionalKeys.forEach(key => {
+                      pdfSubmissionData[key] = conditionalValue;
+                      dbSubmissionData[key] = conditionalValue;
+                    });
                   }
                 }
               });
@@ -300,18 +323,16 @@ export const PublicForm: React.FC = () => {
         }
       });
 
-      console.log(`📤 ===== DONNÉES FINALES SOUMISSION =====`);
-      console.log(`📤 Clés dans dbSubmissionData:`, Object.keys(dbSubmissionData));
-      console.log(`📤 Clés dans pdfSubmissionData:`, Object.keys(pdfSubmissionData));
+      console.log(`📤 === DONNÉES FINALES ===`);
+      console.log(`📤 Clés PDF:`, Object.keys(pdfSubmissionData));
       
       // Debug final pour les signatures
       const signaturesInData = Object.entries(pdfSubmissionData).filter(([key, value]) => 
         typeof value === 'string' && value.startsWith('data:image')
       );
-      console.log(`📤 === SIGNATURES FINALES ===`);
-      console.log(`📤 Total signatures: ${signaturesInData.length}`);
+      console.log(`📤 ✍️ Signatures dans données finales: ${signaturesInData.length}`);
       signaturesInData.forEach(([key, value], index) => {
-        console.log(`📤 Signature ${index + 1}: "${key}" (${typeof value === 'string' ? value.length : 0} chars)`);
+        console.log(`📤 ✍️ ${index + 1}. "${key}" (${typeof value === 'string' ? value.length : 0} chars)`);
       });
       
       // Formater les dates au format français avant soumission
@@ -320,20 +341,7 @@ export const PublicForm: React.FC = () => {
         if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
           dbSubmissionData[key] = formatDateFR(value);
           pdfSubmissionData[key] = formatDateFR(value);
-          console.log(`📅 Date formatée: ${key} = ${value} → ${dbSubmissionData[key]}`);
         }
-      });
-      
-      // Debug spécial pour les images
-      const imagesInPdfData = Object.entries(pdfSubmissionData).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log(`📤 === IMAGES FINALES DANS PDF DATA ===`);
-      console.log(`📤 Nombre total d'images: ${imagesInPdfData.length}`);
-      imagesInPdfData.forEach(([key, value], index) => {
-        const isSignature = key.toLowerCase().includes('signature') || 
-                           form.fields.some(f => f.label === key && f.type === 'signature');
-        console.log(`📤 Image ${index + 1}: clé="${key}", type=${isSignature ? 'SIGNATURE' : 'IMAGE'}, taille=${typeof value === 'string' ? value.length : 0}`);
       });
 
       // Sauvegarder dans la base avec les données allégées
@@ -355,15 +363,15 @@ export const PublicForm: React.FC = () => {
       console.log('Response saved:', responseData);
 
       // Génération PDF
-      console.log('🎯 Traitement PDF démarré');
+      console.log('🎯 === TRAITEMENT PDF ===');
       
       // Traitement PDF en arrière-plan pour éviter les timeouts
       setTimeout(async () => {
         try {
           await handlePDFGeneration(responseData, pdfSubmissionData);
-          console.log('🎯 Traitement PDF terminé avec succès');
+          console.log('🎯 ✅ PDF traité avec succès');
         } catch (error) {
-          console.error('🎯 Erreur traitement PDF:', error);
+          console.error('🎯 ❌ Erreur PDF:', error);
           // Ne pas afficher d'erreur à l'utilisateur car le formulaire est déjà envoyé
           console.warn('PDF non généré mais formulaire envoyé avec succès');
         }

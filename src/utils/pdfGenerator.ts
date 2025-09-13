@@ -12,6 +12,7 @@ export class PDFGenerator {
       console.log('🎨 Template:', template.name);
       console.log('🎨 Champs:', template.fields.length);
       console.log('🎨 Données:', Object.keys(data));
+      console.log('🎨 Données complètes:', data);
       
       // Charger le PDF original
       const pdfDoc = await PDFDocument.load(originalPdfBytes);
@@ -24,6 +25,11 @@ export class PDFGenerator {
       
       // Traiter chaque champ
       for (const field of template.fields) {
+        console.log(`🎨 === TRAITEMENT CHAMP ===`);
+        console.log(`🎨 Variable: ${field.variable}`);
+        console.log(`🎨 Type: ${field.type}`);
+        console.log(`🎨 Page: ${field.page}`);
+        
         const pageIndex = (field.page || 1) - 1;
         const page = pages[pageIndex];
         
@@ -34,7 +40,6 @@ export class PDFGenerator {
         
         // Lire la taille réelle de la page en points
         const { width: pdfWidth, height: pdfHeight } = page.getSize();
-        console.log(`📐 Page ${field.page} dimensions: ${pdfWidth} × ${pdfHeight} points`);
         
         // Calculer les coordonnées PDF depuis les ratios avec offset ajustable
         const pdfX = (field.xRatio || 0) * pdfWidth + (field.offsetX || 0);
@@ -42,86 +47,84 @@ export class PDFGenerator {
         const pdfFieldWidth = (field.widthRatio || 0.1) * pdfWidth;
         const pdfFieldHeight = (field.heightRatio || 0.05) * pdfHeight;
         
-        console.log(`🎨 Champ ${field.variable}:`);
-        console.log(`🎨   Ratios: (${(field.xRatio || 0).toFixed(4)}, ${(field.yRatio || 0).toFixed(4)}, ${(field.widthRatio || 0.1).toFixed(4)}, ${(field.heightRatio || 0.05).toFixed(4)})`);
-        console.log(`🎨   Offsets: (${field.offsetX || 0}, ${field.offsetY || 0}) points`);
-        console.log(`🎨   PDF: (${Math.round(pdfX)}, ${Math.round(pdfY)}) ${Math.round(pdfFieldWidth)}×${Math.round(pdfFieldHeight)}`);
+        console.log(`🎨 Position calculée: (${Math.round(pdfX)}, ${Math.round(pdfY)}) ${Math.round(pdfFieldWidth)}×${Math.round(pdfFieldHeight)}`);
         
         const value = this.getFieldValue(field, data);
+        console.log(`🎨 Valeur trouvée:`, value ? (typeof value === 'string' && value.startsWith('data:image') ? 'IMAGE_DATA' : value) : 'VIDE');
         
-        console.log(`🎨 Valeur: "${value}"`);
-        
-        if (!value && !field.required) {
+        // Ne pas ignorer les champs vides, les traiter quand même
+        if (!value) {
+          console.log(`🎨 ⚠️ Valeur vide pour ${field.variable}, dessin placeholder`);
+          // Dessiner un placeholder pour indiquer le champ manquant
+          page.drawRectangle({
+            x: pdfX,
+            y: pdfY,
+            width: pdfFieldWidth,
+            height: pdfFieldHeight,
+            borderColor: rgb(0.8, 0.8, 0.8),
+            borderWidth: 1,
+            color: rgb(0.98, 0.98, 0.98),
+          });
+          
+          page.drawText(`${field.variable} manquant`, {
+            x: pdfX + 2,
+            y: pdfY + pdfFieldHeight / 2,
+            size: Math.min(8, pdfFieldHeight * 0.4),
+            color: rgb(0.7, 0.7, 0.7),
+            font,
+          });
           continue;
         }
 
         switch (field.type) {
           case 'text':
           case 'number':
+            console.log(`🎨 ✏️ Dessin texte: "${value}"`);
             await this.drawText(page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight, field, font);
             break;
             
           case 'date':
             const dateValue = this.formatDate(value);
+            console.log(`🎨 📅 Dessin date: "${dateValue}"`);
             await this.drawText(page, dateValue, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight, field, font);
             break;
             
           case 'checkbox':
+            console.log(`🎨 ☑️ Dessin checkbox: ${value}`);
             await this.drawCheckbox(page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight, field);
             break;
             
           case 'signature':
-            console.log(`✍️ === TRAITEMENT SIGNATURE PDF ===`);
-            console.log(`✍️ Variable: ${field.variable}`);
-            console.log(`✍️ Valeur trouvée:`, value ? 'OUI' : 'NON');
-            console.log(`✍️ Type valeur:`, typeof value);
-            console.log(`✍️ Est image:`, typeof value === 'string' && value.startsWith('data:image'));
+            console.log(`🎨 ✍️ Traitement signature pour variable: ${field.variable}`);
             
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
-              console.log(`✍️ ✅ Signature valide trouvée, dessin en cours...`);
+              console.log(`🎨 ✅ Signature valide trouvée, dessin...`);
               await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
             } else {
-              console.log(`✍️ ❌ Signature non trouvée ou invalide`);
-              console.log(`✍️ Recherche alternative dans toutes les données...`);
-              
-              // Recherche alternative : chercher n'importe quelle signature dans les données
-              const allSignatures = Object.entries(data).filter(([key, val]) => 
-                typeof val === 'string' && val.startsWith('data:image')
-              );
-              
-              console.log(`✍️ Signatures alternatives trouvées:`, allSignatures.length);
-              allSignatures.forEach(([key, val], index) => {
-                console.log(`✍️ Signature alt ${index + 1}: clé="${key}", taille=${typeof val === 'string' ? val.length : 0}`);
+              console.log(`🎨 ❌ Signature non trouvée, dessin placeholder`);
+              // Dessiner un placeholder pour signature manquante
+              page.drawRectangle({
+                x: pdfX,
+                y: pdfY,
+                width: pdfFieldWidth,
+                height: pdfFieldHeight,
+                borderColor: rgb(0.8, 0.8, 0.8),
+                borderWidth: 1,
+                color: rgb(0.98, 0.98, 0.98),
               });
               
-              if (allSignatures.length > 0) {
-                console.log(`✍️ ✅ Utilisation signature alternative: ${allSignatures[0][0]}`);
-                await this.drawSignature(pdfDoc, page, allSignatures[0][1] as string, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
-              } else {
-                console.log(`✍️ ❌ Aucune signature trouvée, dessin placeholder`);
-                // Dessiner un placeholder pour signature manquante
-                page.drawRectangle({
-                  x: pdfX,
-                  y: pdfY,
-                  width: pdfFieldWidth,
-                  height: pdfFieldHeight,
-                  borderColor: rgb(0.8, 0.8, 0.8),
-                  borderWidth: 1,
-                  color: rgb(0.98, 0.98, 0.98),
-                });
-                
-                page.drawText('Signature manquante', {
-                  x: pdfX + 5,
-                  y: pdfY + pdfFieldHeight / 2,
-                  size: Math.min(10, pdfFieldHeight * 0.6),
-                  color: rgb(0.7, 0.7, 0.7),
-                  font,
-                });
-              }
+              page.drawText('Signature manquante', {
+                x: pdfX + 2,
+                y: pdfY + pdfFieldHeight / 2,
+                size: Math.min(10, pdfFieldHeight * 0.6),
+                color: rgb(0.7, 0.7, 0.7),
+                font,
+              });
             }
             break;
             
           case 'image':
+            console.log(`🎨 🖼️ Traitement image`);
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
               await this.drawImage(pdfDoc, page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
             }
@@ -141,99 +144,94 @@ export class PDFGenerator {
   }
 
   private static getFieldValue(field: PDFField, data: Record<string, any>): string {
-    const variableName = field.variable.replace(/^\$\{|\}$/g, '');
+    if (!field.variable) {
+      console.log(`🔍 ❌ Pas de variable définie pour le champ ${field.type}`);
+      return '';
+    }
     
-    console.log(`🔍 === RECHERCHE VARIABLE SIGNATURE ===`);
-    console.log(`🔍 Variable template: "${variableName}"`);
-    console.log(`🔍 Type champ: ${field.type}`);
-    console.log(`🔍 Clés disponibles:`, Object.keys(data));
+    const variableName = field.variable.replace(/^\$\{|\}$/g, '');
+    console.log(`🔍 Recherche variable: "${variableName}" pour champ ${field.type}`);
     
     // Pour les signatures, recherche spéciale et prioritaire
     if (field.type === 'signature') {
-      console.log(`✍️ === RECHERCHE SIGNATURE SPÉCIALE ===`);
+      console.log(`🔍 ✍️ Recherche signature spéciale...`);
       
-      // 1. Recherche directe par variable
+      // 1. Recherche directe par variable exacte
       let signatureValue = data[variableName];
-      console.log(`✍️ 1. Recherche directe "${variableName}":`, signatureValue ? 'TROUVÉ' : 'NON TROUVÉ');
+      console.log(`🔍 1. Variable exacte "${variableName}":`, signatureValue ? 'TROUVÉ' : 'NON');
       
-      // 2. Recherche par toutes les clés contenant "signature"
+      // 2. Recherche insensible à la casse
+      if (!signatureValue) {
+        const lowerVariableName = variableName.toLowerCase();
+        const matchingKey = Object.keys(data).find(key => 
+          key.toLowerCase() === lowerVariableName
+        );
+        
+        if (matchingKey) {
+          signatureValue = data[matchingKey];
+          console.log(`🔍 2. Clé insensible casse "${matchingKey}":`, signatureValue ? 'TROUVÉ' : 'NON');
+        }
+      }
+      
+      // 3. Recherche par clés contenant "signature"
       if (!signatureValue) {
         const signatureKeys = Object.keys(data).filter(key => 
-          key.toLowerCase().includes('signature') ||
-          key.toLowerCase().includes('sign')
+          key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')
         );
-        console.log(`✍️ 2. Clés signature trouvées:`, signatureKeys);
+        console.log(`🔍 3. Clés signature trouvées:`, signatureKeys);
         
         for (const key of signatureKeys) {
           const val = data[key];
           if (typeof val === 'string' && val.startsWith('data:image')) {
             signatureValue = val;
-            console.log(`✍️ ✅ Signature trouvée via clé: "${key}"`);
+            console.log(`🔍 ✅ Signature trouvée via clé: "${key}"`);
             break;
           }
         }
       }
       
-      // 3. Recherche par toutes les images disponibles (fallback)
+      // 4. Fallback : première image trouvée
       if (!signatureValue) {
-        const imageKeys = Object.keys(data).filter(key => {
-          const val = data[key];
-          return typeof val === 'string' && val.startsWith('data:image');
-        });
-        console.log(`✍️ 3. Images disponibles:`, imageKeys);
+        const allImages = Object.entries(data).filter(([key, val]) => 
+          typeof val === 'string' && val.startsWith('data:image')
+        );
+        console.log(`🔍 4. Images disponibles:`, allImages.length);
         
-        if (imageKeys.length > 0) {
-          signatureValue = data[imageKeys[0]];
-          console.log(`✍️ ✅ Signature trouvée via première image: "${imageKeys[0]}"`);
+        if (allImages.length > 0) {
+          signatureValue = allImages[0][1];
+          console.log(`🔍 ✅ Utilisation première image: "${allImages[0][0]}"`);
         }
       }
       
       if (signatureValue) {
-        console.log(`✍️ ✅ SIGNATURE FINALE TROUVÉE (${signatureValue.length} chars)`);
+        console.log(`🔍 ✅ SIGNATURE FINALE: ${signatureValue.length} chars`);
         return signatureValue;
       } else {
-        console.log(`✍️ ❌ AUCUNE SIGNATURE TROUVÉE`);
+        console.log(`🔍 ❌ AUCUNE SIGNATURE TROUVÉE`);
         return '';
       }
     }
     
     // Pour les autres types de champs, recherche normale
     let value = data[variableName];
+    console.log(`🔍 Recherche normale "${variableName}":`, value ? 'TROUVÉ' : 'NON');
     
     if (!value) {
-      const originalKeys = Object.keys(data);
-      
       // Recherche insensible à la casse
-      let matchingKey = originalKeys.find(key => 
+      const matchingKey = Object.keys(data).find(key => 
         key.toLowerCase() === variableName.toLowerCase()
       );
       
-      if (!matchingKey) {
-        matchingKey = originalKeys.find(key => 
-          this.normalizeKey(key) === this.normalizeKey(variableName)
-        );
-      }
-      
       if (matchingKey) {
         value = data[matchingKey];
-        console.log(`🔍 ✅ Trouvé via clé: "${matchingKey}"`);
+        console.log(`🔍 ✅ Trouvé via clé insensible: "${matchingKey}"`);
       }
     }
     
-    const finalValue = value || field.placeholder || '';
-    console.log(`🔍 Valeur finale pour "${variableName}":`, typeof finalValue === 'string' && finalValue.startsWith('data:image') ? 'IMAGE_DATA' : finalValue);
+    const finalValue = value || '';
+    console.log(`🔍 Valeur finale:`, finalValue ? (typeof finalValue === 'string' && finalValue.startsWith('data:image') ? 'IMAGE_DATA' : finalValue) : 'VIDE');
     
     return finalValue;
-  }
-  
-  private static normalizeKey(key: string): string {
-    return key
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
   }
 
   private static async drawText(
@@ -249,7 +247,7 @@ export class PDFGenerator {
     const fontSize = field.fontSize || 12;
     const color = this.hexToRgb(field.fontColor || '#000000');
     
-    console.log(`✏️ Dessin texte "${text}" à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
+    console.log(`🎨 ✏️ Dessin texte "${text}" à (${Math.round(x)}, ${Math.round(y)})`);
     
     // Fond si spécifié
     if (field.backgroundColor && field.backgroundColor !== '#ffffff') {
@@ -285,7 +283,7 @@ export class PDFGenerator {
     const isChecked = value === true || value === 'true' || value === '1';
     const size = Math.min(width, height, 16);
     
-    console.log(`☑️ Dessin checkbox à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(size)} - ${isChecked ? 'cochée' : 'vide'}`);
+    console.log(`🎨 ☑️ Dessin checkbox: ${isChecked ? 'cochée' : 'vide'}`);
     
     // Case
     page.drawRectangle({
@@ -319,7 +317,7 @@ export class PDFGenerator {
     height: number
   ) {
     try {
-      console.log(`✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) ${Math.round(width)}×${Math.round(height)}`);
+      console.log(`🎨 ✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) ${Math.round(width)}×${Math.round(height)}`);
       
       if (!signatureData || !signatureData.startsWith('data:image')) {
         throw new Error('Données de signature invalides');
@@ -364,7 +362,7 @@ export class PDFGenerator {
       const offsetX = (width - drawWidth) / 2;
       const offsetY = (height - drawHeight) / 2;
       
-      console.log(`✍️ Signature: ${Math.round(drawWidth)}×${Math.round(drawHeight)} à (${Math.round(x + offsetX)}, ${Math.round(y + offsetY)})`);
+      console.log(`🎨 ✍️ Signature finale: ${Math.round(drawWidth)}×${Math.round(drawHeight)}`);
       
       // Fond blanc avec bordure
       page.drawRectangle({
@@ -385,7 +383,7 @@ export class PDFGenerator {
         height: drawHeight,
       });
       
-      console.log(`✍️ ✅ Signature dessinée avec succès`);
+      console.log(`🎨 ✅ Signature dessinée avec succès`);
       
     } catch (error) {
       console.error('Erreur dessin signature:', error);
@@ -420,7 +418,7 @@ export class PDFGenerator {
     height: number
   ) {
     try {
-      console.log(`🖼️ Dessin image à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
+      console.log(`🎨 🖼️ Dessin image à (${Math.round(x)}, ${Math.round(y)})`);
       
       const imageBytes = this.base64ToBytes(imageData);
       let image;

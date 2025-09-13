@@ -170,16 +170,30 @@ export class PDFService {
     const cleaned: Record<string, any> = {};
     
     Object.entries(formData).forEach(([key, value]) => {
-      // Exclure les images base64 trop volumineuses du stockage
+      // Pour les signatures et images, garder les données complètes mais les marquer
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        // Garder seulement un marqueur pour indiquer qu'il y avait une image
-        cleaned[key] = '[IMAGE_UPLOADED]';
+        // IMPORTANT: Garder les signatures complètes pour la génération PDF
+        if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
+          cleaned[key] = value; // Garder la signature complète
+          console.log(`💾 Signature conservée pour clé: "${key}"`);
+        } else {
+          cleaned[key] = '[IMAGE_UPLOADED]'; // Marquer les autres images
+        }
       } else if (typeof value === 'string' && value.length > 1000) {
         // Tronquer les textes très longs
         cleaned[key] = value.substring(0, 1000) + '...';
       } else {
         cleaned[key] = value;
       }
+    });
+    
+    console.log(`💾 Données nettoyées - clés finales:`, Object.keys(cleaned));
+    const signaturesInCleaned = Object.entries(cleaned).filter(([key, val]) => 
+      typeof val === 'string' && val.startsWith('data:image')
+    );
+    console.log(`💾 Signatures conservées:`, signaturesInCleaned.length);
+    signaturesInCleaned.forEach(([key, val], index) => {
+      console.log(`💾 Signature ${index + 1}: "${key}"`);
     });
     
     return cleaned;
