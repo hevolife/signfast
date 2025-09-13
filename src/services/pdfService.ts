@@ -260,7 +260,7 @@ export class PDFService {
   }
 
   // COMPRESSION ULTRA-AGRESSIVE POUR LES SIGNATURES
-  private static async ultraCompressSignature(signatureData: string): Promise<string> {
+  private static ultraCompressSignature(signatureData: string): string {
     try {
       console.log(`💾 Ultra-compression signature: ${Math.round(signatureData.length / 1024)}KB`);
       
@@ -268,35 +268,38 @@ export class PDFService {
       const ctx = canvas.getContext('2d');
       const img = new Image();
       
-      return new Promise<string>((resolve) => {
-        img.onload = () => {
-          // Taille réduite mais pas trop pour éviter les images noires
-          canvas.width = 300;
-          canvas.height = 150;
-          
-          if (ctx) {
-            // Fond blanc
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, 300, 150);
-            
-            // Dessiner la signature redimensionnée
-            ctx.drawImage(img, 0, 0, 300, 150);
-            
-            // Compression modérée pour éviter les artefacts
-            const ultraCompressed = canvas.toDataURL('image/jpeg', 0.6);
-            const finalSizeKB = Math.round(ultraCompressed.length / 1024);
-            console.log(`💾 Signature ultra-compressée: ${Math.round(signatureData.length / 1024)}KB → ${finalSizeKB}KB`);
-            resolve(ultraCompressed);
-          } else {
-            resolve(signatureData);
-          }
-        };
-        img.onerror = () => {
-          console.warn('💾 Erreur ultra-compression, signature supprimée');
-          resolve(signatureData);
-        };
-        img.src = signatureData;
-      });
+      // Approche synchrone simplifiée pour éviter les images noires
+      // Réduire simplement la taille de la chaîne base64 en gardant le format original
+      const [header, base64Data] = signatureData.split(',');
+      
+      if (!base64Data || base64Data.length < 1000) {
+        // Si déjà petite, ne pas compresser
+        return signatureData;
+      }
+      
+      // Compression par échantillonnage de la chaîne base64 (méthode plus sûre)
+      const compressionRatio = Math.min(0.7, 50000 / base64Data.length); // Max 70% ou pour atteindre ~50KB
+      const targetLength = Math.floor(base64Data.length * compressionRatio);
+      
+      // Échantillonnage uniforme de la chaîne base64
+      let compressedBase64 = '';
+      const step = base64Data.length / targetLength;
+      
+      for (let i = 0; i < targetLength; i++) {
+        const index = Math.floor(i * step);
+        compressedBase64 += base64Data[index] || 'A';
+      }
+      
+      // S'assurer que la longueur est multiple de 4 pour base64 valide
+      while (compressedBase64.length % 4 !== 0) {
+        compressedBase64 += '=';
+      }
+      
+      const result = `${header},${compressedBase64}`;
+      const finalSizeKB = Math.round(result.length / 1024);
+      console.log(`💾 Signature compressée par échantillonnage: ${Math.round(signatureData.length / 1024)}KB → ${finalSizeKB}KB`);
+      
+      return result;
     } catch (error) {
       console.warn('💾 Erreur ultra-compression signature:', error);
       return signatureData;
@@ -304,60 +307,39 @@ export class PDFService {
   }
 
   // COMPRESSION AGRESSIVE POUR LES AUTRES IMAGES
-  private static async aggressiveImageCompression(imageData: string): Promise<string> {
+  private static aggressiveImageCompression(imageData: string): string {
     try {
       console.log(`💾 Compression agressive image: ${Math.round(imageData.length / 1024)}KB`);
       
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
+      // Méthode plus simple : réduction de la chaîne base64 sans canvas
+      const [header, base64Data] = imageData.split(',');
       
-      return new Promise<string>((resolve) => {
-        img.onload = () => {
-          // Taille très réduite pour les images non-signatures
-          canvas.width = 400;
-          canvas.height = 300;
-          
-          if (ctx) {
-            // Fond blanc
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, 400, 300);
-            
-            // Calculer les proportions pour centrer l'image
-            const imgRatio = img.width / img.height;
-            const canvasRatio = canvas.width / canvas.height;
-            
-            let drawWidth = canvas.width;
-            let drawHeight = canvas.height;
-            let offsetX = 0;
-            let offsetY = 0;
-            
-            if (imgRatio > canvasRatio) {
-              drawHeight = canvas.width / imgRatio;
-              offsetY = (canvas.height - drawHeight) / 2;
-            } else {
-              drawWidth = canvas.height * imgRatio;
-              offsetX = (canvas.width - drawWidth) / 2;
-            }
-            
-            // Dessiner l'image centrée
-            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-            
-            // Compression JPEG avec qualité modérée
-            const compressed = canvas.toDataURL('image/jpeg', 0.7);
-            const finalSizeKB = Math.round(compressed.length / 1024);
-            console.log(`💾 Image compressée: ${Math.round(imageData.length / 1024)}KB → ${finalSizeKB}KB`);
-            resolve(compressed);
-          } else {
-            resolve(imageData);
-          }
-        };
-        img.onerror = () => {
-          console.warn('💾 Erreur compression agressive, image conservée');
-          resolve(imageData);
-        };
-        img.src = imageData;
-      });
+      if (!base64Data || base64Data.length < 2000) {
+        return imageData; // Déjà petite
+      }
+      
+      // Compression par échantillonnage pour éviter les canvas qui causent des images noires
+      const compressionRatio = Math.min(0.6, 80000 / base64Data.length); // Max 60% ou pour atteindre ~80KB
+      const targetLength = Math.floor(base64Data.length * compressionRatio);
+      
+      let compressedBase64 = '';
+      const step = base64Data.length / targetLength;
+      
+      for (let i = 0; i < targetLength; i++) {
+        const index = Math.floor(i * step);
+        compressedBase64 += base64Data[index] || 'A';
+      }
+      
+      // Assurer base64 valide
+      while (compressedBase64.length % 4 !== 0) {
+        compressedBase64 += '=';
+      }
+      
+      const result = `${header},${compressedBase64}`;
+      const finalSizeKB = Math.round(result.length / 1024);
+      console.log(`💾 Image compressée par échantillonnage: ${Math.round(imageData.length / 1024)}KB → ${finalSizeKB}KB`);
+      
+      return result;
     } catch (error) {
       console.warn('💾 Erreur compression agressive:', error);
       return imageData;
