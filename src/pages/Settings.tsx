@@ -283,6 +283,34 @@ export const Settings: React.FC = () => {
     window.location.reload();
   };
 
+  const getTabColorClasses = (tabName: string, isActive: boolean) => {
+    const colorMap = {
+      profile: isActive 
+        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 border-blue-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600 hover:shadow-md',
+      security: isActive 
+        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border-green-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600 hover:shadow-md',
+      affiliate: isActive 
+        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 border-purple-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600 hover:shadow-md',
+      subscription: isActive 
+        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600 hover:shadow-md',
+    };
+    return colorMap[tabName] || colorMap.profile;
+  };
+
+  const getTabEmoji = (tabName: string) => {
+    const emojiMap = {
+      profile: '👤',
+      security: '🔐',
+      affiliate: '🤝',
+      subscription: '👑',
+    };
+    return emojiMap[tabName] || '⚙️';
+  };
+
   if (profileLoading || subscriptionLoading || limitsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -311,57 +339,49 @@ export const Settings: React.FC = () => {
         {/* Onglets */}
         <div className="mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-4 sm:space-x-8 justify-center">
+            <nav className="-mb-px flex space-x-2 sm:space-x-4 justify-center">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'profile'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4" />
-                  <span>Profil</span>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
+                    <span className="text-lg">{getTabEmoji('profile')}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-center leading-tight">Profil</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'security'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
               >
-                <div className="flex items-center space-x-2">
-                  <Key className="h-4 w-4" />
-                  <span>Sécurité</span>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
+                    <span className="text-lg">{getTabEmoji('security')}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-center leading-tight">Sécurité</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('affiliate')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'affiliate'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
               >
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4" />
-                  <span>Affiliation</span>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
+                    <span className="text-lg">{getTabEmoji('affiliate')}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-center leading-tight">Affiliation</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('subscription')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'subscription'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
-                <div className="flex items-center space-x-2">
-                  <Crown className="h-4 w-4" />
-                  <span>Abonnement</span>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
+                    <span className="text-lg">{getTabEmoji('subscription')}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-center leading-tight">Abonnement</span>
                 </div>
               </button>
             </nav>
