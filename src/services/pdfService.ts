@@ -230,11 +230,11 @@ export class PDFService {
       // Si ENCORE trop gros, mesures extrêmes
       if (newSize > 600000) {
         console.log(`💾 🆘 MESURES EXTRÊMES: ${newSizeKB}KB encore trop gros`);
-        
-        // Garder seulement les données essentielles
+      if (totalSize > 600000) { // Plus de 600KB
+        console.log(`💾 🚨 COMPRESSION D'URGENCE: ${totalSizeKB}KB > 600KB`);
         const essentialData: Record<string, any> = {};
         let signatureCount = 0;
-        
+        for (const key of Object.keys(cleaned)) {
         Object.entries(cleaned).forEach(([key, value]) => {
           if (typeof value === 'string' && value.startsWith('data:image')) {
             if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
@@ -263,7 +263,7 @@ export class PDFService {
   }
 
   // COMPRESSION ULTRA-AGRESSIVE POUR LES SIGNATURES
-  private static ultraCompressSignature(signatureData: string): string {
+  private static async ultraCompressSignature(signatureData: string): Promise<string> {
     try {
       console.log(`💾 Ultra-compression signature: ${Math.round(signatureData.length / 1024)}KB`);
       
@@ -273,20 +273,20 @@ export class PDFService {
       
       return new Promise<string>((resolve) => {
         img.onload = () => {
-          // Taille très réduite pour les signatures
-          canvas.width = 200;
-          canvas.height = 100;
+          // Taille réduite mais pas trop pour éviter les images noires
+          canvas.width = 300;
+          canvas.height = 150;
           
           if (ctx) {
             // Fond blanc
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, 200, 100);
+            ctx.fillRect(0, 0, 300, 150);
             
             // Dessiner la signature redimensionnée
-            ctx.drawImage(img, 0, 0, 200, 100);
+            ctx.drawImage(img, 0, 0, 300, 150);
             
-            // Compression maximale
-            const ultraCompressed = canvas.toDataURL('image/jpeg', 0.3);
+            // Compression modérée pour éviter les artefacts
+            const ultraCompressed = canvas.toDataURL('image/jpeg', 0.6);
             const finalSizeKB = Math.round(ultraCompressed.length / 1024);
             console.log(`💾 Signature ultra-compressée: ${Math.round(signatureData.length / 1024)}KB → ${finalSizeKB}KB`);
             resolve(ultraCompressed);
@@ -296,13 +296,74 @@ export class PDFService {
         };
         img.onerror = () => {
           console.warn('💾 Erreur ultra-compression, signature supprimée');
-          resolve('[SIGNATURE_COMPRESSION_FAILED]');
+          resolve(signatureData);
         };
         img.src = signatureData;
       });
     } catch (error) {
       console.warn('💾 Erreur ultra-compression signature:', error);
-      return '[SIGNATURE_COMPRESSION_ERROR]';
+      return signatureData;
+    }
+  }
+
+  // COMPRESSION AGRESSIVE POUR LES AUTRES IMAGES
+  private static async aggressiveImageCompression(imageData: string): Promise<string> {
+    try {
+      console.log(`💾 Compression agressive image: ${Math.round(imageData.length / 1024)}KB`);
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      return new Promise<string>((resolve) => {
+        img.onload = () => {
+          // Taille très réduite pour les images non-signatures
+          canvas.width = 400;
+          canvas.height = 300;
+          
+          if (ctx) {
+            // Fond blanc
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 400, 300);
+            
+            // Calculer les proportions pour centrer l'image
+            const imgRatio = img.width / img.height;
+            const canvasRatio = canvas.width / canvas.height;
+            
+            let drawWidth = canvas.width;
+            let drawHeight = canvas.height;
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            if (imgRatio > canvasRatio) {
+              drawHeight = canvas.width / imgRatio;
+              offsetY = (canvas.height - drawHeight) / 2;
+            } else {
+              drawWidth = canvas.height * imgRatio;
+              offsetX = (canvas.width - drawWidth) / 2;
+            }
+            
+            // Dessiner l'image centrée
+            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+            
+            // Compression JPEG avec qualité modérée
+            const compressed = canvas.toDataURL('image/jpeg', 0.7);
+            const finalSizeKB = Math.round(compressed.length / 1024);
+            console.log(`💾 Image compressée: ${Math.round(imageData.length / 1024)}KB → ${finalSizeKB}KB`);
+            resolve(compressed);
+          } else {
+            resolve(imageData);
+          }
+        };
+        img.onerror = () => {
+          console.warn('💾 Erreur compression agressive, image conservée');
+          resolve(imageData);
+        };
+        img.src = imageData;
+      });
+    } catch (error) {
+      console.warn('💾 Erreur compression agressive:', error);
+      return imageData;
     }
   }
 
@@ -312,8 +373,8 @@ export class PDFService {
       const originalSizeKB = Math.round(imageData.length / 1024);
       console.log(`💾 Compression image: ${originalSizeKB}KB`);
       
-      // Compression progressive selon la taille
-      if (imageData.length > 30000) { // Plus de 30KB
+      // Compression progressive selon la taille - seuils plus élevés pour éviter les images noires
+      if (imageData.length > 100000) { // Plus de 100KB
         console.log(`💾 Compression nécessaire pour ${originalSizeKB}KB...`);
         
         // Créer un canvas pour compresser l'image
@@ -323,21 +384,21 @@ export class PDFService {
         
         return new Promise<string>((resolve) => {
           img.onload = () => {
-            // Réduire la taille selon le niveau de compression nécessaire
-            let maxWidth = 800;
-            let maxHeight = 600;
-            let quality = 0.7;
+            // Compression plus douce pour éviter les images noires
+            let maxWidth = 1200;
+            let maxHeight = 900;
+            let quality = 0.8;
             
             // Compression plus agressive pour les très gros fichiers
-            if (originalSizeKB > 200) {
-              maxWidth = 400;
-              maxHeight = 300;
-              quality = 0.5;
+            if (originalSizeKB > 500) {
+              maxWidth = 800;
+              maxHeight = 600;
+              quality = 0.7;
               console.log(`💾 Compression agressive: ${maxWidth}x${maxHeight}, qualité ${quality}`);
-            } else if (originalSizeKB > 100) {
-              maxWidth = 600;
-              maxHeight = 450;
-              quality = 0.6;
+            } else if (originalSizeKB > 300) {
+              maxWidth = 1000;
+              maxHeight = 750;
+              quality = 0.75;
               console.log(`💾 Compression modérée: ${maxWidth}x${maxHeight}, qualité ${quality}`);
             }
             
@@ -353,25 +414,35 @@ export class PDFService {
             canvas.height = height;
             
             if (ctx) {
+              // Fond blanc pour éviter la transparence qui peut causer des problèmes
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, width, height);
+              
               ctx.drawImage(img, 0, 0, width, height);
-              // Compression JPEG avec qualité variable
+              
+              // Essayer PNG d'abord pour préserver la qualité
               const compressedData = canvas.toDataURL('image/jpeg', quality);
               const newSizeKB = Math.round(compressedData.length / 1024);
               console.log(`💾 Image compressée: ${originalSizeKB}KB → ${newSizeKB}KB (${Math.round((1 - newSizeKB/originalSizeKB) * 100)}% de réduction)`);
               
-              // Si encore trop gros, compression ultra-agressive
-              if (newSizeKB > 150) {
+              // Si encore trop gros, compression supplémentaire mais plus douce
+              if (newSizeKB > 200) {
                 console.log(`💾 Compression ultra-agressive nécessaire...`);
-                canvas.width = Math.min(width * 0.5, 300);
-                canvas.height = Math.min(height * 0.5, 200);
+                canvas.width = Math.min(width * 0.7, 600);
+                canvas.height = Math.min(height * 0.7, 450);
+                
+                // Redessiner avec fond blanc
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                const ultraCompressed = canvas.toDataURL('image/jpeg', 0.4);
+                
+                const ultraCompressed = canvas.toDataURL('image/jpeg', 0.6);
                 const ultraSizeKB = Math.round(ultraCompressed.length / 1024);
                 console.log(`💾 Ultra-compression: ${newSizeKB}KB → ${ultraSizeKB}KB`);
                 resolve(ultraCompressed);
               } else {
                 resolve(compressedData);
-              }
+              cleaned[key] = await this.ultraCompressSignature(value);
             } else {
               resolve(imageData);
             }
@@ -496,11 +567,12 @@ export class PDFService {
       } else {
         console.log('📄 📝 Génération PDF simple - template non disponible');
         console.log('📄 Debug template data:', {
-          hasTemplateData: !!templateData,
-          templateId: templateData?.templateId,
+              // Compression très agressive des autres images
+              console.log(`💾 Compression très agressive image: ${key}`);
+              cleaned[key] = await this.aggressiveImageCompression(value);
           hasFields: !!templateData?.templateFields?.length,
           hasContent: !!templateData?.templatePdfContent
-        });
+        }
         
         
         // Nettoyer les données du formulaire
@@ -791,11 +863,11 @@ export class PDFService {
             doc.addPage();
             yPosition = 20;
           }
-        }
+          for (const [key, value] of Object.entries(cleaned)) {
       });
       
       return new Uint8Array(doc.output('arraybuffer'));
-    } catch (error) {
+                  essentialData[key] = await this.ultraCompressSignature(value);
       console.error('🎯 Erreur génération PDF simple:', error);
       throw error;
     }
@@ -817,7 +889,7 @@ export class PDFService {
       // Vérifier si on est en mode impersonation
       const impersonationData = localStorage.getItem('admin_impersonation');
       if (impersonationData) {
-        try {
+          }
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
           console.log('💾 🎭 Mode impersonation: nettoyage PDFs pour', data.target_email);
