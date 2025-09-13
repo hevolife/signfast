@@ -104,7 +104,7 @@ export class PDFService {
       console.log('💾 Sauvegarde métadonnées PDF:', fileName);
       
       // Nettoyer les données du formulaire pour éviter les problèmes de quota
-      const cleanFormData = this.cleanFormDataForStorage(metadata.formData);
+      const cleanFormData = await this.cleanFormDataForStorage(metadata.formData);
       
       // Stocker seulement l'ID du template pour éviter les gros volumes
       let templateId = null;
