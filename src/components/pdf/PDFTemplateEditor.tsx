@@ -24,6 +24,7 @@ interface PDFTemplateEditorProps {
   templateName?: string;
   linkedFormId?: string;
   onFormLinkChange?: (formId: string | null) => void;
+  onTemplateNameChange?: (name: string) => void;
 }
 
 export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
@@ -34,6 +35,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   templateName,
   linkedFormId,
   onFormLinkChange,
+  onTemplateNameChange,
 }) => {
   // État pour les dimensions PDF - doit être déclaré en premier
   const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
@@ -50,6 +52,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [draggedFieldType, setDraggedFieldType] = useState<PDFField['type'] | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [pdfLoaded, setPdfLoaded] = useState(false);
+  const [currentTemplateName, setCurrentTemplateName] = useState(templateName || '');
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Détecter mobile
@@ -67,6 +70,12 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     }
   }, [existingPdfUrl, pdfLoaded]);
 
+  // Mettre à jour le nom du template quand il change
+  useEffect(() => {
+    if (templateName) {
+      setCurrentTemplateName(templateName);
+    }
+  }, [templateName]);
   // Initialiser les champs après chargement du PDF
   useEffect(() => {
     if (pdfFile && initialFields.length > 0 && !isInitialized && pdfDimensions.length > 0) {
