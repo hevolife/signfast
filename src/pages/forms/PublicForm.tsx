@@ -269,18 +269,19 @@ export const PublicForm: React.FC = () => {
       console.log('Response saved:', responseData);
 
       // Génération PDF
-      console.log('🎯 Génération PDF déclenchée');
+      console.log('🎯 Traitement PDF démarré');
       
-      // Petit délai pour s'assurer que la réponse est sauvegardée
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      try {
-        await handlePDFGeneration(responseData);
-        console.log('🎯 Génération PDF terminée avec succès');
-      } catch (error) {
-        console.error('🎯 Erreur génération PDF:', error);
-        toast.error(`⚠️ Formulaire envoyé mais erreur PDF: ${error.message}`);
-      }
+      // Traitement PDF en arrière-plan pour éviter les timeouts
+      setTimeout(async () => {
+        try {
+          await handlePDFGeneration(responseData);
+          console.log('🎯 Traitement PDF terminé avec succès');
+        } catch (error) {
+          console.error('🎯 Erreur traitement PDF:', error);
+          // Ne pas afficher d'erreur à l'utilisateur car le formulaire est déjà envoyé
+          console.warn('PDF non généré mais formulaire envoyé avec succès');
+        }
+      }, 100);
 
       setSubmitted(true);
       toast.success('Formulaire envoyé avec succès !');
@@ -294,10 +295,11 @@ export const PublicForm: React.FC = () => {
   };
 
   const handlePDFGeneration = async (response: any) => {
-    console.log('🎯 Sauvegarde métadonnées PDF (génération différée)');
+    console.log('🎯 Traitement PDF pour formulaire public');
     
     try {
-      toast.loading('💾 Sauvegarde des données PDF...', { id: 'pdf-save', duration: 10000 });
+      // Ne pas afficher de toast pour les utilisateurs publics
+      console.log('💾 Préparation des métadonnées PDF...');
 
       // Préparer les métadonnées
       const timestamp = Date.now();
@@ -311,7 +313,8 @@ export const PublicForm: React.FC = () => {
       console.log('🎯 Propriétaire du formulaire:', formOwnerId);
       
       if (!formOwnerId) {
-        throw new Error('Propriétaire du formulaire non identifié');
+        console.error('🎯 Propriétaire du formulaire non identifié');
+        return; // Échec silencieux pour les formulaires publics
       }
       
       const metadata = {
@@ -324,22 +327,28 @@ export const PublicForm: React.FC = () => {
 
       // Vérifier si un template PDF est configuré
       if (form.settings?.pdfTemplateId) {
-        console.log('🎯 Template PDF configuré:', form.settings.pdfTemplateId);
+        console.log('🎯 Chargement template PDF:', form.settings.pdfTemplateId);
         
-        // Charger le template depuis Supabase
-        const template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
-        
-        if (template) {
-          console.log('🎯 Template trouvé:', template.name);
+        try {
+          // Charger le template depuis Supabase avec timeout
+          const template = await Promise.race([
+            PDFTemplateService.getTemplate(form.settings.pdfTemplateId),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+          ]);
           
-          // Ajouter les informations du template aux métadonnées
-          metadata.templateName = template.name;
-          metadata.templateId = template.id;
-          metadata.templateFields = template.fields;
-          metadata.templatePdfContent = template.originalPdfUrl;
-        } else {
-          console.log('🎯 Template non trouvé, utilisation PDF simple');
-          metadata.templateName = 'PDF Simple (Template non trouvé)';
+          if (template) {
+            console.log('🎯 Template trouvé:', template.name);
+            metadata.templateName = template.name;
+            metadata.templateId = template.id;
+            metadata.templateFields = template.fields;
+            metadata.templatePdfContent = template.originalPdfUrl;
+          } else {
+            console.log('🎯 Template non trouvé');
+            metadata.templateName = 'PDF Simple';
+          }
+        } catch (templateError) {
+          console.warn('🎯 Erreur chargement template (timeout):', templateError);
+          metadata.templateName = 'PDF Simple';
         }
       } else {
         console.log('🎯 Aucun template configuré, PDF simple');
@@ -348,21 +357,17 @@ export const PublicForm: React.FC = () => {
       // Sauvegarder les métadonnées (pas le PDF lui-même)
       await PDFService.savePDFMetadata(fileName, metadata);
       
-      toast.success('💾 Données PDF sauvegardées ! Le PDF sera généré au téléchargement.', { id: 'pdf-save' });
+      console.log('💾 Métadonnées PDF sauvegardées avec succès');
       
       // Simuler qu'un PDF est disponible pour le téléchargement
       setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
       
     } catch (error) {
-      console.error('🎯 Erreur sauvegarde métadonnées PDF:', error);
+      console.error('🎯 Erreur traitement PDF:', error);
       
-      if (error.message.includes('Limite de')) {
-        toast.error(`❌ ${error.message}`, { id: 'pdf-save', duration: 8000 });
-      } else if (error.message.includes('propriétaire')) {
-        toast.error('❌ Erreur: Impossible d\'identifier le propriétaire du formulaire', { id: 'pdf-save' });
-      } else {
-        toast.error(`❌ Erreur sauvegarde: ${error.message}`, { id: 'pdf-save' });
-      }
+      // Échec silencieux pour les formulaires publics
+      // Le formulaire est envoyé même si le PDF échoue
+      console.warn('PDF non sauvegardé mais formulaire envoyé avec succès');
     }
   };
 
@@ -732,6 +737,19 @@ export const PublicForm: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400">
               Votre formulaire a été envoyé avec succès.
             </p>
+            
+            {/* Bouton de téléchargement PDF si disponible */}
+            {generatedPDF && savedPdfFileName && (
+              <div className="mt-6">
+                <Button
+                  onClick={downloadPDF}
+                  className="flex items-center space-x-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Télécharger le PDF</span>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
