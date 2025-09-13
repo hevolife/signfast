@@ -44,18 +44,26 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   };
 
   return (
-    <Card>
+    <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 shadow-lg">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Propriétés du champ
-          </h3>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-white text-lg">⚙️</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
+              Propriétés du champ
+            </h3>
+            <p className="text-sm text-purple-700 dark:text-purple-400">
+              Configurez les paramètres du champ sélectionné
+            </p>
+          </div>
           <Button
             onClick={onPreviewPDF}
             disabled={previewLoading}
             variant="secondary"
             size="sm"
-            className="flex items-center space-x-1"
+            className="flex items-center space-x-1 bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
           >
             {previewLoading ? (
               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
@@ -66,7 +74,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           </Button>
         </div>
         {linkedFormId && (
-          <p className="text-xs text-blue-600 dark:text-blue-400">
+          <p className="text-xs text-purple-600 dark:text-purple-400">
             📋 Lié au formulaire: {getLinkedFormInfo()}
           </p>
         )}
@@ -80,7 +88,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           <select
             value={field.variable}
             onChange={(e) => onUpdate({ variable: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
             <option value="">Sélectionner une variable</option>
             <optgroup label="Variables du formulaire">
@@ -100,8 +108,8 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
           </select>
           
           {field.variable && (
-            <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
-              <p className="text-xs text-green-800 dark:text-green-200">
+            <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
+              <p className="text-xs text-purple-800 dark:text-purple-200">
                 ✅ Variable: <code className="font-mono bg-white dark:bg-gray-800 px-1 rounded">{field.variable}</code>
               </p>
             </div>
@@ -190,7 +198,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.1, yRatio: 0.1 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               ↖
             </Button>
@@ -198,7 +206,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.5, yRatio: 0.1 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               ↑
             </Button>
@@ -206,7 +214,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.8, yRatio: 0.1 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               ↗
             </Button>
@@ -214,7 +222,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.1, yRatio: 0.7 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               ↙
             </Button>
@@ -222,7 +230,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.5, yRatio: 0.7 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               ↓
             </Button>
@@ -230,7 +238,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ xRatio: 0.8, yRatio: 0.7 })}
-              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               ↘
             </Button>
@@ -247,7 +255,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.15, heightRatio: 0.03 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               Petit
             </Button>
@@ -255,7 +263,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.25, heightRatio: 0.04 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               Moyen
             </Button>
@@ -263,7 +271,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.35, heightRatio: 0.05 })}
-              className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100"
+              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
             >
               Grand
             </Button>
@@ -271,7 +279,7 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
               size="sm"
               variant="ghost"
               onClick={() => onUpdate({ widthRatio: 0.35, heightRatio: 0.1 })}
-              className="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100"
+              className="text-xs bg-pink-50 text-pink-700 hover:bg-pink-100 dark:bg-pink-900/30 dark:text-pink-300 dark:hover:bg-pink-800"
             >
               Signature
             </Button>
@@ -349,17 +357,17 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
             const snappedYRatio = Math.round((field.yRatio || 0) / gridSize) * gridSize;
             onUpdate({ xRatio: snappedXRatio, yRatio: snappedYRatio });
           }}
-          className="w-full text-xs bg-green-50 text-green-700 hover:bg-green-100"
+          className="w-full text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
         >
           📐 Aligner sur grille (1%)
         </Button>
 
         {/* Informations du champ */}
-        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border">
-          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+          <h4 className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">
             Informations du champ
           </h4>
-          <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+          <div className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
             <div>Type: {field.type}</div>
             <div>Page: {field.page}</div>
             <div>Ratios position: ({(field.xRatio || 0).toFixed(3)}, {(field.yRatio || 0).toFixed(3)})</div>
