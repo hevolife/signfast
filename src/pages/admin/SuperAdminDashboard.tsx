@@ -578,7 +578,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         <div className="flex-shrink-0 self-start">
                           <Button
                             onClick={() => impersonateUser(adminUser)}
-                            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 hover:from-indigo-200 hover:to-purple-200 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-sm hover:shadow-md transition-all px-4 py-2 text-sm font-medium"
+                            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium shadow-md hover:shadow-lg transition-all"
                           >
                             <UserCheck className="h-4 w-4" />
                             <span className="hidden sm:inline">Se connecter en tant que</span>
