@@ -606,13 +606,4 @@ export class PDFService {
     }
   }
 
-  // UTILITAIRES PRIVÉS
-  private static getLocalPDFs(): Record<string, any> {
-    try {
-      const data = localStorage.getItem('allSavedPDFs');
-      return data ? JSON.parse(data) : {};
-    } catch (error) {
-      return {};
-    }
-  }
 }
