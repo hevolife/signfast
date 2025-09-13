@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAffiliateAdmin } from '../../hooks/useAffiliate';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -20,11 +20,121 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+interface AdminUser {
+  id: string;
+  email: string;
+  created_at: string;
+  profile?: {
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
+  };
+}
+
+interface AffiliateProgram {
+  id: string;
+  user_id: string;
+  affiliate_code: string;
+  commission_rate: number;
+  total_referrals: number;
+  total_earnings: number;
+  monthly_earnings: number;
+  is_active: boolean;
+  created_at: string;
+  user?: AdminUser;
+}
+
 export const AffiliateAdminPanel: React.FC = () => {
-  const { allPrograms, loading, updateCommissionRate, refetch } = useAffiliateAdmin();
+  const { user, session } = useAuth();
+  const [allPrograms, setAllPrograms] = useState<AffiliateProgram[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [newCommissionRate, setNewCommissionRate] = useState<number>(5);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Vérifier si l'utilisateur est super admin
+  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      loadAffiliatePrograms();
+    }
+  }, [isSuperAdmin]);
+
+  const loadAffiliatePrograms = async () => {
+    try {
+      if (!session?.access_token) {
+        console.error('❌ Session non disponible');
+        return;
+      }
+
+      // 1. Récupérer tous les utilisateurs via l'API admin
+      const usersResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!usersResponse.ok) {
+        throw new Error('Erreur lors de la récupération des utilisateurs');
+      }
+
+      const users: AdminUser[] = await usersResponse.json();
+      console.log('📊 Utilisateurs récupérés:', users.length);
+
+      // 2. Récupérer tous les programmes d'affiliation
+      const { data: programs, error: programsError } = await supabase
+        .from('affiliate_programs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (programsError) {
+        console.error('❌ Erreur programmes:', programsError);
+        throw new Error(programsError.message);
+      }
+
+      // 3. Enrichir les programmes avec les données utilisateur
+      const programsWithUserData = (programs || []).map(program => {
+        const userData = users.find(u => u.id === program.user_id);
+        return {
+          ...program,
+          user: userData
+        };
+      });
+
+      setAllPrograms(programsWithUserData);
+      console.log('📊 Programmes avec données utilisateur:', programsWithUserData.length);
+      
+    } catch (error: any) {
+      console.error('Erreur chargement programmes admin:', error);
+      setAllPrograms([]);
+      toast.error('Erreur lors du chargement des programmes d\'affiliation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCommissionRate = async (userId: string, newRate: number) => {
+    try {
+      const { error } = await supabase
+        .from('affiliate_programs')
+        .update({ commission_rate: newRate })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Erreur mise à jour commission:', error);
+        return false;
+      }
+
+      // Rafraîchir les données
+      await loadAffiliatePrograms();
+      return true;
+    } catch (error) {
+      console.error('Erreur mise à jour commission:', error);
+      return false;
+    }
+  };
 
   const handleEditCommission = (userId: string, currentRate: number) => {
     setEditingUserId(userId);
@@ -58,17 +168,48 @@ export const AffiliateAdminPanel: React.FC = () => {
     setNewCommissionRate(5);
   };
 
+  const getUserDisplayName = (program: AffiliateProgram): string => {
+    const userData = program.user;
+    
+    if (!userData) {
+      return program.affiliate_code; // Fallback sur le code d'affiliation
+    }
+    
+    // Priorité : nom d'entreprise
+    if (userData.profile?.company_name) {
+      return userData.profile.company_name;
+    }
+    
+    // Ensuite : prénom + nom
+    const firstName = userData.profile?.first_name || '';
+    const lastName = userData.profile?.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    
+    if (fullName) {
+      return fullName;
+    }
+    
+    // Fallback : email
+    if (userData.email) {
+      return userData.email;
+    }
+    
+    return program.affiliate_code;
+  };
+
   const filteredPrograms = allPrograms.filter(program => {
     const searchLower = searchTerm.toLowerCase();
+    const displayName = getUserDisplayName(program);
     return (
       program.affiliate_code.toLowerCase().includes(searchLower) ||
-      program.user_id.toLowerCase().includes(searchLower)
+      program.user_id.toLowerCase().includes(searchLower) ||
+      displayName.toLowerCase().includes(searchLower)
     );
   });
 
   const totalEarnings = allPrograms.reduce((sum, program) => sum + program.total_earnings, 0);
   const totalReferrals = allPrograms.reduce((sum, program) => sum + program.total_referrals, 0);
-  const monthlyEarnings = allPrograms.reduce((sum, program) => sum + program.monthly_earnings, 0);
+  const monthlyEarnings = allPrograms.reduce((sum, program) => sum + (program.monthly_earnings || 0), 0);
 
   if (loading) {
     return (
@@ -190,28 +331,7 @@ export const AffiliateAdminPanel: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
                           <div className="font-medium text-gray-900 dark:text-white">
-                            {(() => {
-                              // Priorité : nom d'entreprise
-                              if (program.user_profiles?.company_name) {
-                                return program.user_profiles.company_name;
-                              }
-                              
-                              // Ensuite : prénom + nom
-                              const firstName = program.user_profiles?.first_name || '';
-                              const lastName = program.user_profiles?.last_name || '';
-                              const fullName = `${firstName} ${lastName}`.trim();
-                              
-                              if (fullName) {
-                                return fullName;
-                              }
-                              
-                              // Fallback : email
-                              if (program.auth_user?.email) {
-                                return program.auth_user.email;
-                              }
-                              
-                              return 'Utilisateur sans nom';
-                            })()}
+                            {getUserDisplayName(program)}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
@@ -227,10 +347,10 @@ export const AffiliateAdminPanel: React.FC = () => {
                           </span>
                         </div>
                         <div className="text-sm text-gray-500 space-y-1">
-                          {program.auth_user?.email && (
+                          {program.user?.email && (
                             <div className="flex items-center space-x-1">
                               <span>📧</span>
-                              <span className="truncate">{program.auth_user.email}</span>
+                              <span className="truncate">{program.user.email}</span>
                             </div>
                           )}
                           <div className="text-xs text-gray-400 truncate">
@@ -247,15 +367,15 @@ export const AffiliateAdminPanel: React.FC = () => {
                         <div className="text-xs text-blue-600">Parrainages</div>
                       </div>
                       <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-green-600">{program.confirmed_referrals}</div>
+                        <div className="text-lg font-bold text-green-600">{program.total_referrals}</div>
                         <div className="text-xs text-green-600">Confirmés</div>
                       </div>
                       <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-purple-600">{program.monthly_earnings.toFixed(2)}€</div>
+                        <div className="text-lg font-bold text-purple-600">{program.monthly_earnings?.toFixed(2) || '0.00'}€</div>
                         <div className="text-xs text-purple-600">Ce mois</div>
                       </div>
                       <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-orange-600">{program.total_earnings.toFixed(2)}€</div>
+                        <div className="text-lg font-bold text-orange-600">{program.total_earnings?.toFixed(2) || '0.00'}€</div>
                         <div className="text-xs text-orange-600">Total</div>
                       </div>
                     </div>
