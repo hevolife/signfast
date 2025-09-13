@@ -33,22 +33,42 @@ export const MobileBottomNav: React.FC = () => {
 
   // Si pas d'utilisateur connecté, afficher seulement quelques éléments
   const visibleItems = user ? [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
-    { path: '/forms', icon: FileText, label: 'Formulaires', show: true },
-    { path: '/pdf/templates', icon: FileText, label: 'Templates', show: true },
-    { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', show: true },
-    { path: '/settings', icon: Settings, label: 'Paramètres', show: true }
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true, color: 'blue', emoji: '📊' },
+    { path: '/forms', icon: FileText, label: 'Formulaires', show: true, color: 'green', emoji: '📝' },
+    { path: '/pdf/templates', icon: FileText, label: 'Templates', show: true, color: 'purple', emoji: '📄' },
+    { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', show: true, color: 'orange', emoji: '💾' },
+    { path: '/settings', icon: Settings, label: 'Paramètres', show: true, color: 'indigo', emoji: '⚙️' }
   ] : [
-    { path: '/', icon: Home, label: 'Accueil', show: true },
-    { path: '/login', icon: LogIn, label: 'Connexion', show: true },
-    { path: '/signup', icon: UserPlus, label: 'Inscription', show: true }
+    { path: '/', icon: Home, label: 'Accueil', show: true, color: 'blue', emoji: '🏠' },
+    { path: '/login', icon: LogIn, label: 'Connexion', show: true, color: 'green', emoji: '🔑' },
+    { path: '/signup', icon: UserPlus, label: 'Inscription', show: true, color: 'purple', emoji: '✨' }
   ];
+
+  const getColorClasses = (color: string, active: boolean) => {
+    const colorMap = {
+      blue: active 
+        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 border-blue-300'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600',
+      green: active 
+        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border-green-300'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600',
+      purple: active 
+        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 border-purple-300'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600',
+      orange: active 
+        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600',
+      indigo: active 
+        ? 'bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-700 border-indigo-300'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-indigo-100 hover:text-indigo-600',
+    };
+    return colorMap[color] || colorMap.blue;
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className={`flex justify-around items-center ${user ? 'py-4 px-1' : 'py-3 px-2'}`}>
+      <div className={`flex justify-around items-center gap-1 ${user ? 'py-3 px-2' : 'py-3 px-2'}`}>
         {visibleItems.map((item, index) => {
-          const Icon = item.icon;
           const active = !item.isButton && isActive(item.path);
           
           if (!item.show) return null;
@@ -57,25 +77,25 @@ export const MobileBottomNav: React.FC = () => {
             <button
               key={`button-${index}`}
               onClick={item.onClick}
-              className={`flex flex-col items-center justify-center ${user ? 'py-2 px-2' : 'py-2 px-3'} rounded-lg transition-colors ${
-                'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${getColorClasses(item.color, false)}`}
             >
-              <Icon className={`${user ? 'h-6 w-6' : 'h-5 w-5'} mb-1`} />
-              <span className={`${user ? 'text-xs' : 'text-xs'} font-medium`}>{item.label}</span>
+              <div className="p-1.5 bg-white/50 rounded-lg shadow-sm mb-1">
+                <span className="text-lg">{item.emoji}</span>
+              </div>
+              <span className="text-xs font-semibold text-center leading-tight">{item.label}</span>
             </button>
           ) : (
             <Link
               key={`link-${item.path}`}
               to={item.path}
-              className={`flex flex-col items-center justify-center ${user ? 'py-2 px-1' : 'py-2 px-3'} rounded-lg transition-colors min-w-0 ${
-                active
-                  ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 min-w-0 ${
+                active ? `${getColorClasses(item.color, true)} shadow-lg` : getColorClasses(item.color, false)
+              } ${active ? 'border-2 border-dashed' : ''}`}
             >
-              <Icon className={`${user ? 'h-7 w-7' : 'h-5 w-5'} mb-1`} />
-              <span className={`${user ? 'text-xs' : 'text-xs'} font-medium truncate max-w-16 text-center`}>{item.label}</span>
+              <div className="p-1.5 bg-white/50 rounded-lg shadow-sm mb-1">
+                <span className="text-lg">{item.emoji}</span>
+              </div>
+              <span className="text-xs font-semibold text-center leading-tight truncate max-w-16">{item.label}</span>
             </Link>
           );
         })}
