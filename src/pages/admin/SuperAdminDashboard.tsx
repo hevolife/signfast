@@ -128,30 +128,20 @@ export const SuperAdminDashboard: React.FC = () => {
     try {
       console.log('🔑 Chargement des codes secrets...');
       
-      // Vérifier si Supabase est configuré
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('⚠️ Supabase non configuré - impossible de charger les codes');
-        setSecretCodes([]);
-        return;
+      // Utiliser l'Edge Function pour récupérer les codes
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération des codes');
       }
 
-      // Utiliser le service role key pour contourner RLS
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseAdmin = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
-
-      console.log('🔑 Tentative de récupération avec client admin...');
-      const { data, error } = await supabaseAdmin
-        .from('secret_codes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await response.json();
       
       console.log('🔑 Codes chargés:', data?.length || 0);
       console.log('🔑 Détails codes:', data?.map(c => ({
@@ -163,7 +153,7 @@ export const SuperAdminDashboard: React.FC = () => {
         max_uses: c.max_uses
       })));
       
-      setSecretCodes(data || []);
+      setSecretCodes(data);
     } catch (error) {
       console.error('Erreur chargement codes secrets:', error);
       toast.error('Erreur lors du chargement des codes secrets');
@@ -184,39 +174,28 @@ export const SuperAdminDashboard: React.FC = () => {
         maxUses: newCodeMaxUses
       });
       
-      const code = `${newCodeType.toUpperCase()}${Date.now().toString().slice(-6)}`;
-      const expiresAt = newCodeType === 'monthly' 
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        : null;
-
-      console.log('🔑 Code généré:', code);
-      console.log('🔑 Expire le:', expiresAt);
-
-      // Utiliser le service role key pour contourner RLS
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseAdmin = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
-
-      const { data, error } = await supabaseAdmin
-        .from('secret_codes')
-        .insert([{
-          code,
+      // Utiliser l'Edge Function pour créer le code
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           type: newCodeType,
           description: newCodeDescription,
-          max_uses: newCodeMaxUses,
-          expires_at: expiresAt,
-          is_active: true,
-          current_uses: 0,
-        }])
-        .select()
-        .single();
+          maxUses: newCodeMaxUses,
+        }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création du code');
+      }
+
+      const data = await response.json();
 
       console.log('🔑 Code inséré avec succès:', data);
-      toast.success(`Code secret créé: ${code}`);
+      toast.success(`Code secret créé: ${data.code}`);
       setNewCodeDescription('');
       setNewCodeMaxUses(1);
       await loadSecretCodes();
@@ -229,19 +208,19 @@ export const SuperAdminDashboard: React.FC = () => {
   const deleteSecretCode = async (id: string, code: string) => {
     if (window.confirm(`Supprimer le code "${code}" ?`)) {
       try {
-        // Utiliser le service role key pour contourner RLS
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabaseAdmin = createClient(
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
-        );
+        // Utiliser l'Edge Function pour supprimer le code
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes?id=${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-        const { error } = await supabaseAdmin
-          .from('secret_codes')
-          .delete()
-          .eq('id', id);
+        if (!response.ok) {
+          throw new Error('Erreur lors de la suppression du code');
+        }
 
-        if (error) throw error;
         toast.success('Code supprimé');
         await loadSecretCodes();
       } catch (error) {
