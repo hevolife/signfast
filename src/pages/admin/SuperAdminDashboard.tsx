@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -76,6 +76,7 @@ interface SecretCode {
 
 export const SuperAdminDashboard: React.FC = () => {
   const { user, session } = useAuth();
+  const navigate = useNavigate();
   const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
@@ -112,6 +113,14 @@ export const SuperAdminDashboard: React.FC = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          const errorBody = await response.text();
+          if (errorBody.includes('not_admin') || errorBody.includes('Not a super admin')) {
+            toast.error('Accès refusé : Vous n\'avez pas les privilèges super admin');
+            navigate('/dashboard');
+            return;
+          }
+        }
         throw new Error('Erreur lors de la récupération des utilisateurs');
       }
 
@@ -119,6 +128,10 @@ export const SuperAdminDashboard: React.FC = () => {
       setUsers(data);
     } catch (error) {
       console.error('Erreur:', error);
+      if (error instanceof Error && error.message.includes('Accès refusé')) {
+        // Error already handled above
+        return;
+      }
       toast.error('Erreur lors du chargement des utilisateurs');
     } finally {
       setLoading(false);

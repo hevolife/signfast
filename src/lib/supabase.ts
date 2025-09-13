@@ -7,7 +7,32 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supab
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Custom fetch function to handle session expiration
+const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
+  const response = await fetch(url, options);
+  
+  // Check for session expiration
+  if (response.status === 403) {
+    try {
+      const body = await response.clone().json();
+      if (body.code === 'session_not_found') {
+        // Session expired, sign out the user
+        console.log('Session expired, signing out user');
+        supabase.auth.signOut();
+      }
+    } catch (error) {
+      // If we can't parse the response body, ignore
+    }
+  }
+  
+  return response;
+};
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: {
+    fetch: customFetch,
+  },
+});
 
 // Export createClient for admin operations
 export { createClient };
