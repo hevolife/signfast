@@ -512,10 +512,13 @@ export class PDFService {
   // SUPPRIMER UN PDF
   static async deletePDF(fileName: string): Promise<boolean> {
     try {
+      console.log('🗑️ Suppression PDF:', fileName);
+      
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
+        console.error('❌ Utilisateur non authentifié pour suppression');
         return false;
       }
 
@@ -527,11 +530,13 @@ export class PDFService {
         try {
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
+          console.log('🎭 Mode impersonation: suppression pour', data.target_email);
         } catch (error) {
           // Silent error
         }
       }
 
+      // Supprimer l'enregistrement de la base de données
       const { error } = await supabase
         .from('pdf_storage')
         .delete()
@@ -539,11 +544,14 @@ export class PDFService {
         .eq('user_id', targetUserId);
 
       if (error) {
+        console.error('❌ Erreur suppression base de données:', error);
         return false;
       }
 
+      console.log('✅ PDF supprimé de la base de données:', fileName);
       return true;
     } catch (error) {
+      console.error('❌ Erreur générale suppression PDF:', error);
       return false;
     }
   }
@@ -592,10 +600,13 @@ export class PDFService {
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
     try {
+      console.log('🗑️ Suppression de tous les PDFs...');
+      
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
+        console.error('❌ Utilisateur non authentifié pour suppression massive');
         return;
       }
 
@@ -607,17 +618,38 @@ export class PDFService {
         try {
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
+          console.log('🎭 Mode impersonation: suppression massive pour', data.target_email);
         } catch (error) {
           // Silent error
         }
       }
 
+      // Compter les PDFs avant suppression
+      const { count: pdfCount } = await supabase
+        .from('pdf_storage')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', targetUserId);
+
+      console.log('🗑️ Nombre de PDFs à supprimer:', pdfCount || 0);
+
+      // Supprimer tous les PDFs de l'utilisateur
       const { error } = await supabase
         .from('pdf_storage')
         .delete()
         .eq('user_id', targetUserId);
 
       if (error) {
+        console.error('❌ Erreur suppression massive base de données:', error);
+        throw new Error(`Erreur lors de la suppression: ${error.message}`);
+      }
+
+      console.log('✅ Tous les PDFs supprimés de la base de données:', pdfCount || 0, 'enregistrements');
+    } catch (error) {
+      console.error('❌ Erreur générale suppression massive:', error);
+      throw error;
+    }
+  }
+}
         // Silent error
       }
     } catch (error) {

@@ -134,27 +134,42 @@ export const PDFManager: React.FC = () => {
     // Vérifier si on peut supprimer (toujours autorisé pour libérer de l'espace)
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le PDF "${pdf.fileName}" ?`)) {
       try {
+        console.log('🗑️ Début suppression PDF:', pdf.fileName);
         const success = await PDFService.deletePDF(pdf.fileName);
         if (success) {
           setPdfs(prev => prev.filter(p => p.fileName !== pdf.fileName));
           refreshLimits(); // Rafraîchir les limites après suppression
-          toast.success('PDF supprimé avec succès');
+          toast.success('✅ PDF et données supprimés avec succès');
+          console.log('✅ PDF supprimé avec succès:', pdf.fileName);
         } else {
-          toast.error('Erreur lors de la suppression');
+          toast.error('❌ Erreur lors de la suppression du PDF');
+          console.error('❌ Échec suppression PDF:', pdf.fileName);
         }
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
-        toast.error('Erreur lors de la suppression');
+        toast.error('❌ Erreur lors de la suppression du PDF');
       }
     }
   };
 
   const clearAllPDFs = () => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer tous les ${pdfs.length} PDFs sauvegardés ?\n\nCette action est irréversible.`)) {
-      PDFService.clearAllPDFs();
-      setPdfs([]);
-      refreshLimits(); // Rafraîchir les limites après suppression
-      toast.success(`${pdfs.length} PDFs supprimés avec succès`);
+      const pdfCount = pdfs.length;
+      console.log('🗑️ Début suppression massive:', pdfCount, 'PDFs');
+      
+      PDFService.clearAllPDFs()
+        .then(() => {
+          setPdfs([]);
+          refreshLimits(); // Rafraîchir les limites après suppression
+          toast.success(`✅ ${pdfCount} PDFs et données supprimés avec succès`);
+          console.log('✅ Suppression massive réussie:', pdfCount, 'PDFs');
+        })
+        .catch((error) => {
+          console.error('❌ Erreur suppression massive:', error);
+          toast.error('❌ Erreur lors de la suppression massive');
+          // Recharger la liste pour voir l'état réel
+          loadPDFs();
+        });
     }
   };
 
