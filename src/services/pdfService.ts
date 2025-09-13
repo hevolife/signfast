@@ -55,7 +55,7 @@ export class PDFService {
           .eq('secret_codes.is_active', true);
 
         if (secretError) {
-          console.warn('💾 Erreur vérification codes secrets:', secretError);
+          // Silent error
         }
 
         let hasActiveSecretCode = false;
@@ -88,8 +88,8 @@ export class PDFService {
         throw new Error(`Limite de ${stripeConfig.freeLimits.maxSavedPdfs} PDFs sauvegardés atteinte. Passez Pro pour un stockage illimité.`);
       }
       
-      // Nettoyer les données du formulaire pour éviter les problèmes de quota
-      const cleanFormData = await this.cleanFormDataForStorage(metadata.formData);
+      // Nettoyer drastiquement les données pour éviter les timeouts
+      const cleanFormData = this.cleanFormDataForStorageSync(metadata.formData);
       
       // Stocker seulement l'ID du template pour éviter les gros volumes
       let templateId = null;
@@ -108,10 +108,13 @@ export class PDFService {
         user_id: targetUserId,
       };
 
-      // Sauvegarder dans Supabase
-      const { error } = await supabase
-        .from('pdf_storage')
-        .insert([pdfData]);
+      // Sauvegarder dans Supabase avec timeout réduit
+      const { error } = await Promise.race([
+        supabase.from('pdf_storage').insert([pdfData]),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout sauvegarde PDF')), 5000)
+        )
+      ]);
 
       if (error) {
         throw new Error(`Erreur de sauvegarde: ${error.message}`);
@@ -141,28 +144,22 @@ export class PDFService {
     }
   }
 
-  // NETTOYER LES DONNÉES DU FORMULAIRE POUR LE STOCKAGE
-  private static async cleanFormDataForStorage(formData: Record<string, any>): Promise<Record<string, any>> {
+  // NETTOYER LES DONNÉES DU FORMULAIRE POUR LE STOCKAGE (VERSION SYNCHRONE)
+  private static cleanFormDataForStorageSync(formData: Record<string, any>): Record<string, any> {
     const cleaned: Record<string, any> = {};
     
     for (const [key, value] of Object.entries(formData)) {
       if (typeof value === 'string' && value.startsWith('data:image')) {
+        // Compression drastique pour éviter les timeouts
         const originalSize = Math.round(value.length / 1024);
-        console.log(`💾 Image ${key}: ${originalSize}KB`);
         
-        // Compresser si > 500KB pour éviter les timeouts Supabase
-        if (originalSize > 500) {
-          try {
-            const compressedImage = await this.compressImageWithCanvas(value, 0.7);
-            const compressedSize = Math.round(compressedImage.length / 1024);
-            cleaned[key] = compressedImage;
-          } catch (error) {
-            // En cas d'erreur, garder l'original
-            cleaned[key] = value;
-          }
-          // Image déjà petite, garder l'original
+        if (originalSize > 200) {
+          // Compression simple par échantillonnage pour les gros fichiers
+          cleaned[key] = this.compressImageSimple(value);
+        } else {
           cleaned[key] = value;
         }
+      } else {
         cleaned[key] = value;
       }
     }
@@ -241,11 +238,9 @@ export class PDFService {
       
       const compressedImage = `${header},${compressedData}`;
       const compressedSize = Math.round(compressedImage.length / 1024);
-      console.log(`💾 ✅ Compression: ${originalSize}KB → ${compressedSize}KB`);
       
       return compressedImage;
     } catch (error) {
-      console.error(`💾 ❌ Erreur compression:`, error);
       return base64Image; // Retourner l'original en cas d'erreur
     }
   }

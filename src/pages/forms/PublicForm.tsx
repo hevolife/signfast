@@ -338,7 +338,6 @@ export const PublicForm: React.FC = () => {
       const formOwnerId = form.user_id;
       
       if (!formOwnerId) {
-        console.error('❌ Propriétaire du formulaire non trouvé');
         toast.error('Erreur: propriétaire du formulaire non identifié');
         return;
       }
@@ -366,7 +365,6 @@ export const PublicForm: React.FC = () => {
             metadata.templateName = template.name;
           }
         } catch (templateError) {
-          console.error('❌ Erreur chargement template:', templateError);
           metadata.templateName = 'PDF Simple';
         }
       }
@@ -381,12 +379,10 @@ export const PublicForm: React.FC = () => {
         setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
         toast.success('📄 PDF généré et sauvegardé avec succès !');
       } else {
-        console.error('❌ Erreur sauvegarde PDF');
         toast.error('❌ Erreur lors de la sauvegarde du PDF');
       }
       
     } catch (error) {
-      console.error('❌ Erreur génération PDF:', error);
       toast.error('❌ Erreur lors de la génération du PDF');
     }
   };
