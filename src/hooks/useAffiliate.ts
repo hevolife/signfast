@@ -199,13 +199,19 @@ export const useAffiliateAdmin = () => {
       const programsWithStats = await Promise.all(
         (programs || []).map(async (program) => {
           try {
-            // Récupérer le profil utilisateur séparément
+            // Récupérer les données utilisateur complètes (auth + profil)
+            const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(program.user_id);
+            
             const { data: userProfile } = await supabase
               .from('user_profiles')
               .select('first_name, last_name, company_name')
               .eq('user_id', program.user_id)
               .maybeSingle();
 
+            console.log('📊 Données utilisateur pour', program.user_id, ':', {
+              email: authUser?.user?.email,
+              profile: userProfile
+            });
             // Compter les parrainages confirmés
             const { count: confirmedCount } = await supabase
               .from('affiliate_referrals')
@@ -230,6 +236,7 @@ export const useAffiliateAdmin = () => {
 
             return {
               ...program,
+              auth_user: authUser?.user || null,
               user_profiles: userProfile,
               confirmed_referrals: confirmedCount || 0,
               monthly_earnings: monthlyEarnings,
@@ -238,6 +245,7 @@ export const useAffiliateAdmin = () => {
             console.error('Erreur calcul stats pour programme:', program.user_id, error);
             return {
               ...program,
+              auth_user: null,
               user_profiles: null,
               confirmed_referrals: 0,
               monthly_earnings: 0,

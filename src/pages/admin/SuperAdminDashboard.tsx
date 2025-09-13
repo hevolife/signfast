@@ -472,9 +472,28 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="space-y-4">
               {filteredUsers.map((adminUser) => {
                 const subscriptionInfo = getSubscriptionStatus(adminUser);
-                const displayName = adminUser.profile?.company_name || 
-                  `${adminUser.profile?.first_name || ''} ${adminUser.profile?.last_name || ''}`.trim() || 
-                  'Utilisateur';
+                const displayName = (() => {
+                  // Priorité : nom d'entreprise
+                  if (adminUser.profile?.company_name) {
+                    return adminUser.profile.company_name;
+                  }
+                  
+                  // Ensuite : prénom + nom
+                  const firstName = adminUser.profile?.first_name || '';
+                  const lastName = adminUser.profile?.last_name || '';
+                  const fullName = `${firstName} ${lastName}`.trim();
+                  
+                  if (fullName) {
+                    return fullName;
+                  }
+                  
+                  // Fallback : email
+                  if (adminUser.email) {
+                    return adminUser.email;
+                  }
+                  
+                  return 'Utilisateur sans nom';
+                })();
 
                 return (
                   <Card key={adminUser.id} className="hover:shadow-md transition-shadow">

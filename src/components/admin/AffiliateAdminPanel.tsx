@@ -190,9 +190,28 @@ export const AffiliateAdminPanel: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
                           <div className="font-medium text-gray-900 dark:text-white">
-                            {program.user_profiles?.company_name || 
-                             `${program.user_profiles?.first_name || ''} ${program.user_profiles?.last_name || ''}`.trim() ||
-                             'Utilisateur sans nom'}
+                            {(() => {
+                              // Priorité : nom d'entreprise
+                              if (program.user_profiles?.company_name) {
+                                return program.user_profiles.company_name;
+                              }
+                              
+                              // Ensuite : prénom + nom
+                              const firstName = program.user_profiles?.first_name || '';
+                              const lastName = program.user_profiles?.last_name || '';
+                              const fullName = `${firstName} ${lastName}`.trim();
+                              
+                              if (fullName) {
+                                return fullName;
+                              }
+                              
+                              // Fallback : email
+                              if (program.auth_user?.email) {
+                                return program.auth_user.email;
+                              }
+                              
+                              return 'Utilisateur sans nom';
+                            })()}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
@@ -207,9 +226,17 @@ export const AffiliateAdminPanel: React.FC = () => {
                             {program.is_active ? 'Actif' : 'Inactif'}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-500 truncate">
-                          ID: {program.user_id}
-                        </p>
+                        <div className="text-sm text-gray-500 space-y-1">
+                          {program.auth_user?.email && (
+                            <div className="flex items-center space-x-1">
+                              <span>📧</span>
+                              <span className="truncate">{program.auth_user.email}</span>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-400 truncate">
+                            ID: {program.user_id}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
