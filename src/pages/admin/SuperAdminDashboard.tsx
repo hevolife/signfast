@@ -128,6 +128,16 @@ export const SuperAdminDashboard: React.FC = () => {
     try {
       console.log('🔑 Chargement des codes secrets...');
       
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('⚠️ Supabase non configuré - impossible de charger les codes');
+        setSecretCodes([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('secret_codes')
         .select('*')
@@ -174,7 +184,7 @@ export const SuperAdminDashboard: React.FC = () => {
       console.log('🔑 Code généré:', code);
       console.log('🔑 Expire le:', expiresAt);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('secret_codes')
         .insert([{
           code,
@@ -185,10 +195,12 @@ export const SuperAdminDashboard: React.FC = () => {
           is_active: true,
           current_uses: 0,
         }]);
+        .select()
+        .single();
 
       if (error) throw error;
 
-      console.log('🔑 Code inséré avec succès');
+      console.log('🔑 Code inséré avec succès:', data);
       toast.success(`Code secret créé: ${code}`);
       setNewCodeDescription('');
       setNewCodeMaxUses(1);
