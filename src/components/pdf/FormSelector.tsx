@@ -218,13 +218,18 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
 
       {/* Aperçu des variables générées */}
       {showVariablesPreview && previewVariables.length > 0 && (
-        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-          <h4 className="text-sm font-semibold text-green-900 dark:text-green-300 mb-3">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 shadow-lg">
+          <div className="flex items-center space-x-2 mb-3">
+            <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+              <span className="text-white text-xs">📋</span>
+            </div>
+            <h4 className="text-sm font-semibold text-green-900 dark:text-green-300">
             Variables générées ({previewVariables.length})
-          </h4>
+            </h4>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {previewVariables.map((variable, index) => (
-              <div key={index} className="text-xs bg-white dark:bg-gray-800 px-2 py-1 rounded border">
+              <div key={index} className="text-xs bg-white dark:bg-gray-800 px-2 py-1 rounded border shadow-sm hover:shadow-md transition-shadow">
                 <code className="text-green-600 dark:text-green-400">{variable}</code>
               </div>
             ))}
@@ -237,17 +242,26 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
 
       {/* Message si aucun formulaire */}
       {forms.length === 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 shadow-lg">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+              <span className="text-white text-xs">⚠️</span>
+            </div>
+            <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-300">
+              Aucun formulaire disponible
+            </p>
+          </div>
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ Aucun formulaire disponible. Créez d'abord un formulaire pour pouvoir le lier à ce template.
+            Créez d'abord un formulaire pour pouvoir le lier à ce template.
           </p>
           <a
             href="/forms/new"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-sm mt-1 inline-block"
+            className="text-blue-600 hover:text-blue-700 text-sm mt-2 inline-flex items-center space-x-1 font-medium hover:underline"
           >
-            → Créer un nouveau formulaire
+            <span>🔗</span>
+            <span>→ Créer un nouveau formulaire</span>
           </a>
         </div>
       )}
