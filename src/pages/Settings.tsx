@@ -26,7 +26,8 @@ import {
   MapPin,
   FileText,
   Camera,
-  Shield
+  Shield,
+  Users
 } from 'lucide-react';
 import { stripeConfig } from '../stripe-config';
 import toast from 'react-hot-toast';
