@@ -194,7 +194,7 @@ export const SuperAdminDashboard: React.FC = () => {
           expires_at: expiresAt,
           is_active: true,
           current_uses: 0,
-        }]);
+        }])
         .select()
         .single();
 
