@@ -555,7 +555,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 </label>
                 <Input
                   value={currentTemplateName}
-                  onChange={(e) => handleTemplateNameChange(e.target.value)}
+                  onChange={(e) => onTemplateNameChange?.(e.target.value)}
                   placeholder="Ex: Contrat de location, Facture..."
                   className="w-full"
                 />
