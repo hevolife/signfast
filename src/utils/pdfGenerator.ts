@@ -135,6 +135,22 @@ export class PDFGenerator {
     console.log(`🔍 Recherche variable: "${variableName}" pour champ ${field.type}`);
     console.log(`🔍 Données disponibles:`, Object.keys(data));
     
+    // Debug spécial pour les images
+    if (field.type === 'image' || field.type === 'signature') {
+      console.log(`🔍 🖼️ RECHERCHE ${field.type.toUpperCase()}:`);
+      console.log(`🔍 Variable recherchée: "${variableName}"`);
+      
+      // Lister toutes les images disponibles
+      const allImages = Object.entries(data).filter(([key, val]) => 
+        typeof val === 'string' && val.startsWith('data:image')
+      );
+      console.log(`🔍 Images disponibles dans data:`, allImages.map(([k, v]) => ({
+        key: k,
+        type: typeof v === 'string' && v.startsWith('data:image/png') ? 'PNG' : 'JPG',
+        size: typeof v === 'string' ? `${Math.round(v.length/1024)}KB` : 'N/A'
+      })));
+    }
+    
     // Pour les signatures, recherche spéciale et prioritaire
     if (field.type === 'signature') {
       console.log(`🔍 ✍️ Recherche signature spéciale...`);
@@ -191,6 +207,69 @@ export class PDFGenerator {
         return signatureValue;
       } else {
         console.log(`🔍 ❌ AUCUNE SIGNATURE TROUVÉE`);
+        return '';
+      }
+    }
+    
+    // Pour les images, recherche spéciale similaire aux signatures
+    if (field.type === 'image') {
+      console.log(`🔍 🖼️ Recherche image spéciale...`);
+      
+      // 1. Recherche directe par variable exacte
+      let imageValue = data[variableName];
+      console.log(`🔍 1. Variable exacte "${variableName}":`, imageValue ? 'TROUVÉ' : 'NON');
+      
+      // 2. Recherche insensible à la casse
+      if (!imageValue) {
+        const lowerVariableName = variableName.toLowerCase();
+        const matchingKey = Object.keys(data).find(key => 
+          key.toLowerCase() === lowerVariableName
+        );
+        
+        if (matchingKey) {
+          imageValue = data[matchingKey];
+          console.log(`🔍 2. Clé insensible casse "${matchingKey}":`, imageValue ? 'TROUVÉ' : 'NON');
+        }
+      }
+      
+      // 3. Recherche par clés contenant "image" ou "photo"
+      if (!imageValue) {
+        const imageKeys = Object.keys(data).filter(key => 
+          key.toLowerCase().includes('image') || 
+          key.toLowerCase().includes('photo') ||
+          key.toLowerCase().includes('picture')
+        );
+        console.log(`🔍 3. Clés image trouvées:`, imageKeys);
+        
+        for (const key of imageKeys) {
+          const val = data[key];
+          if (typeof val === 'string' && val.startsWith('data:image')) {
+            imageValue = val;
+            console.log(`🔍 ✅ Image trouvée via clé: "${key}"`);
+            break;
+          }
+        }
+      }
+      
+      // 4. Fallback : première image non-signature trouvée
+      if (!imageValue) {
+        const allImages = Object.entries(data).filter(([key, val]) => 
+          typeof val === 'string' && val.startsWith('data:image') &&
+          !key.toLowerCase().includes('signature') && !key.toLowerCase().includes('sign')
+        );
+        console.log(`🔍 4. Images non-signature disponibles:`, allImages.length);
+        
+        if (allImages.length > 0) {
+          imageValue = allImages[0][1];
+          console.log(`🔍 ✅ Utilisation première image non-signature: "${allImages[0][0]}"`);
+        }
+      }
+      
+      if (imageValue) {
+        console.log(`🔍 ✅ IMAGE FINALE: ${imageValue.length} chars`);
+        return imageValue;
+      } else {
+        console.log(`🔍 ❌ AUCUNE IMAGE TROUVÉE`);
         return '';
       }
     }
@@ -341,29 +420,51 @@ export class PDFGenerator {
   ) {
     try {
       console.log(`🎨 ✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) ${Math.round(width)}×${Math.round(height)}`);
+      console.log(`🎨 ✍️ Données signature reçues: ${signatureData.length} chars`);
+      console.log(`🎨 ✍️ Format signature: ${signatureData.substring(0, 30)}...`);
       
       if (!signatureData || !signatureData.startsWith('data:image')) {
+        console.log(`🎨 ❌ Données signature invalides:`, signatureData ? signatureData.substring(0, 50) : 'undefined');
         throw new Error('Données de signature invalides');
       }
 
       const [header, base64Data] = signatureData.split(',');
       if (!base64Data || base64Data.length === 0) {
+        console.log(`🎨 ❌ Base64 vide après split:`, { header, base64Length: base64Data?.length });
         throw new Error('Données base64 vides');
       }
       
+      console.log(`🎨 ✍️ Header: ${header}`);
+      console.log(`🎨 ✍️ Base64 length: ${base64Data.length}`);
+      
       // Conversion base64 vers bytes
-      const binaryString = atob(base64Data);
-      const imageBytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        imageBytes[i] = binaryString.charCodeAt(i);
+      let imageBytes: Uint8Array;
+      try {
+        const binaryString = atob(base64Data);
+        imageBytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          imageBytes[i] = binaryString.charCodeAt(i);
+        }
+        console.log(`🎨 ✍️ Conversion base64 réussie: ${imageBytes.length} bytes`);
+      } catch (conversionError) {
+        console.error(`🎨 ❌ Erreur conversion base64:`, conversionError);
+        throw new Error(`Conversion base64 échouée: ${conversionError.message}`);
       }
       
       // Embedder l'image (PNG en priorité)
       let image;
-      if (header.includes('png')) {
-        image = await pdfDoc.embedPng(imageBytes);
-      } else {
-        image = await pdfDoc.embedJpg(imageBytes);
+      try {
+        if (header.includes('png')) {
+          console.log(`🎨 ✍️ Embedding PNG...`);
+          image = await pdfDoc.embedPng(imageBytes);
+        } else {
+          console.log(`🎨 ✍️ Embedding JPG...`);
+          image = await pdfDoc.embedJpg(imageBytes);
+        }
+        console.log(`🎨 ✍️ Image embedded successfully: ${image.width}x${image.height}`);
+      } catch (embedError) {
+        console.error(`🎨 ❌ Erreur embedding image:`, embedError);
+        throw new Error(`Embedding image échoué: ${embedError.message}`);
       }
       
       // Calculer les dimensions en gardant les proportions
@@ -442,24 +543,85 @@ export class PDFGenerator {
   ) {
     try {
       console.log(`🎨 🖼️ Dessin image à (${Math.round(x)}, ${Math.round(y)})`);
+      console.log(`🎨 🖼️ Données image reçues: ${imageData.length} chars`);
+      console.log(`🎨 🖼️ Format image: ${imageData.substring(0, 30)}...`);
       
-      const imageBytes = this.base64ToBytes(imageData);
-      let image;
-      
-      if (imageData.includes('data:image/png')) {
-        image = await pdfDoc.embedPng(imageBytes);
-      } else {
-        image = await pdfDoc.embedJpg(imageBytes);
+      if (!imageData || !imageData.startsWith('data:image')) {
+        console.log(`🎨 ❌ Données image invalides:`, imageData ? imageData.substring(0, 50) : 'undefined');
+        throw new Error('Données image invalides');
       }
       
+      const [header, base64Data] = imageData.split(',');
+      if (!base64Data || base64Data.length === 0) {
+        console.log(`🎨 ❌ Base64 image vide:`, { header, base64Length: base64Data?.length });
+        throw new Error('Données base64 image vides');
+      }
+      
+      console.log(`🎨 🖼️ Header: ${header}`);
+      console.log(`🎨 🖼️ Base64 length: ${base64Data.length}`);
+      
+      // Conversion base64 vers bytes
+      let imageBytes: Uint8Array;
+      try {
+        const binaryString = atob(base64Data);
+        imageBytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          imageBytes[i] = binaryString.charCodeAt(i);
+        }
+        console.log(`🎨 🖼️ Conversion base64 réussie: ${imageBytes.length} bytes`);
+      } catch (conversionError) {
+        console.error(`🎨 ❌ Erreur conversion base64 image:`, conversionError);
+        throw new Error(`Conversion base64 image échouée: ${conversionError.message}`);
+      }
+      
+      let image;
+      
+      try {
+        if (header.includes('png')) {
+          console.log(`🎨 🖼️ Embedding PNG image...`);
+          image = await pdfDoc.embedPng(imageBytes);
+        } else {
+          console.log(`🎨 🖼️ Embedding JPG image...`);
+          image = await pdfDoc.embedJpg(imageBytes);
+        }
+        console.log(`🎨 🖼️ Image embedded successfully: ${image.width}x${image.height}`);
+      } catch (embedError) {
+        console.error(`🎨 ❌ Erreur embedding image:`, embedError);
+        throw new Error(`Embedding image échoué: ${embedError.message}`);
+      }
+      
+      // Calculer les dimensions en gardant les proportions
+      const imageAspectRatio = image.width / image.height;
+      const fieldAspectRatio = width / height;
+      
+      let drawWidth = width;
+      let drawHeight = height;
+      
+      if (fieldAspectRatio > imageAspectRatio) {
+        // Le champ est plus large que l'image
+        drawWidth = height * imageAspectRatio;
+      } else {
+        // Le champ est plus haut que l'image
+        drawHeight = width / imageAspectRatio;
+      }
+      
+      // Centrer l'image dans le champ
+      const offsetX = (width - drawWidth) / 2;
+      const offsetY = (height - drawHeight) / 2;
+      
+      console.log(`🎨 🖼️ Image finale: ${Math.round(drawWidth)}×${Math.round(drawHeight)}`);
+      
       page.drawImage(image, {
-        x,
-        y,
-        width,
-        height,
+        x: x + offsetX,
+        y: y + offsetY,
+        width: drawWidth,
+        height: drawHeight,
       });
+      
+      console.log(`🎨 ✅ Image dessinée avec succès`);
+      
     } catch (error) {
-      console.error('Erreur image:', error);
+      console.error('🎨 ❌ Erreur dessin image:', error);
       
       // Placeholder en cas d'erreur
       page.drawRectangle({
@@ -467,6 +629,7 @@ export class PDFGenerator {
         y,
         width,
         height,
+        color: rgb(0.95, 0.95, 0.95),
         borderColor: rgb(0.8, 0.8, 0.8),
         borderWidth: 1,
       });
@@ -511,50 +674,5 @@ export class PDFGenerator {
       g: parseInt(result[2], 16) / 255,
       b: parseInt(result[3], 16) / 255,
     } : { r: 0, g: 0, b: 0 };
-  }
-
-  private static base64ToBytes(base64: string): Uint8Array {
-    try {
-      console.log(`🔄 Conversion base64, longueur totale: ${base64.length}`);
-      
-      if (!base64 || typeof base64 !== 'string') {
-        throw new Error('Données base64 invalides - pas une string');
-      }
-      
-      if (!base64.includes(',')) {
-        throw new Error('Données base64 invalides - format incorrect');
-      }
-      
-      const base64Data = base64.split(',')[1];
-      
-      if (!base64Data) {
-        throw new Error('Données base64 invalides - pas de virgule trouvée');
-      }
-      
-      if (base64Data.length === 0) {
-        throw new Error('Données base64 vides après extraction');
-      }
-      
-      console.log(`🔄 Données base64 extraites, longueur: ${base64Data.length}`);
-      
-      // Validation base64
-      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data)) {
-        throw new Error('Données base64 contiennent des caractères invalides');
-      }
-      
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      console.log(`🔄 Conversion terminée, ${bytes.length} bytes générés`);
-      return bytes;
-    } catch (error) {
-      console.error('🔄 Erreur conversion base64:', error);
-      console.error('🔄 Base64 problématique:', base64 ? base64.substring(0, 200) : 'undefined');
-      throw new Error(`Conversion base64 échouée: ${error.message}`);
-    }
   }
 }
