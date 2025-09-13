@@ -167,35 +167,11 @@ export class PDFService {
     const cleaned: Record<string, any> = {};
     
     Object.entries(formData).forEach(([key, value]) => {
-      // Compresser les images si elles sont trop grosses
       if (typeof value === 'string' && value.startsWith('data:image')) {
         const originalSize = Math.round(value.length / 1024);
         console.log(`💾 Image ${key}: ${originalSize}KB`);
-        
-        // Si l'image est très grosse (> 2MB), essayer de la compresser intelligemment
-        if (value.length > 2000000) {
-          console.log(`💾 🔧 Image très grosse (${originalSize}KB), compression intelligente...`);
-          try {
-            const compressed = this.intelligentImageCompression(value, 1500); // Max 1.5MB
-            const compressedSize = Math.round(compressed.length / 1024);
-            console.log(`💾 ✅ Compression réussie: ${originalSize}KB → ${compressedSize}KB`);
-            cleaned[key] = compressed;
-          } catch (error) {
-            console.warn(`💾 ❌ Compression échouée, remplacement par placeholder:`, error);
-            cleaned[key] = '[IMAGE_TOO_LARGE_REMOVED]';
-          }
-        } else {
-          // Compresser seulement si > 1MB
-          if (value.length > 1000000) {
-            console.log(`💾 🔧 Compression image (${originalSize}KB)...`);
-            const compressed = this.compressImageSimple(value);
-            const compressedSize = Math.round(compressed.length / 1024);
-            console.log(`💾 ✅ Compression: ${originalSize}KB → ${compressedSize}KB`);
-            cleaned[key] = compressed;
-          } else {
-            cleaned[key] = value;
-          }
-        }
+        // Garder l'image originale sans compression
+        cleaned[key] = value;
       } else {
         cleaned[key] = value;
       }
