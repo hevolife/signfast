@@ -71,8 +71,53 @@ export class PDFGenerator {
             break;
             
           case 'signature':
+            console.log(`✍️ === TRAITEMENT SIGNATURE PDF ===`);
+            console.log(`✍️ Variable: ${field.variable}`);
+            console.log(`✍️ Valeur trouvée:`, value ? 'OUI' : 'NON');
+            console.log(`✍️ Type valeur:`, typeof value);
+            console.log(`✍️ Est image:`, typeof value === 'string' && value.startsWith('data:image'));
+            
             if (value && typeof value === 'string' && value.startsWith('data:image')) {
+              console.log(`✍️ ✅ Signature valide trouvée, dessin en cours...`);
               await this.drawSignature(pdfDoc, page, value, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
+            } else {
+              console.log(`✍️ ❌ Signature non trouvée ou invalide`);
+              console.log(`✍️ Recherche alternative dans toutes les données...`);
+              
+              // Recherche alternative : chercher n'importe quelle signature dans les données
+              const allSignatures = Object.entries(data).filter(([key, val]) => 
+                typeof val === 'string' && val.startsWith('data:image')
+              );
+              
+              console.log(`✍️ Signatures alternatives trouvées:`, allSignatures.length);
+              allSignatures.forEach(([key, val], index) => {
+                console.log(`✍️ Signature alt ${index + 1}: clé="${key}", taille=${typeof val === 'string' ? val.length : 0}`);
+              });
+              
+              if (allSignatures.length > 0) {
+                console.log(`✍️ ✅ Utilisation signature alternative: ${allSignatures[0][0]}`);
+                await this.drawSignature(pdfDoc, page, allSignatures[0][1] as string, pdfX, pdfY, pdfFieldWidth, pdfFieldHeight);
+              } else {
+                console.log(`✍️ ❌ Aucune signature trouvée, dessin placeholder`);
+                // Dessiner un placeholder pour signature manquante
+                page.drawRectangle({
+                  x: pdfX,
+                  y: pdfY,
+                  width: pdfFieldWidth,
+                  height: pdfFieldHeight,
+                  borderColor: rgb(0.8, 0.8, 0.8),
+                  borderWidth: 1,
+                  color: rgb(0.98, 0.98, 0.98),
+                });
+                
+                page.drawText('Signature manquante', {
+                  x: pdfX + 5,
+                  y: pdfY + pdfFieldHeight / 2,
+                  size: Math.min(10, pdfFieldHeight * 0.6),
+                  color: rgb(0.7, 0.7, 0.7),
+                  font,
+                });
+              }
             }
             break;
             
@@ -98,8 +143,11 @@ export class PDFGenerator {
   private static getFieldValue(field: PDFField, data: Record<string, any>): string {
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
     
-    console.log(`🔍 Recherche variable: "${variableName}"`);
-    console.log(`🔍 Clés disponibles:`, Object.keys(data));
+    console.log(`🔍 === RECHERCHE VARIABLE ===`);
+    console.log(`🔍 Variable recherchée: "${variableName}"`);
+    console.log(`🔍 Type de champ: ${field.type}`);
+    console.log(`🔍 Toutes les clés disponibles:`, Object.keys(data));
+    console.log(`🔍 Données complètes:`, data);
     
     let value = data[variableName];
     
@@ -107,32 +155,82 @@ export class PDFGenerator {
     if (!value) {
       const originalKeys = Object.keys(data);
       
-      // Recherche exacte
+      // 1. Recherche exacte
       let matchingKey = originalKeys.find(key => key === variableName);
+      console.log(`🔍 Recherche exacte "${variableName}":`, matchingKey ? `trouvé (${matchingKey})` : 'non trouvé');
       
-      // Recherche insensible à la casse
+      // 2. Recherche insensible à la casse
       if (!matchingKey) {
         matchingKey = originalKeys.find(key => 
           key.toLowerCase() === variableName.toLowerCase()
         );
+        console.log(`🔍 Recherche insensible casse "${variableName}":`, matchingKey ? `trouvé (${matchingKey})` : 'non trouvé');
       }
       
-      // Recherche normalisée
+      // 3. Recherche normalisée (accents, espaces, etc.)
       if (!matchingKey) {
         matchingKey = originalKeys.find(key => 
           this.normalizeKey(key) === this.normalizeKey(variableName)
         );
+        console.log(`🔍 Recherche normalisée "${this.normalizeKey(variableName)}":`, matchingKey ? `trouvé (${matchingKey})` : 'non trouvé');
+      }
+      
+      // 4. Recherche spéciale pour signatures (par type de champ)
+      if (!matchingKey && field.type === 'signature') {
+        console.log(`🔍 === RECHERCHE SPÉCIALE SIGNATURE ===`);
+        
+        // Chercher toutes les clés qui contiennent "signature"
+        const signatureKeys = originalKeys.filter(key => 
+          key.toLowerCase().includes('signature') ||
+          key.toLowerCase().includes('sign') ||
+          this.normalizeKey(key).includes('signature')
+        );
+        console.log(`🔍 Clés contenant "signature":`, signatureKeys);
+        
+        // Prendre la première signature trouvée
+        if (signatureKeys.length > 0) {
+          matchingKey = signatureKeys[0];
+          console.log(`🔍 ✅ Signature trouvée via recherche spéciale: ${matchingKey}`);
+        }
+        
+        // Recherche par valeur (chercher les données qui ressemblent à des signatures)
+        if (!matchingKey) {
+          const signatureDataKeys = originalKeys.filter(key => {
+            const val = data[key];
+            return typeof val === 'string' && val.startsWith('data:image');
+          });
+          console.log(`🔍 Clés avec données image (potentielles signatures):`, signatureDataKeys);
+          
+          if (signatureDataKeys.length > 0) {
+            matchingKey = signatureDataKeys[0];
+            console.log(`🔍 ✅ Signature trouvée via données image: ${matchingKey}`);
+          }
+        }
       }
       
       if (matchingKey) {
         value = data[matchingKey];
-        console.log(`🔍 Trouvé via clé: "${matchingKey}" = "${value}"`);
+        console.log(`🔍 ✅ TROUVÉ via clé: "${matchingKey}"`);
+        console.log(`🔍 Type de valeur:`, typeof value);
+        console.log(`🔍 Est une image:`, typeof value === 'string' && value.startsWith('data:image'));
+        if (typeof value === 'string' && value.startsWith('data:image')) {
+          console.log(`🔍 Taille image: ${value.length} caractères`);
+        }
       } else {
-        console.log(`🔍 Variable "${variableName}" non trouvée`);
+        console.log(`🔍 ❌ Variable "${variableName}" NON TROUVÉE`);
+        console.log(`🔍 Suggestions de clés similaires:`, originalKeys.filter(key => 
+          key.toLowerCase().includes(variableName.toLowerCase()) ||
+          variableName.toLowerCase().includes(key.toLowerCase())
+        ));
       }
     }
     
-    return value || field.placeholder || '';
+    const finalValue = value || field.placeholder || '';
+    console.log(`🔍 === VALEUR FINALE ===`);
+    console.log(`🔍 Variable: ${variableName}`);
+    console.log(`🔍 Valeur: ${typeof finalValue === 'string' && finalValue.startsWith('data:image') ? 'IMAGE_DATA' : finalValue}`);
+    
+    return finalValue;
   }
   
   private static normalizeKey(key: string): string {

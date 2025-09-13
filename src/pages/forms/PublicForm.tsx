@@ -164,8 +164,19 @@ export const PublicForm: React.FC = () => {
     }
   };
 
+  // Fonction utilitaire pour normaliser les clés (même logique que dans pdfGenerator)
+  const normalizeKey = (key: string): string => {
+    return key
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+  };
+
   const handleInputChange = (fieldId: string, value: any) => {
-    console.log(`Input change: ${fieldId} = ${value}`);
+    console.log(`📝 Input change: ${fieldId} = ${typeof value === 'string' && value.startsWith('data:image') ? 'IMAGE_DATA' : value}`);
     setFormData(prev => ({
       ...prev,
       [fieldId]: value
@@ -184,8 +195,25 @@ export const PublicForm: React.FC = () => {
       // Préparer les données complètes pour le PDF (avec les images)
       const pdfSubmissionData = { ...formData };
       
-      console.log(`📤 ===== SOUMISSION FORMULAIRE =====`);
-      console.log(`📤 FormData avant traitement:`, formData);
+      console.log(`📤 ===== SOUMISSION FORMULAIRE AVEC DEBUG SIGNATURE =====`);
+      console.log(`📤 FormData avant traitement:`, Object.keys(formData));
+      
+      // Debug spécial pour identifier les signatures
+      const signaturesInFormData = Object.entries(formData).filter(([key, value]) => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      console.log(`📤 Signatures détectées dans formData:`, signaturesInFormData.length);
+      signaturesInFormData.forEach(([key, value], index) => {
+        console.log(`📤 Signature ${index + 1}: fieldId="${key}", taille=${typeof value === 'string' ? value.length : 0}`);
+        
+        // Trouver le champ correspondant
+        const correspondingField = form.fields?.find(f => f.id === key);
+        if (correspondingField) {
+          console.log(`📤   → Champ trouvé: "${correspondingField.label}" (type: ${correspondingField.type})`);
+        } else {
+          console.log(`📤   → Champ non trouvé pour ID: ${key}`);
+        }
+      });
       
       // Traitement spécial pour les signatures
       console.log(`📤 === TRAITEMENT SIGNATURES ===`);
@@ -200,25 +228,70 @@ export const PublicForm: React.FC = () => {
         );
         
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
-          // Traitement spécial pour les signatures
+          // NOUVEAU SYSTÈME: Sauvegarder avec PLUSIEURS CLÉS pour maximiser les chances de mapping
+          
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log(`✍️ Traitement signature: ${field.label}`);
+            console.log(`✍️ === TRAITEMENT SIGNATURE MULTI-CLÉS ===`);
+            console.log(`✍️ Champ: "${field.label}"`);
+            console.log(`✍️ ID: ${field.id}`);
             
-            // Utiliser le LABEL du champ comme clé pour le PDF
-            pdfSubmissionData[field.label] = fieldValue;
+            // Créer plusieurs clés possibles pour la signature
+            const signatureKeys = [
+              field.label, // Libellé exact
+              field.label.toLowerCase(), // Libellé en minuscules
+              normalizeKey(field.label), // Libellé normalisé
+              'signature', // Clé générique
+              'sign', // Clé courte
+              `signature_${field.id}`, // Avec ID
+              field.id, // ID direct
+              `${normalizeKey(field.label)}_signature`, // Combinaison
+              `champ_signature`, // Générique français
+            ];
+            
+            // Sauvegarder avec toutes les clés possibles
+            signatureKeys.forEach(key => {
+              pdfSubmissionData[key] = fieldValue;
+              console.log(`✍️   → Clé: "${key}"`);
+            });
+            
+            // Pour la DB, utiliser le libellé principal
             dbSubmissionData[field.label] = `[SIGNATURE_${field.id}]`;
             
-            console.log(`✍️ ✅ Signature ajoutée: ${field.label}`);
+            console.log(`✍️ ✅ ${signatureKeys.length} clés créées pour: ${field.label}`);
           }
-          // Pour la base de données : remplacer les images par des marqueurs
+          // Images normales
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
+            // Créer plusieurs clés pour les images aussi
+            const imageKeys = [
+              field.label,
+              field.label.toLowerCase(),
+              normalizeKey(field.label),
+              field.id,
+            ];
+            
+            imageKeys.forEach(key => {
+              pdfSubmissionData[key] = fieldValue;
+            });
+            
             dbSubmissionData[field.label] = `[IMAGE_UPLOADED_${field.label}]`;
-            console.log(`📤 Image remplacée par marqueur pour DB: ${field.label}`);
-            // Pour le PDF : garder les données complètes
-            pdfSubmissionData[field.label] = fieldValue;
-          } else {
-            dbSubmissionData[field.label] = fieldValue;
-            pdfSubmissionData[field.label] = fieldValue;
+            console.log(`📤 Image multi-clés créée pour: ${field.label}`);
+          } 
+          // Données normales
+          else {
+            // Créer plusieurs clés pour tous les champs
+            const dataKeys = [
+              field.label,
+              field.label.toLowerCase(),
+              normalizeKey(field.label),
+              field.id,
+            ];
+            
+            dataKeys.forEach(key => {
+              pdfSubmissionData[key] = fieldValue;
+              dbSubmissionData[key] = fieldValue;
+            });
+            
+            console.log(`📤 Données multi-clés créées pour: ${field.label}`);
           }
           
           // Debug pour les champs image/fichier
@@ -247,20 +320,49 @@ export const PublicForm: React.FC = () => {
               conditionalFields.forEach(conditionalField => {
                 const conditionalValue = formData[conditionalField.id];
                 if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
-                  // Traitement spécial pour les signatures conditionnelles
+                  // Appliquer le même système multi-clés pour les champs conditionnels
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                    const conditionalSignatureKeys = [
+                      conditionalField.label,
+                      conditionalField.label.toLowerCase(),
+                      normalizeKey(conditionalField.label),
+                      'signature',
+                      `signature_${conditionalField.id}`,
+                      conditionalField.id,
+                    ];
+                    
+                    conditionalSignatureKeys.forEach(key => {
+                      pdfSubmissionData[key] = conditionalValue;
+                    });
+                    
                     dbSubmissionData[conditionalField.label] = `[SIGNATURE_${conditionalField.label}]`;
-                    pdfSubmissionData[conditionalField.label] = conditionalValue;
-                  }
-                  // Pour les autres images
-                  else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                  } else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                    const conditionalImageKeys = [
+                      conditionalField.label,
+                      conditionalField.label.toLowerCase(),
+                      normalizeKey(conditionalField.label),
+                      conditionalField.id,
+                    ];
+                    
+                    conditionalImageKeys.forEach(key => {
+                      pdfSubmissionData[key] = conditionalValue;
+                    });
+                    
                     dbSubmissionData[conditionalField.label] = `[IMAGE_UPLOADED_${conditionalField.label}]`;
-                    pdfSubmissionData[conditionalField.label] = conditionalValue;
                   } else {
-                    dbSubmissionData[conditionalField.label] = conditionalValue;
-                    pdfSubmissionData[conditionalField.label] = conditionalValue;
+                    const conditionalDataKeys = [
+                      conditionalField.label,
+                      conditionalField.label.toLowerCase(),
+                      normalizeKey(conditionalField.label),
+                      conditionalField.id,
+                    ];
+                    
+                    conditionalDataKeys.forEach(key => {
+                      pdfSubmissionData[key] = conditionalValue;
+                      dbSubmissionData[key] = conditionalValue;
+                    });
                   }
-                  console.log(`📤 Champ conditionnel ajouté: "${conditionalField.label}" = ${conditionalValue}`);
+                  console.log(`📤 Champ conditionnel multi-clés ajouté: "${conditionalField.label}"`);
                 }
               });
             }
@@ -271,6 +373,16 @@ export const PublicForm: React.FC = () => {
       console.log(`📤 ===== DONNÉES FINALES SOUMISSION =====`);
       console.log(`📤 Clés dans dbSubmissionData:`, Object.keys(dbSubmissionData));
       console.log(`📤 Clés dans pdfSubmissionData:`, Object.keys(pdfSubmissionData));
+      
+      // Debug spécial pour les signatures
+      const signaturesInData = Object.entries(pdfSubmissionData).filter(([key, value]) => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      console.log(`📤 === SIGNATURES DANS LES DONNÉES ===`);
+      console.log(`📤 Nombre de signatures: ${signaturesInData.length}`);
+      signaturesInData.forEach(([key, value], index) => {
+        console.log(`📤 Signature ${index + 1}: clé="${key}", taille=${typeof value === 'string' ? value.length : 0}`);
+      });
       
       // Formater les dates au format français avant soumission
       Object.keys(dbSubmissionData).forEach(key => {
