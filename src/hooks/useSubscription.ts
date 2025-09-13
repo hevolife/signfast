@@ -120,6 +120,7 @@ export const useSubscription = () => {
             )
           `)
           .eq('user_id', targetUserId)
+         .eq('secret_codes.is_active', true)
           .order('activated_at', { ascending: false });
 
         console.log('🔑 Codes secrets pour userId', targetUserId, ':', secretCodeData?.length || 0);
@@ -128,26 +129,34 @@ export const useSubscription = () => {
           console.log('🔑 Détails des codes trouvés:');
           secretCodeData.forEach((code, index) => {
             console.log(`🔑 Code ${index + 1}:`, {
-              type: code.secret_codes?.type,
-              code: code.secret_codes?.code,
+             type: (code.secret_codes as any)?.type,
+             code: (code.secret_codes as any)?.code,
+             is_active: (code.secret_codes as any)?.is_active,
               expires_at: code.expires_at,
               activated_at: code.activated_at,
-              isLifetime: code.secret_codes?.type === 'lifetime' && !code.expires_at,
-              isValidMonthly: code.secret_codes?.type === 'monthly' && code.expires_at && new Date(code.expires_at) > new Date()
+             isLifetime: (code.secret_codes as any)?.type === 'lifetime' && !code.expires_at,
+             isValidMonthly: (code.secret_codes as any)?.type === 'monthly' && code.expires_at && new Date(code.expires_at) > new Date()
             });
           });
           
           // Vérifier chaque code pour trouver un code actif
           for (const codeData of secretCodeData) {
-            const codeType = codeData.secret_codes?.type;
+           const codeType = (codeData.secret_codes as any)?.type;
             const expiresAt = codeData.expires_at;
             
             console.log('🔑 Vérification code:', { 
               type: codeType, 
               expires_at: expiresAt,
-              code: codeData.secret_codes?.code 
+             code: (codeData.secret_codes as any)?.code,
+             is_active: (codeData.secret_codes as any)?.is_active
             });
             
+           // Vérifier que le code est actif
+           if (!(codeData.secret_codes as any)?.is_active) {
+             console.log('🔑 ❌ Code inactif dans secret_codes');
+             continue;
+           }
+           
             // Un code est actif si :
             // - C'est un code à vie (expires_at est null)
             // - OU c'est un code mensuel non expiré
@@ -169,7 +178,7 @@ export const useSubscription = () => {
                 type: codeType,
                 isLifetime,
                 expiresAt: expiresAt || 'jamais',
-                code: codeData.secret_codes?.code
+               code: (codeData.secret_codes as any)?.code
               });
               break; // Prendre le premier code actif trouvé
             } else {
