@@ -98,6 +98,11 @@ export const useSubscription = () => {
       }
 
       // Vérifier les codes secrets avec plus de détails
+      let hasActiveSecretCode = false;
+      let secretCodeType = null;
+      let secretCodeExpiresAt = null;
+      
+      try {
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
           .select(`
