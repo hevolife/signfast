@@ -191,35 +191,130 @@ export class PDFService {
     
     // Calculer la taille totale pour debug
     const totalSize = JSON.stringify(cleaned).length;
-    console.log(`💾 Taille totale des données après nettoyage: ${Math.round(totalSize / 1024)}KB`);
+    const totalSizeKB = Math.round(totalSize / 1024);
+    console.log(`💾 Taille totale des données après nettoyage: ${totalSizeKB}KB`);
     
-    // Si encore trop gros, compression d'urgence
-    if (totalSize > 500000) { // Plus de 500KB
-      console.log(`💾 ⚠️ Données encore trop volumineuses, compression d'urgence...`);
+    // Si encore trop gros après compression, compression d'urgence
+    if (totalSize > 600000) { // Plus de 600KB
+      console.log(`💾 🚨 COMPRESSION D'URGENCE: ${totalSizeKB}KB > 600KB`);
       
-      // Supprimer toutes les images sauf les signatures
+      // Étape 1: Compresser encore plus les images restantes
       Object.keys(cleaned).forEach(key => {
         const value = cleaned[key];
         if (typeof value === 'string' && value.startsWith('data:image')) {
-          if (!key.toLowerCase().includes('signature') && !key.toLowerCase().includes('sign')) {
+          const isSignature = key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign');
+          
+          if (isSignature) {
+            // Compression ultra-agressive des signatures
+            console.log(`💾 Compression ultra-agressive signature: ${key}`);
+            cleaned[key] = this.ultraCompressSignature(value);
+          } else {
+            // Supprimer les autres images
             cleaned[key] = '[IMAGE_REMOVED_FOR_SIZE]';
           }
         }
       });
       
+      // Étape 2: Tronquer les textes encore plus
+      Object.keys(cleaned).forEach(key => {
+        const value = cleaned[key];
+        if (typeof value === 'string' && !value.startsWith('data:image') && value.length > 100) {
+          cleaned[key] = value.substring(0, 100) + '...';
+        }
+      });
+      
       const newSize = JSON.stringify(cleaned).length;
-      console.log(`💾 Taille après compression d'urgence: ${Math.round(newSize / 1024)}KB`);
+      const newSizeKB = Math.round(newSize / 1024);
+      console.log(`💾 Taille après compression d'urgence: ${totalSizeKB}KB → ${newSizeKB}KB`);
+      
+      // Si ENCORE trop gros, mesures extrêmes
+      if (newSize > 600000) {
+        console.log(`💾 🆘 MESURES EXTRÊMES: ${newSizeKB}KB encore trop gros`);
+        
+        // Garder seulement les données essentielles
+        const essentialData: Record<string, any> = {};
+        let signatureCount = 0;
+        
+        Object.entries(cleaned).forEach(([key, value]) => {
+          if (typeof value === 'string' && value.startsWith('data:image')) {
+            if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
+              if (signatureCount < 2) { // Max 2 signatures
+                essentialData[key] = this.ultraCompressSignature(value);
+                signatureCount++;
+              }
+            }
+          } else if (typeof value === 'string' && value.length <= 50) {
+            // Garder seulement les textes courts
+            essentialData[key] = value;
+          } else if (typeof value !== 'string') {
+            // Garder les autres types de données
+            essentialData[key] = value;
+          }
+        });
+        
+        const finalSize = JSON.stringify(essentialData).length;
+        console.log(`💾 Taille finale après mesures extrêmes: ${Math.round(finalSize / 1024)}KB`);
+        
+        return essentialData;
+      }
     }
     
     return cleaned;
   }
 
-  // COMPRESSER LES DONNÉES IMAGE POUR ÉVITER LES TIMEOUTS
-  private static compressImageData(imageData: string): string {
+  // COMPRESSION ULTRA-AGRESSIVE POUR LES SIGNATURES
+  private static ultraCompressSignature(signatureData: string): string {
     try {
-      // Compression agressive pour éviter les timeouts
-      if (imageData.length > 50000) { // Plus de 50KB
-        console.log(`💾 Compression image: ${Math.round(imageData.length / 1024)}KB → compression agressive...`);
+      console.log(`💾 Ultra-compression signature: ${Math.round(signatureData.length / 1024)}KB`);
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      return new Promise<string>((resolve) => {
+        img.onload = () => {
+          // Taille très réduite pour les signatures
+          canvas.width = 200;
+          canvas.height = 100;
+          
+          if (ctx) {
+            // Fond blanc
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 200, 100);
+            
+            // Dessiner la signature redimensionnée
+            ctx.drawImage(img, 0, 0, 200, 100);
+            
+            // Compression maximale
+            const ultraCompressed = canvas.toDataURL('image/jpeg', 0.3);
+            const finalSizeKB = Math.round(ultraCompressed.length / 1024);
+            console.log(`💾 Signature ultra-compressée: ${Math.round(signatureData.length / 1024)}KB → ${finalSizeKB}KB`);
+            resolve(ultraCompressed);
+          } else {
+            resolve(signatureData);
+          }
+        };
+        img.onerror = () => {
+          console.warn('💾 Erreur ultra-compression, signature supprimée');
+          resolve('[SIGNATURE_COMPRESSION_FAILED]');
+        };
+        img.src = signatureData;
+      });
+    } catch (error) {
+      console.warn('💾 Erreur ultra-compression signature:', error);
+      return '[SIGNATURE_COMPRESSION_ERROR]';
+    }
+  }
+
+  // COMPRESSER LES DONNÉES IMAGE POUR ÉVITER LES TIMEOUTS
+  private static async compressImageData(imageData: string): Promise<string> {
+    try {
+      const originalSizeKB = Math.round(imageData.length / 1024);
+      console.log(`💾 Compression image: ${originalSizeKB}KB`);
+      
+      // Compression progressive selon la taille
+      if (imageData.length > 30000) { // Plus de 30KB
+        console.log(`💾 Compression nécessaire pour ${originalSizeKB}KB...`);
         
         // Créer un canvas pour compresser l'image
         const canvas = document.createElement('canvas');
@@ -228,9 +323,23 @@ export class PDFService {
         
         return new Promise<string>((resolve) => {
           img.onload = () => {
-            // Réduire la taille si l'image est trop grande
-            const maxWidth = 800;
-            const maxHeight = 600;
+            // Réduire la taille selon le niveau de compression nécessaire
+            let maxWidth = 800;
+            let maxHeight = 600;
+            let quality = 0.7;
+            
+            // Compression plus agressive pour les très gros fichiers
+            if (originalSizeKB > 200) {
+              maxWidth = 400;
+              maxHeight = 300;
+              quality = 0.5;
+              console.log(`💾 Compression agressive: ${maxWidth}x${maxHeight}, qualité ${quality}`);
+            } else if (originalSizeKB > 100) {
+              maxWidth = 600;
+              maxHeight = 450;
+              quality = 0.6;
+              console.log(`💾 Compression modérée: ${maxWidth}x${maxHeight}, qualité ${quality}`);
+            }
             
             let { width, height } = img;
             
@@ -245,10 +354,24 @@ export class PDFService {
             
             if (ctx) {
               ctx.drawImage(img, 0, 0, width, height);
-              // Compression JPEG avec qualité réduite
-              const compressedData = canvas.toDataURL('image/jpeg', 0.7);
-              console.log(`💾 Image compressée: ${Math.round(imageData.length / 1024)}KB → ${Math.round(compressedData.length / 1024)}KB`);
-              resolve(compressedData);
+              // Compression JPEG avec qualité variable
+              const compressedData = canvas.toDataURL('image/jpeg', quality);
+              const newSizeKB = Math.round(compressedData.length / 1024);
+              console.log(`💾 Image compressée: ${originalSizeKB}KB → ${newSizeKB}KB (${Math.round((1 - newSizeKB/originalSizeKB) * 100)}% de réduction)`);
+              
+              // Si encore trop gros, compression ultra-agressive
+              if (newSizeKB > 150) {
+                console.log(`💾 Compression ultra-agressive nécessaire...`);
+                canvas.width = Math.min(width * 0.5, 300);
+                canvas.height = Math.min(height * 0.5, 200);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const ultraCompressed = canvas.toDataURL('image/jpeg', 0.4);
+                const ultraSizeKB = Math.round(ultraCompressed.length / 1024);
+                console.log(`💾 Ultra-compression: ${newSizeKB}KB → ${ultraSizeKB}KB`);
+                resolve(ultraCompressed);
+              } else {
+                resolve(compressedData);
+              }
             } else {
               resolve(imageData);
             }
@@ -258,6 +381,7 @@ export class PDFService {
         });
       }
       
+      console.log(`💾 Image conservée sans compression: ${originalSizeKB}KB`);
       return imageData;
     } catch (error) {
       console.warn('💾 Erreur compression image:', error);
