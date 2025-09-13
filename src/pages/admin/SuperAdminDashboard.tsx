@@ -102,7 +102,10 @@ export const SuperAdminDashboard: React.FC = () => {
   const loadUsers = async () => {
     try {
       if (!session?.access_token) {
-        throw new Error('Session non disponible');
+        console.error('❌ Session non disponible');
+        toast.error('Session expirée, veuillez vous reconnecter');
+        navigate('/login');
+        return;
       }
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
@@ -115,11 +118,18 @@ export const SuperAdminDashboard: React.FC = () => {
       if (!response.ok) {
         if (response.status === 403) {
           const errorBody = await response.text();
-          if (errorBody.includes('not_admin') || errorBody.includes('Not a super admin')) {
-            toast.error('Accès refusé : Vous n\'avez pas les privilèges super admin');
+          console.error('❌ Erreur 403:', errorBody);
+          
+          if (errorBody.includes('not_admin') || errorBody.includes('Not a super admin') || errorBody.includes('User not allowed')) {
+            toast.error('Accès refusé : Vous devez être connecté avec le compte super admin (admin@signfast.com)');
             navigate('/dashboard');
             return;
           }
+        } else if (response.status === 401) {
+          console.error('❌ Session expirée');
+          toast.error('Session expirée, veuillez vous reconnecter');
+          navigate('/login');
+          return;
         }
         throw new Error('Erreur lors de la récupération des utilisateurs');
       }
@@ -128,11 +138,7 @@ export const SuperAdminDashboard: React.FC = () => {
       setUsers(data);
     } catch (error) {
       console.error('Erreur:', error);
-      if (error instanceof Error && error.message.includes('Accès refusé')) {
-        // Error already handled above
-        return;
-      }
-      toast.error('Erreur lors du chargement des utilisateurs');
+      toast.error('Erreur lors du chargement des utilisateurs. Vérifiez que vous êtes connecté avec le compte super admin.');
     } finally {
       setLoading(false);
     }

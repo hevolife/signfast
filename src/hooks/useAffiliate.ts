@@ -191,16 +191,9 @@ export const useAffiliateAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (programsError) {
-        console.error('Erreur récupération programmes admin:', programsError);
-        throw programsError;
+        console.error('❌ Erreur programmes:', programsError);
+        throw new Error(programsError.message);
       }
-
-      // Pour chaque programme, calculer les statistiques détaillées
-      const programsWithStats = await Promise.all(
-        (programs || []).map(async (program) => {
-          try {
-            // Récupérer les données utilisateur complètes (auth + profil)
-            const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(program.user_id);
             
             const { data: userProfile } = await supabase
               .from('user_profiles')
@@ -234,19 +227,30 @@ export const useAffiliateAdmin = () => {
             const monthlyEarnings = (monthlyCommissions || [])
               .reduce((sum, ref) => sum + ref.commission_amount, 0);
 
+            // Récupérer l'email depuis la table users publique
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', program.user_id)
+              .single();
+
+            if (userError) {
+              console.warn('⚠️ Erreur récupération user data:', userError);
+            }
+
             return {
               ...program,
-              auth_user: authUser?.user || null,
               user_profiles: userProfile,
               confirmed_referrals: confirmedCount || 0,
-              monthly_earnings: monthlyEarnings,
+              user_profiles: profile || null,
+              user_email: userData?.email || null
             };
           } catch (error) {
             console.error('Erreur calcul stats pour programme:', program.user_id, error);
             return {
               ...program,
               auth_user: null,
-              user_profiles: null,
+              user_email: null
               confirmed_referrals: 0,
               monthly_earnings: 0,
             };
