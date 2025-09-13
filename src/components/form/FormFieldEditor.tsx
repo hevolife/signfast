@@ -3,6 +3,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { FormField } from '../../types/form';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { MaskedInput } from './MaskedInput';
 import { Trash2, GripVertical } from 'lucide-react';
 
 interface FormFieldEditorProps {
@@ -91,6 +92,20 @@ export const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
   const renderFieldInput = () => {
     switch (field.type) {
       case 'text':
+        return field.validation?.mask ? (
+          <MaskedInput
+            mask={field.validation.mask}
+            value=""
+            onChange={() => {}}
+            placeholder={field.placeholder || field.label}
+          />
+        ) : (
+          <Input
+            type="text"
+            placeholder={field.placeholder || field.label}
+            disabled
+          />
+        );
       case 'email':
       case 'phone':
       case 'number':

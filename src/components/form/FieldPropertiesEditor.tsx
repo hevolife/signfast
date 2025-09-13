@@ -383,6 +383,44 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
         </div>
       )}
 
+      {field.type === 'text' && (
+        <div>
+          <Input
+            label="Masque de saisie"
+            value={field.validation?.mask || ''}
+            onChange={(e) => onUpdate({
+              validation: {
+                ...field.validation,
+                mask: e.target.value || undefined
+              }
+            })}
+            placeholder="Ex: 99.99.99.99.99 ou AA-999-AA"
+          />
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-gray-500">
+              Optionnel : masque pour formater la saisie automatiquement
+            </p>
+            <div className="text-xs text-gray-400 space-y-1">
+              <div><code>9</code> = chiffre (0-9)</div>
+              <div><code>A</code> = lettre majuscule (A-Z)</div>
+              <div><code>a</code> = lettre minuscule (a-z)</div>
+              <div><code>*</code> = caractère alphanumérique</div>
+              <div>Autres caractères = littéraux (-, ., /, etc.)</div>
+            </div>
+            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-800 dark:text-blue-200 font-medium">Exemples :</p>
+              <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1 mt-1">
+                <div><code>99.99.99.99.99</code> → Numéro de sécurité sociale</div>
+                <div><code>99/99/9999</code> → Date (JJ/MM/AAAA)</div>
+                <div><code>AA-999-AA</code> → Plaque d'immatriculation</div>
+                <div><code>99 99 99 99 99</code> → Numéro de téléphone</div>
+                <div><code>AAAAA-99999</code> → Code postal + numéro</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {field.type === 'phone' && (
         <div>
           <Input

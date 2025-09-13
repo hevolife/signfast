@@ -14,6 +14,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { SignatureCanvas } from '../../components/form/SignatureCanvas';
+import { MaskedInput } from '../../components/form/MaskedInput';
 import { FormInput, CheckCircle, FileText, Download, Lock, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -438,6 +439,27 @@ export const PublicForm: React.FC = () => {
 
     switch (field.type) {
       case 'text':
+        return (
+          <div>
+            {field.validation?.mask ? (
+              <MaskedInput
+                mask={field.validation.mask}
+                value={formData[field.id] || ''}
+                onChange={(value) => handleInputChange(field.id, value)}
+                label={field.label}
+                required={field.required}
+                placeholder={field.placeholder}
+              />
+            ) : (
+              <Input
+                {...baseProps}
+                type="text"
+                label={field.label}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+              />
+            )}
+          </div>
+        );
       case 'email':
       case 'phone':
       case 'number':

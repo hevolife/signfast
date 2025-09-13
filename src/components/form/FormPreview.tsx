@@ -4,6 +4,7 @@ import { formatDateFR } from '../../utils/dateFormatter';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { SignatureCanvas } from './SignatureCanvas';
+import { MaskedInput } from './MaskedInput';
 
 interface FormPreviewProps {
   fields: FormField[];
@@ -58,6 +59,27 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
 
     switch (field.type) {
       case 'text':
+        return (
+          <div>
+            {field.validation?.mask ? (
+              <MaskedInput
+                mask={field.validation.mask}
+                value={formData[field.id] || ''}
+                onChange={(value) => handleInputChange(field.id, value)}
+                label={field.label}
+                required={field.required}
+                placeholder={field.placeholder}
+              />
+            ) : (
+              <Input
+                {...baseProps}
+                type="text"
+                label={field.label}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+              />
+            )}
+          </div>
+        );
       case 'email':
       case 'phone':
       case 'number':

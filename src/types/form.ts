@@ -12,6 +12,7 @@ export interface FormField {
     min?: number;
     max?: number;
     pattern?: string;
+    mask?: string;
   };
 }
 
