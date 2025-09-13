@@ -238,17 +238,20 @@ export const PublicForm: React.FC = () => {
               : fieldValue
           );
           
-          // Créer plusieurs clés pour maximiser les chances de correspondance
+          // Créer les clés de mapping
+          const normalizedKey = normalizeKey(field.label);
           const keys = [
-            field.label, // Clé principale : libellé exact
+            field.label,           // Libellé exact
+            normalizedKey,         // Libellé normalisé (pour variable)
             field.label.toLowerCase(), // Minuscules
-            field.type, // Type du champ
           ];
           
           // Pour les signatures, ajouter des clés spéciales
           if (field.type === 'signature') {
             keys.push('signature', 'Signature', 'SIGNATURE');
           }
+          
+          console.log(`📤 Clés de sauvegarde pour "${field.label}":`, keys);
           
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
@@ -290,10 +293,11 @@ export const PublicForm: React.FC = () => {
               conditionalFields.forEach(conditionalField => {
                 const conditionalValue = formData[conditionalField.id];
                 if (conditionalValue !== undefined && conditionalValue !== null && conditionalValue !== '') {
+                  const conditionalNormalizedKey = normalizeKey(conditionalField.label);
                   const conditionalKeys = [
                     conditionalField.label,
+                    conditionalNormalizedKey,
                     conditionalField.label.toLowerCase(),
-                    conditionalField.type,
                   ];
                   
                   if (conditionalField.type === 'signature') {
@@ -303,7 +307,7 @@ export const PublicForm: React.FC = () => {
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
                     conditionalKeys.forEach(key => {
                       pdfSubmissionData[key] = conditionalValue;
-                      dbSubmissionData[key] = `[SIGNATURE_${conditionalField.id}]`;
+                      dbSubmissionData[key] = conditionalValue; // GARDER LA SIGNATURE COMPLÈTE
                     });
                   } else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
                     conditionalKeys.forEach(key => {
@@ -325,6 +329,7 @@ export const PublicForm: React.FC = () => {
 
       console.log(`📤 === DONNÉES FINALES ===`);
       console.log(`📤 Clés PDF:`, Object.keys(pdfSubmissionData));
+      console.log(`📤 Données PDF complètes:`, pdfSubmissionData);
       
       // Debug final pour les signatures
       const signaturesInData = Object.entries(pdfSubmissionData).filter(([key, value]) => 

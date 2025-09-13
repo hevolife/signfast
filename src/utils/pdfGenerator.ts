@@ -151,6 +151,7 @@ export class PDFGenerator {
     
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
     console.log(`🔍 Recherche variable: "${variableName}" pour champ ${field.type}`);
+    console.log(`🔍 Données disponibles:`, Object.keys(data));
     
     // Pour les signatures, recherche spéciale et prioritaire
     if (field.type === 'signature') {
@@ -216,8 +217,11 @@ export class PDFGenerator {
     let value = data[variableName];
     console.log(`🔍 Recherche normale "${variableName}":`, value ? 'TROUVÉ' : 'NON');
     
+    // Si pas trouvé, essayer plusieurs stratégies de recherche
     if (!value) {
-      // Recherche insensible à la casse
+      console.log(`🔍 Tentative recherche alternative pour "${variableName}"`);
+      
+      // 1. Recherche insensible à la casse
       const matchingKey = Object.keys(data).find(key => 
         key.toLowerCase() === variableName.toLowerCase()
       );
@@ -225,7 +229,44 @@ export class PDFGenerator {
       if (matchingKey) {
         value = data[matchingKey];
         console.log(`🔍 ✅ Trouvé via clé insensible: "${matchingKey}"`);
+      } else {
+        // 2. Recherche par clé contenant la variable
+        const partialMatchKey = Object.keys(data).find(key => 
+          key.toLowerCase().includes(variableName.toLowerCase()) ||
+          variableName.toLowerCase().includes(key.toLowerCase())
+        );
+        
+        if (partialMatchKey) {
+          value = data[partialMatchKey];
+          console.log(`🔍 ✅ Trouvé via correspondance partielle: "${partialMatchKey}"`);
+        } else {
+          // 3. Recherche par libellé de champ original (avant normalisation)
+          const originalLabelKey = Object.keys(data).find(key => {
+            const normalizedKey = key
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
+            return normalizedKey === variableName;
+          });
+          
+          if (originalLabelKey) {
+            value = data[originalLabelKey];
+            console.log(`🔍 ✅ Trouvé via libellé original: "${originalLabelKey}"`);
+          }
+        }
       }
+    }
+    
+    // Si toujours pas trouvé, afficher les clés similaires pour debug
+    if (!value) {
+      const similarKeys = Object.keys(data).filter(key => 
+        key.toLowerCase().includes(variableName.toLowerCase().substring(0, 3)) ||
+        variableName.toLowerCase().includes(key.toLowerCase().substring(0, 3))
+      );
+      console.log(`🔍 ❌ Variable "${variableName}" non trouvée. Clés similaires:`, similarKeys);
     }
     
     const finalValue = value || '';

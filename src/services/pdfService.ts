@@ -170,30 +170,42 @@ export class PDFService {
     const cleaned: Record<string, any> = {};
     
     Object.entries(formData).forEach(([key, value]) => {
-      // Pour les signatures et images, garder les données complètes mais les marquer
+      // IMPORTANT: Garder TOUTES les signatures complètes pour la génération PDF
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        // IMPORTANT: Garder les signatures complètes pour la génération PDF
         if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
           cleaned[key] = value; // Garder la signature complète
           console.log(`💾 Signature conservée pour clé: "${key}"`);
         } else {
-          cleaned[key] = '[IMAGE_UPLOADED]'; // Marquer les autres images
+          cleaned[key] = value; // Garder aussi les autres images pour le PDF
+          console.log(`💾 Image conservée pour clé: "${key}"`);
         }
       } else if (typeof value === 'string' && value.length > 1000) {
         // Tronquer les textes très longs
         cleaned[key] = value.substring(0, 1000) + '...';
       } else {
+        // Garder toutes les autres données normales
         cleaned[key] = value;
+        console.log(`💾 Donnée normale conservée: "${key}" = "${value}"`);
       }
     });
     
     console.log(`💾 Données nettoyées - clés finales:`, Object.keys(cleaned));
-    const signaturesInCleaned = Object.entries(cleaned).filter(([key, val]) => 
+    
+    // Debug des données conservées
+    const textData = Object.entries(cleaned).filter(([key, val]) => 
+      typeof val === 'string' && !val.startsWith('data:image') && val !== ''
+    );
+    console.log(`💾 Données texte conservées:`, textData.length);
+    textData.forEach(([key, val]) => {
+      console.log(`💾 Texte: "${key}" = "${val}"`);
+    });
+    
+    const imageData = Object.entries(cleaned).filter(([key, val]) => 
       typeof val === 'string' && val.startsWith('data:image')
     );
-    console.log(`💾 Signatures conservées:`, signaturesInCleaned.length);
-    signaturesInCleaned.forEach(([key, val], index) => {
-      console.log(`💾 Signature ${index + 1}: "${key}"`);
+    console.log(`💾 Images/Signatures conservées:`, imageData.length);
+    imageData.forEach(([key, val]) => {
+      console.log(`💾 Image: "${key}" (${typeof val === 'string' ? val.length : 0} chars)`);
     });
     
     return cleaned;
