@@ -236,12 +236,10 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
         const signature = canvas.toDataURL('image/png', 1.0);
         onSignatureChange(signature);
       }
-    } catch (error) {
       console.error('Erreur conversion signature:', error);
       // Fallback simple
       const signature = canvas.toDataURL('image/png');
       console.error('✍️ Erreur sauvegarde manuelle signature:', error);
-      toast.error('Erreur lors de la sauvegarde de la signature');
     }
   };
 
