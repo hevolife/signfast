@@ -126,16 +126,30 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const loadSecretCodes = async () => {
     try {
+      console.log('🔑 Chargement des codes secrets...');
+      
       const { data, error } = await supabase
         .from('secret_codes')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log('🔑 Codes chargés:', data?.length || 0);
+      console.log('🔑 Détails codes:', data?.map(c => ({
+        id: c.id,
+        code: c.code,
+        type: c.type,
+        is_active: c.is_active,
+        current_uses: c.current_uses,
+        max_uses: c.max_uses
+      })));
+      
       setSecretCodes(data || []);
     } catch (error) {
       console.error('Erreur chargement codes secrets:', error);
       toast.error('Erreur lors du chargement des codes secrets');
+      setSecretCodes([]);
     }
   };
 
@@ -146,10 +160,19 @@ export const SuperAdminDashboard: React.FC = () => {
     }
 
     try {
+      console.log('🔑 Création code secret:', {
+        type: newCodeType,
+        description: newCodeDescription,
+        maxUses: newCodeMaxUses
+      });
+      
       const code = `${newCodeType.toUpperCase()}${Date.now().toString().slice(-6)}`;
       const expiresAt = newCodeType === 'monthly' 
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : null;
+
+      console.log('🔑 Code généré:', code);
+      console.log('🔑 Expire le:', expiresAt);
 
       const { error } = await supabase
         .from('secret_codes')
@@ -159,14 +182,17 @@ export const SuperAdminDashboard: React.FC = () => {
           description: newCodeDescription,
           max_uses: newCodeMaxUses,
           expires_at: expiresAt,
+          is_active: true,
+          current_uses: 0,
         }]);
 
       if (error) throw error;
 
+      console.log('🔑 Code inséré avec succès');
       toast.success(`Code secret créé: ${code}`);
       setNewCodeDescription('');
       setNewCodeMaxUses(1);
-      loadSecretCodes();
+      await loadSecretCodes();
     } catch (error) {
       console.error('Erreur création code:', error);
       toast.error('Erreur lors de la création du code');
@@ -183,7 +209,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
         if (error) throw error;
         toast.success('Code supprimé');
-        loadSecretCodes();
+        await loadSecretCodes();
       } catch (error) {
         console.error('Erreur suppression:', error);
         toast.error('Erreur lors de la suppression');
@@ -567,7 +593,17 @@ export const SuperAdminDashboard: React.FC = () => {
             </Card>
 
             {/* Liste des codes */}
-            <div className="grid gap-4">
+            <div className="space-y-4">
+              {secretCodes.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Key className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Aucun code secret créé
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
               {secretCodes.map((code) => (
                 <Card key={code.id}>
                   <CardContent className="p-4">
@@ -616,6 +652,13 @@ export const SuperAdminDashboard: React.FC = () => {
                           {code.expires_at && (
                             <span>Expire le {formatDateFR(code.expires_at)}</span>
                           )}
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            code.is_active 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                          }`}>
+                            {code.is_active ? 'Actif' : 'Inactif'}
+                          </span>
                         </div>
                       </div>
 
@@ -631,6 +674,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               ))}
+              )}
             </div>
           </div>
         )}
