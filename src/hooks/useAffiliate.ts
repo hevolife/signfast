@@ -57,10 +57,23 @@ export const useAffiliate = () => {
         throw programError;
       }
       
-      setProgram(programData);
+      // Si aucun programme n'existe, essayer de le créer automatiquement
+      if (!programData) {
+        console.log('📊 Aucun programme trouvé, création automatique...');
+        const createdProgram = await createAffiliateProgram();
+        if (createdProgram) {
+          setProgram(createdProgram);
+        } else {
+          console.warn('📊 Impossible de créer le programme automatiquement');
+          setProgram(null);
+        }
+      } else {
+        setProgram(programData);
+      }
       
       // Si un programme existe, récupérer les parrainages
-      if (programData) {
+      if (programData || program) {
+        const targetProgram = programData || program;
         const { data: referralsData, error: referralsError } = await supabase
           .from('affiliate_referrals')
           .select(`
@@ -85,6 +98,42 @@ export const useAffiliate = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createAffiliateProgram = async (): Promise<AffiliateProgram | null> => {
+    if (!user) return null;
+
+    try {
+      console.log('📊 Création programme d\'affiliation pour:', user.id);
+      
+      // Générer un code d'affiliation unique
+      const affiliateCode = `AF${user.id.slice(0, 8).toUpperCase()}${Date.now().toString().slice(-4)}`;
+      
+      const { data, error } = await supabase
+        .from('affiliate_programs')
+        .insert([{
+          user_id: user.id,
+          affiliate_code: affiliateCode,
+          commission_rate: 5.00,
+          total_referrals: 0,
+          total_earnings: 0.00,
+          monthly_earnings: 0.00,
+          is_active: true,
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Erreur création programme:', error);
+        return null;
+      }
+
+      console.log('✅ Programme d\'affiliation créé:', data.affiliate_code);
+      return data;
+    } catch (error) {
+      console.error('❌ Erreur création programme:', error);
+      return null;
     }
   };
 

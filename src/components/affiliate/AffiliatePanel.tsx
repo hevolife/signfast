@@ -113,13 +113,20 @@ export const AffiliatePanel: React.FC = () => {
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Programme d'affiliation en cours de création
+            Initialisation de votre programme d'affiliation
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            Votre programme d'affiliation sera activé automatiquement.
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Création de votre code d'affiliation en cours...
           </p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="secondary"
+            size="sm"
+          >
+            Actualiser la page
+          </Button>
         </CardContent>
       </Card>
     );
