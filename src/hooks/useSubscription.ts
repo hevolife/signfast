@@ -98,19 +98,18 @@ export const useSubscription = () => {
       }
 
       // Vérifier les codes secrets avec plus de détails
-      let hasActiveSecretCode = false;
-      let secretCodeType = null;
-      let secretCodeExpiresAt = null;
-
-      try {
-        console.log('🔑 === DÉBUT VÉRIFICATION CODES SECRETS ===');
-        console.log('🔑 Recherche codes secrets pour userId:', targetUserId);
-        console.log('🔑 Mode impersonation actif:', !!impersonationData);
-        
-        // Chercher les codes secrets actifs pour l'utilisateur
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
-          .select('expires_at, activated_at, code_id, secret_codes(*)')
+          .select(`
+            expires_at,
+            activated_at,
+            code_id,
+            secret_codes (
+              type,
+              code,
+              is_active
+            )
+          `)
           .eq('user_id', targetUserId)
           .order('activated_at', { ascending: false });
 
