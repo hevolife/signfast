@@ -158,21 +158,14 @@ export class ImageCompressor {
       return requestedFormat as 'webp' | 'jpeg' | 'png';
     }
 
-    // Vérifier le support WebP
-    const supportsWebP = this.supportsWebP();
-    
-    // Si transparence requise et WebP supporté
-    if (preserveTransparency && supportsWebP) {
-      return 'webp';
-    }
-    
-    // Si transparence requise mais pas de WebP
+    // Priorité au JPEG pour des fichiers plus petits
+    // Seulement PNG si transparence absolument nécessaire
     if (preserveTransparency) {
       return 'png';
     }
     
-    // Pas de transparence : WebP ou JPEG
-    return supportsWebP ? 'webp' : 'jpeg';
+    // Par défaut : JPEG pour la compression optimale
+    return 'jpeg';
   }
 
   /**
@@ -267,8 +260,8 @@ export class ImageCompressor {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, 0, 0, 400, 200);
       
-      // Compression PNG pour signatures (meilleure qualité)
-      return canvas.toDataURL('image/png', 1.0);
+      // Compression JPEG pour signatures (fichiers plus petits)
+      return canvas.toDataURL('image/jpeg', 0.9);
     } catch (error) {
       console.warn('⚠️ Erreur compression signature, retour original:', error);
       return dataUrl;

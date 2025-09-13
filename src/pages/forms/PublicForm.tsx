@@ -190,10 +190,10 @@ export const PublicForm: React.FC = () => {
           const compressed = await ImageCompressor.compressImage(value, {
             maxWidth: 1920,
             maxHeight: 1080,
-            quality: 0.75,
-            maxSizeKB: 800, // Limite à 800KB par image
-            format: 'auto',
-            preserveTransparency: true
+            quality: 0.7,
+            maxSizeKB: 512, // Limite à 512KB par image
+            format: 'jpeg',
+            preserveTransparency: false
           });
           
           const compressedSize = Math.round(compressed.length / 1024);
@@ -641,9 +641,10 @@ export const PublicForm: React.FC = () => {
                         ImageCompressor.compressImage(file, {
                           maxWidth: 1920,
                           maxHeight: 1080,
-                          quality: 0.8,
-                          maxSizeKB: 800,
-                          format: 'auto'
+                          quality: 0.75,
+                          maxSizeKB: 512,
+                          format: 'jpeg',
+                          preserveTransparency: false
                         }).then(compressedImage => {
                           toast.dismiss();
                           toast.success('✅ Image compressée et prête');

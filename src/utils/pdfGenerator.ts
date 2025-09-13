@@ -514,12 +514,12 @@ export class PDFGenerator {
           console.log('🖼️ Embedding PNG...');
           image = await pdfDoc.embedPng(imageBytes);
         } else if (isWebp) {
-          console.log('🖼️ WebP détecté, conversion en PNG...');
-          // WebP n'est pas supporté par pdf-lib, convertir en PNG
-          const convertedPng = await this.convertWebPToPng(imageData);
-          const [, convertedBase64] = convertedPng.split(',');
+          console.log('🖼️ WebP détecté, conversion en JPEG...');
+          // WebP n'est pas supporté par pdf-lib, convertir en JPEG
+          const convertedJpeg = await this.convertWebPToJpeg(imageData);
+          const [, convertedBase64] = convertedJpeg.split(',');
           const convertedBytes = new Uint8Array(atob(convertedBase64).split('').map(c => c.charCodeAt(0)));
-          image = await pdfDoc.embedPng(convertedBytes);
+          image = await pdfDoc.embedJpg(convertedBytes);
         } else {
           console.log('🖼️ Embedding JPEG...');
           image = await pdfDoc.embedJpg(imageBytes);
@@ -531,7 +531,18 @@ export class PDFGenerator {
         });
       } catch (embedError) {
         console.error('🖼️ Erreur embedding:', embedError);
-        throw new Error(`Embedding image échoué: ${embedError.message}`);
+        // Essayer de convertir en JPEG si l'embedding échoue
+        try {
+          console.log('🖼️ Tentative conversion JPEG...');
+          const convertedJpeg = await this.convertToJpeg(imageData);
+          const [, convertedBase64] = convertedJpeg.split(',');
+          const convertedBytes = new Uint8Array(atob(convertedBase64).split('').map(c => c.charCodeAt(0)));
+          image = await pdfDoc.embedJpg(convertedBytes);
+          console.log('🖼️ Conversion JPEG réussie');
+        } catch (conversionError) {
+          console.error('🖼️ Conversion JPEG échouée:', conversionError);
+          throw new Error(`Embedding image échoué: ${embedError.message}`);
+        }
       }
       
       // Calculer les dimensions en gardant les proportions
@@ -592,9 +603,9 @@ export class PDFGenerator {
   }
   
   /**
-   * Convertit une image WebP en PNG pour compatibilité pdf-lib
+   * Convertit une image WebP en JPEG pour compatibilité pdf-lib
    */
-  private static async convertWebPToPng(webpDataUrl: string): Promise<string> {
+  private static async convertWebPToJpeg(webpDataUrl: string): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
         const img = new Image();
@@ -618,10 +629,10 @@ export class PDFGenerator {
             // Dessiner l'image
             ctx.drawImage(img, 0, 0);
             
-            // Convertir en PNG
-            const pngDataUrl = canvas.toDataURL('image/png', 1.0);
-            console.log('🔄 WebP converti en PNG');
-            resolve(pngDataUrl);
+            // Convertir en JPEG
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            console.log('🔄 WebP converti en JPEG');
+            resolve(jpegDataUrl);
           } catch (error) {
             reject(error);
           }
@@ -632,6 +643,53 @@ export class PDFGenerator {
         };
         
         img.src = webpDataUrl;
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Convertit n'importe quelle image en JPEG pour compatibilité maximale
+   */
+  private static async convertToJpeg(imageDataUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              reject(new Error('Canvas context non disponible'));
+              return;
+            }
+            
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Fond blanc pour éviter la transparence
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dessiner l'image
+            ctx.drawImage(img, 0, 0);
+            
+            // Convertir en JPEG avec bonne qualité
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            console.log('🔄 Image convertie en JPEG');
+            resolve(jpegDataUrl);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        img.onerror = () => {
+          reject(new Error('Impossible de charger l\'image'));
+        };
+        
+        img.src = imageDataUrl;
       } catch (error) {
         reject(error);
       }
