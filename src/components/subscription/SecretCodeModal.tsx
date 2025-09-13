@@ -35,20 +35,31 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
     setLoading(true);
     
     try {
+      console.log('🔑 Activation code secret:', code.trim().toUpperCase(), 'pour user:', user?.id);
+      
       const { data, error } = await supabase.rpc('activate_secret_code', {
         p_code: code.trim().toUpperCase(),
         p_user_id: user?.id
       });
+      
+      console.log('🔑 Réponse activation:', { data, error });
 
       if (error) {
         console.error('Erreur activation code:', error);
-        toast.error('Erreur lors de l\'activation du code');
+        toast.error(`Erreur lors de l'activation du code: ${error.message}`);
         return;
       }
 
       if (data.success) {
         const isLifetime = data.type === 'lifetime';
         const expiresAt = data.expires_at ? new Date(data.expires_at).toLocaleDateString('fr-FR') : null;
+        
+        console.log('🔑 ✅ Code activé avec succès:', {
+          type: data.type,
+          isLifetime,
+          expiresAt,
+          message: data.message
+        });
         
         toast.success(
           `🎉 Code activé avec succès ! ${isLifetime ? 'Accès à vie débloqué !' : `Accès mensuel jusqu'au ${expiresAt}`}`,
@@ -59,6 +70,7 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
         onSuccess();
         onClose();
       } else {
+        console.log('🔑 ❌ Échec activation:', data.error);
         toast.error(data.error || 'Code secret invalide');
       }
     } catch (error) {

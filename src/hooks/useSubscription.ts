@@ -107,7 +107,7 @@ export const useSubscription = () => {
         console.log('🔑 Recherche codes secrets pour userId:', targetUserId);
         console.log('🔑 Mode impersonation actif:', !!impersonationData);
         
-        // Maintenant chercher spécifiquement pour notre utilisateur
+        // Chercher les codes secrets actifs pour l'utilisateur
         const { data: secretCodeData, error: secretCodeError } = await supabase
           .from('user_secret_codes')
           .select(`
@@ -120,6 +120,7 @@ export const useSubscription = () => {
             )
           `)
           .eq('user_id', targetUserId)
+          .or('expires_at.is.null,expires_at.gt.now()')
           .order('activated_at', { ascending: false });
 
         console.log('🔑 Codes secrets pour userId', targetUserId, ':', secretCodeData?.length || 0);
@@ -175,6 +176,11 @@ export const useSubscription = () => {
             } else {
               console.log('🔑 ❌ Code inactif ou expiré');
             }
+          }
+          
+          // Si aucun code actif trouvé mais qu'il y a des codes, c'est qu'ils sont expirés
+          if (!hasActiveSecretCode && secretCodeData.length > 0) {
+            console.log('🔑 ⚠️ Codes trouvés mais tous expirés ou inactifs');
           }
         } else {
           console.log('🔑 Aucun code secret trouvé pour userId:', targetUserId);
