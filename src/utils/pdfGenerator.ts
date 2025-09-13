@@ -276,56 +276,33 @@ export class PDFGenerator {
       console.log(`✍️ === EMBEDDING IMAGE ===`);
       let image;
       try {
-        // Détecter le format depuis le header
-        if (header.includes('png')) {
-          console.log(`✍️ Embedding PNG...`);
-          image = await pdfDoc.embedPng(imageBytes);
-          console.log(`✍️ ✅ PNG embedding réussi`);
-        } else {
-          console.log(`✍️ Embedding JPEG...`);
-          image = await pdfDoc.embedJpg(imageBytes);
-          console.log(`✍️ ✅ JPEG embedding réussi`);
-        }
-      } catch (pngError) {
-        console.warn(`✍️ Premier format échec, tentative alternative...`);
+        // Forcer PNG pour les signatures (plus fiable)
+        console.log(`✍️ Embedding PNG (forcé pour signatures)...`);
+        image = await pdfDoc.embedPng(imageBytes);
+        console.log(`✍️ ✅ PNG embedding réussi`);
+      } catch (embedError) {
+        console.error('✍️ ERREUR embedding PNG:', embedError);
+        
+        // Fallback JPEG si PNG échoue
         try {
-          // Essayer l'autre format
-          if (header.includes('png')) {
-            image = await pdfDoc.embedJpg(imageBytes);
-            console.log(`✍️ ✅ JPEG embedding réussi (fallback)`);
-          } else {
-            image = await pdfDoc.embedPng(imageBytes);
-            console.log(`✍️ ✅ PNG embedding réussi (fallback)`);
-          }
+          console.log(`✍️ Tentative fallback JPEG...`);
+          image = await pdfDoc.embedJpg(imageBytes);
+          console.log(`✍️ ✅ JPEG embedding réussi (fallback)`);
         } catch (jpegError) {
           console.error('✍️ ERREUR: Impossible d\'embedder l\'image');
-          console.error('✍️ PNG error:', pngError.message);
+          console.error('✍️ PNG error:', embedError.message);
           console.error('✍️ JPEG error:', jpegError.message);
-          throw new Error(`Impossible d'embedder l'image: PNG(${pngError.message}) JPEG(${jpegError.message})`);
+          throw new Error(`Impossible d'embedder l'image: PNG(${embedError.message}) JPEG(${jpegError.message})`);
         }
       }
       
       console.log(`✍️ ✅ Image embedée avec succès`);
       console.log(`✍️ Dimensions originales: ${image.width}x${image.height}`);
       
-      console.log(`✍️ === DESSIN FOND SIGNATURE ===`);
-      // Dessiner un fond blanc avec bordure pour la signature
-      page.drawRectangle({
-        x,
-        y,
-        width,
-        height,
-        color: rgb(1, 1, 1),
-        borderColor: rgb(0.7, 0.7, 0.7),
-        borderWidth: 1,
-      });
-      
-      console.log(`✍️ ✅ Fond signature dessiné`);
-      
       console.log(`✍️ === CALCUL DIMENSIONS ===`);
       const aspectRatio = image.width / image.height;
-      let displayWidth = width - 8; // Marge de 4px de chaque côté
-      let displayHeight = height - 8;
+      let displayWidth = width - 4; // Marge réduite
+      let displayHeight = height - 4;
       
       // Ajuster pour garder les proportions
       if (displayWidth / displayHeight > aspectRatio) {
@@ -352,6 +329,20 @@ export class PDFGenerator {
       console.log(`✍️   Offset: (${Math.round(offsetX)}, ${Math.round(offsetY)})`);
       console.log(`✍️   Position finale: (${Math.round(finalX)}, ${Math.round(finalY)})`);
       
+      console.log(`✍️ === DESSIN FOND SIGNATURE ===`);
+      // Dessiner un fond blanc avec bordure fine pour la signature
+      page.drawRectangle({
+        x: finalX - 2,
+        y: finalY - 2,
+        width: displayWidth + 4,
+        height: displayHeight + 4,
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.8, 0.8, 0.8),
+        borderWidth: 0.5,
+      });
+      
+      console.log(`✍️ ✅ Fond signature dessiné`);
+      
       console.log(`✍️ === DESSIN IMAGE SIGNATURE ===`);
       page.drawImage(image, {
         x: finalX,
@@ -362,12 +353,12 @@ export class PDFGenerator {
       
       console.log(`✍️ ✅ === SIGNATURE DESSINÉE AVEC SUCCÈS ===`);
       
-      // Ajouter un texte de debug temporaire pour vérifier le positionnement
-      page.drawText('SIGNATURE', {
+      // Ajouter un label discret sous la signature
+      page.drawText('Signature électronique', {
         x: finalX,
-        y: finalY - 5,
-        size: 8,
-        color: rgb(0, 0, 1),
+        y: finalY - 8,
+        size: 6,
+        color: rgb(0.5, 0.5, 0.5),
       });
       
     } catch (error) {
@@ -378,32 +369,23 @@ export class PDFGenerator {
       console.error('✍️ Header signature:', signatureData ? signatureData.substring(0, 50) : 'undefined');
       
       console.log(`✍️ === DESSIN PLACEHOLDER ERREUR ===`);
-      // Dessiner un placeholder d'erreur TRÈS visible
+      // Dessiner un placeholder d'erreur visible
       page.drawRectangle({
         x,
         y,
         width,
         height,
-        borderColor: rgb(1, 0, 0), // Rouge vif
+        borderColor: rgb(1, 0, 0),
         borderWidth: 2,
-        color: rgb(1, 0.9, 0.9), // Fond rouge clair
+        color: rgb(1, 0.9, 0.9),
       });
       
-      // Texte d'erreur principal plus gros
+      // Texte d'erreur
       page.drawText('ERREUR SIGNATURE', {
         x: x + 2,
-        y: y + height - 10,
-        size: Math.min(10, height / 3),
+        y: y + height / 2,
+        size: Math.min(8, height / 4),
         color: rgb(1, 0, 0),
-      });
-      
-      // Message d'erreur détaillé plus court
-      const errorMsg = error.message.substring(0, 20);
-      page.drawText(errorMsg, {
-        x: x + 2,
-        y: y + height - 20,
-        size: Math.min(6, height / 4),
-        color: rgb(0.7, 0, 0),
       });
       
       console.log(`✍️ ✅ Placeholder d'erreur dessiné`);

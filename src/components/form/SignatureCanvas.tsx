@@ -213,37 +213,47 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       
       // Même processus que stopDrawing pour la cohérence
       const tempCanvas = document.createElement('canvas');
+      // Créer un canvas optimisé pour PDF avec fond blanc
+      const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       
-      let signature;
+      let finalSignature;
+      
       if (tempCtx) {
-        const scale = 2;
+        // Utiliser une résolution plus élevée pour PDF
+        const scale = 3;
         tempCanvas.width = canvas.width * scale;
         tempCanvas.height = canvas.height * scale;
         
+        // Configuration haute qualité
         tempCtx.imageSmoothingEnabled = true;
         tempCtx.imageSmoothingQuality = 'high';
         tempCtx.scale(scale, scale);
         
-        // Fond blanc
+        // IMPORTANT: Fond blanc opaque pour contraste
         tempCtx.fillStyle = '#FFFFFF';
         tempCtx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Dessiner la signature
+        // Dessiner la signature avec un trait plus épais
+        tempCtx.globalCompositeOperation = 'source-over';
+        tempCtx.lineWidth = 3;
+        tempCtx.strokeStyle = '#000000';
         tempCtx.drawImage(canvas, 0, 0);
         
-        signature = tempCanvas.toDataURL('image/png', 1.0);
-        console.log('✍️ ✅ Signature sauvegardée manuellement:', signature.length, 'caractères');
+        finalSignature = tempCanvas.toDataURL('image/png', 1.0);
+        console.log('✍️ ✅ Signature haute qualité créée:', finalSignature.length, 'caractères');
       } else {
-        // Fallback si le contexte temporaire n'est pas disponible
-        signature = canvas.toDataURL('image/png', 1.0);
-        console.log('✍️ ⚠️ Signature sauvegardée (fallback):', signature.length, 'caractères');
+        // Fallback simple
+        finalSignature = canvas.toDataURL('image/png', 1.0);
+        console.log('✍️ ⚠️ Signature fallback créée:', finalSignature.length, 'caractères');
       }
       
-      onSignatureChange(signature);
+      onSignatureChange(finalSignature);
+      setIsEmpty(false);
     } catch (error) {
       console.error('✍️ Erreur sauvegarde manuelle signature:', error);
       onSignatureChange('');
+      setIsEmpty(true);
     }
   };
 

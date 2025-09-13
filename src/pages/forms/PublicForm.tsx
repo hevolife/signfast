@@ -317,8 +317,35 @@ export const PublicForm: React.FC = () => {
       
       // Formater les dates au format français avant soumission
       Object.keys(dbSubmissionData).forEach(key => {
-        const value = dbSubmissionData[key];
-        if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                // IMPORTANT: Optimiser la signature pour PDF
+                console.log(`✍️ ✅ Signature validée, optimisation pour PDF...`);
+                
+                // Créer une version optimisée de la signature pour PDF
+                const img = new Image();
+                img.onload = () => {
+                  const optimizedCanvas = document.createElement('canvas');
+                  const optimizedCtx = optimizedCanvas.getContext('2d');
+                  
+                  if (optimizedCtx) {
+                    // Taille optimale pour PDF
+                    optimizedCanvas.width = 400;
+                    optimizedCanvas.height = 200;
+                    
+                    // Fond blanc opaque
+                    optimizedCtx.fillStyle = '#FFFFFF';
+                    optimizedCtx.fillRect(0, 0, 400, 200);
+                    
+                    // Dessiner la signature redimensionnée
+                    optimizedCtx.drawImage(img, 0, 0, 400, 200);
+                    
+                    const optimizedSignature = optimizedCanvas.toDataURL('image/png', 1.0);
+                    console.log(`✍️ ✅ Signature optimisée créée: ${optimizedSignature.length} caractères`);
+                    
+                    // Utiliser la signature optimisée
+                    pdfSubmissionData[field.label] = optimizedSignature;
+                  }
+                };
+                img.src = fieldValue;
           dbSubmissionData[key] = formatDateFR(value);
           pdfSubmissionData[key] = formatDateFR(value);
           console.log(`📅 Date formatée: ${key} = ${value} → ${dbSubmissionData[key]}`);
@@ -877,7 +904,7 @@ export const PublicForm: React.FC = () => {
                       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                   </div>
-                  <span className="text-gray-400 text-xs">Aucun logo configuré</span>
+                // Utiliser la signature originale en attendant l'optimisation
                 </div>
               </div>
             )}
