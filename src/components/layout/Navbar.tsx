@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import { stripeConfig } from '../../stripe-config';
@@ -13,35 +13,10 @@ export const Navbar: React.FC = () => {
   const { isSubscribed, subscriptionStatus } = useSubscription();
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const location = useLocation();
   const product = stripeConfig.products[0];
   
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
-
-  const getColorClasses = (color: string, active: boolean) => {
-    const colorMap = {
-      blue: active 
-        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 border-blue-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600',
-      green: active 
-        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border-green-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600',
-      purple: active 
-        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 border-purple-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600',
-      orange: active 
-        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600',
-      indigo: active 
-        ? 'bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-700 border-indigo-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-indigo-100 hover:text-indigo-600',
-      red: active 
-        ? 'bg-gradient-to-br from-red-100 to-red-200 text-red-700 border-red-300'
-        : 'text-red-600 dark:text-red-400 hover:bg-gradient-to-br hover:from-red-50 hover:to-red-100 hover:text-red-700',
-    };
-    return colorMap[color] || colorMap.blue;
-  };
 
   const handleSignOut = async () => {
     try {
@@ -78,136 +53,80 @@ export const Navbar: React.FC = () => {
               <>
                 {/* Bannière d'impersonation */}
                 {isImpersonating && (
-                  <button
+                  <Button
                     size="sm"
+                    variant="ghost"
                     onClick={stopImpersonation}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 bg-gradient-to-br from-red-100 to-red-200 text-red-700 border border-red-300 shadow-sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800"
                   >
-                    <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                      <span className="text-sm">🚫</span>
-                    </div>
                     Arrêter l'impersonation
-                  </button>
+                  </Button>
                 )}
-                <Link 
-                  to="/dashboard"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                    isActive('/dashboard') ? `${getColorClasses('blue', true)} shadow-lg border-2 border-dashed` : getColorClasses('blue', false)
-                  }`}
-                >
-                  <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-sm">📊</span>
-                  </div>
-                  <span className="font-semibold">Dashboard</span>
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Button>
                 </Link>
-                <Link 
-                  to="/forms"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                    isActive('/forms') ? `${getColorClasses('green', true)} shadow-lg border-2 border-dashed` : getColorClasses('green', false)
-                  }`}
-                >
-                  <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-sm">📝</span>
-                  </div>
-                  <span className="font-semibold">Formulaires</span>
+                <Link to="/forms">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4" />
+                    <span>Formulaires</span>
+                  </Button>
                 </Link>
-                <Link 
-                  to="/pdf/templates"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                    isActive('/pdf/templates') ? `${getColorClasses('purple', true)} shadow-lg border-2 border-dashed` : getColorClasses('purple', false)
-                  }`}
-                >
-                  <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-sm">📄</span>
-                  </div>
-                  <span className="font-semibold">Templates</span>
+                <Link to="/pdf/templates">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4" />
+                    <span>Templates</span>
+                  </Button>
                 </Link>
-                <Link 
-                  to="/pdf/manager"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                    isActive('/pdf/manager') ? `${getColorClasses('orange', true)} shadow-lg border-2 border-dashed` : getColorClasses('orange', false)
-                  }`}
-                >
-                  <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-sm">💾</span>
-                  </div>
-                  <span className="font-semibold">Stockage</span>
+                <Link to="/pdf/manager">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <HardDrive className="h-4 w-4" />
+                    <span>Stockage</span>
+                  </Button>
                 </Link>
                 {isSuperAdmin && (
-                  <Link 
-                    to="/admin"
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                      isActive('/admin') ? `${getColorClasses('red', true)} shadow-lg border-2 border-dashed` : getColorClasses('red', false)
-                    }`}
-                  >
-                    <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                      <span className="text-sm">🛡️</span>
-                    </div>
-                    <span className="font-semibold">Admin</span>
+                  <Link to="/admin">
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-red-600 hover:text-red-700">
+                      <Shield className="h-4 w-4" />
+                      <span>Admin</span>
+                    </Button>
                   </Link>
                 )}
-                <Link 
-                  to="/settings"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                    isActive('/settings') ? `${getColorClasses('indigo', true)} shadow-lg border-2 border-dashed` : getColorClasses('indigo', false)
-                  }`}
-                >
-                  <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-sm">⚙️</span>
-                  </div>
-                  <span className="font-semibold">Paramètres</span>
+                <Link to="/settings">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Paramètres</span>
+                  </Button>
                 </Link>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleSignOut}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 text-red-600 dark:text-red-400 hover:bg-gradient-to-br hover:from-red-50 hover:to-red-100 hover:text-red-700"
+                  className="flex items-center space-x-2 text-red-600 hover:text-red-700"
                 >
-                  <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-sm">🚪</span>
-                  </div>
+                  <LogOut className="h-4 w-4" />
                   <span>Déconnexion</span>
-                </button>
+                </Button>
               </>
             ) : (
               <>
                 <div className="flex items-center space-x-2">
-                  <Link 
-                    to="/login"
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                      isActive('/login') ? `${getColorClasses('green', true)} shadow-lg border-2 border-dashed` : getColorClasses('green', false)
-                    }`}
-                  >
-                    <div className="p-1 bg-white/50 rounded-lg shadow-sm">
-                      <span className="text-sm">🔑</span>
-                    </div>
-                    <span className="font-semibold">
+                  <Link to="/login">
+                    <Button variant="ghost" size="sm">
                       Connexion
-                    </span>
+                    </Button>
                   </Link>
-                  <Link 
-                    to="/signup"
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all active:scale-95 hover:shadow-md hover:scale-105 ${
-                      isActive('/signup') ? `${getColorClasses('purple', true)} shadow-lg border-2 border-dashed` : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg'
-                    }`}
-                  >
-                    <div className="p-1 bg-white/20 rounded-lg shadow-sm">
-                      <span className="text-sm">✨</span>
-                    </div>
-                    <span className="font-semibold">
+                  <Link to="/signup">
+                    <Button size="sm">
                       S'inscrire
-                    </span>
+                    </Button>
                   </Link>
                 </div>
               </>
             )}
           </div>
-
-          {/* Fonction helper pour vérifier si un lien est actif */}
-          {(() => {
-            const isActive = (path: string) => {
-              return location.pathname === path || location.pathname.startsWith(path);
-            };
-            return null; // Cette fonction ne rend rien, elle définit juste isActive
-          })()}
 
           {/* Mobile: Only dark mode toggle and logo */}
           <div className="md:hidden flex items-center space-x-2">
