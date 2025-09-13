@@ -9,6 +9,8 @@ interface PDFFieldPropertiesProps {
   onUpdate: (updates: Partial<PDFField>) => void;
   availableVariables: string[];
   linkedFormId?: string;
+  onPreviewPDF?: () => void;
+  previewLoading?: boolean;
 }
 
 export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
@@ -16,6 +18,8 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   onUpdate,
   availableVariables,
   linkedFormId,
+  onPreviewPDF,
+  previewLoading,
 }) => {
   const getLinkedFormInfo = () => {
     if (!linkedFormId) return null;
@@ -41,9 +45,25 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Propriétés du champ
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Propriétés du champ
+          </h3>
+          <Button
+            onClick={onPreviewPDF}
+            disabled={previewLoading}
+            variant="secondary"
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            {previewLoading ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+            ) : (
+              <Eye className="h-3 w-3" />
+            )}
+            <span className="text-xs">{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
+          </Button>
+        </div>
         {linkedFormId && (
           <p className="text-xs text-blue-600 dark:text-blue-400">
             📋 Lié au formulaire: {getLinkedFormInfo()}
