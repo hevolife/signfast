@@ -673,7 +673,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ))
               )}
             </div>
           </div>
