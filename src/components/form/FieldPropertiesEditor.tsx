@@ -2,7 +2,7 @@ import React from 'react';
 import { FormField } from '../../types/form';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, ChevronDown as MoveDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface FieldPropertiesEditorProps {
@@ -123,6 +123,28 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
         }
       });
     }
+  };
+
+  const moveConditionalField = (optionValue: string, fieldIndex: number, direction: 'up' | 'down') => {
+    const currentConditionalFields = field.conditionalFields || {};
+    const currentFields = [...(currentConditionalFields[optionValue] || [])];
+    
+    const newIndex = direction === 'up' ? fieldIndex - 1 : fieldIndex + 1;
+    
+    // Vérifier que le déplacement est possible
+    if (newIndex < 0 || newIndex >= currentFields.length) {
+      return;
+    }
+    
+    // Échanger les éléments
+    [currentFields[fieldIndex], currentFields[newIndex]] = [currentFields[newIndex], currentFields[fieldIndex]];
+    
+    onUpdate({
+      conditionalFields: {
+        ...currentConditionalFields,
+        [optionValue]: currentFields
+      }
+    });
   };
 
   const showOptions = field.type === 'radio' || field.type === 'checkbox';
@@ -270,18 +292,48 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
                     {field.conditionalFields?.[option]?.map((conditionalField, fieldIndex) => (
                       <div key={conditionalField.id} className="bg-gray-50 dark:bg-gray-800 p-3 rounded border">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {conditionalField.type} - {conditionalField.label}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeConditionalField(option, fieldIndex)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {conditionalField.type} - {conditionalField.label}
+                            </span>
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded dark:bg-blue-900 dark:text-blue-300">
+                              #{fieldIndex + 1}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveConditionalField(option, fieldIndex, 'up')}
+                              disabled={fieldIndex === 0}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-1"
+                              title="Déplacer vers le haut"
+                            >
+                              <ChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveConditionalField(option, fieldIndex, 'down')}
+                              disabled={fieldIndex === (field.conditionalFields?.[option]?.length || 1) - 1}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-1"
+                              title="Déplacer vers le bas"
+                            >
+                              <MoveDown className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeConditionalField(option, fieldIndex)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
+                              title="Supprimer le champ"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Input
