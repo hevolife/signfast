@@ -109,18 +109,8 @@ export const useSubscription = () => {
         
         // Chercher les codes secrets actifs pour l'utilisateur
         const { data: secretCodeData, error: secretCodeError } = await supabase
-          .from('user_secret_codes')
-          .select(`
-            expires_at,
-            activated_at,
-            secret_codes (
-              type,
-              description,
-              code
-            )
-          `)
+          .select('expires_at, activated_at, secret_codes(type, description, code, is_active)')
           .eq('user_id', targetUserId)
-         .eq('secret_codes.is_active', true)
           .order('activated_at', { ascending: false });
 
         console.log('🔑 Codes secrets pour userId', targetUserId, ':', secretCodeData?.length || 0);
