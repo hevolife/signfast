@@ -339,49 +339,49 @@ export const Settings: React.FC = () => {
         {/* Onglets */}
         <div className="mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-2 sm:space-x-4 justify-center">
+            <nav className="-mb-px flex space-x-3 justify-center">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
+                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
-                <div className="flex flex-col items-center space-y-1">
-                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-lg">{getTabEmoji('profile')}</span>
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('profile')}</span>
                   </div>
-                  <span className="text-xs font-semibold text-center leading-tight">Profil</span>
+                  <span className="font-semibold">Profil</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
+                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
               >
-                <div className="flex flex-col items-center space-y-1">
-                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-lg">{getTabEmoji('security')}</span>
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('security')}</span>
                   </div>
-                  <span className="text-xs font-semibold text-center leading-tight">Sécurité</span>
+                  <span className="font-semibold">Sécurité</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('affiliate')}
-                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
+                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
               >
-                <div className="flex flex-col items-center space-y-1">
-                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-lg">{getTabEmoji('affiliate')}</span>
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('affiliate')}</span>
                   </div>
-                  <span className="text-xs font-semibold text-center leading-tight">Affiliation</span>
+                  <span className="font-semibold">Affiliation</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('subscription')}
-                className={`py-3 px-4 border-2 border-dashed rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
+                className={`py-2 px-3 border-2 border-dashed rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
-                <div className="flex flex-col items-center space-y-1">
-                  <div className="p-2 bg-white/50 rounded-lg shadow-sm">
-                    <span className="text-lg">{getTabEmoji('subscription')}</span>
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">{getTabEmoji('subscription')}</span>
                   </div>
-                  <span className="text-xs font-semibold text-center leading-tight">Abonnement</span>
+                  <span className="font-semibold">Abonnement</span>
                 </div>
               </button>
             </nav>
