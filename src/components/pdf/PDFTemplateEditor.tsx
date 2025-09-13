@@ -545,6 +545,29 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
             </div>
           </div>
 
+          {/* Nom du template */}
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Nom du template
+                </h3>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Input
+                label="Nom du template PDF"
+                value={currentTemplateName}
+                onChange={(e) => handleTemplateNameChange(e.target.value)}
+                placeholder="Ex: Contrat de location, Facture, etc."
+                className="max-w-md"
+              />
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Ce nom sera utilisé pour identifier votre template dans la liste
+              </p>
+            </CardContent>
+          </Card>
           {/* Sélecteur de formulaire */}
           <Card className="mb-6">
             <CardHeader>

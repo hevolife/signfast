@@ -309,6 +309,7 @@ export const EditPDFTemplate: React.FC = () => {
       templateName={template.name}
       linkedFormId={template.linkedFormId}
       onFormLinkChange={handleFormLinkChange}
+      onTemplateNameChange={handleTemplateNameChange}
       key={fieldsReady ? 'ready' : 'loading'}
     />
   );

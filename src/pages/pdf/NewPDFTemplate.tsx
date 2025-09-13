@@ -167,6 +167,7 @@ export const NewPDFTemplate: React.FC = () => {
       formVariables={getFormVariables()}
       linkedFormId={linkedFormId}
       onFormLinkChange={handleFormLinkChange}
+      onTemplateNameChange={handleTemplateNameChange}
     />
   );
 };
