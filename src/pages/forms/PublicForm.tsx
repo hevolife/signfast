@@ -342,14 +342,17 @@ export const PublicForm: React.FC = () => {
             console.log('🎯 Template PDF content length:', template.originalPdfUrl?.length || 0);
             
             metadata.templateName = template.name;
-            metadata.templateId = template.id;
-            metadata.templateFields = template.fields;
-            metadata.templatePdfContent = template.originalPdfUrl;
+            // Ajouter les données du template dans form_data avec la structure _template
+            submissionData._template = {
+              templateId: template.id,
+              templateFields: template.fields,
+              templatePdfContent: template.originalPdfUrl,
+            };
             
             console.log('🎯 Métadonnées template préparées:', {
-              templateId: metadata.templateId,
-              fieldsCount: metadata.templateFields?.length || 0,
-              hasContent: !!metadata.templatePdfContent
+              templateId: template.id,
+              fieldsCount: template.fields?.length || 0,
+              hasContent: !!template.originalPdfUrl
             });
           } else {
             console.log('🎯 Template non trouvé');
@@ -363,6 +366,9 @@ export const PublicForm: React.FC = () => {
         console.log('🎯 Aucun template configuré, PDF simple');
       }
 
+      // Mettre à jour les métadonnées avec les données finales
+      metadata.formData = submissionData;
+      
       // Sauvegarder les métadonnées (pas le PDF lui-même)
       await PDFService.savePDFMetadata(fileName, metadata);
       
