@@ -341,7 +341,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                           Ajouter un champ
                           </h3>
                         </div>
-                        </h3>
                         <Button
                           variant="ghost"
                           size="sm"
