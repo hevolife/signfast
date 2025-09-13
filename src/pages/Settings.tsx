@@ -245,12 +245,20 @@ export const Settings: React.FC = () => {
   const handleSubscribe = async () => {
     setSaving(true);
     try {
+      // Vérifier que l'utilisateur est connecté
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        toast.error('Session expirée, veuillez vous reconnecter');
+        return;
+      }
+      
       const product = stripeConfig.products[0];
       
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
