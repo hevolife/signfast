@@ -649,12 +649,14 @@ export class PDFService {
       throw error;
     }
   }
-}
-        // Silent error
-      }
+
+  // GET LOCAL PDFS
+  private static getLocalPDFs(): Record<string, any> {
+    try {
+      const localData = localStorage.getItem('saved_pdfs');
+      return localData ? JSON.parse(localData) : {};
     } catch (error) {
-      // Silent error
+      return {};
     }
   }
-
 }
