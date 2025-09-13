@@ -113,25 +113,102 @@ export const useAffiliateAdmin = () => {
 
   useEffect(() => {
     if (isSuperAdmin) {
-      // Temporairement désactivé - les tables d'affiliation n'existent pas encore
-      setAllPrograms([]);
-      setLoading(false);
+      fetchAllPrograms();
     } else {
       setLoading(false);
     }
   }, [isSuperAdmin]);
 
   const fetchAllPrograms = async () => {
-    // Fonction désactivée temporairement - les tables n'existent pas encore
-    console.log('📊 Admin: Tables d\'affiliation non créées - fonctionnalité désactivée');
-    setAllPrograms([]);
-    setLoading(false);
+    try {
+      console.log('📊 Admin: Chargement tous les programmes...');
+      
+      // Récupérer tous les programmes avec statistiques calculées
+      const { data: programs, error: programsError } = await supabase
+        .from('affiliate_programs')
+        .select(`
+          *,
+          user_profiles!inner(first_name, last_name, company_name, created_at)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (programsError) {
+        console.error('Erreur récupération programmes admin:', programsError);
+        throw programsError;
+      }
+
+      // Pour chaque programme, calculer les statistiques détaillées
+      const programsWithStats = await Promise.all(
+        (programs || []).map(async (program) => {
+          try {
+            // Compter les parrainages confirmés
+            const { count: confirmedCount } = await supabase
+              .from('affiliate_referrals')
+              .select('id', { count: 'exact', head: true })
+              .eq('affiliate_user_id', program.user_id)
+              .eq('status', 'confirmed');
+
+            // Calculer les gains du mois
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+
+            const { data: monthlyCommissions } = await supabase
+              .from('affiliate_referrals')
+              .select('commission_amount')
+              .eq('affiliate_user_id', program.user_id)
+              .eq('status', 'confirmed')
+              .gte('created_at', startOfMonth.toISOString());
+
+            const monthlyEarnings = (monthlyCommissions || [])
+              .reduce((sum, ref) => sum + ref.commission_amount, 0);
+
+            return {
+              ...program,
+              confirmed_referrals: confirmedCount || 0,
+              monthly_earnings: monthlyEarnings,
+            };
+          } catch (error) {
+            console.error('Erreur calcul stats pour programme:', program.user_id, error);
+            return {
+              ...program,
+              confirmed_referrals: 0,
+              monthly_earnings: 0,
+            };
+          }
+        })
+      );
+
+      setAllPrograms(programsWithStats);
+      console.log('📊 Admin: Programmes chargés:', programsWithStats.length);
+      
+    } catch (error: any) {
+      console.error('Erreur chargement programmes admin:', error);
+      setAllPrograms([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateCommissionRate = async (userId: string, newRate: number) => {
-    // Fonction désactivée temporairement - les tables n'existent pas encore
-    console.log('📊 Mise à jour commission désactivée - tables non créées');
-    return false;
+    try {
+      const { error } = await supabase
+        .from('affiliate_programs')
+        .update({ commission_rate: newRate })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Erreur mise à jour commission:', error);
+        return false;
+      }
+
+      // Rafraîchir les données
+      await fetchAllPrograms();
+      return true;
+    } catch (error) {
+      console.error('Erreur mise à jour commission:', error);
+      return false;
+    }
   };
 
   return {
