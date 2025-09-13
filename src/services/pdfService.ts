@@ -111,15 +111,18 @@ export class PDFService {
           } catch (error) {
             console.warn(`💾 ❌ Compression échouée, remplacement par placeholder:`, error);
             cleaned[key] = '[IMAGE_TOO_LARGE_REMOVED]';
-        // Compresser seulement si > 1MB
-        if (value.length > 1000000) {
-          console.log(`💾 🔧 Compression image (${originalSize}KB)...`);
-          const compressed = this.compressImageSimple(value);
-          const compressedSize = Math.round(compressed.length / 1024);
-          console.log(`💾 ✅ Compression: ${originalSize}KB → ${compressedSize}KB`);
-          cleaned[key] = compressed;
+          }
         } else {
-          cleaned[key] = value;
+          // Compresser seulement si > 1MB
+          if (value.length > 1000000) {
+            console.log(`💾 🔧 Compression image (${originalSize}KB)...`);
+            const compressed = this.compressImageSimple(value);
+            const compressedSize = Math.round(compressed.length / 1024);
+            console.log(`💾 ✅ Compression: ${originalSize}KB → ${compressedSize}KB`);
+            cleaned[key] = compressed;
+          } else {
+            cleaned[key] = value;
+          }
         }
       } else {
         cleaned[key] = value;
@@ -136,8 +139,7 @@ export class PDFService {
       if (!data) throw new Error('Format base64 invalide');
       
       // Compression simple par échantillonnage (réduire de 50%)
-      const [header, data] = base64Image.split(',');
-      if (!data) return base64Image;
+      const originalSize = Math.round(base64Image.length / 1024);
       
       // Prendre 1 caractère sur 2 pour réduire la taille
       let compressedData = '';
@@ -154,6 +156,26 @@ export class PDFService {
       console.error(`💾 ❌ Erreur compression:`, error);
       return base64Image; // Retourner l'original en cas d'erreur
     }
+  }
+
+  // GÉNÉRER ET TÉLÉCHARGER PDF
+  static async generateAndDownloadPDF(fileName: string): Promise<boolean> {
+    try {
+      console.log('📄 === DÉBUT generateAndDownloadPDF ===');
+      console.log('📄 🔍 Étape 1: Récupération métadonnées...');
+      
+      // 1. Récupérer les métadonnées
+      const metadata = await this.getPDFMetadata(fileName);
+      if (!metadata) {
+        console.error('📄 ❌ Métadonnées non trouvées pour:', fileName);
+        return false;
+      }
+
+      console.log('📄 ⚙️ Étape 2: Génération PDF...');
+      // 2. Générer le PDF
+      let pdfBytes: Uint8Array;
+      let templateData: any = null;
+      
       // Récupérer les métadonnées du template depuis pdf_content
       if (metadata.pdf_content) {
         try {
