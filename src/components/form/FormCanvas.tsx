@@ -101,7 +101,6 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                 }
                 </h3>
               </div>
-              </h3>
             </div>
             <CardContent className="p-6">
               {(() => {
