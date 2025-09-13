@@ -213,8 +213,6 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       
       // Même processus que stopDrawing pour la cohérence
       const tempCanvas = document.createElement('canvas');
-      // Créer un canvas optimisé pour PDF avec fond blanc
-      const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       
       let finalSignature;
