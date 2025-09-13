@@ -604,7 +604,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : (
-              {secretCodes.map((code) => (
+              secretCodes.map((code) => (
                 <Card key={code.id}>
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
