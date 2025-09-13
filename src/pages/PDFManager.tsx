@@ -362,7 +362,7 @@ export const PDFManager: React.FC = () => {
               });
               
               return (
-              <Card key={pdf.fileName} hover className={`group relative ${isLocked ? 'opacity-75 border-2 border-yellow-400' : ''}`}>
+              <Card key={pdf.fileName} hover className={`group relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg ${isLocked ? 'opacity-75 border-2 border-yellow-400' : ''}`}>
                 {isLocked && (
                   <div className="absolute inset-0 bg-gradient-to-br from-orange-900/70 to-yellow-900/70 rounded-lg flex items-center justify-center z-10">
                     <div className="text-center p-4">
@@ -384,42 +384,81 @@ export const PDFManager: React.FC = () => {
                 )}
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 truncate">
-                        {getDisplayName(pdf.formData) || `Document ${pdf.formTitle}`}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {getDisplayName(pdf.formData) ? `Formulaire: ${pdf.formTitle}` : `Template: ${pdf.templateName}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleDownload(pdf)}
-                        className="bg-green-500 text-white hover:bg-green-600 dark:bg-green-600 dark:text-white dark:hover:bg-green-700 [&>svg]:text-white"
-                        title="Télécharger le PDF"
-                        disabled={isLocked}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(pdf)}
-                        className="bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
-                        title="Supprimer le PDF"
-                        disabled={isLocked}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white text-lg">💾</span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
+                          {getDisplayName(pdf.formData) || `Document ${pdf.formTitle}`}
+                        </h3>
+                        <p className="text-sm text-green-700 dark:text-green-400 line-clamp-2">
+                          {getDisplayName(pdf.formData) ? `Formulaire: ${pdf.formTitle}` : `Template: ${pdf.templateName}`}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded dark:bg-green-900/30 dark:text-green-300">
+                      {formatFileSize(pdf.size)}
+                    </span>
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      Créé le {formatDateTimeFR(pdf.createdAt)}
+                    </span>
+                  </div>
+                  
+                  {/* Afficher les données détectées pour debug */}
+                  {getDisplayName(pdf.formData) && (
+                    <div className="text-xs text-green-600 dark:text-green-400 truncate mb-4">
+                      👤 Identité détectée: {getDisplayName(pdf.formData)}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDownload(pdf)}
+                      className="flex-1 flex items-center space-x-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 hover:from-green-200 hover:to-emerald-200 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300 border border-green-200 dark:border-green-800 shadow-sm hover:shadow-md transition-all"
+                      title="Télécharger le PDF"
+                      disabled={isLocked}
+                    >
+                      <Download className="h-4 w-4" />
+                      <span className="hidden lg:inline">Télécharger</span>
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(pdf)}
+                      className="bg-gradient-to-r from-red-100 to-pink-100 text-red-700 hover:from-red-200 hover:to-pink-200 dark:from-red-900/30 dark:to-pink-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 shadow-sm hover:shadow-md transition-all"
+                      title="Supprimer le PDF"
+                      disabled={isLocked}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+            })}
+          </div>
+        )}
+        
+        <LimitReachedModal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          limitType="savedPdfs"
+          currentCount={savedPdfsLimits.current}
+          maxCount={savedPdfsLimits.max}
+        />
+      </div>
+    </div>
+  );
+};
+
                       <Calendar className="h-4 w-4 mr-2" />
                       <span>
                         {formatDateTimeFR(pdf.createdAt)}
