@@ -313,55 +313,60 @@ export class PDFService {
         return base64Image;
       }
       
-      // Compression par échantillonnage intelligent
-      const targetRatio = maxSizeKB / originalSizeKB;
-      const compressionRatio = Math.max(0.4, Math.min(0.95, targetRatio * 1.3)); // Entre 40% et 95%
-      
-      console.log(`🔧 Ratio de compression: ${Math.round(compressionRatio * 100)}%`);
-      
-      // Échantillonnage intelligent de la chaîne base64
-      const step = Math.max(1, Math.ceil(1 / compressionRatio));
-      let compressedData = '';
-      
-      // Échantillonnage avec pattern pour préserver la qualité
-      for (let i = 0; i < data.length; i += step) {
-        // Prendre quelques caractères consécutifs pour préserver les patterns
-        const chunkSize = Math.max(1, Math.floor(step * 0.8));
-        for (let j = 0; j < chunkSize && i + j < data.length; j++) {
-          compressedData += data[i + j];
-        }
-      }
-      
-      // Reconstituer l'image
-      const compressedImage = `${header},${compressedData}`;
-      const compressedSizeKB = Math.round(compressedImage.length / 1024);
-      
-      console.log(`🔧 ✅ Compression terminée: ${originalSizeKB}KB → ${compressedSizeKB}KB`);
-      
-      // Si la compression n'est pas assez efficace, essayer une approche différente
-      if (compressedSizeKB > maxSizeKB * 1.8) {
-        console.log(`🔧 ⚠️ Compression insuffisante (${compressedSizeKB}KB > ${Math.round(maxSizeKB * 1.8)}KB), tentative plus agressive`);
-        
-        // Compression plus agressive avec échantillonnage plus espacé
-        const aggressiveStep = Math.ceil(step * 2);
-        let aggressiveData = '';
-        
-        // Échantillonnage plus espacé mais en gardant des chunks
-        for (let i = 0; i < data.length; i += aggressiveStep) {
-          const chunkSize = Math.max(1, Math.floor(aggressiveStep * 0.3));
-          for (let j = 0; j < chunkSize && i + j < data.length; j++) {
-            aggressiveData += data[i + j];
+      // Utiliser canvas pour une vraie compression d'image
+      return new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas context non disponible');
+            
+            // Calculer les nouvelles dimensions pour atteindre la taille cible
+            const targetRatio = Math.sqrt(maxSizeKB / originalSizeKB);
+            const newWidth = Math.floor(img.width * targetRatio);
+            const newHeight = Math.floor(img.height * targetRatio);
+            
+            console.log(`🔧 Redimensionnement: ${img.width}×${img.height} → ${newWidth}×${newHeight}`);
+            
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            
+            // Dessiner l'image redimensionnée avec qualité optimale
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            
+            // Essayer différents niveaux de qualité JPEG
+            let quality = 0.8;
+            let compressedImage = canvas.toDataURL('image/jpeg', quality);
+            let compressedSizeKB = Math.round(compressedImage.length / 1024);
+            
+            console.log(`🔧 Première tentative qualité ${quality}: ${compressedSizeKB}KB`);
+            
+            // Ajuster la qualité si nécessaire
+            while (compressedSizeKB > maxSizeKB && quality > 0.3) {
+              quality -= 0.1;
+              compressedImage = canvas.toDataURL('image/jpeg', quality);
+              compressedSizeKB = Math.round(compressedImage.length / 1024);
+              console.log(`🔧 Tentative qualité ${quality.toFixed(1)}: ${compressedSizeKB}KB`);
+            }
+            
+            console.log(`🔧 ✅ Compression canvas terminée: ${originalSizeKB}KB → ${compressedSizeKB}KB (qualité: ${quality.toFixed(1)})`);
+            resolve(compressedImage);
+          } catch (error) {
+            console.error(`🔧 ❌ Erreur compression canvas:`, error);
+            reject(error);
           }
-        }
+        };
         
-        const aggressiveImage = `${header},${aggressiveData}`;
-        const aggressiveSizeKB = Math.round(aggressiveImage.length / 1024);
+        img.onerror = () => {
+          console.error(`🔧 ❌ Erreur chargement image pour compression`);
+          reject(new Error('Impossible de charger l\'image'));
+        };
         
-        console.log(`🔧 ✅ Compression agressive: ${originalSizeKB}KB → ${aggressiveSizeKB}KB`);
-        return aggressiveImage;
-      }
-      
-      return compressedImage;
+        img.src = base64Image;
+      });
       
     } catch (error) {
       console.error(`🔧 ❌ Erreur compression intelligente:`, error);
