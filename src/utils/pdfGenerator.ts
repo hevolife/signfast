@@ -231,10 +231,19 @@ export class PDFGenerator {
       console.log(`✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
       console.log(`✍️ Données signature:`, signatureData.substring(0, 50) + '...');
       
-      // Vérifier le format de l'image
-      let image;
-      const imageBytes = this.base64ToBytes(signatureData);
+      // Validation des données de signature
+      if (!signatureData || !signatureData.startsWith('data:image')) {
+        throw new Error('Données de signature invalides ou manquantes');
+      }
+
+      console.log(`✍️ Validation signature OK, format: ${signatureData.substring(0, 30)}`);
       
+      // Convertir base64 en bytes avec validation
+      const imageBytes = this.base64ToBytes(signatureData);
+      console.log(`✍️ Conversion base64 OK, ${imageBytes.length} bytes`);
+      
+      // Détecter et embedder l'image selon son format
+      let image;
       if (signatureData.includes('data:image/png')) {
         console.log(`✍️ Format PNG détecté`);
         image = await pdfDoc.embedPng(imageBytes);
@@ -243,47 +252,78 @@ export class PDFGenerator {
         image = await pdfDoc.embedJpg(imageBytes);
       } else {
         console.log(`✍️ Format non reconnu, tentative PNG par défaut`);
+        // Forcer le format PNG pour les canvas
         image = await pdfDoc.embedPng(imageBytes);
       }
       
-      console.log(`✍️ Image embedée avec succès, dimensions: ${image.width}x${image.height}`);
+      console.log(`✍️ Image embedée avec succès, dimensions originales: ${image.width}x${image.height}`);
       
-      page.drawImage(image, {
-        x,
-        y,
-        width,
-        height,
-      });
+      // Calculer les dimensions d'affichage en gardant les proportions
+      const aspectRatio = image.width / image.height;
+      let displayWidth = width;
+      let displayHeight = height;
       
-      console.log(`✍️ Signature dessinée avec succès`);
-    } catch (error) {
-      console.error('✍️ Erreur signature:', error);
-      console.error('✍️ Données signature problématiques:', signatureData.substring(0, 100));
+      // Ajuster pour garder les proportions
+      if (width / height > aspectRatio) {
+        displayWidth = height * aspectRatio;
+      } else {
+        displayHeight = width / aspectRatio;
+      }
       
-      // Placeholder en cas d'erreur
+      // Centrer l'image dans l'espace alloué
+      const offsetX = (width - displayWidth) / 2;
+      const offsetY = (height - displayHeight) / 2;
+      
+      console.log(`✍️ Dimensions d'affichage: ${Math.round(displayWidth)}x${Math.round(displayHeight)}`);
+      console.log(`✍️ Position finale: (${Math.round(x + offsetX)}, ${Math.round(y + offsetY)})`);
+      
+      // Dessiner un fond blanc pour la signature
       page.drawRectangle({
         x,
         y,
         width,
         height,
-        borderColor: rgb(0.5, 0.5, 0.5),
-        borderWidth: 1,
-        color: rgb(0.95, 0.95, 0.95),
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.8, 0.8, 0.8),
+        borderWidth: 0.5,
       });
       
-      page.drawText('Signature non disponible', {
-        x: x + 5,
-        y: y + height / 2 - 4,
-        size: 8,
-        color: rgb(0.5, 0.5, 0.5),
+      // Dessiner l'image de signature
+      page.drawImage(image, {
+        x: x + offsetX,
+        y: y + offsetY,
+        width: displayWidth,
+        height: displayHeight,
       });
       
-      // Ajouter plus d'informations sur l'erreur
-      page.drawText(`Erreur: ${error.message.substring(0, 30)}`, {
+      console.log(`✍️ Signature dessinée avec succès`);
+    } catch (error) {
+      console.error('✍️ Erreur signature:', error);
+      console.error('✍️ Données signature problématiques:', signatureData ? signatureData.substring(0, 100) : 'undefined');
+      
+      // Placeholder plus visible en cas d'erreur
+      page.drawRectangle({
+        x,
+        y,
+        width,
+        height,
+        borderColor: rgb(1, 0, 0),
+        borderWidth: 2,
+        color: rgb(1, 0.9, 0.9),
+      });
+      
+      page.drawText('ERREUR SIGNATURE', {
         x: x + 5,
-        y: y + height / 2 + 4,
-        size: 6,
-        color: rgb(0.7, 0, 0),
+        y: y + height / 2,
+        size: Math.min(10, height / 3),
+        color: rgb(1, 0, 0),
+      });
+      
+      page.drawText(`${error.message.substring(0, 20)}`, {
+        x: x + 5,
+        y: y + height / 2 - 12,
+        size: Math.min(8, height / 4),
+        color: rgb(0.8, 0, 0),
       });
     }
   }
@@ -373,13 +413,32 @@ export class PDFGenerator {
   private static base64ToBytes(base64: string): Uint8Array {
     try {
       console.log(`🔄 Conversion base64, longueur totale: ${base64.length}`);
+      
+      if (!base64 || typeof base64 !== 'string') {
+        throw new Error('Données base64 invalides - pas une string');
+      }
+      
+      if (!base64.includes(',')) {
+        throw new Error('Données base64 invalides - format incorrect');
+      }
+      
       const base64Data = base64.split(',')[1];
       
       if (!base64Data) {
         throw new Error('Données base64 invalides - pas de virgule trouvée');
       }
       
+      if (base64Data.length === 0) {
+        throw new Error('Données base64 vides après extraction');
+      }
+      
       console.log(`🔄 Données base64 extraites, longueur: ${base64Data.length}`);
+      
+      // Validation base64
+      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data)) {
+        throw new Error('Données base64 contiennent des caractères invalides');
+      }
+      
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       
@@ -391,7 +450,7 @@ export class PDFGenerator {
       return bytes;
     } catch (error) {
       console.error('🔄 Erreur conversion base64:', error);
-      console.error('🔄 Base64 problématique:', base64.substring(0, 200));
+      console.error('🔄 Base64 problématique:', base64 ? base64.substring(0, 200) : 'undefined');
       throw new Error(`Conversion base64 échouée: ${error.message}`);
     }
   }
