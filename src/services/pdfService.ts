@@ -230,7 +230,7 @@ export class PDFService {
     }
   }
 
-  // GÉNÉRER ET TÉLÉCHARGER PDF
+  // GÉNÉRER ET TÉLÉCHARGER UN PDF
   static async generateAndDownloadPDF(fileName: string): Promise<boolean> {
     try {
       console.log('📄 === DÉBUT generateAndDownloadPDF ===');
