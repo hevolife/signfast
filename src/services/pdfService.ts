@@ -18,65 +18,23 @@ export class PDFService {
     }
   ): Promise<boolean> {
     try {
-      // Utiliser l'userId fourni dans les métadonnées (propriétaire du formulaire)
-      // ou fallback sur l'utilisateur connecté
-      let targetUserId = metadata.userId;
+      // IMPORTANT: Pour les formulaires publics, utiliser l'userId du propriétaire du formulaire
+      const targetUserId = metadata.userId;
       
       if (!targetUserId) {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-          console.warn('💾 Utilisateur non connecté, sauvegarde locale uniquement');
-          // Fallback localStorage pour utilisateurs non connectés
-          const localData = {
-            file_name: fileName,
-            response_id: metadata.responseId,
-            template_name: metadata.templateName,
-            form_title: metadata.formTitle,
-            form_data: metadata.formData,
-            pdf_content: '',
-            file_size: 0,
-            created_at: new Date().toISOString(),
-          };
-          
-          const existingPDFs = this.getLocalPDFs();
-          existingPDFs[fileName] = localData;
-          localStorage.setItem('allSavedPDFs', JSON.stringify(existingPDFs));
-          
-          console.log('💾 Métadonnées sauvegardées en local uniquement');
-          return true;
-        }
-        targetUserId = user.id;
+        console.error('💾 ❌ ERREUR: userId manquant dans les métadonnées');
+        throw new Error('Impossible de sauvegarder: propriétaire du formulaire non identifié');
       }
       
-      console.log('💾 Sauvegarde PDF pour userId:', targetUserId);
-      
-      // Ne pas gérer l'impersonation ici - utiliser directement l'userId fourni
-      /*
-        console.warn('💾 Utilisateur non connecté, sauvegarde locale uniquement');
-        // Fallback localStorage pour utilisateurs non connectés
-        const localData = {
-          file_name: fileName,
-          response_id: metadata.responseId,
-          template_name: metadata.templateName,
-          form_title: metadata.formTitle,
-          form_data: metadata.formData,
-          pdf_content: '',
-          file_size: 0,
-          created_at: new Date().toISOString(),
-        };
-        
-        const existingPDFs = this.getLocalPDFs();
-        existingPDFs[fileName] = localData;
-        localStorage.setItem('allSavedPDFs', JSON.stringify(existingPDFs));
-        
-        console.log('💾 Métadonnées sauvegardées en local uniquement');
-        return true;
-      }
-
-      */
+      console.log('💾 Sauvegarde PDF pour le propriétaire du formulaire:', targetUserId);
 
       // Vérifier les limites avant de sauvegarder
-      const currentPdfs = await this.listPDFs();
+      let currentPdfsCount = 0;
+      try {
+        currentPdfsCount = await this.countPDFsForUser(targetUserId);
+      } catch (error) {
+        console.warn('💾 Impossible de compter les PDFs, on continue:', error);
+      }
       
       // Vérifier si l'utilisateur est abonné (via les données Supabase)
       let isSubscribed = false;
@@ -86,24 +44,41 @@ export class PDFService {
           .from('stripe_user_subscriptions')
           .select('subscription_status')
           .eq('customer_id', targetUserId)
-          .limit(1);
+          .maybeSingle();
         
-        const hasStripeAccess = stripeSubscription && stripeSubscription.length > 0 && 
-                               (stripeSubscription[0].subscription_status === 'active' || 
-                                stripeSubscription[0].subscription_status === 'trialing');
+        const hasStripeAccess = stripeSubscription && 
+                               (stripeSubscription.subscription_status === 'active' || 
+                                stripeSubscription.subscription_status === 'trialing');
         
         // Vérifier les codes secrets
-        const { data: secretCodeData } = await supabase
+        const { data: secretCodeData, error: secretError } = await supabase
           .from('user_secret_codes')
-          .select(`
-            expires_at,
-            secret_codes (type)
-          `)
+          .select('expires_at, secret_codes!inner(type, is_active)')
           .eq('user_id', targetUserId)
-          .or('expires_at.is.null,expires_at.gt.now()')
-          .limit(1);
+          .eq('secret_codes.is_active', true);
 
-        const hasActiveSecretCode = secretCodeData && secretCodeData.length > 0;
+        if (secretError) {
+          console.warn('💾 Erreur vérification codes secrets:', secretError);
+        }
+
+        let hasActiveSecretCode = false;
+        if (secretCodeData && secretCodeData.length > 0) {
+          // Vérifier chaque code
+          for (const codeData of secretCodeData) {
+            const codeType = codeData.secret_codes?.type;
+            const expiresAt = codeData.expires_at;
+            
+            if (codeType === 'lifetime') {
+              hasActiveSecretCode = true;
+              break;
+            } else if (codeType === 'monthly') {
+              if (!expiresAt || new Date(expiresAt) > new Date()) {
+                hasActiveSecretCode = true;
+                break;
+              }
+            }
+          }
+        }
         
         // L'utilisateur est considéré comme abonné s'il a un abonnement Stripe OU un code secret actif
         isSubscribed = hasStripeAccess || hasActiveSecretCode;
@@ -112,7 +87,7 @@ export class PDFService {
           hasStripeAccess,
           hasActiveSecretCode,
           isSubscribed,
-          currentPdfs: currentPdfs.length,
+          currentPdfsCount,
           limit: stripeConfig.freeLimits.maxSavedPdfs
         });
       } catch (error) {
@@ -121,33 +96,34 @@ export class PDFService {
       }
       
       // Vérifier les limites pour les utilisateurs gratuits
-      if (!isSubscribed && currentPdfs.length >= stripeConfig.freeLimits.maxSavedPdfs) {
+      if (!isSubscribed && currentPdfsCount >= stripeConfig.freeLimits.maxSavedPdfs) {
         console.warn('💾 Limite de PDFs sauvegardés atteinte pour utilisateur gratuit');
         throw new Error(`Limite de ${stripeConfig.freeLimits.maxSavedPdfs} PDFs sauvegardés atteinte. Passez Pro pour un stockage illimité.`);
       }
       
       console.log('💾 Sauvegarde métadonnées PDF:', fileName);
       
-      // Préparer les données avec les métadonnées du template incluses dans form_data
-      const enrichedFormData = {
-        ...metadata.formData,
-        // Ajouter les métadonnées du template dans form_data
-        _pdfTemplate: {
-          templateId: metadata.templateId,
-          templateFields: metadata.templateFields,
-          templatePdfContent: metadata.templatePdfContent,
-        }
-      };
+      // Nettoyer les données du formulaire pour éviter les problèmes de quota
+      const cleanFormData = this.cleanFormDataForStorage(metadata.formData);
+      
+      // Ajouter les métadonnées du template de manière compacte
+      if (metadata.templateId) {
+        cleanFormData._template = {
+          id: metadata.templateId,
+          fields: metadata.templateFields || [],
+          content: metadata.templatePdfContent || '',
+        };
+      }
 
       const pdfData = {
         file_name: fileName,
         response_id: metadata.responseId,
         template_name: metadata.templateName,
         form_title: metadata.formTitle,
-        form_data: enrichedFormData,
+        form_data: cleanFormData,
         pdf_content: '', // Vide pour l'instant
         file_size: 0, // Sera calculé au téléchargement
-        user_id: targetUserId, // IMPORTANT: Associer le PDF à l'utilisateur cible (impersonation)
+        user_id: targetUserId,
       };
 
       // Sauvegarder dans Supabase
@@ -156,28 +132,56 @@ export class PDFService {
         .insert([pdfData]);
 
       if (error) {
-        console.warn('💾 Erreur Supabase, sauvegarde locale:', error);
-        
-        // Fallback localStorage
-        const localData = {
-          ...pdfData,
-          created_at: new Date().toISOString(),
-        };
-        
-        const existingPDFs = this.getLocalPDFs();
-        existingPDFs[fileName] = localData;
-        localStorage.setItem('allSavedPDFs', JSON.stringify(existingPDFs));
-        
-        console.log('💾 Métadonnées sauvegardées en local');
-        return true;
+        console.error('💾 ❌ Erreur Supabase:', error);
+        throw new Error(`Erreur de sauvegarde: ${error.message}`);
       }
 
       console.log('💾 Métadonnées sauvegardées dans Supabase');
       return true;
     } catch (error) {
       console.error('💾 Erreur sauvegarde métadonnées:', error);
-      return false;
+      throw error;
     }
+  }
+
+  // COMPTER LES PDFS POUR UN UTILISATEUR SPÉCIFIQUE
+  static async countPDFsForUser(userId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('pdf_storage')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('💾 Erreur count pour user:', error);
+        return 0;
+      }
+
+      return count || 0;
+    } catch (error) {
+      console.error('💾 Erreur count PDFs pour user:', error);
+      return 0;
+    }
+  }
+
+  // NETTOYER LES DONNÉES DU FORMULAIRE POUR LE STOCKAGE
+  private static cleanFormDataForStorage(formData: Record<string, any>): Record<string, any> {
+    const cleaned: Record<string, any> = {};
+    
+    Object.entries(formData).forEach(([key, value]) => {
+      // Exclure les images base64 trop volumineuses du stockage
+      if (typeof value === 'string' && value.startsWith('data:image')) {
+        // Garder seulement un marqueur pour indiquer qu'il y avait une image
+        cleaned[key] = '[IMAGE_UPLOADED]';
+      } else if (typeof value === 'string' && value.length > 1000) {
+        // Tronquer les textes très longs
+        cleaned[key] = value.substring(0, 1000) + '...';
+      } else {
+        cleaned[key] = value;
+      }
+    });
+    
+    return cleaned;
   }
 
   // GÉNÉRER ET TÉLÉCHARGER LE PDF (uniquement au moment du téléchargement)
@@ -212,16 +216,16 @@ export class PDFService {
       let pdfBytes: Uint8Array;
 
       // 2. Générer le PDF selon le type
-      const templateData = metadata.form_data?._pdfTemplate;
+      const templateData = metadata.form_data?._template || metadata.form_data?._pdfTemplate; // Compatibilité
       if (templateData?.templateId && templateData?.templateFields && templateData?.templatePdfContent) {
         console.log('📄 🎨 Génération avec template PDF avancé');
         
         // Reconstituer le template
         const template = {
-          id: templateData.templateId,
+          id: templateData.id || templateData.templateId, // Compatibilité
           name: metadata.template_name,
-          fields: templateData.templateFields,
-          originalPdfUrl: templateData.templatePdfContent,
+          fields: templateData.fields || templateData.templateFields, // Compatibilité
+          originalPdfUrl: templateData.content || templateData.templatePdfContent, // Compatibilité
         };
 
         // Convertir le PDF template en bytes
@@ -233,7 +237,8 @@ export class PDFService {
         
         // Nettoyer les données du formulaire (enlever les métadonnées du template)
         const cleanFormData = { ...metadata.form_data };
-        delete cleanFormData._pdfTemplate;
+        delete cleanFormData._template;
+        delete cleanFormData._pdfTemplate; // Compatibilité ancienne version
         
         pdfBytes = await PDFGenerator.generatePDF(template, cleanFormData, originalPdfBytes);
       } else {
@@ -241,7 +246,8 @@ export class PDFService {
         
         // Nettoyer les données du formulaire
         const cleanFormData = { ...metadata.form_data };
-        delete cleanFormData._pdfTemplate;
+        delete cleanFormData._template;
+        delete cleanFormData._pdfTemplate; // Compatibilité ancienne version
         
         // Générer un PDF simple
         pdfBytes = await this.generateSimplePDF(cleanFormData, metadata.form_title);

@@ -297,7 +297,7 @@ export const PublicForm: React.FC = () => {
     console.log('🎯 Sauvegarde métadonnées PDF (génération différée)');
     
     try {
-      toast.loading('💾 Sauvegarde des données PDF...', { id: 'pdf-save' });
+      toast.loading('💾 Sauvegarde des données PDF...', { id: 'pdf-save', duration: 10000 });
 
       // Préparer les métadonnées
       const timestamp = Date.now();
@@ -310,12 +310,16 @@ export const PublicForm: React.FC = () => {
       const formOwnerId = form.user_id;
       console.log('🎯 Propriétaire du formulaire:', formOwnerId);
       
+      if (!formOwnerId) {
+        throw new Error('Propriétaire du formulaire non identifié');
+      }
+      
       const metadata = {
         responseId: response.id,
         templateName: 'PDF Simple',
         formTitle: form.title,
         formData: response.data,
-        userId: formOwnerId, // Utiliser l'ID du propriétaire du formulaire
+        userId: formOwnerId,
       };
 
       // Vérifier si un template PDF est configuré
@@ -342,19 +346,23 @@ export const PublicForm: React.FC = () => {
       }
 
       // Sauvegarder les métadonnées (pas le PDF lui-même)
-      const saved = await PDFService.savePDFMetadata(fileName, metadata);
+      await PDFService.savePDFMetadata(fileName, metadata);
       
-      if (saved) {
-        toast.success('💾 Données PDF sauvegardées ! Le PDF sera généré au téléchargement.', { id: 'pdf-save' });
-        
-        // Simuler qu'un PDF est disponible pour le téléchargement
-        setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
-      } else {
-        toast.error('💾 Erreur de sauvegarde des données PDF', { id: 'pdf-save' });
-      }
+      toast.success('💾 Données PDF sauvegardées ! Le PDF sera généré au téléchargement.', { id: 'pdf-save' });
+      
+      // Simuler qu'un PDF est disponible pour le téléchargement
+      setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
+      
     } catch (error) {
       console.error('🎯 Erreur sauvegarde métadonnées PDF:', error);
-      toast.error(`❌ Erreur sauvegarde: ${error.message}`, { id: 'pdf-save' });
+      
+      if (error.message.includes('Limite de')) {
+        toast.error(`❌ ${error.message}`, { id: 'pdf-save', duration: 8000 });
+      } else if (error.message.includes('propriétaire')) {
+        toast.error('❌ Erreur: Impossible d\'identifier le propriétaire du formulaire', { id: 'pdf-save' });
+      } else {
+        toast.error(`❌ Erreur sauvegarde: ${error.message}`, { id: 'pdf-save' });
+      }
     }
   };
 
