@@ -118,7 +118,6 @@ export const SuperAdminDashboard: React.FC = () => {
       if (!response.ok) {
         if (response.status === 403) {
           const errorBody = await response.text();
-          console.error('❌ Erreur 403:', errorBody);
           
           if (errorBody.includes('not_admin') || errorBody.includes('Not a super admin') || errorBody.includes('User not allowed')) {
             toast.error('Accès refusé : Vous devez être connecté avec le compte super admin (admin@signfast.com)');
@@ -126,7 +125,6 @@ export const SuperAdminDashboard: React.FC = () => {
             return;
           }
         } else if (response.status === 401) {
-          console.error('❌ Session expirée');
           toast.error('Session expirée, veuillez vous reconnecter');
           navigate('/login');
           return;
@@ -137,7 +135,6 @@ export const SuperAdminDashboard: React.FC = () => {
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      console.error('Erreur:', error);
       toast.error('Erreur lors du chargement des utilisateurs. Vérifiez que vous êtes connecté avec le compte super admin.');
     } finally {
       setLoading(false);
@@ -146,8 +143,6 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const loadSecretCodes = async () => {
     try {
-      console.log('🔑 Chargement des codes secrets...');
-      
       // Utiliser l'Edge Function pour récupérer les codes
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
         method: 'GET',
@@ -162,20 +157,8 @@ export const SuperAdminDashboard: React.FC = () => {
       }
 
       const data = await response.json();
-      
-      console.log('🔑 Codes chargés:', data?.length || 0);
-      console.log('🔑 Détails codes:', data?.map(c => ({
-        id: c.id,
-        code: c.code,
-        type: c.type,
-        is_active: c.is_active,
-        current_uses: c.current_uses,
-        max_uses: c.max_uses
-      })));
-      
       setSecretCodes(data);
     } catch (error) {
-      console.error('Erreur chargement codes secrets:', error);
       toast.error('Erreur lors du chargement des codes secrets');
       setSecretCodes([]);
     }
@@ -188,12 +171,6 @@ export const SuperAdminDashboard: React.FC = () => {
     }
 
     try {
-      console.log('🔑 Création code secret:', {
-        type: newCodeType,
-        description: newCodeDescription,
-        maxUses: newCodeMaxUses
-      });
-      
       // Utiliser l'Edge Function pour créer le code
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
         method: 'POST',
@@ -213,14 +190,11 @@ export const SuperAdminDashboard: React.FC = () => {
       }
 
       const data = await response.json();
-
-      console.log('🔑 Code inséré avec succès:', data);
       toast.success(`Code secret créé: ${data.code}`);
       setNewCodeDescription('');
       setNewCodeMaxUses(1);
       await loadSecretCodes();
     } catch (error) {
-      console.error('Erreur création code:', error);
       toast.error('Erreur lors de la création du code');
     }
   };
@@ -244,7 +218,6 @@ export const SuperAdminDashboard: React.FC = () => {
         toast.success('Code supprimé');
         await loadSecretCodes();
       } catch (error) {
-        console.error('Erreur suppression:', error);
         toast.error('Erreur lors de la suppression');
       }
     }

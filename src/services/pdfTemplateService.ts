@@ -5,8 +5,6 @@ export class PDFTemplateService {
   // CRÉER UN TEMPLATE PDF DANS SUPABASE
   static async createTemplate(template: Omit<PDFTemplate, 'id' | 'created_at' | 'updated_at'>, userId: string): Promise<string | null> {
     try {
-      console.log('📄 Création template PDF dans Supabase');
-      
       const { data, error } = await supabase
         .from('pdf_templates')
         .insert([{
@@ -23,14 +21,11 @@ export class PDFTemplateService {
         .single();
 
       if (error) {
-        console.error('❌ Erreur création template:', error);
         return null;
       }
 
-      console.log('✅ Template créé avec succès:', data.id);
       return data.id;
     } catch (error) {
-      console.error('❌ Erreur création template:', error);
       return null;
     }
   }
@@ -38,8 +33,6 @@ export class PDFTemplateService {
   // RÉCUPÉRER UN TEMPLATE PAR ID (ACCÈS PUBLIC)
   static async getTemplate(templateId: string): Promise<PDFTemplate | null> {
     try {
-      console.log('📄 Récupération template:', templateId);
-      
       const { data, error } = await supabase
         .from('pdf_templates')
         .select('*')
@@ -48,7 +41,6 @@ export class PDFTemplateService {
         .single();
 
       if (error) {
-        console.error('❌ Template non trouvé:', error);
         return null;
       }
 
@@ -72,10 +64,8 @@ export class PDFTemplateService {
         user_id: data.user_id,
       };
 
-      console.log('✅ Template récupéré:', template.name);
       return template;
     } catch (error) {
-      console.error('❌ Erreur récupération template:', error);
       return null;
     }
   }
@@ -83,14 +73,11 @@ export class PDFTemplateService {
   // LISTER LES TEMPLATES DE L'UTILISATEUR
   static async getUserTemplates(userId: string): Promise<PDFTemplate[]> {
     try {
-      console.log('📄 getUserTemplates appelé pour userId:', userId);
-      
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('📄 Supabase non configuré - retour liste vide');
         return [];
       }
 
@@ -108,11 +95,9 @@ export class PDFTemplateService {
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error) {
-        console.warn('📄 Supabase non disponible - retour liste vide:', error.message);
         return [];
       }
 
-      console.log('📄 Templates récupérés:', data?.length || 0);
       return data.map(item => ({
         id: item.id,
         name: item.name,
@@ -132,7 +117,6 @@ export class PDFTemplateService {
         user_id: item.user_id,
       }));
     } catch (error) {
-      console.warn('📄 Erreur récupération templates (timeout ou réseau):', error.message);
       return [];
     }
   }
@@ -153,14 +137,11 @@ export class PDFTemplateService {
         .eq('id', templateId);
 
       if (error) {
-        console.error('❌ Erreur mise à jour template:', error);
         return false;
       }
 
-      console.log('✅ Template mis à jour:', templateId);
       return true;
     } catch (error) {
-      console.error('❌ Erreur mise à jour template:', error);
       return false;
     }
   }
@@ -174,14 +155,11 @@ export class PDFTemplateService {
         .eq('id', templateId);
 
       if (error) {
-        console.error('❌ Erreur suppression template:', error);
         return false;
       }
 
-      console.log('✅ Template supprimé:', templateId);
       return true;
     } catch (error) {
-      console.error('❌ Erreur suppression template:', error);
       return false;
     }
   }
@@ -189,8 +167,6 @@ export class PDFTemplateService {
   // LIER UN TEMPLATE À UN FORMULAIRE
   static async linkTemplateToForm(templateId: string, formId: string | null): Promise<boolean> {
     try {
-      console.log('🔗 Liaison template-formulaire:', templateId, '→', formId);
-      
       // Vérifier que le template existe
       const { data: templateExists, error: checkError } = await supabase
         .from('pdf_templates')
@@ -199,11 +175,8 @@ export class PDFTemplateService {
         .single();
 
       if (checkError || !templateExists) {
-        console.error('❌ Template non trouvé:', templateId);
         return false;
       }
-
-      console.log('✅ Template trouvé:', templateExists.name);
 
       const { error } = await supabase
         .from('pdf_templates')
@@ -211,12 +184,9 @@ export class PDFTemplateService {
         .eq('id', templateId);
 
       if (error) {
-        console.error('❌ Erreur liaison template-formulaire:', error);
         return false;
       }
 
-      console.log('✅ Template lié au formulaire:', templateId, '→', formId);
-      
       // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
       if (formId) {
         try {
@@ -228,11 +198,8 @@ export class PDFTemplateService {
             .single();
 
           if (checkFormError || !formExists) {
-            console.error('❌ Formulaire non trouvé:', formId);
             return false;
           }
-
-          console.log('✅ Formulaire trouvé:', formExists.title);
 
           // Récupérer les settings actuels du formulaire
           const { error: formUpdateError } = await supabase
@@ -248,20 +215,17 @@ export class PDFTemplateService {
             .eq('id', formId);
 
           if (formUpdateError) {
-            console.warn('⚠️ Erreur mise à jour settings formulaire:', formUpdateError);
             return false;
           } else {
-            console.log('✅ Settings formulaire mis à jour avec template ID');
+            // Success
           }
         } catch (formError) {
-          console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
           return false;
         }
       }
       
       return true;
     } catch (error) {
-      console.error('❌ Erreur liaison template-formulaire:', error);
       return false;
     }
   }

@@ -70,7 +70,7 @@ export const PublicForm: React.FC = () => {
         fetchFormOwnerProfile(data.user_id);
       }
     } catch (error) {
-      console.error('Error fetching form:', error);
+      // Silent error
     } finally {
       setLoading(false);
     }
@@ -78,14 +78,11 @@ export const PublicForm: React.FC = () => {
 
   const fetchFormOwnerProfile = async (userId: string) => {
     try {
-      console.log('🔍 Récupération profil propriétaire pour userId:', userId);
-      
      // Vérifier si Supabase est configuré
      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
      
      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-       console.warn('⚠️ Supabase non configuré pour visiteur - profil par défaut');
        setFormOwnerProfile({
          id: '',
          user_id: userId,
@@ -108,8 +105,6 @@ export const PublicForm: React.FC = () => {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching form owner profile:', error);
-       console.log('❌ Erreur Supabase, création profil par défaut');
        setFormOwnerProfile({
          id: '',
          user_id: userId,
@@ -126,7 +121,6 @@ export const PublicForm: React.FC = () => {
       }
 
       if (!data) {
-        console.log('ℹ️ Aucun profil configuré pour ce propriétaire de formulaire');
         // Créer un profil vide au lieu de null pour éviter le "Chargement..."
         setFormOwnerProfile({
           id: '',
@@ -143,11 +137,8 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
-      console.log('✅ Profil propriétaire chargé:', data.company_name || 'Profil personnel');
       setFormOwnerProfile(data);
     } catch (error) {
-      console.error('Error fetching form owner profile:', error);
-      console.log('❌ Erreur générale, création profil vide');
       // Créer un profil vide en cas d'erreur
       setFormOwnerProfile({
         id: '',
@@ -176,7 +167,6 @@ export const PublicForm: React.FC = () => {
   };
 
   const handleInputChange = (fieldId: string, value: any) => {
-    console.log(`📝 Input change: ${fieldId} = ${typeof value === 'string' && value.startsWith('data:image') ? 'IMAGE_DATA' : value}`);
     setFormData(prev => ({
       ...prev,
       [fieldId]: value
@@ -195,29 +185,7 @@ export const PublicForm: React.FC = () => {
       // Préparer les données complètes pour le PDF (avec les images)
       const pdfSubmissionData = { ...formData };
       
-      console.log(`📤 ===== SOUMISSION FORMULAIRE AVEC DEBUG SIGNATURE =====`);
-      console.log(`📤 FormData avant traitement:`, Object.keys(formData));
-      
-      // Debug spécial pour identifier les signatures
-      const signaturesInFormData = Object.entries(formData).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log(`📤 Signatures détectées dans formData:`, signaturesInFormData.length);
-      signaturesInFormData.forEach(([key, value], index) => {
-        console.log(`📤 Signature ${index + 1}: fieldId="${key}", taille=${typeof value === 'string' ? value.length : 0}`);
-        
-        // Trouver le champ correspondant
-        const correspondingField = form.fields?.find(f => f.id === key);
-        if (correspondingField) {
-          console.log(`📤   → Champ trouvé: "${correspondingField.label}" (type: ${correspondingField.type})`);
-        } else {
-          console.log(`📤   → Champ non trouvé pour ID: ${key}`);
-        }
-      });
-      
       // Traitement spécial pour les signatures
-      console.log(`📤 === TRAITEMENT SIGNATURES ===`);
-      
       // Créer un mapping direct par libellé de champ pour simplifier
       const fieldLabelToId = new Map();
       form.fields?.forEach(field => {
@@ -225,19 +193,11 @@ export const PublicForm: React.FC = () => {
         fieldLabelToId.set(normalizeKey(field.label), field.id);
       });
       
-      console.log('📤 Mapping libellé → ID:', Array.from(fieldLabelToId.entries()));
-      
       // Traiter chaque champ du formulaire
       form.fields?.forEach(field => {
         const fieldValue = formData[field.id];
         
         if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
-          console.log(`📤 Traitement champ "${field.label}" (${field.type}):`, 
-            typeof fieldValue === 'string' && fieldValue.startsWith('data:image') 
-              ? `IMAGE_BASE64 (${fieldValue.length} caractères)` 
-              : fieldValue
-          );
-          
           // Créer les clés de mapping
           const normalizedKey = normalizeKey(field.label);
           const keys = [
@@ -251,19 +211,13 @@ export const PublicForm: React.FC = () => {
             keys.push('signature', 'Signature', 'SIGNATURE');
           }
           
-          console.log(`📤 Clés de sauvegarde pour "${field.label}":`, keys);
-          
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log(`📤 ✍️ SIGNATURE DÉTECTÉE: "${field.label}"`);
-            
             // Sauvegarder avec toutes les clés possibles
             keys.forEach(key => {
               pdfSubmissionData[key] = fieldValue;
               dbSubmissionData[key] = `[SIGNATURE_${field.id}]`;
             });
-            
-            console.log(`📤 ✍️ Signature sauvegardée avec clés:`, keys);
           }
           // Images normales
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
@@ -271,7 +225,6 @@ export const PublicForm: React.FC = () => {
               pdfSubmissionData[key] = fieldValue;
               dbSubmissionData[key] = `[IMAGE_${field.id}]`;
             });
-            console.log(`📤 Image sauvegardée avec clés:`, keys);
           } 
           // Données normales
           else {
@@ -279,7 +232,6 @@ export const PublicForm: React.FC = () => {
               pdfSubmissionData[key] = fieldValue;
               dbSubmissionData[key] = fieldValue;
             });
-            console.log(`📤 Donnée sauvegardée avec clés:`, keys);
           }
         }
         
@@ -327,19 +279,6 @@ export const PublicForm: React.FC = () => {
         }
       });
 
-      console.log(`📤 === DONNÉES FINALES ===`);
-      console.log(`📤 Clés PDF:`, Object.keys(pdfSubmissionData));
-      console.log(`📤 Données PDF complètes:`, pdfSubmissionData);
-      
-      // Debug final pour les signatures
-      const signaturesInData = Object.entries(pdfSubmissionData).filter(([key, value]) => 
-        typeof value === 'string' && value.startsWith('data:image')
-      );
-      console.log(`📤 ✍️ Signatures dans données finales: ${signaturesInData.length}`);
-      signaturesInData.forEach(([key, value], index) => {
-        console.log(`📤 ✍️ ${index + 1}. "${key}" (${typeof value === 'string' ? value.length : 0} chars)`);
-      });
-      
       // Formater les dates au format français avant soumission
       Object.keys(dbSubmissionData).forEach(key => {
         const value = dbSubmissionData[key];
@@ -365,20 +304,13 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
-      console.log('Response saved:', responseData);
-
       // Génération PDF
-      console.log('🎯 === TRAITEMENT PDF ===');
-      
       // Traitement PDF en arrière-plan pour éviter les timeouts
       setTimeout(async () => {
         try {
           await handlePDFGeneration(responseData, pdfSubmissionData);
-          console.log('🎯 ✅ PDF traité avec succès');
         } catch (error) {
-          console.error('🎯 ❌ Erreur PDF:', error);
           // Ne pas afficher d'erreur à l'utilisateur car le formulaire est déjà envoyé
-          console.warn('PDF non généré mais formulaire envoyé avec succès');
         }
       }, 100);
 
@@ -386,7 +318,6 @@ export const PublicForm: React.FC = () => {
       toast.success('Formulaire envoyé avec succès !');
       
     } catch (error) {
-      console.error('Error:', error);
       toast.error('Erreur lors de l\'envoi');
     } finally {
       setSubmitting(false);
@@ -394,12 +325,8 @@ export const PublicForm: React.FC = () => {
   };
 
   const handlePDFGeneration = async (response: any, submissionData: Record<string, any>) => {
-    console.log('🎯 Traitement PDF pour formulaire public');
-    
     try {
       // Ne pas afficher de toast pour les utilisateurs publics
-      console.log('💾 Préparation des métadonnées PDF...');
-
       // Préparer les métadonnées
       const timestamp = Date.now();
       const fileName = `${form.title.replace(/[^a-z0-9]/gi, '_')}_${timestamp}.pdf`;
@@ -409,10 +336,8 @@ export const PublicForm: React.FC = () => {
       
       // IMPORTANT: Récupérer l'ID du propriétaire du formulaire pour la sauvegarde PDF
       const formOwnerId = form.user_id;
-      console.log('🎯 Propriétaire du formulaire:', formOwnerId);
       
       if (!formOwnerId) {
-        console.error('🎯 Propriétaire du formulaire non identifié');
         return; // Échec silencieux pour les formulaires publics
       }
       
@@ -426,8 +351,6 @@ export const PublicForm: React.FC = () => {
 
       // Vérifier si un template PDF est configuré
       if (form.settings?.pdfTemplateId) {
-        console.log('🎯 Chargement template PDF:', form.settings.pdfTemplateId);
-        
         try {
           // Charger le template depuis Supabase avec timeout
           const template = await Promise.race([
@@ -436,10 +359,6 @@ export const PublicForm: React.FC = () => {
           ]);
           
           if (template) {
-            console.log('🎯 Template trouvé:', template.name);
-            console.log('🎯 Template fields:', template.fields?.length || 0);
-            console.log('🎯 Template PDF content length:', template.originalPdfUrl?.length || 0);
-            
             metadata.templateName = template.name;
             // Ajouter les données du template dans form_data avec la structure _template
             submissionData._template = {
@@ -448,21 +367,11 @@ export const PublicForm: React.FC = () => {
               templatePdfContent: template.originalPdfUrl,
             };
             
-            console.log('🎯 Métadonnées template préparées:', {
-              templateId: template.id,
-              fieldsCount: template.fields?.length || 0,
-              hasContent: !!template.originalPdfUrl
-            });
-          } else {
-            console.log('🎯 Template non trouvé');
             metadata.templateName = 'PDF Simple';
           }
         } catch (templateError) {
-          console.warn('🎯 Erreur chargement template (timeout):', templateError);
           metadata.templateName = 'PDF Simple';
         }
-      } else {
-        console.log('🎯 Aucun template configuré, PDF simple');
       }
 
       // Mettre à jour les métadonnées avec les données finales
@@ -471,17 +380,12 @@ export const PublicForm: React.FC = () => {
       // Sauvegarder les métadonnées (pas le PDF lui-même)
       await PDFService.savePDFMetadata(fileName, metadata);
       
-      console.log('💾 Métadonnées PDF sauvegardées avec succès');
-      
       // Simuler qu'un PDF est disponible pour le téléchargement
       setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
       
     } catch (error) {
-      console.error('🎯 Erreur traitement PDF:', error);
-      
       // Échec silencieux pour les formulaires publics
       // Le formulaire est envoyé même si le PDF échoue
-      console.warn('PDF non sauvegardé mais formulaire envoyé avec succès');
     }
   };
 
@@ -492,7 +396,6 @@ export const PublicForm: React.FC = () => {
     
     setTimeout(async () => {
       try {
-        console.log('📄 Téléchargement PDF avec nom:', savedPdfFileName);
         const success = await PDFService.generateAndDownloadPDF(savedPdfFileName);
         
         if (success) {
@@ -501,37 +404,25 @@ export const PublicForm: React.FC = () => {
           toast.error('❌ Erreur lors de la génération du PDF');
         }
       } catch (error) {
-        console.error('Erreur téléchargement PDF:', error);
         toast.error('❌ Erreur lors du téléchargement');
       }
     }, 1000);
   };
 
   const renderConditionalFields = (parentField: FormField, selectedValues: string | string[]) => {
-    console.log('🔍 renderConditionalFields appelée');
-    console.log('🔍 parentField:', parentField);
-    console.log('🔍 selectedValues:', selectedValues);
-    console.log('🔍 parentField.conditionalFields:', parentField.conditionalFields);
-    
     if (!parentField.conditionalFields) return null;
 
     const valuesToCheck = Array.isArray(selectedValues) ? selectedValues : [selectedValues];
-    console.log('🔍 valuesToCheck:', valuesToCheck);
     const fieldsToShow: FormField[] = [];
 
     valuesToCheck.forEach(value => {
-      console.log('🔍 Checking value:', value);
-      console.log('🔍 Available conditional fields for this value:', parentField.conditionalFields?.[value]);
       if (parentField.conditionalFields?.[value]) {
         fieldsToShow.push(...parentField.conditionalFields[value]);
       }
     });
 
-    console.log('🔍 fieldsToShow:', fieldsToShow);
-    
     return fieldsToShow.map(conditionalField => (
       <div key={conditionalField.id} className="ml-6 border-l-2 border-blue-200 pl-4 mt-4">
-        {console.log('🔍 Rendering conditional field:', conditionalField.label)}
         {renderField(conditionalField)}
       </div>
     ));
@@ -596,8 +487,6 @@ export const PublicForm: React.FC = () => {
                       value={option}
                       checked={formData[field.id] === option}
                       onChange={(e) => {
-                        console.log('🔍 Radio changed:', field.id, '=', e.target.value);
-                        console.log('🔍 Field has conditionalFields:', !!field.conditionalFields);
                         handleInputChange(field.id, e.target.value);
                       }}
                       className="text-blue-600"
@@ -631,8 +520,6 @@ export const PublicForm: React.FC = () => {
                         const newValues = e.target.checked
                           ? [...currentValues, option]
                           : currentValues.filter((v: string) => v !== option);
-                        console.log('🔍 Checkbox changed:', field.id, '=', newValues);
-                        console.log('🔍 Field has conditionalFields:', !!field.conditionalFields);
                         handleInputChange(field.id, newValues);
                       }}
                       className="text-blue-600"
@@ -675,39 +562,16 @@ export const PublicForm: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    console.log(`📷 ===== FICHIER SÉLECTIONNÉ =====`);
-                    console.log(`📷 Champ: "${field.label}"`);
-                    console.log(`📷 Nom fichier: ${file.name}`);
-                    console.log(`📷 Type: ${file.type}`);
-                    console.log(`📷 Taille: ${file.size} bytes`);
-                    
                     // Pour les images, convertir en base64
                     if (file.type.startsWith('image/')) {
-                      console.log(`📷 Conversion en base64 pour: ${field.label}`);
                       const reader = new FileReader();
                       reader.onload = (event) => {
                         const base64 = event.target?.result as string;
-                        console.log(`📷 ===== CONVERSION TERMINÉE =====`);
-                        console.log(`📷 Champ: ${field.label}`);
-                        console.log(`📷 Base64 généré: ${base64.length} caractères`);
-                        console.log(`📷 Format détecté: ${base64.substring(0, 30)}...`);
-                        console.log(`📷 Sauvegarde avec clé: "${field.label}"`);
                         handleInputChange(field.id, base64);
-                        
-                        // Vérifier immédiatement que la donnée est bien sauvegardée
-                        setTimeout(() => {
-                          console.log(`📷 ===== VÉRIFICATION SAUVEGARDE =====`);
-                          console.log(`📷 FormData actuel:`, Object.keys(formData));
-                          console.log(`📷 Valeur pour ${field.id}:`, formData[field.id] ? 'PRÉSENTE' : 'ABSENTE');
-                          if (formData[field.id]) {
-                            console.log(`📷 Taille sauvegardée: ${formData[field.id].length} caractères`);
-                          }
-                        }, 100);
                       };
                       reader.readAsDataURL(file);
                     } else {
                       // Pour les autres fichiers, stocker le nom
-                      console.log(`📄 Fichier non-image pour "${field.label}": ${file.name}`);
                       handleInputChange(field.id, file.name);
                     }
                   }

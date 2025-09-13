@@ -39,24 +39,14 @@ export const useForms = () => {
         localStorage.setItem('currentUserForms', JSON.stringify(data || []));
         sessionStorage.setItem('currentUserForms', JSON.stringify(data || []));
         
-        // Aussi sauvegarder dans une variable globale pour accès immédiat
         if (typeof window !== 'undefined') {
-          (window as any).currentUserForms = data || [];
+          // Silent error
         }
-        
-        console.log('💾 Formulaires sauvegardés:', (data || []).length, 'formulaires');
-        console.log('💾 IDs sauvegardés:', (data || []).map(f => f.id));
-        console.log('💾 Détails des formulaires:', (data || []).map(f => ({
-          id: f.id,
-          title: f.title,
-          fieldsCount: f.fields?.length || 0,
-          fieldLabels: f.fields?.map((field: any) => field.label) || []
-        })));
       } catch (error) {
-        console.warn('Impossible de sauvegarder les formulaires:', error);
+        // Silent error
       }
     } catch (error) {
-      console.error('Error fetching forms:', error);
+      // Silent error
     } finally {
       setLoading(false);
     }
@@ -84,7 +74,6 @@ export const useForms = () => {
       await fetchForms();
       return data;
     } catch (error) {
-      console.error('Error creating form:', error);
       return null;
     }
   };
@@ -100,7 +89,6 @@ export const useForms = () => {
       await fetchForms();
       return true;
     } catch (error) {
-      console.error('Error updating form:', error);
       return false;
     }
   };
@@ -116,7 +104,6 @@ export const useForms = () => {
       await fetchForms();
       return true;
     } catch (error) {
-      console.error('Error deleting form:', error);
       return false;
     }
   };
@@ -146,7 +133,7 @@ export const useFormResponses = (formId: string) => {
       if (error) throw error;
       setResponses(data || []);
     } catch (error) {
-      console.error('Error fetching responses:', error);
+      // Silent error
     } finally {
       setLoading(false);
     }

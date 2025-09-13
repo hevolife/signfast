@@ -82,7 +82,6 @@ export const AffiliateAdminPanel: React.FC = () => {
       }
 
       const users: AdminUser[] = await usersResponse.json();
-      console.log('📊 Utilisateurs récupérés:', users.length);
 
       // 2. Récupérer tous les programmes d'affiliation
       const { data: programs, error: programsError } = await supabase
@@ -91,7 +90,6 @@ export const AffiliateAdminPanel: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (programsError) {
-        console.error('❌ Erreur programmes:', programsError);
         throw new Error(programsError.message);
       }
 
@@ -105,10 +103,8 @@ export const AffiliateAdminPanel: React.FC = () => {
       });
 
       setAllPrograms(programsWithUserData);
-      console.log('📊 Programmes avec données utilisateur:', programsWithUserData.length);
       
     } catch (error: any) {
-      console.error('Erreur chargement programmes admin:', error);
       setAllPrograms([]);
       toast.error('Erreur lors du chargement des programmes d\'affiliation');
     } finally {
@@ -124,7 +120,6 @@ export const AffiliateAdminPanel: React.FC = () => {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Erreur mise à jour commission:', error);
         return false;
       }
 
@@ -132,7 +127,6 @@ export const AffiliateAdminPanel: React.FC = () => {
       await loadAffiliatePrograms();
       return true;
     } catch (error) {
-      console.error('Erreur mise à jour commission:', error);
       return false;
     }
   };

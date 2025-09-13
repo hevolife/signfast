@@ -28,27 +28,22 @@ export const usePDFTemplates = () => {
           try {
             const data = JSON.parse(impersonationData);
             targetUserId = data.target_user_id;
-            console.log('🎭 Mode impersonation: récupération des templates pour', data.target_email);
           } catch (error) {
-            console.error('Erreur parsing impersonation data:', error);
+            // Silent error
           }
         }
 
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
-          console.log('📄 Début chargement templates Supabase...');
           const supabaseTemplates = await PDFTemplateService.getUserTemplates(targetUserId);
           clearTimeout(loadingTimeout);
           setTemplates(supabaseTemplates);
-          console.log('📄 Templates Supabase chargés:', supabaseTemplates.length);
         } catch (supabaseError) {
-          console.warn('📄 Erreur Supabase, fallback localStorage:', supabaseError);
           clearTimeout(loadingTimeout);
           // Fallback vers localStorage si Supabase n'est pas disponible
           const saved = localStorage.getItem('pdfTemplates');
           if (saved) {
             setTemplates(JSON.parse(saved));
-            console.log('📄 Templates localStorage chargés');
           } else {
             setTemplates([]);
           }
@@ -59,13 +54,11 @@ export const usePDFTemplates = () => {
         const saved = localStorage.getItem('pdfTemplates');
         if (saved) {
           setTemplates(JSON.parse(saved));
-          console.log('📄 Templates localStorage chargés');
         } else {
           setTemplates([]);
         }
       }
     } catch (error) {
-      console.warn('📄 Erreur générale chargement templates:', error);
       clearTimeout(loadingTimeout);
       setTemplates([]);
     } finally {
