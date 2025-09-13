@@ -177,8 +177,16 @@ export class PDFGenerator {
     
     // Pour les images, recherche spéciale similaire aux signatures
     if (field.type === 'image') {
-      // 1. Recherche directe par variable exacte
+      console.log('🖼️ === RECHERCHE IMAGE POUR VARIABLE ===');
+      console.log('🖼️ Variable recherchée:', variableName);
+      console.log('🖼️ Données disponibles:', Object.keys(data));
+      console.log('🖼️ Images disponibles:', Object.keys(data).filter(key => 
+        typeof data[key] === 'string' && data[key].startsWith('data:image')
+      ));
+      
+      // 1. Recherche EXACTE par variable (priorité absolue)
       let imageValue = data[variableName];
+      console.log('🖼️ Recherche exacte pour', variableName, ':', !!imageValue);
       
       // 2. Recherche insensible à la casse
       if (!imageValue) {
@@ -189,51 +197,92 @@ export class PDFGenerator {
         
         if (matchingKey) {
           imageValue = data[matchingKey];
+          console.log('🖼️ Trouvé via casse insensible:', matchingKey);
         }
       }
       
-      // 3. Recherche par clés contenant "image", "photo", etc.
+      // 3. Recherche par clés contenant la variable
       if (!imageValue) {
-        const imageKeys = Object.keys(data).filter(key => 
-          key.toLowerCase().includes('image') || 
-          key.toLowerCase().includes('photo') ||
-          key.toLowerCase().includes('picture') ||
-          key.toLowerCase().includes('img')
-        );
+        const partialMatchKey = Object.keys(data).find(key => {
+          const keyLower = key.toLowerCase();
+          const varLower = variableName.toLowerCase();
+          return keyLower.includes(varLower) || varLower.includes(keyLower);
+        });
         
-        for (const key of imageKeys) {
-          const val = data[key];
+        if (partialMatchKey) {
+          const val = data[partialMatchKey];
           if (typeof val === 'string' && val.startsWith('data:image')) {
             imageValue = val;
-            console.log('🖼️ Image trouvée via clé:', key);
-            break;
+            console.log('🖼️ Trouvé via correspondance partielle:', partialMatchKey);
           }
         }
       }
       
-      // 4. Fallback : chercher toute image disponible si le champ est de type image
-      if (!imageValue) {
-        console.log('🖼️ Recherche fallback pour variable:', variableName);
-        const allImages = Object.entries(data).filter(([key, val]) => 
-          typeof val === 'string' && val.startsWith('data:image') && !key.toLowerCase().includes('signature')
-        );
+      // 4. SEULEMENT si la variable contient des mots-clés génériques
+      if (!imageValue && (
+        variableName.toLowerCase().includes('image') ||
+        variableName.toLowerCase().includes('photo') ||
+        variableName.toLowerCase().includes('picture') ||
+        variableName.toLowerCase().includes('img')
+      )) {
+        console.log('🖼️ Variable générique détectée, recherche par mots-clés');
+        const imageKeys = Object.keys(data).filter(key => {
+          const keyLower = key.toLowerCase();
+          return (keyLower.includes('image') || 
+                  keyLower.includes('photo') ||
+                  keyLower.includes('picture') ||
+                  keyLower.includes('img')) &&
+                 typeof data[key] === 'string' && 
+                 data[key].startsWith('data:image');
+        });
         
-        console.log('🖼️ Images disponibles:', allImages.map(([key]) => key));
-        
-        if (allImages.length > 0) {
-          imageValue = allImages[0][1];
-          console.log('🖼️ Image fallback utilisée depuis:', allImages[0][0]);
+        if (imageKeys.length > 0) {
+          imageValue = data[imageKeys[0]];
+          console.log('🖼️ Image trouvée via mots-clés:', imageKeys[0]);
         }
       }
       
+      // 5. Recherche par normalisation de la variable (pour les accents, etc.)
+      if (!imageValue) {
+        const normalizedVariable = variableName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        
+        const normalizedMatchKey = Object.keys(data).find(key => {
+          const normalizedKey = key
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          return normalizedKey === normalizedVariable;
+        });
+        
+        if (normalizedMatchKey) {
+          const val = data[normalizedMatchKey];
+          if (typeof val === 'string' && val.startsWith('data:image')) {
+            imageValue = val;
+            console.log('🖼️ Trouvé via normalisation:', normalizedMatchKey);
+          }
+        }
+      }
+      
+      // NE PLUS FAIRE DE FALLBACK AUTOMATIQUE - respecter la variable spécifique
       if (imageValue) {
-        console.log('🖼️ Image trouvée pour variable:', variableName, 'taille:', Math.round(imageValue.length / 1024), 'KB');
+        console.log('🖼️ ✅ Image trouvée pour variable:', variableName, 'taille:', Math.round(imageValue.length / 1024), 'KB');
         return imageValue;
       } else {
-        console.warn('🖼️ Aucune image trouvée pour variable:', variableName);
-        console.log('🖼️ Données disponibles:', Object.keys(data).filter(key => 
-          typeof data[key] === 'string' && data[key].startsWith && data[key].startsWith('data:image')
-        ));
+        console.warn('🖼️ ❌ Aucune image trouvée pour variable:', variableName);
+        console.log('🖼️ Variables disponibles:', Object.keys(data));
+        console.log('🖼️ Images disponibles:', Object.keys(data).filter(key => 
+          typeof data[key] === 'string' && data[key].startsWith('data:image')
+        );
+        
         return '';
       }
     }
@@ -630,7 +679,7 @@ export class PDFGenerator {
             ctx.drawImage(img, 0, 0);
             
             // Convertir en JPEG
-            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.75);
             console.log('🔄 WebP converti en JPEG');
             resolve(jpegDataUrl);
           } catch (error) {
@@ -677,7 +726,7 @@ export class PDFGenerator {
             ctx.drawImage(img, 0, 0);
             
             // Convertir en JPEG avec bonne qualité
-            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.75);
             console.log('🔄 Image convertie en JPEG');
             resolve(jpegDataUrl);
           } catch (error) {
