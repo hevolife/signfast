@@ -563,6 +563,13 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 <Button onClick={() => document.getElementById('pdf-file-input')?.click()}>
                   Choisir un fichier PDF
                 </Button>
+                <input
+                  id="pdf-file-input"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </CardContent>
             </Card>
           ) : (
