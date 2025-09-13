@@ -233,20 +233,19 @@ export class PDFService {
         const essentialData: Record<string, any> = {};
         let signatureCount = 0;
         for (const key of Object.keys(cleaned)) {
-          const value = cleaned[key];
-          if (typeof value === 'string' && value.startsWith('data:image')) {
+          if (typeof cleaned[key] === 'string' && cleaned[key].startsWith('data:image')) {
             if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
               if (signatureCount < 2) { // Max 2 signatures
-                essentialData[key] = this.ultraCompressSignature(value);
+                essentialData[key] = this.ultraCompressSignature(cleaned[key]);
                 signatureCount++;
               }
             }
-          } else if (typeof value === 'string' && value.length <= 50) {
+          } else if (typeof cleaned[key] === 'string' && cleaned[key].length <= 50) {
             // Garder seulement les textes courts
-            essentialData[key] = value;
-          } else if (typeof value !== 'string') {
+            essentialData[key] = cleaned[key];
+          } else if (typeof cleaned[key] !== 'string') {
             // Garder les autres types de données
-            essentialData[key] = value;
+            essentialData[key] = cleaned[key];
           }
         }
         
@@ -261,7 +260,7 @@ export class PDFService {
   }
 
   // COMPRESSION ULTRA-AGRESSIVE POUR LES SIGNATURES
-  private static ultraCompressSignature(signatureData: string): string {
+  private static async ultraCompressSignature(signatureData: string): Promise<string> {
     try {
       console.log(`💾 Ultra-compression signature: ${Math.round(signatureData.length / 1024)}KB`);
       
@@ -294,13 +293,74 @@ export class PDFService {
         };
         img.onerror = () => {
           console.warn('💾 Erreur ultra-compression, signature supprimée');
-          resolve('[SIGNATURE_COMPRESSION_FAILED]');
+          resolve(signatureData);
         };
         img.src = signatureData;
       });
     } catch (error) {
       console.warn('💾 Erreur ultra-compression signature:', error);
-      return '[SIGNATURE_COMPRESSION_ERROR]';
+      return signatureData;
+    }
+  }
+
+  // COMPRESSION AGRESSIVE POUR LES AUTRES IMAGES
+  private static async aggressiveImageCompression(imageData: string): Promise<string> {
+    try {
+      console.log(`💾 Compression agressive image: ${Math.round(imageData.length / 1024)}KB`);
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      return new Promise<string>((resolve) => {
+        img.onload = () => {
+          // Taille très réduite pour les images non-signatures
+          canvas.width = 400;
+          canvas.height = 300;
+          
+          if (ctx) {
+            // Fond blanc
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 400, 300);
+            
+            // Calculer les proportions pour centrer l'image
+            const imgRatio = img.width / img.height;
+            const canvasRatio = canvas.width / canvas.height;
+            
+            let drawWidth = canvas.width;
+            let drawHeight = canvas.height;
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            if (imgRatio > canvasRatio) {
+              drawHeight = canvas.width / imgRatio;
+              offsetY = (canvas.height - drawHeight) / 2;
+            } else {
+              drawWidth = canvas.height * imgRatio;
+              offsetX = (canvas.width - drawWidth) / 2;
+            }
+            
+            // Dessiner l'image centrée
+            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+            
+            // Compression JPEG avec qualité modérée
+            const compressed = canvas.toDataURL('image/jpeg', 0.7);
+            const finalSizeKB = Math.round(compressed.length / 1024);
+            console.log(`💾 Image compressée: ${Math.round(imageData.length / 1024)}KB → ${finalSizeKB}KB`);
+            resolve(compressed);
+          } else {
+            resolve(imageData);
+          }
+        };
+        img.onerror = () => {
+          console.warn('💾 Erreur compression agressive, image conservée');
+          resolve(imageData);
+        };
+        img.src = imageData;
+      });
+    } catch (error) {
+      console.warn('💾 Erreur compression agressive:', error);
+      return imageData;
     }
   }
 
