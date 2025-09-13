@@ -38,14 +38,17 @@ export const useAffiliate = () => {
           setLoading(false);
           return;
         } else if (programError.code !== 'PGRST116') {
-          console.error('Error fetching affiliate program:', programError);
+          // Only log errors that are not related to missing tables
+          if (programError.code !== 'PGRST205') {
+            console.error('Error fetching affiliate program:', programError);
+          }
         }
       } else {
         setProgram(programData);
       }
 
-      // Only fetch referrals if tables exist
-      if (tablesExist) {
+      // Only fetch referrals if program was fetched successfully (tables exist)
+      if (programData || (programError && programError.code === 'PGRST116')) {
         // Récupérer les parrainages
         const { data: referralsData, error: referralsError } = await supabase
           .from('affiliate_referrals')
@@ -61,14 +64,17 @@ export const useAffiliate = () => {
           if (referralsError.code === 'PGRST205') {
             setTablesExist(false);
           } else {
-            console.error('Error fetching referrals:', referralsError);
+            // Only log errors that are not related to missing tables
+            if (referralsError.code !== 'PGRST205') {
+              console.error('Error fetching referrals:', referralsError);
+            }
           }
         } else {
           setReferrals(referralsData || []);
         }
       }
     } catch (error) {
-        console.error('Error fetching affiliate program:', programError);
+      console.error('Error in fetchAffiliateData:', error);
     } finally {
       setLoading(false);
     }
