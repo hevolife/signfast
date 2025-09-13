@@ -194,6 +194,17 @@ export const useAffiliateAdmin = () => {
         console.error('❌ Erreur programmes:', programsError);
         throw new Error(programsError.message);
       }
+
+      // Calculer les statistiques pour chaque programme
+      const programsWithStats = await Promise.all(
+        (programs || []).map(async (program) => {
+          try {
+            // Récupérer les informations utilisateur depuis auth.users
+            const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(program.user_id);
+            
+            if (authError) {
+              console.warn('⚠️ Erreur récupération auth user:', authError);
+            }
             
             const { data: userProfile } = await supabase
               .from('user_profiles')
@@ -242,7 +253,7 @@ export const useAffiliateAdmin = () => {
               ...program,
               user_profiles: userProfile,
               confirmed_referrals: confirmedCount || 0,
-              user_profiles: profile || null,
+              monthly_earnings: monthlyEarnings,
               user_email: userData?.email || null
             };
           } catch (error) {
@@ -250,7 +261,8 @@ export const useAffiliateAdmin = () => {
             return {
               ...program,
               auth_user: null,
-              user_email: null
+              user_profiles: null,
+              user_email: null,
               confirmed_referrals: 0,
               monthly_earnings: 0,
             };
