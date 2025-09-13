@@ -12,11 +12,7 @@ export const useAffiliate = () => {
 
   useEffect(() => {
     if (user) {
-      // Temporairement désactivé - les tables d'affiliation n'existent pas encore
-      setTablesExist(false);
-      setProgram(null);
-      setReferrals([]);
-      setLoading(false);
+      fetchAffiliateData();
     } else {
       setTablesExist(false);
       setProgram(null);
@@ -26,12 +22,70 @@ export const useAffiliate = () => {
   }, [user]);
 
   const fetchAffiliateData = async () => {
-    // Fonction désactivée temporairement - les tables n'existent pas encore
-    console.log('📊 Tables d\'affiliation non créées - fonctionnalité désactivée');
-    setTablesExist(false);
-    setProgram(null);
-    setReferrals([]);
-    setLoading(false);
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log('📊 Chargement données affiliation pour:', user.id);
+      
+      // Tester d'abord si les tables existent
+      const { error: testError } = await supabase
+        .from('affiliate_programs')
+        .select('id')
+        .limit(1);
+      
+      if (testError && testError.code === 'PGRST205') {
+        console.log('📊 Tables d\'affiliation non créées');
+        setTablesExist(false);
+        setLoading(false);
+        return;
+      }
+      
+      setTablesExist(true);
+      
+      // Récupérer le programme d'affiliation de l'utilisateur
+      const { data: programData, error: programError } = await supabase
+        .from('affiliate_programs')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (programError && programError.code !== 'PGRST116') {
+        console.error('Erreur récupération programme:', programError);
+        throw programError;
+      }
+      
+      setProgram(programData);
+      
+      // Si un programme existe, récupérer les parrainages
+      if (programData) {
+        const { data: referralsData, error: referralsError } = await supabase
+          .from('affiliate_referrals')
+          .select(`
+            *,
+            referred_user:users!referred_user_id(email),
+            referred_profile:user_profiles!referred_user_id(first_name, last_name, company_name)
+          `)
+          .eq('affiliate_user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (referralsError) {
+          console.error('Erreur récupération parrainages:', referralsError);
+        } else {
+          setReferrals(referralsData || []);
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Erreur chargement affiliation:', error);
+      if (error.code === 'PGRST205') {
+        setTablesExist(false);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const generateAffiliateLink = () => {
