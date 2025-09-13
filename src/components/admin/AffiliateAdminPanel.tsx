@@ -318,25 +318,25 @@ export const AffiliateAdminPanel: React.FC = () => {
           </Card>
         ) : (
           filteredPrograms.map((program) => (
-            <Card key={program.id} className="hover:shadow-md transition-shadow bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 border-teal-200 dark:border-teal-800 shadow-lg">
+            <Card key={program.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                   {/* Informations utilisateur */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-3 mb-3">
                       <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center shadow-lg">
-                          <span className="text-white text-lg">🤝</span>
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                          <Users className="h-5 w-5 text-white" />
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
-                          <div className="font-medium text-teal-900 dark:text-teal-300">
+                          <div className="font-medium text-gray-900 dark:text-white">
                             {getUserDisplayName(program)}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
-                          <code className="text-sm font-mono bg-teal-100 dark:bg-teal-900/30 px-2 py-1 rounded text-teal-800 dark:text-teal-300">
+                          <code className="text-sm font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                             {program.affiliate_code}
                           </code>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -347,14 +347,14 @@ export const AffiliateAdminPanel: React.FC = () => {
                             {program.is_active ? 'Actif' : 'Inactif'}
                           </span>
                         </div>
-                        <div className="text-sm text-teal-600 dark:text-teal-400 space-y-1">
+                        <div className="text-sm text-gray-500 space-y-1">
                           {program.user?.email && (
                             <div className="flex items-center space-x-1">
                               <span>📧</span>
                               <span className="truncate">{program.user.email}</span>
                             </div>
                           )}
-                          <div className="text-xs text-teal-500 dark:text-teal-500 truncate">
+                          <div className="text-xs text-gray-400 truncate">
                             ID: {program.user_id}
                           </div>
                         </div>
@@ -363,21 +363,21 @@ export const AffiliateAdminPanel: React.FC = () => {
 
                     {/* Statistiques en grille */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-teal-600">{program.total_referrals}</div>
-                        <div className="text-xs text-teal-600">Parrainages</div>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                        <div className="text-lg font-bold text-blue-600">{program.total_referrals}</div>
+                        <div className="text-xs text-blue-600">Parrainages</div>
                       </div>
-                      <div className="bg-cyan-50 dark:bg-cyan-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-cyan-600">{program.total_referrals}</div>
-                        <div className="text-xs text-cyan-600">Confirmés</div>
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                        <div className="text-lg font-bold text-green-600">{program.total_referrals}</div>
+                        <div className="text-xs text-green-600">Confirmés</div>
                       </div>
-                      <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-emerald-600">{program.monthly_earnings?.toFixed(2) || '0.00'}€</div>
-                        <div className="text-xs text-emerald-600">Ce mois</div>
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-center">
+                        <div className="text-lg font-bold text-purple-600">{program.monthly_earnings?.toFixed(2) || '0.00'}€</div>
+                        <div className="text-xs text-purple-600">Ce mois</div>
                       </div>
-                      <div className="bg-pink-50 dark:bg-pink-900/20 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-pink-600">{program.total_earnings?.toFixed(2) || '0.00'}€</div>
-                        <div className="text-xs text-pink-600">Total</div>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-center">
+                        <div className="text-lg font-bold text-orange-600">{program.total_earnings?.toFixed(2) || '0.00'}€</div>
+                        <div className="text-xs text-orange-600">Total</div>
                       </div>
                     </div>
                   </div>
@@ -408,7 +408,7 @@ export const AffiliateAdminPanel: React.FC = () => {
                           size="sm"
                           variant="ghost"
                           onClick={handleCancelEdit}
-                          className="bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 hover:from-gray-200 hover:to-slate-200 dark:from-gray-800 dark:to-slate-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
+                          className="text-gray-600 hover:text-gray-800"
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -425,7 +425,7 @@ export const AffiliateAdminPanel: React.FC = () => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleEditCommission(program.id, program.commission_rate)}
-                          className="flex items-center space-x-1 bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 hover:from-teal-200 hover:to-cyan-200 dark:from-teal-900/30 dark:to-cyan-900/30 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shadow-sm hover:shadow-md transition-all"
+                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700"
                         >
                           <Edit className="h-3 w-3" />
                           <span className="text-xs">Modifier</span>
@@ -441,12 +441,10 @@ export const AffiliateAdminPanel: React.FC = () => {
       </div>
 
       {/* Résumé des commissions */}
-      <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-lg">
+      <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
         <CardHeader>
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white text-sm">📊</span>
-            </div>
+            <TrendingUp className="h-5 w-5 text-indigo-600" />
             <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-300">
               Résumé des commissions
             </h3>
