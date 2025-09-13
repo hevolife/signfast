@@ -10,9 +10,11 @@ import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import { Upload, Save, FileText, Link as LinkIcon } from 'lucide-react';
+import { Eye, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
+import { PDFGenerator } from '../../utils/pdfGenerator';
 
 interface PDFTemplateEditorProps {
   onSave?: (fields: PDFField[], pdfFile: File) => void;
@@ -46,6 +48,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [draggedFieldType, setDraggedFieldType] = useState<PDFField['type'] | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Détecter mobile
@@ -356,6 +359,106 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     onSave?.(fields, pdfFile);
   };
 
+  const generateSampleData = (): Record<string, any> => {
+    const sampleData: Record<string, any> = {};
+    
+    // Générer des données d'exemple pour chaque variable
+    actualFormVariables.forEach(variable => {
+      const varName = variable.replace(/^\$\{|\}$/g, '').toLowerCase();
+      
+      if (varName.includes('nom')) {
+        sampleData[varName] = 'Dupont';
+      } else if (varName.includes('prenom')) {
+        sampleData[varName] = 'Jean';
+      } else if (varName.includes('email')) {
+        sampleData[varName] = 'jean.dupont@email.com';
+      } else if (varName.includes('telephone') || varName.includes('phone')) {
+        sampleData[varName] = '01 23 45 67 89';
+      } else if (varName.includes('adresse')) {
+        sampleData[varName] = '123 Rue de la Paix, 75001 Paris';
+      } else if (varName.includes('date_naissance') || varName.includes('birthdate')) {
+        sampleData[varName] = '15/03/1985';
+      } else if (varName.includes('date')) {
+        sampleData[varName] = new Date().toLocaleDateString('fr-FR');
+      } else if (varName.includes('heure')) {
+        sampleData[varName] = new Date().toLocaleTimeString('fr-FR');
+      } else if (varName.includes('numero')) {
+        sampleData[varName] = Math.floor(Math.random() * 10000).toString();
+      } else if (varName.includes('salaire') || varName.includes('prix') || varName.includes('montant')) {
+        sampleData[varName] = '2500€';
+      } else if (varName.includes('signature')) {
+        // Générer une signature d'exemple simple
+        sampleData[varName] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+      } else {
+        // Valeur par défaut
+        sampleData[varName] = `Exemple ${varName}`;
+      }
+    });
+    
+    return sampleData;
+  };
+
+  const handlePreviewPDF = async () => {
+    if (!pdfFile) {
+      toast.error('Veuillez charger un fichier PDF');
+      return;
+    }
+
+    if (fields.length === 0) {
+      toast.error('Ajoutez au moins un champ pour prévisualiser');
+      return;
+    }
+
+    const fieldsWithoutVariables = fields.filter(field => !field.variable?.trim());
+    if (fieldsWithoutVariables.length > 0) {
+      toast.error('Tous les champs doivent avoir une variable pour la prévisualisation');
+      return;
+    }
+
+    setPreviewLoading(true);
+    
+    try {
+      toast.loading('🎨 Génération de la prévisualisation...');
+      
+      // Générer des données d'exemple
+      const sampleData = generateSampleData();
+      console.log('🎨 Données d\'exemple générées:', sampleData);
+      
+      // Créer un template temporaire
+      const tempTemplate = {
+        id: 'preview',
+        name: 'Prévisualisation',
+        fields: fields,
+        originalPdfUrl: '', // Pas utilisé ici
+      };
+      
+      // Convertir le fichier PDF en bytes
+      const pdfArrayBuffer = await pdfFile.arrayBuffer();
+      const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+      
+      // Générer le PDF avec les données d'exemple
+      const pdfBytes = await PDFGenerator.generatePDF(tempTemplate, sampleData, originalPdfBytes);
+      
+      // Télécharger la prévisualisation
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `preview_${templateName || 'template'}_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('🎨 Prévisualisation générée et téléchargée !');
+    } catch (error) {
+      console.error('Erreur prévisualisation:', error);
+      toast.error('Erreur lors de la génération de la prévisualisation');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const handleFormLinkChange = (formId: string | null) => {
     setCurrentLinkedFormId(formId);
     onFormLinkChange?.(formId);
@@ -412,6 +515,19 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
             >
               <Save className="h-4 w-4" />
               <span>Sauvegarder</span>
+            </Button>
+            <Button
+              onClick={handlePreviewPDF}
+              disabled={!pdfFile || fields.length === 0 || previewLoading}
+              variant="secondary"
+              className="flex items-center space-x-2"
+            >
+              {previewLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+              <span>{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
             </Button>
           </div>
 
