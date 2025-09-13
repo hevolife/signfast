@@ -74,22 +74,55 @@ export const useAffiliate = () => {
       // Si un programme existe, récupérer les parrainages
       if (programData || program) {
         const targetProgram = programData || program;
+        
+        // Première requête : récupérer les parrainages avec les infos de base des utilisateurs
         const { data: referralsData, error: referralsError } = await supabase
           .from('affiliate_referrals')
           .select(`
             *,
-            referred_user:users!referred_user_id(
-              email,
-              user_profiles(first_name, last_name, company_name)
-            )
+            referred_user:users!referred_user_id(id, email)
           `)
           .eq('affiliate_user_id', user.id)
           .order('created_at', { ascending: false });
         
         if (referralsError) {
           console.error('Erreur récupération parrainages:', referralsError);
+          setReferrals([]);
         } else {
-          setReferrals(referralsData || []);
+          // Deuxième requête : récupérer les profils utilisateurs
+          if (referralsData && referralsData.length > 0) {
+            const userIds = referralsData
+              .map(ref => ref.referred_user?.id)
+              .filter(Boolean);
+            
+            if (userIds.length > 0) {
+              const { data: userProfiles, error: profilesError } = await supabase
+                .from('user_profiles')
+                .select('user_id, first_name, last_name, company_name')
+                .in('user_id', userIds);
+              
+              if (profilesError) {
+                console.error('Erreur récupération profils:', profilesError);
+              }
+              
+              // Mapper les profils aux parrainages
+              const referralsWithProfiles = referralsData.map(referral => ({
+                ...referral,
+                referred_user: {
+                  ...referral.referred_user,
+                  user_profiles: userProfiles?.find(
+                    profile => profile.user_id === referral.referred_user?.id
+                  ) || null
+                }
+              }));
+              
+              setReferrals(referralsWithProfiles);
+            } else {
+              setReferrals(referralsData);
+            }
+          } else {
+            setReferrals([]);
+          }
         }
       }
       
