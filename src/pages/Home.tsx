@@ -495,11 +495,11 @@ export const Home: React.FC = () => {
 
           <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-2xl font-bold text-white mb-1">10 000+</div>
+              <div className="text-2xl font-bold text-white mb-1">1 000+</div>
               <div className="text-blue-200 text-sm">Contrats signés</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white mb-1">500+</div>
+              <div className="text-2xl font-bold text-white mb-1">100+</div>
               <div className="text-blue-200 text-sm">Entreprises</div>
             </div>
             <div>

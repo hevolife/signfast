@@ -914,18 +914,6 @@ export const PublicForm: React.FC = () => {
           )}
         </div>
         
-        {/* Debug info - à supprimer en production */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-            <strong>Debug:</strong><br/>
-            Form owner ID: {form?.user_id}<br/>
-            Profile loaded: {formOwnerProfile ? 'Oui' : 'Non'}<br/>
-            Profile data: {formOwnerProfile ? JSON.stringify(formOwnerProfile, null, 2) : 'Aucun'}<br/>
-            Logo URL: {formOwnerProfile?.logo_url || 'Aucun'}<br/>
-            Company: {formOwnerProfile?.company_name || 'Aucun'}
-          </div>
-        )}
-        
         <Card>
           <CardHeader>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

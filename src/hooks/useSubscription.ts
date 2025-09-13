@@ -187,7 +187,6 @@ export const useSubscription = () => {
       console.log('🔑 hasActiveSecretCode:', hasActiveSecretCode);
       console.log('🔑 secretCodeType:', secretCodeType);
       console.log('🔑 isSubscribed FINAL:', isSubscribed);
-      console.log('🔑 Mode impersonation:', !!impersonationData);
       
       const finalState = {
         isSubscribed,
@@ -201,7 +200,6 @@ export const useSubscription = () => {
         loading: false,
       };
       
-      console.log('🔑 État final à sauvegarder:', finalState);
       setSubscription(finalState);
 
     } catch (error) {

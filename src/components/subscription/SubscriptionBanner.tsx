@@ -11,14 +11,6 @@ export const SubscriptionBanner: React.FC = () => {
   const { isSubscribed, loading: subscriptionLoading } = useSubscription();
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
 
-  // Debug pour vérifier l'état
-  console.log('🔍 SubscriptionBanner - État:', {
-    isSubscribed,
-    subscriptionLoading,
-    limitsLoading,
-    shouldShow: !subscriptionLoading && !limitsLoading && !isSubscribed
-  });
-
   if (subscriptionLoading || limitsLoading || isSubscribed) {
     return null;
   }
