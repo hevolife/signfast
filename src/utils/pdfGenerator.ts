@@ -232,44 +232,14 @@ export class PDFGenerator {
         }
       }
       
-      // 3. Recherche par clés contenant "image" ou "photo"
-      if (!imageValue) {
-        const imageKeys = Object.keys(data).filter(key => 
-          key.toLowerCase().includes('image') || 
-          key.toLowerCase().includes('photo') ||
-          key.toLowerCase().includes('picture')
-        );
-        console.log(`🔍 3. Clés image trouvées:`, imageKeys);
-        
-        for (const key of imageKeys) {
-          const val = data[key];
-          if (typeof val === 'string' && val.startsWith('data:image')) {
-            imageValue = val;
-            console.log(`🔍 ✅ Image trouvée via clé: "${key}"`);
-            break;
-          }
-        }
-      }
-      
-      // 4. Fallback : première image non-signature trouvée
-      if (!imageValue) {
-        const allImages = Object.entries(data).filter(([key, val]) => 
-          typeof val === 'string' && val.startsWith('data:image') &&
-          !key.toLowerCase().includes('signature') && !key.toLowerCase().includes('sign')
-        );
-        console.log(`🔍 4. Images non-signature disponibles:`, allImages.length);
-        
-        if (allImages.length > 0) {
-          imageValue = allImages[0][1];
-          console.log(`🔍 ✅ Utilisation première image non-signature: "${allImages[0][0]}"`);
-        }
-      }
+      // 3. ARRÊT ICI - Pas de fallback pour les images
+      // Chaque champ image doit avoir sa propre variable exacte
       
       if (imageValue) {
-        console.log(`🔍 ✅ IMAGE FINALE: ${imageValue.length} chars`);
+        console.log(`🔍 ✅ IMAGE TROUVÉE pour variable "${variableName}": ${imageValue.length} chars`);
         return imageValue;
       } else {
-        console.log(`🔍 ❌ AUCUNE IMAGE TROUVÉE`);
+        console.log(`🔍 ❌ AUCUNE IMAGE TROUVÉE pour variable "${variableName}" - champ restera vide`);
         return '';
       }
     }
