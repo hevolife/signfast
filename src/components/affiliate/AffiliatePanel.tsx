@@ -21,7 +21,7 @@ import {
 import toast from 'react-hot-toast';
 
 export const AffiliatePanel: React.FC = () => {
-  const { program, referrals, loading } = useAffiliate();
+  const { program, referrals, loading, tablesExist } = useAffiliate();
   const [showDetails, setShowDetails] = useState(false);
 
   const copyAffiliateLink = () => {
@@ -93,16 +93,32 @@ export const AffiliatePanel: React.FC = () => {
     );
   }
 
+  if (!tablesExist) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Système d'affiliation en cours de configuration
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Les tables d'affiliation sont en cours de création. Veuillez patienter ou contacter l'administrateur.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!program) {
     return (
       <Card>
         <CardContent className="text-center py-8">
           <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Programme d'affiliation non disponible
+            Programme d'affiliation en cours de création
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
-            Votre programme d'affiliation sera créé automatiquement.
+            Votre programme d'affiliation sera activé automatiquement.
           </p>
         </CardContent>
       </Card>

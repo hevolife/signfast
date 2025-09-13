@@ -8,6 +8,7 @@ export const useAffiliate = () => {
   const [program, setProgram] = useState<AffiliateProgram | null>(null);
   const [referrals, setReferrals] = useState<AffiliateReferral[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tablesExist, setTablesExist] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -30,30 +31,44 @@ export const useAffiliate = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (programError && programError.code !== 'PGRST116') {
-        console.error('Error fetching affiliate program:', programError);
+      if (programError) {
+        if (programError.code === 'PGRST205') {
+          // Table doesn't exist
+          setTablesExist(false);
+          setLoading(false);
+          return;
+        } else if (programError.code !== 'PGRST116') {
+          console.error('Error fetching affiliate program:', programError);
+        }
       } else {
         setProgram(programData);
       }
 
-      // Récupérer les parrainages
-      const { data: referralsData, error: referralsError } = await supabase
-        .from('affiliate_referrals')
-        .select(`
-          *,
-          referred_user:users!referred_user_id(email),
-          referred_profile:user_profiles!referred_user_id(first_name, last_name, company_name)
-        `)
-        .eq('affiliate_user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Only fetch referrals if tables exist
+      if (tablesExist) {
+        // Récupérer les parrainages
+        const { data: referralsData, error: referralsError } = await supabase
+          .from('affiliate_referrals')
+          .select(`
+            *,
+            referred_user:users!referred_user_id(email),
+            referred_profile:user_profiles!referred_user_id(first_name, last_name, company_name)
+          `)
+          .eq('affiliate_user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (referralsError) {
-        console.error('Error fetching referrals:', referralsError);
-      } else {
-        setReferrals(referralsData || []);
+        if (referralsError) {
+          if (referralsError.code === 'PGRST205') {
+            setTablesExist(false);
+          } else {
+            console.error('Error fetching referrals:', referralsError);
+          }
+        } else {
+          setReferrals(referralsData || []);
+        }
       }
     } catch (error) {
-      console.error('Error fetching affiliate data:', error);
+        console.error('Error fetching affiliate program:', programError);
     } finally {
       setLoading(false);
     }
@@ -68,6 +83,7 @@ export const useAffiliate = () => {
     program,
     referrals,
     loading,
+    tablesExist,
     generateAffiliateLink,
     refetch: fetchAffiliateData,
   };
