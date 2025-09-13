@@ -290,6 +290,8 @@ export const PDFManager: React.FC = () => {
               </Button>
             </div>
           </div>
+        </div>
+          </div>
 
         <SubscriptionBanner />
         
