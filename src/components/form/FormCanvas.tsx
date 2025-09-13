@@ -4,7 +4,7 @@ import { FormField } from '../../types/form';
 import { FormFieldEditor } from './FormFieldEditor';
 import { FieldPropertiesEditor } from './FieldPropertiesEditor';
 import { Card, CardContent } from '../ui/Card';
-import { Plus, Sparkles, Settings } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface FormCanvasProps {
   fields: FormField[];
@@ -42,27 +42,24 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
-        <Card className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 shadow-lg">
+        <Card>
           <CardContent className="p-4 lg:p-6">
             <div
               ref={drop}
-              className={`min-h-64 lg:min-h-96 border-2 border-dashed rounded-xl transition-all ${
+              className={`min-h-64 lg:min-h-96 border-2 border-dashed rounded-lg ${
                 isOver
-                  ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 shadow-inner'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                   : 'border-gray-300 dark:border-gray-600'
-              } ${fields.length === 0 ? 'flex items-center justify-center' : 'p-3 lg:p-6 space-y-3 lg:space-y-4'}`}
+              } ${fields.length === 0 ? 'flex items-center justify-center' : 'p-2 lg:p-4 space-y-2 lg:space-y-4'}`}
             >
               {fields.length === 0 ? (
-                <div className="text-center p-8">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-blue-100 dark:from-gray-700 dark:to-blue-900/30 text-blue-500 rounded-2xl mb-6 shadow-lg">
-                    <Sparkles className="h-10 w-10" />
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 text-gray-400 rounded-full mb-4">
+                    <Plus className="h-8 w-8" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                    Zone de Construction
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
-                    <span className="hidden lg:inline">Glissez des éléments depuis la palette ci-dessus ou cliquez directement pour créer votre formulaire</span>
-                    <span className="lg:hidden">Utilisez le menu "Champs" pour ajouter des éléments à votre formulaire</span>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="hidden lg:inline">Glissez des éléments ici pour créer votre formulaire</span>
+                    <span className="lg:hidden">Appuyez sur le menu pour ajouter des champs</span>
                   </p>
                 </div>
               ) : (
@@ -88,24 +85,14 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
 
       <div className="lg:col-span-1 hidden lg:block">
         {selectedField ? (
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 shadow-lg">
-            <div className="px-6 py-4 border-b border-purple-200 dark:border-purple-700">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                  <Settings className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-purple-900 dark:text-purple-300">
-                    {isMultiSelectMode && selectedFields.size > 1 
-                      ? `Propriétés (${selectedFields.size} champs)` 
-                      : 'Propriétés du Champ'
-                    }
-                  </h3>
-                  <p className="text-xs text-purple-700 dark:text-purple-400">
-                    Personnalisez les paramètres du champ sélectionné
-                  </p>
-                </div>
-              </div>
+          <Card>
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {isMultiSelectMode && selectedFields.size > 1 
+                  ? `Propriétés (${selectedFields.size} champs)` 
+                  : 'Propriétés du champ'
+                }
+              </h3>
             </div>
             <CardContent className="p-6">
               {(() => {
@@ -126,18 +113,12 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 border-gray-200 dark:border-gray-700 shadow-lg">
+          <Card>
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Settings className="h-6 w-6 text-white" />
-              </div>
-              <h4 className="font-bold text-gray-900 dark:text-white mb-2">
-                Propriétés
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {isMultiSelectMode 
-                  ? 'Cliquez sur les champs pour les sélectionner et modifier leurs propriétés en lot'
-                  : 'Sélectionnez un champ dans la zone de construction pour modifier ses propriétés'
+                  ? 'Cliquez sur les champs pour les sélectionner (mode multi-sélection)'
+                  : 'Cliquez sur un champ pour modifier ses propriétés'
                 }
               </p>
             </CardContent>

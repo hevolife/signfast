@@ -14,7 +14,6 @@ import {
   Phone,
   Cake,
   PenTool,
-  Palette,
 } from 'lucide-react';
 
 interface FieldPaletteProps {
@@ -41,15 +40,13 @@ const FieldType: React.FC<FieldTypeProps> = ({ type, icon, label, onAdd }) => {
     <div
       ref={drag}
       onClick={onAdd}
-      className={`p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 transition-all active:scale-95 hover:shadow-lg hover:-translate-y-1 group ${
+      className={`p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all active:scale-95 hover:shadow-md ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
-      <div className="flex flex-col items-center space-y-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-          {icon}
-        </div>
-        <span className="text-xs font-bold text-gray-900 dark:text-white text-center leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+      <div className="flex flex-col items-center space-y-2">
+        <div className="text-blue-600">{icon}</div>
+        <span className="text-xs font-medium text-gray-900 dark:text-white text-center leading-tight">
           {label}
         </span>
       </div>
@@ -73,24 +70,17 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
   ];
 
   return (
-    <Card className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20 border-blue-200 dark:border-blue-800 shadow-lg">
+    <Card>
       <CardHeader>
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <Palette className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
-              Éléments de Formulaire
-            </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-400">
-              Cliquez ou glissez pour ajouter un champ au formulaire
-            </p>
-          </div>
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Éléments de formulaire
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Cliquez pour ajouter un champ au formulaire
+        </p>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
           {fieldTypes.map(({ type, icon, label }) => (
             <FieldType
               key={type}
