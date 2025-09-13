@@ -3,6 +3,7 @@ import { PDFField } from '../../types/pdf';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
+import { Eye } from 'lucide-react';
 
 interface PDFFieldPropertiesProps {
   field: PDFField;
