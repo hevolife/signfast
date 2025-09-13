@@ -338,10 +338,19 @@ export const PublicForm: React.FC = () => {
           
           if (template) {
             console.log('🎯 Template trouvé:', template.name);
+            console.log('🎯 Template fields:', template.fields?.length || 0);
+            console.log('🎯 Template PDF content length:', template.originalPdfUrl?.length || 0);
+            
             metadata.templateName = template.name;
             metadata.templateId = template.id;
             metadata.templateFields = template.fields;
             metadata.templatePdfContent = template.originalPdfUrl;
+            
+            console.log('🎯 Métadonnées template préparées:', {
+              templateId: metadata.templateId,
+              fieldsCount: metadata.templateFields?.length || 0,
+              hasContent: !!metadata.templatePdfContent
+            });
           } else {
             console.log('🎯 Template non trouvé');
             metadata.templateName = 'PDF Simple';

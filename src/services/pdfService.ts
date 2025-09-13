@@ -110,8 +110,9 @@ export class PDFService {
       if (metadata.templateId) {
         cleanFormData._template = {
           id: metadata.templateId,
-          fields: metadata.templateFields || [],
-          content: metadata.templatePdfContent || '',
+          templateId: metadata.templateId,
+          templateFields: metadata.templateFields || [],
+          templatePdfContent: metadata.templatePdfContent || '',
         };
       }
 
@@ -206,27 +207,34 @@ export class PDFService {
       console.log('📄 ✅ Étape 1 OK: Métadonnées récupérées:', {
         templateName: metadata.template_name,
         formTitle: metadata.form_title,
-        hasTemplateData: !!metadata.form_data?._pdfTemplate,
-        hasTemplateId: !!metadata.form_data?._pdfTemplate?.templateId,
-        hasTemplateFields: !!metadata.form_data?._pdfTemplate?.templateFields?.length,
-        hasTemplatePdfContent: !!metadata.form_data?._pdfTemplate?.templatePdfContent,
+        hasTemplateData: !!metadata.form_data?._template,
+        hasTemplateId: !!metadata.form_data?._template?.templateId,
+        hasTemplateFields: !!metadata.form_data?._template?.templateFields?.length,
+        hasTemplatePdfContent: !!metadata.form_data?._template?.templatePdfContent,
       });
 
       console.log('📄 🔧 Étape 2: Génération du PDF...');
       let pdfBytes: Uint8Array;
 
       // 2. Générer le PDF selon le type
-      const templateData = metadata.form_data?._template || metadata.form_data?._pdfTemplate; // Compatibilité
+      const templateData = metadata.form_data?._template;
       if (templateData?.templateId && templateData?.templateFields && templateData?.templatePdfContent) {
         console.log('📄 🎨 Génération avec template PDF avancé');
         
         // Reconstituer le template
         const template = {
-          id: templateData.id || templateData.templateId, // Compatibilité
+          id: templateData.templateId,
           name: metadata.template_name,
-          fields: templateData.fields || templateData.templateFields, // Compatibilité
-          originalPdfUrl: templateData.content || templateData.templatePdfContent, // Compatibilité
+          fields: templateData.templateFields,
+          originalPdfUrl: templateData.templatePdfContent,
         };
+
+        console.log('📄 Template reconstitué:', {
+          id: template.id,
+          name: template.name,
+          fieldsCount: template.fields?.length || 0,
+          hasPdfContent: !!template.originalPdfUrl
+        });
 
         // Convertir le PDF template en bytes
         const pdfResponse = await fetch(template.originalPdfUrl);
@@ -238,16 +246,21 @@ export class PDFService {
         // Nettoyer les données du formulaire (enlever les métadonnées du template)
         const cleanFormData = { ...metadata.form_data };
         delete cleanFormData._template;
-        delete cleanFormData._pdfTemplate; // Compatibilité ancienne version
         
         pdfBytes = await PDFGenerator.generatePDF(template, cleanFormData, originalPdfBytes);
       } else {
-        console.log('📄 📝 Génération PDF simple');
+        console.log('📄 📝 Génération PDF simple - template non disponible');
+        console.log('📄 Debug template data:', {
+          hasTemplateData: !!templateData,
+          templateId: templateData?.templateId,
+          hasFields: !!templateData?.templateFields?.length,
+          hasContent: !!templateData?.templatePdfContent
+        });
+        
         
         // Nettoyer les données du formulaire
         const cleanFormData = { ...metadata.form_data };
         delete cleanFormData._template;
-        delete cleanFormData._pdfTemplate; // Compatibilité ancienne version
         
         // Générer un PDF simple
         pdfBytes = await this.generateSimplePDF(cleanFormData, metadata.form_title);
