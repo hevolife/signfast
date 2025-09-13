@@ -229,9 +229,24 @@ export class PDFGenerator {
   ) {
     try {
       console.log(`✍️ Dessin signature à (${Math.round(x)}, ${Math.round(y)}) taille ${Math.round(width)}×${Math.round(height)}`);
+      console.log(`✍️ Données signature:`, signatureData.substring(0, 50) + '...');
       
+      // Vérifier le format de l'image
+      let image;
       const imageBytes = this.base64ToBytes(signatureData);
-      const image = await pdfDoc.embedPng(imageBytes);
+      
+      if (signatureData.includes('data:image/png')) {
+        console.log(`✍️ Format PNG détecté`);
+        image = await pdfDoc.embedPng(imageBytes);
+      } else if (signatureData.includes('data:image/jpeg') || signatureData.includes('data:image/jpg')) {
+        console.log(`✍️ Format JPEG détecté`);
+        image = await pdfDoc.embedJpg(imageBytes);
+      } else {
+        console.log(`✍️ Format non reconnu, tentative PNG par défaut`);
+        image = await pdfDoc.embedPng(imageBytes);
+      }
+      
+      console.log(`✍️ Image embedée avec succès, dimensions: ${image.width}x${image.height}`);
       
       page.drawImage(image, {
         x,
@@ -239,8 +254,11 @@ export class PDFGenerator {
         width,
         height,
       });
+      
+      console.log(`✍️ Signature dessinée avec succès`);
     } catch (error) {
-      console.error('Erreur signature:', error);
+      console.error('✍️ Erreur signature:', error);
+      console.error('✍️ Données signature problématiques:', signatureData.substring(0, 100));
       
       // Placeholder en cas d'erreur
       page.drawRectangle({
@@ -248,15 +266,24 @@ export class PDFGenerator {
         y,
         width,
         height,
-        borderColor: rgb(0.8, 0.8, 0.8),
+        borderColor: rgb(0.5, 0.5, 0.5),
         borderWidth: 1,
+        color: rgb(0.95, 0.95, 0.95),
       });
       
       page.drawText('Signature non disponible', {
         x: x + 5,
-        y: y + height / 2,
+        y: y + height / 2 - 4,
         size: 8,
         color: rgb(0.5, 0.5, 0.5),
+      });
+      
+      // Ajouter plus d'informations sur l'erreur
+      page.drawText(`Erreur: ${error.message.substring(0, 30)}`, {
+        x: x + 5,
+        y: y + height / 2 + 4,
+        size: 6,
+        color: rgb(0.7, 0, 0),
       });
     }
   }
@@ -345,7 +372,14 @@ export class PDFGenerator {
 
   private static base64ToBytes(base64: string): Uint8Array {
     try {
+      console.log(`🔄 Conversion base64, longueur totale: ${base64.length}`);
       const base64Data = base64.split(',')[1];
+      
+      if (!base64Data) {
+        throw new Error('Données base64 invalides - pas de virgule trouvée');
+      }
+      
+      console.log(`🔄 Données base64 extraites, longueur: ${base64Data.length}`);
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       
@@ -353,9 +387,11 @@ export class PDFGenerator {
         bytes[i] = binaryString.charCodeAt(i);
       }
       
+      console.log(`🔄 Conversion terminée, ${bytes.length} bytes générés`);
       return bytes;
     } catch (error) {
-      console.error('Erreur conversion base64:', error);
+      console.error('🔄 Erreur conversion base64:', error);
+      console.error('🔄 Base64 problématique:', base64.substring(0, 200));
       throw new Error(`Conversion base64 échouée: ${error.message}`);
     }
   }
