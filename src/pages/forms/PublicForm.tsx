@@ -327,7 +327,6 @@ export const PublicForm: React.FC = () => {
 
   const handlePDFGeneration = async (response: any, submissionData: Record<string, any>) => {
     try {
-      // Ne pas afficher de toast pour les utilisateurs publics
       // Préparer les métadonnées
       const timestamp = Date.now();
       const fileName = `${form.title.replace(/[^a-z0-9]/gi, '_')}_${timestamp}.pdf`;
@@ -335,11 +334,13 @@ export const PublicForm: React.FC = () => {
       // Sauvegarder le nom de fichier pour le téléchargement
       setSavedPdfFileName(fileName);
       
-      // IMPORTANT: Récupérer l'ID du propriétaire du formulaire pour la sauvegarde PDF
+      // Récupérer l'ID du propriétaire du formulaire pour la sauvegarde PDF
       const formOwnerId = form.user_id;
       
       if (!formOwnerId) {
-        return; // Échec silencieux pour les formulaires publics
+        console.error('❌ Propriétaire du formulaire non trouvé');
+        toast.error('Erreur: propriétaire du formulaire non identifié');
+        return;
       }
       
       const metadata = {
@@ -353,40 +354,40 @@ export const PublicForm: React.FC = () => {
       // Vérifier si un template PDF est configuré
       if (form.settings?.pdfTemplateId) {
         try {
-          // Charger le template depuis Supabase avec timeout
-          const template = await Promise.race([
-            PDFTemplateService.getTemplate(form.settings.pdfTemplateId),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-          ]);
+          const template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
           
           if (template) {
             metadata.templateName = template.name;
-            // Ajouter les données du template dans form_data avec la structure _template
             submissionData._template = {
               templateId: template.id,
               templateFields: template.fields,
               templatePdfContent: template.originalPdfUrl,
             };
-            
-            metadata.templateName = 'PDF Simple';
+            metadata.templateName = template.name;
           }
         } catch (templateError) {
+          console.error('❌ Erreur chargement template:', templateError);
           metadata.templateName = 'PDF Simple';
         }
       }
 
-      // Mettre à jour les métadonnées avec les données finales
       metadata.formData = submissionData;
       
-      // Sauvegarder les métadonnées (pas le PDF lui-même)
-      await PDFService.savePDFMetadata(fileName, metadata);
+      // Sauvegarder les métadonnées PDF
+      const saveSuccess = await PDFService.savePDFMetadata(fileName, metadata);
       
-      // Simuler qu'un PDF est disponible pour le téléchargement
-      setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
+      if (saveSuccess) {
+        // PDF sauvegardé avec succès
+        setGeneratedPDF(new Uint8Array([1])); // Dummy data pour activer le bouton
+        toast.success('📄 PDF généré et sauvegardé avec succès !');
+      } else {
+        console.error('❌ Erreur sauvegarde PDF');
+        toast.error('❌ Erreur lors de la sauvegarde du PDF');
+      }
       
     } catch (error) {
-      // Échec silencieux pour les formulaires publics
-      // Le formulaire est envoyé même si le PDF échoue
+      console.error('❌ Erreur génération PDF:', error);
+      toast.error('❌ Erreur lors de la génération du PDF');
     }
   };
 
