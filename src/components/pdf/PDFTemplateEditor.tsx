@@ -508,27 +508,29 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 Créez des templates PDF avec positionnement précis par ratios
               </p>
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={!pdfFile || fields.length === 0}
-              className="flex items-center space-x-2"
-            >
-              <Save className="h-4 w-4" />
-              <span>Sauvegarder</span>
-            </Button>
-            <Button
-              onClick={handlePreviewPDF}
-              disabled={!pdfFile || fields.length === 0 || previewLoading}
-              variant="secondary"
-              className="flex items-center space-x-2"
-            >
-              {previewLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              <span>{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button
+                onClick={handlePreviewPDF}
+                disabled={!pdfFile || fields.length === 0 || previewLoading}
+                variant="secondary"
+                className="flex items-center space-x-2"
+              >
+                {previewLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                <span>{previewLoading ? 'Génération...' : 'Prévisualiser'}</span>
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={!pdfFile || fields.length === 0}
+                className="flex items-center space-x-2"
+              >
+                <Save className="h-4 w-4" />
+                <span>Sauvegarder</span>
+              </Button>
+            </div>
           </div>
 
           {/* Sélecteur de formulaire */}
