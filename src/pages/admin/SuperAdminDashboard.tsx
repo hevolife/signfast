@@ -80,7 +80,6 @@ export const SuperAdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'codes' | 'stats'>('users');
   const [activeTab, setActiveTab] = useState<'users' | 'codes' | 'affiliates' | 'stats'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   const [newCodeType, setNewCodeType] = useState<'monthly' | 'lifetime'>('monthly');
