@@ -59,20 +59,34 @@ Deno.serve(async (req) => {
       return corsResponse({ error }, 400);
     }
 
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return corsResponse({ error: 'Authorization header missing' }, 401);
+    }
+
     const token = authHeader.replace('Bearer ', '');
+    
+    // Créer un client Supabase avec la clé anon pour l'authentification utilisateur
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+    
     const {
       data: { user },
       error: getUserError,
-    } = await supabase.auth.getUser(token);
+    } = await supabaseAuth.auth.getUser(token);
 
     if (getUserError) {
+      console.error('Authentication error:', getUserError);
       return corsResponse({ error: 'Failed to authenticate user' }, 401);
     }
 
     if (!user) {
       return corsResponse({ error: 'User not found' }, 404);
     }
+
+    console.log('User authenticated:', user.id, user.email);
 
     const { data: customer, error: getCustomerError } = await supabase
       .from('stripe_customers')
