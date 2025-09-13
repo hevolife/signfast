@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
