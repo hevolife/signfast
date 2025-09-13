@@ -199,23 +199,12 @@ export const useAffiliateAdmin = () => {
       const programsWithStats = await Promise.all(
         (programs || []).map(async (program) => {
           try {
-            // Récupérer les informations utilisateur depuis auth.users
-            const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(program.user_id);
-            
-            if (authError) {
-              console.warn('⚠️ Erreur récupération auth user:', authError);
-            }
-            
             const { data: userProfile } = await supabase
               .from('user_profiles')
               .select('first_name, last_name, company_name')
               .eq('user_id', program.user_id)
               .maybeSingle();
 
-            console.log('📊 Données utilisateur pour', program.user_id, ':', {
-              email: authUser?.user?.email,
-              profile: userProfile
-            });
             // Compter les parrainages confirmés
             const { count: confirmedCount } = await supabase
               .from('affiliate_referrals')
@@ -238,29 +227,17 @@ export const useAffiliateAdmin = () => {
             const monthlyEarnings = (monthlyCommissions || [])
               .reduce((sum, ref) => sum + ref.commission_amount, 0);
 
-            // Récupérer l'email depuis la table users publique
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('email')
-              .eq('id', program.user_id)
-              .single();
-
-            if (userError) {
-              console.warn('⚠️ Erreur récupération user data:', userError);
-            }
-
             return {
               ...program,
               user_profiles: userProfile,
               confirmed_referrals: confirmedCount || 0,
               monthly_earnings: monthlyEarnings,
-              user_email: userData?.email || null
+              user_email: null // Email non disponible sans API admin
             };
           } catch (error) {
             console.error('Erreur calcul stats pour programme:', program.user_id, error);
             return {
               ...program,
-              auth_user: null,
               user_profiles: null,
               user_email: null,
               confirmed_referrals: 0,
