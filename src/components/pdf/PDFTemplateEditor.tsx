@@ -49,6 +49,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [draggedFieldType, setDraggedFieldType] = useState<PDFField['type'] | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [pdfLoaded, setPdfLoaded] = useState(false);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Détecter mobile
@@ -61,10 +62,10 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
   // Charger PDF existant
   useEffect(() => {
-    if (existingPdfUrl && !pdfFile) {
+    if (existingPdfUrl && !pdfFile && !pdfLoaded) {
       loadExistingPdf();
     }
-  }, [existingPdfUrl]);
+  }, [existingPdfUrl, pdfLoaded]);
 
   // Initialiser les champs après chargement du PDF
   useEffect(() => {
@@ -112,6 +113,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     if (!existingPdfUrl) return;
     
     try {
+      setPdfLoaded(true);
       const response = await fetch(existingPdfUrl);
       const blob = await response.blob();
       const file = new File([blob], templateName || 'template.pdf', { type: 'application/pdf' });
@@ -120,6 +122,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     } catch (error) {
       console.error('Erreur chargement PDF:', error);
       toast.error('Erreur lors du chargement du PDF');
+      setPdfLoaded(false);
     }
   };
 
