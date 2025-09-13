@@ -52,27 +52,9 @@ export class PDFGenerator {
         const value = this.getFieldValue(field, data);
         console.log(`🎨 Valeur trouvée:`, value ? (typeof value === 'string' && value.startsWith('data:image') ? 'IMAGE_DATA' : value) : 'VIDE');
         
-        // Ne pas ignorer les champs vides, les traiter quand même
+        // Ignorer complètement les champs vides - ne rien dessiner
         if (!value) {
-          console.log(`🎨 ⚠️ Valeur vide pour ${field.variable}, dessin placeholder`);
-          // Dessiner un placeholder pour indiquer le champ manquant
-          page.drawRectangle({
-            x: pdfX,
-            y: pdfY,
-            width: pdfFieldWidth,
-            height: pdfFieldHeight,
-            borderColor: rgb(0.8, 0.8, 0.8),
-            borderWidth: 1,
-            color: rgb(0.98, 0.98, 0.98),
-          });
-          
-          page.drawText(`${field.variable} manquant`, {
-            x: pdfX + 2,
-            y: pdfY + pdfFieldHeight / 2,
-            size: Math.min(8, pdfFieldHeight * 0.4),
-            color: rgb(0.7, 0.7, 0.7),
-            font,
-          });
+          console.log(`🎨 ⚠️ Valeur vide pour ${field.variable}, champ ignoré (invisible)`);
           continue;
         }
 
