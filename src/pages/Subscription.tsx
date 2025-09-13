@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Crown, Check, Zap, Calendar, CreditCard, AlertCircle, Key, Gift } from 'lucide-react';
 import { stripeConfig } from '../stripe-config';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 export const Subscription: React.FC = () => {
   const { user } = useAuth();
