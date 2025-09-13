@@ -9,8 +9,9 @@ import { FormPreview } from './FormPreview';
 import { FieldPropertiesEditor } from './FieldPropertiesEditor';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
-import { Eye, EyeOff, Save, Menu, X, Settings } from 'lucide-react';
+import { Eye, EyeOff, Save, Menu, X, Settings, Layers, Palette, CheckSquare } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import toast from 'react-hot-toast';
 
 interface FormBuilderProps {
   initialFields?: FormField[];
@@ -154,7 +155,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   const bulkSetRequired = (required: boolean) => {
     updateMultipleFields({ required });
     const count = selectedFields.size;
-    // toast.success(`${count} champ(s) ${required ? 'marqués comme obligatoires' : 'marqués comme optionnels'}`);
+    toast.success(`${count} champ(s) ${required ? 'marqués comme obligatoires' : 'marqués comme optionnels'}`);
   };
 
   return (
@@ -162,10 +163,52 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
           {/* En-tête responsive */}
-          <div className="mb-4 lg:mb-8">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-3 text-center">
-              Constructeur de formulaire
-            </h1>
+          <div className="mb-6 lg:mb-8">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Layers className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+                  Constructeur de Formulaire
+                </h1>
+              </div>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Créez des formulaires interactifs avec glisser-déposer et aperçu en temps réel
+              </p>
+            </div>
+            
+            {/* Statistiques du formulaire */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600 mb-1">{fields.length}</div>
+                  <div className="text-xs text-blue-600">Champs totaux</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600 mb-1">{fields.filter(f => f.required).length}</div>
+                  <div className="text-xs text-green-600">Obligatoires</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-purple-600 mb-1">{fields.filter(f => f.type === 'radio' || f.type === 'checkbox').length}</div>
+                  <div className="text-xs text-purple-600">Choix multiples</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-orange-600 mb-1">{fields.filter(f => f.type === 'signature' || f.type === 'file').length}</div>
+                  <div className="text-xs text-orange-600">Fichiers/Signatures</div>
+                </CardContent>
+              </Card>
+            </div>
+            
             <div className="flex items-center justify-between space-x-2 lg:space-x-4">
               {/* Boutons mobiles */}
               {isMobile && !showPreview && (
@@ -177,9 +220,10 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                       setShowMobilePalette(!showMobilePalette);
                       setShowMobileProperties(false);
                     }}
-                    className={`lg:hidden ${showMobilePalette ? 'bg-blue-100 text-blue-600' : ''}`}
+                    className={`lg:hidden flex items-center space-x-2 ${showMobilePalette ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' : 'bg-white dark:bg-gray-800 shadow-md'}`}
                   >
                     <Menu className="h-4 w-4" />
+                    <span className="text-xs">Champs</span>
                   </Button>
                   {selectedField && (
                     <Button
@@ -189,38 +233,52 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                         setShowMobileProperties(!showMobileProperties);
                         setShowMobilePalette(false);
                       }}
-                      className={`lg:hidden ${showMobileProperties ? 'bg-blue-100 text-blue-600' : ''}`}
+                      className={`lg:hidden flex items-center space-x-2 ${showMobileProperties ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' : 'bg-white dark:bg-gray-800 shadow-md'}`}
                     >
                       <Settings className="h-4 w-4" />
+                      <span className="text-xs">Propriétés</span>
                     </Button>
                   )}
                 </div>
               )}
               
-              <div className="flex items-center justify-center space-x-2 lg:space-x-4 flex-1">
+              <div className="flex items-center justify-center space-x-3 lg:space-x-4 flex-1">
                 {/* Mode sélection multiple */}
                 <Button
                   onClick={toggleMultiSelectMode}
-                  variant={isMultiSelectMode ? "primary" : "ghost"}
+                  variant="ghost"
                   size="sm"
-                  className="flex items-center space-x-1 lg:space-x-2"
+                  className={`flex items-center space-x-2 transition-all ${
+                    isMultiSelectMode 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:from-blue-600 hover:to-purple-700' 
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700'
+                  }`}
                 >
+                  <CheckSquare className="h-4 w-4" />
                   <span className="text-xs lg:text-sm">
                     {isMultiSelectMode ? `Sélection (${selectedFields.size})` : 'Sélection'}
                   </span>
                 </Button>
+                
                 <Button
                   onClick={() => setShowPreview(!showPreview)}
                   variant="ghost"
-                  className="flex items-center space-x-1 lg:space-x-2"
+                  size="sm"
+                  className={`flex items-center space-x-2 transition-all ${
+                    showPreview 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg hover:from-green-600 hover:to-emerald-700' 
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700'
+                  }`}
                 >
                   {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   <span className="hidden sm:inline">{showPreview ? 'Éditer' : 'Aperçu'}</span>
                 </Button>
+                
                 <Button
                   onClick={handleSave}
                   disabled={saving || fields.length === 0}
-                  className="flex items-center space-x-1 lg:space-x-2"
+                  size="sm"
+                  className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="h-4 w-4" />
                   <span className="hidden sm:inline">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</span>
@@ -231,35 +289,48 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
           {/* Barre d'outils multi-sélection */}
           {isMultiSelectMode && selectedFields.size > 0 && !showPreview && (
-            <Card className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <Card className="mb-6 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-blue-200 dark:border-blue-800 shadow-lg">
               <CardContent className="p-4">
-                <div className="flex flex-wrap items-center gap-2 lg:gap-4">
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
-                    {selectedFields.size} champ(s) sélectionné(s)
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <CheckSquare className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
+                        Mode Multi-Sélection
+                      </span>
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
+                        {selectedFields.size} champ(s) sélectionné(s)
+                      </p>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={copyLabelsToPlaceholders}
-                      className="text-xs bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
+                      className="text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-md transition-all"
                     >
+                      <Palette className="h-3 w-3 mr-1" />
                       Copier libellés → placeholders
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => bulkSetRequired(true)}
-                      className="text-xs bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300"
+                      className="text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700 shadow-md transition-all"
                     >
+                      <CheckSquare className="h-3 w-3 mr-1" />
                       Marquer obligatoires
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => bulkSetRequired(false)}
-                      className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                      className="text-xs bg-gradient-to-r from-gray-400 to-gray-600 text-white hover:from-gray-500 hover:to-gray-700 shadow-md transition-all"
                     >
+                      <X className="h-3 w-3 mr-1" />
                       Marquer optionnels
                     </Button>
                   </div>
@@ -270,11 +341,21 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
           {showPreview ? (
             // Mode aperçu - pleine largeur sur mobile
-            <Card>
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg">
               <CardHeader>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Aperçu du formulaire
-                </h2>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                    <Eye className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-green-900 dark:text-green-300">
+                      Aperçu du Formulaire
+                    </h2>
+                    <p className="text-sm text-green-700 dark:text-green-400">
+                      Prévisualisation en temps réel de votre formulaire
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <FormPreview fields={fields} />
@@ -284,8 +365,23 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             // Mode édition - layout adaptatif
             <div className="relative">
               {/* Palette des éléments - au-dessus du canvas */}
-              <div className="mb-6">
+              <div className="mb-6 relative">
                 <FieldPalette onAddField={addField} />
+                {fields.length === 0 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-100/90 via-purple-100/90 to-pink-100/90 dark:from-blue-900/90 dark:via-purple-900/90 dark:to-pink-900/90 rounded-lg flex items-center justify-center border-2 border-blue-300 dark:border-blue-700 border-dashed">
+                    <div className="text-center p-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <Palette className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300 mb-2">
+                        Commencez ici !
+                      </h3>
+                      <p className="text-sm text-blue-700 dark:text-blue-400">
+                        Cliquez sur un type de champ ci-dessus pour commencer à construire votre formulaire
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Layout desktop */}
@@ -323,15 +419,21 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 {/* Palette mobile - overlay */}
                 {showMobilePalette && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-                    <div className="absolute bottom-16 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-xl max-h-[60vh] overflow-y-auto">
-                      <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          Ajouter un champ
-                        </h3>
+                    <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-t-xl max-h-[60vh] overflow-y-auto shadow-2xl border-t-4 border-blue-500">
+                      <div className="flex justify-between items-center p-4 border-b border-blue-200 dark:border-blue-700">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <Palette className="h-4 w-4 text-white" />
+                          </div>
+                          <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
+                            Ajouter un Champ
+                          </h3>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowMobilePalette(false)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -346,15 +448,21 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 {/* Propriétés mobile - overlay */}
                 {showMobileProperties && selectedFieldData && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-                    <div className="absolute bottom-16 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-xl max-h-[60vh] overflow-y-auto">
-                      <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          Propriétés du champ
-                        </h3>
+                    <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 rounded-t-xl max-h-[60vh] overflow-y-auto shadow-2xl border-t-4 border-purple-500">
+                      <div className="flex justify-between items-center p-4 border-b border-purple-200 dark:border-purple-700">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                            <Settings className="h-4 w-4 text-white" />
+                          </div>
+                          <h3 className="text-lg font-bold text-purple-900 dark:text-purple-300">
+                            Propriétés du Champ
+                          </h3>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowMobileProperties(false)}
+                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:hover:bg-purple-800"
                         >
                           <X className="h-4 w-4" />
                         </Button>
