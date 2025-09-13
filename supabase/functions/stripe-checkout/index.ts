@@ -66,16 +66,11 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Créer un client Supabase avec la clé anon pour l'authentification utilisateur
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-    
+    // Utiliser le client principal avec service role pour l'authentification
     const {
       data: { user },
       error: getUserError,
-    } = await supabaseAuth.auth.getUser(token);
+    } = await supabase.auth.getUser(token);
 
     if (getUserError) {
       console.error('Authentication error:', getUserError);
