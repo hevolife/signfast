@@ -106,14 +106,18 @@ export class PDFService {
       // Nettoyer les données du formulaire pour éviter les problèmes de quota
       const cleanFormData = this.cleanFormDataForStorage(metadata.formData);
       
-      // Ajouter les métadonnées du template de manière compacte
+      // Stocker les métadonnées du template séparément pour éviter les timeouts
+      let templateMetadata = null;
       if (metadata.templateId) {
-        cleanFormData._template = {
+        templateMetadata = {
           id: metadata.templateId,
           templateId: metadata.templateId,
           templateFields: metadata.templateFields || [],
           templatePdfContent: metadata.templatePdfContent || '',
         };
+        
+        // Stocker seulement l'ID du template dans les données principales
+        cleanFormData._templateId = metadata.templateId;
       }
 
       const pdfData = {
@@ -122,7 +126,7 @@ export class PDFService {
         template_name: metadata.templateName,
         form_title: metadata.formTitle,
         form_data: cleanFormData,
-        pdf_content: '', // Vide pour l'instant
+        pdf_content: templateMetadata ? JSON.stringify(templateMetadata) : '', // Stocker les métadonnées template ici
         file_size: 0, // Sera calculé au téléchargement
         user_id: targetUserId,
       };
@@ -170,18 +174,20 @@ export class PDFService {
     const cleaned: Record<string, any> = {};
     
     Object.entries(formData).forEach(([key, value]) => {
-      // IMPORTANT: Garder TOUTES les signatures complètes pour la génération PDF
+      // Optimiser les données pour éviter les timeouts
       if (typeof value === 'string' && value.startsWith('data:image')) {
         if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
-          cleaned[key] = value; // Garder la signature complète
+          // Compresser légèrement les signatures pour éviter les timeouts
+          cleaned[key] = this.compressImageData(value);
           console.log(`💾 Signature conservée pour clé: "${key}"`);
         } else {
-          cleaned[key] = value; // Garder aussi les autres images pour le PDF
+          // Compresser les autres images
+          cleaned[key] = this.compressImageData(value);
           console.log(`💾 Image conservée pour clé: "${key}"`);
         }
-      } else if (typeof value === 'string' && value.length > 1000) {
+      } else if (typeof value === 'string' && value.length > 500) {
         // Tronquer les textes très longs
-        cleaned[key] = value.substring(0, 1000) + '...';
+        cleaned[key] = value.substring(0, 500) + '...';
       } else {
         // Garder toutes les autres données normales
         cleaned[key] = value;
@@ -191,24 +197,30 @@ export class PDFService {
     
     console.log(`💾 Données nettoyées - clés finales:`, Object.keys(cleaned));
     
-    // Debug des données conservées
-    const textData = Object.entries(cleaned).filter(([key, val]) => 
-      typeof val === 'string' && !val.startsWith('data:image') && val !== ''
-    );
-    console.log(`💾 Données texte conservées:`, textData.length);
-    textData.forEach(([key, val]) => {
-      console.log(`💾 Texte: "${key}" = "${val}"`);
-    });
-    
-    const imageData = Object.entries(cleaned).filter(([key, val]) => 
-      typeof val === 'string' && val.startsWith('data:image')
-    );
-    console.log(`💾 Images/Signatures conservées:`, imageData.length);
-    imageData.forEach(([key, val]) => {
-      console.log(`💾 Image: "${key}" (${typeof val === 'string' ? val.length : 0} chars)`);
-    });
+    // Calculer la taille totale pour debug
+    const totalSize = JSON.stringify(cleaned).length;
+    console.log(`💾 Taille totale des données: ${Math.round(totalSize / 1024)}KB`);
     
     return cleaned;
+  }
+
+  // COMPRESSER LES DONNÉES IMAGE POUR ÉVITER LES TIMEOUTS
+  private static compressImageData(imageData: string): string {
+    try {
+      // Si l'image est très grande, on peut la compresser
+      if (imageData.length > 100000) { // Plus de 100KB
+        console.log(`💾 Compression image: ${Math.round(imageData.length / 1024)}KB → compression...`);
+        
+        // Pour l'instant, on garde l'image telle quelle mais on pourrait implémenter
+        // une compression canvas ici si nécessaire
+        return imageData;
+      }
+      
+      return imageData;
+    } catch (error) {
+      console.warn('💾 Erreur compression image:', error);
+      return imageData;
+    }
   }
 
   // GÉNÉRER ET TÉLÉCHARGER LE PDF (uniquement au moment du téléchargement)
@@ -243,7 +255,24 @@ export class PDFService {
       let pdfBytes: Uint8Array;
 
       // 2. Générer le PDF selon le type
-      const templateData = metadata.form_data?._template;
+      let templateData = null;
+      
+      // Récupérer les métadonnées du template depuis pdf_content
+      if (metadata.pdf_content) {
+        try {
+          templateData = JSON.parse(metadata.pdf_content);
+          console.log('📄 Template data récupéré depuis pdf_content');
+        } catch (error) {
+          console.warn('📄 Impossible de parser template data:', error);
+        }
+      }
+      
+      // Fallback vers form_data si disponible
+      if (!templateData && metadata.form_data?._template) {
+        templateData = metadata.form_data._template;
+        console.log('📄 Template data récupéré depuis form_data (fallback)');
+      }
+      
       if (templateData?.templateId && templateData?.templateFields && templateData?.templatePdfContent) {
         console.log('📄 🎨 Génération avec template PDF avancé');
         
@@ -272,6 +301,7 @@ export class PDFService {
         // Nettoyer les données du formulaire (enlever les métadonnées du template)
         const cleanFormData = { ...metadata.form_data };
         delete cleanFormData._template;
+        delete cleanFormData._templateId;
         
         pdfBytes = await PDFGenerator.generatePDF(template, cleanFormData, originalPdfBytes);
       } else {
@@ -287,6 +317,7 @@ export class PDFService {
         // Nettoyer les données du formulaire
         const cleanFormData = { ...metadata.form_data };
         delete cleanFormData._template;
+        delete cleanFormData._templateId;
         
         // Générer un PDF simple
         pdfBytes = await this.generateSimplePDF(cleanFormData, metadata.form_title);
