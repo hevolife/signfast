@@ -24,53 +24,15 @@ export const useAffiliate = () => {
     if (!user) return;
 
     try {
-      // Vérifier d'abord si les tables existent en testant une requête simple
-      const { error: testError } = await supabase
-        .from('affiliate_programs')
-        .select('id')
-        .limit(1);
-
-      if (testError && testError.code === 'PGRST205') {
-        console.log('ℹ️ Tables d\'affiliation non encore créées');
-        setTablesExist(false);
-        setLoading(false);
-        return;
-      }
-
-      // Récupérer le programme d'affiliation
-      const { data: programData, error: programError } = await supabase
-        .from('affiliate_programs')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (programError) {
-        if (programError.code !== 'PGRST116') {
-          console.error('Error fetching affiliate program:', programError);
-        }
-      } else {
-        setProgram(programData);
-      }
-
-      // Récupérer les parrainages
-      const { data: referralsData, error: referralsError } = await supabase
-        .from('affiliate_referrals')
-        .select(`
-          *,
-          referred_user:users!referred_user_id(email),
-          referred_profile:user_profiles!referred_user_id(first_name, last_name, company_name)
-        `)
-        .eq('affiliate_user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (referralsError) {
-        console.error('Error fetching referrals:', referralsError);
-      } else {
-        setReferrals(referralsData || []);
-      }
-    } catch (error) {
-      console.error('Error in fetchAffiliateData:', error);
+      // Pour l'instant, les tables d'affiliation ne sont pas encore créées
+      // On simule un état où les tables n'existent pas
       setTablesExist(false);
+      setProgram(null);
+      setReferrals([]);
+    } catch (error) {
+      setTablesExist(false);
+      setProgram(null);
+      setReferrals([]);
     } finally {
       setLoading(false);
     }
