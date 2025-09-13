@@ -150,12 +150,14 @@ export class PDFService {
     
     for (const [key, value] of Object.entries(formData)) {
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        // Compression drastique pour éviter les timeouts
+        // Les images sont déjà compressées par ImageCompressor
         const originalSize = Math.round(value.length / 1024);
+        console.log(`💾 Sauvegarde image ${key}: ${originalSize}KB`);
         
-        if (originalSize > 200) {
-          // Compression simple par échantillonnage pour les gros fichiers
-          cleaned[key] = this.compressImageSimple(value);
+        if (originalSize > 1000) {
+          // Compression d'urgence si encore trop gros
+          console.warn(`⚠️ Image ${key} encore trop grosse (${originalSize}KB), compression d'urgence`);
+          cleaned[key] = this.emergencyCompress(value);
         } else {
           cleaned[key] = value;
         }
@@ -165,6 +167,28 @@ export class PDFService {
     }
     
     return cleaned;
+  }
+
+  // COMPRESSION D'URGENCE POUR IMAGES TRÈS VOLUMINEUSES
+  private static emergencyCompress(base64Image: string): string {
+    try {
+      const [header, data] = base64Image.split(',');
+      if (!data) return base64Image;
+      
+      // Prendre seulement 1 caractère sur 3 pour réduction drastique
+      let compressedData = '';
+      for (let i = 0; i < data.length; i += 3) {
+        compressedData += data[i];
+      }
+      
+      const result = `${header},${compressedData}`;
+      console.log(`🚨 Compression d'urgence: ${Math.round(base64Image.length / 1024)}KB → ${Math.round(result.length / 1024)}KB`);
+      
+      return result;
+    } catch (error) {
+      console.error('Erreur compression d\'urgence:', error);
+      return base64Image;
+    }
   }
 
   // COMPRESSION D'IMAGE AVEC CANVAS

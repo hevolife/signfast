@@ -129,37 +129,30 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     if (!canvas) return;
 
     try {
-      // Créer une version optimisée pour PDF
-      const outputCanvas = document.createElement('canvas');
-      const outputCtx = outputCanvas.getContext('2d');
+      // Utiliser la compression optimisée pour signatures
+      const rawSignature = canvas.toDataURL('image/png', 1.0);
       
-      if (!outputCtx) return;
-
-      // Taille fixe optimale pour PDF (ratio 2:1)
-      outputCanvas.width = 400;
-      outputCanvas.height = 200;
-
-      // Fond blanc opaque
-      outputCtx.fillStyle = '#FFFFFF';
-      outputCtx.fillRect(0, 0, 400, 200);
-
-      // Configuration pour une signature nette
-      outputCtx.strokeStyle = '#000000';
-      outputCtx.lineWidth = 3;
-      outputCtx.lineCap = 'round';
-      outputCtx.lineJoin = 'round';
-      outputCtx.imageSmoothingEnabled = false; // Désactiver le lissage pour des traits nets
-
-      // Redessiner la signature depuis le canvas original
-      outputCtx.drawImage(canvas, 0, 0, 400, 200);
-
-      // Convertir en PNG avec qualité maximale
-      const signatureDataUrl = outputCanvas.toDataURL('image/png', 1.0);
+      // Compression asynchrone
+      import('../../utils/imageCompression').then(({ ImageCompressor }) => {
+        ImageCompressor.compressSignature(rawSignature).then(compressedSignature => {
+          console.log('✍️ Signature compressée:', {
+            original: Math.round(rawSignature.length / 1024) + 'KB',
+            compressed: Math.round(compressedSignature.length / 1024) + 'KB'
+          });
+          
+          onSignatureChange(compressedSignature);
+          setIsEmpty(false);
+        }).catch(error => {
+          console.warn('⚠️ Erreur compression signature:', error);
+          onSignatureChange(rawSignature);
+          setIsEmpty(false);
+        });
+      }).catch(() => {
+        // Fallback si module non disponible
+        onSignatureChange(rawSignature);
+        setIsEmpty(false);
+      });
       
-      console.log('✍️ Signature sauvegardée:', signatureDataUrl.length, 'caractères');
-      
-      onSignatureChange(signatureDataUrl);
-      setIsEmpty(false);
     } catch (error) {
       console.error('Erreur sauvegarde signature:', error);
       onSignatureChange('');
