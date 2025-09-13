@@ -189,6 +189,13 @@ export const AffiliateAdminPanel: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {program.user_profiles?.company_name || 
+                             `${program.user_profiles?.first_name || ''} ${program.user_profiles?.last_name || ''}`.trim() ||
+                             'Utilisateur sans nom'}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 mt-1">
                           <code className="text-sm font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                             {program.affiliate_code}
                           </code>

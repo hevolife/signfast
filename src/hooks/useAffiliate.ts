@@ -185,7 +185,10 @@ export const useAffiliateAdmin = () => {
       // Récupérer tous les programmes avec statistiques calculées
       const { data: programs, error: programsError } = await supabase
         .from('affiliate_programs')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!inner(first_name, last_name, company_name)
+        `)
         .order('created_at', { ascending: false });
 
       if (programsError) {
