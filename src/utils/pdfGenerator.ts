@@ -281,7 +281,7 @@ export class PDFGenerator {
         console.log('🖼️ Variables disponibles:', Object.keys(data));
         console.log('🖼️ Images disponibles:', Object.keys(data).filter(key => 
           typeof data[key] === 'string' && data[key].startsWith('data:image')
-        );
+        ));
         
         return '';
       }
