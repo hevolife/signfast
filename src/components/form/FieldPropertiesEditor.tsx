@@ -290,6 +290,26 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
                             onChange={(e) => updateConditionalField(option, fieldIndex, { label: e.target.value })}
                             className="text-sm"
                           />
+                          {conditionalField.type === 'text' && (
+                            <div>
+                              <Input
+                                label="Masque de saisie"
+                                value={conditionalField.validation?.mask || ''}
+                                onChange={(e) => updateConditionalField(option, fieldIndex, {
+                                  validation: {
+                                    ...conditionalField.validation,
+                                    mask: e.target.value || undefined
+                                  }
+                                })}
+                                placeholder="Ex: 99.99.99.99.99"
+                                className="text-sm"
+                              />
+                              <div className="mt-1 text-xs text-gray-400 space-y-1">
+                                <div><code>9</code> = chiffre • <code>A</code> = majuscule • <code>a</code> = minuscule</div>
+                                <div>Ex: <code>99.99.99.99.99</code> pour sécurité sociale</div>
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-center space-x-2">
                             <input
                               type="checkbox"
