@@ -80,42 +80,10 @@ export const useAffiliate = () => {
 
       setTablesExist(true);
     } catch (error) {
-      if (error.code === 'PGRST205') {
-        setTablesExist(false);
-        setProgram(null);
-        setReferrals([]);
-        return;
-      }
-
-      setTablesExist(true);
-
-      // Récupérer le programme d'affiliation de l'utilisateur
-      const { data: programData, error: programError } = await supabase
-        .from('affiliate_programs')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (programError && programError.code !== 'PGRST116') {
-        console.error('Erreur récupération programme:', programError);
-        setProgram(null);
-      } else {
-        setProgram(programData);
-      }
-
-      // Récupérer les parrainages
-      const { data: referralsData, error: referralsError } = await supabase
-        .from('affiliate_referrals')
-        .select('*')
-        .eq('affiliate_user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (referralsError) {
-        console.error('Erreur récupération parrainages:', referralsError);
-        setReferrals([]);
-      } else {
-        setReferrals(referralsData || []);
-      }
+      console.error('Erreur générale affiliation:', error);
+      setTablesExist(false);
+      setProgram(null);
+      setReferrals([]);
     } finally {
       setLoading(false);
     }
@@ -154,56 +122,32 @@ export const useAffiliateAdmin = () => {
 
   const fetchAllPrograms = async () => {
     try {
-      console.log('📊 Admin: Récupération tous les programmes...');
-      
-      // Récupérer directement depuis affiliate_programs avec jointures
-      const { data: programsData, error: programsError } = await supabase
+      // Tester d'abord si les tables existent
+      const { error: testError } = await supabase
         .from('affiliate_programs')
-        .select(`
-          *,
-          user_profile:user_profiles!user_id(first_name, last_name, company_name),
-          referrals_count:affiliate_referrals!affiliate_user_id(count),
-          confirmed_referrals:affiliate_referrals!affiliate_user_id(count).eq(status, confirmed),
-          total_commissions:affiliate_referrals!affiliate_user_id(commission_amount).eq(status, confirmed)
-        `)
-        .order('total_earnings', { ascending: false });
+        .select('id')
+        .limit(1);
 
-      if (programsError) {
-        if (programsError.code === 'PGRST205') {
-          console.log('📊 Tables d\'affiliation non créées pour admin');
-          setAllPrograms([]);
-          return;
-        }
-        console.error('📊 Erreur récupération programmes admin:', programsError);
+      if (testError && testError.code === 'PGRST205') {
+        console.log('📊 Tables d\'affiliation non créées pour admin');
         setAllPrograms([]);
         return;
       }
 
-      // Transformer les données pour correspondre à AffiliateStats
-      const statsData = (programsData || []).map(program => ({
-        user_id: program.user_id,
-        affiliate_code: program.affiliate_code,
-        commission_rate: program.commission_rate,
-        total_referrals: program.total_referrals,
-        total_earnings: program.total_earnings,
-        monthly_earnings: program.monthly_earnings,
-        is_active: program.is_active,
-        confirmed_referrals: 0, // Sera calculé côté client si nécessaire
-        pending_referrals: 0,
-        total_commissions: program.total_earnings
-      }));
-      
-      console.log('📊 Programmes admin chargés:', statsData.length);
-      setAllPrograms(statsData);
-      
-    } catch (error) {
-      if (error.code === 'PGRST205') {
-        console.log('📊 Tables d\'affiliation non créées');
+      const { data, error } = await supabase
+        .from('affiliate_stats')
+        .select('*')
+        .order('total_earnings', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching affiliate stats:', error);
         setAllPrograms([]);
       } else {
-        console.error('📊 Erreur générale programmes admin:', error);
-        setAllPrograms([]);
+        setAllPrograms(data || []);
       }
+    } catch (error) {
+      console.error('Error fetching affiliate programs:', error);
+      setAllPrograms([]);
     } finally {
       setLoading(false);
     }
