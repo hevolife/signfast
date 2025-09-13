@@ -442,39 +442,7 @@ export const PDFManager: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-            );
-            })}
-          </div>
-        )}
-        
-        <LimitReachedModal
-          isOpen={showLimitModal}
-          onClose={() => setShowLimitModal(false)}
-          limitType="savedPdfs"
-          currentCount={savedPdfsLimits.current}
-          maxCount={savedPdfsLimits.max}
-        />
-      </div>
-    </div>
-  );
-};
-
-                      <Calendar className="h-4 w-4 mr-2" />
-                      <span>
-                        {formatDateTimeFR(pdf.createdAt)}
-                      </span>
-                    </div>
-                    
-                    {/* Afficher les données détectées pour debug */}
-                    {getDisplayName(pdf.formData) && (
-                      <div className="text-xs text-green-600 dark:text-green-400 truncate">
-                        👤 Identité détectée: {getDisplayName(pdf.formData)}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
+              );
             })}
           </div>
         )}
