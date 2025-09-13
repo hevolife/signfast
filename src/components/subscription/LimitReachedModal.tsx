@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
