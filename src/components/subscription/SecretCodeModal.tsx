@@ -32,34 +32,34 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
       return;
     }
 
+    if (!user) {
+      toast.error('Vous devez être connecté pour activer un code');
+      return;
+    }
+
     setLoading(true);
     
     try {
-      console.log('🔑 Activation code secret:', code.trim().toUpperCase(), 'pour user:', user?.id);
+      console.log('🔑 Activation code secret:', code.trim().toUpperCase(), 'pour user:', user.id);
       
-      const { data: activationResult, error: rpcError } = await supabase.rpc('activate_secret_code', {
-        p_code: code.trim().toUpperCase(),
-        p_user_id: user?.id
+      const { data: result, error } = await supabase.rpc('activate_secret_code', {
+        code_input: code.trim().toUpperCase(),
+        user_id_input: user.id
       });
       
-      console.log('🔑 Réponse activation:', { data: activationResult, error: rpcError });
+      console.log('🔑 Réponse activation:', { result, error });
 
-      if (rpcError) {
-        console.error('Erreur activation code:', rpcError);
-        toast.error(`Erreur lors de l'activation du code: ${rpcError.message}`);
+      if (error) {
+        console.error('Erreur activation code:', error);
+        toast.error(`Erreur lors de l'activation: ${error.message}`);
         return;
       }
 
-      if (activationResult?.success) {
-        const isLifetime = activationResult.type === 'lifetime';
-        const expiresAt = activationResult.expires_at ? new Date(activationResult.expires_at).toLocaleDateString('fr-FR') : null;
+      if (result?.success) {
+        const isLifetime = result.type === 'lifetime';
+        const expiresAt = result.expires_at ? new Date(result.expires_at).toLocaleDateString('fr-FR') : null;
         
-        console.log('🔑 ✅ Code activé avec succès:', {
-          type: activationResult.type,
-          isLifetime,
-          expiresAt,
-          message: activationResult.message
-        });
+        console.log('🔑 ✅ Code activé avec succès:', result);
         
         toast.success(
           `🎉 Code activé avec succès ! ${isLifetime ? 'Accès à vie débloqué !' : `Accès mensuel jusqu'au ${expiresAt}`}`,
@@ -70,8 +70,8 @@ export const SecretCodeModal: React.FC<SecretCodeModalProps> = ({
         onSuccess();
         onClose();
       } else {
-        console.log('🔑 ❌ Échec activation:', activationResult?.error);
-        toast.error(activationResult?.error || 'Code secret invalide');
+        console.log('🔑 ❌ Échec activation:', result?.error);
+        toast.error(result?.error || 'Code secret invalide');
       }
     } catch (error) {
       console.error('Erreur:', error);
