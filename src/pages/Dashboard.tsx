@@ -18,7 +18,8 @@ import {
   Calendar,
   BarChart3,
   ArrowRight,
-  Activity
+  Activity,
+  Gift
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
