@@ -31,15 +31,6 @@ export const Home: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Rediriger vers login si l'utilisateur n'est pas connecté (sauf si on vient déjà de login/signup)
-  const isFromAuth = location.state?.from?.pathname === '/login' || 
-                     location.state?.from?.pathname === '/signup' ||
-                     location.pathname === '/login' ||
-                     location.pathname === '/signup';
-  
-  if (!user && !isFromAuth) {
-    return <Navigate to="/login" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
