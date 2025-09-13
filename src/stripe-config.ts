@@ -4,7 +4,7 @@ export const stripeConfig = {
       id: 'prod_T2Mf3y84TiochN',
       priceId: 'price_1S6HwBKiNbWQJGP35byRSSBn',
       name: 'Abonnement Mensuel',
-      description: 'SignFast Pro',
+      description: 'App FormBuilder',
       price: 59.99,
       currency: 'EUR',
       mode: 'subscription' as const,
