@@ -383,12 +383,21 @@ export const Settings: React.FC = () => {
         {activeTab === 'profile' && (
           <div className="space-y-6">
             {/* Logo de l'entreprise */}
-            <Card>
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 shadow-lg">
               <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                  <Camera className="h-5 w-5" />
-                  <span>Logo de l'entreprise</span>
-                </h3>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-lg">📷</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300">
+                      Logo de l'entreprise
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                      Personnalisez l'apparence de vos formulaires
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-6">
@@ -432,12 +441,21 @@ export const Settings: React.FC = () => {
             </Card>
 
             {/* Informations personnelles */}
-            <Card>
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg">
               <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Informations personnelles</span>
-                </h3>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-lg">👤</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
+                      Informations personnelles
+                    </h3>
+                    <p className="text-sm text-green-700 dark:text-green-400">
+                      Gérez vos informations de profil
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSaveProfile} className="space-y-4">
@@ -499,12 +517,21 @@ export const Settings: React.FC = () => {
         {activeTab === 'security' && (
           <div className="space-y-6">
             {/* Changement d'email */}
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 shadow-lg">
               <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Adresse email</span>
-                </h3>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-lg">📧</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
+                      Adresse email
+                    </h3>
+                    <p className="text-sm text-purple-700 dark:text-purple-400">
+                      Modifiez votre adresse de connexion
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleChangeEmail} className="space-y-4">
@@ -554,12 +581,21 @@ export const Settings: React.FC = () => {
             </Card>
 
             {/* Changement de mot de passe */}
-            <Card>
+            <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800 shadow-lg">
               <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                  <Key className="h-5 w-5" />
-                  <span>Mot de passe</span>
-                </h3>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-lg">🔐</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-300">
+                      Mot de passe
+                    </h3>
+                    <p className="text-sm text-orange-700 dark:text-orange-400">
+                      Changez votre mot de passe de connexion
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleChangePassword} className="space-y-4">
@@ -645,12 +681,22 @@ export const Settings: React.FC = () => {
 
             <div className="grid md:grid-cols-2 gap-8">
               {/* Plan Gratuit */}
-              <Card className={`${!isSubscribed ? 'ring-2 ring-gray-300' : ''}`}>
+              <Card className={`bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-gray-200 dark:border-gray-700 shadow-lg ${!isSubscribed ? 'ring-2 ring-gray-300' : ''}`}>
                 <CardHeader>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-slate-600 rounded-full flex items-center justify-center shadow-lg">
+                      <span className="text-white text-lg">🆓</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Plan Gratuit
+                      </h3>
+                      <p className="text-sm text-gray-700 dark:text-gray-400">
+                        Fonctionnalités de base
+                      </p>
+                    </div>
+                  </div>
                   <div className="text-center">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      Plan Gratuit
-                    </h3>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">
                       0€
                       <span className="text-sm font-normal text-gray-500">/mois</span>
@@ -690,7 +736,7 @@ export const Settings: React.FC = () => {
               </Card>
 
               {/* Plan Pro */}
-              <Card className={`${isSubscribed ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-300'} relative`}>
+              <Card className={`bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-800 shadow-lg ${isSubscribed ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-300'} relative`}>
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-600 text-white">
                     <Crown className="h-4 w-4 mr-1" />
@@ -698,17 +744,24 @@ export const Settings: React.FC = () => {
                   </span>
                 </div>
                 <CardHeader>
-                  <div className="text-center">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {product.name}
-                    </h3>
-                    <div className="text-3xl font-bold text-blue-600">
-                      {product.price}€
-                      <span className="text-sm font-normal text-gray-500">/mois</span>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                      <span className="text-white text-lg">👑</span>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      {product.description}
-                    </p>
+                    <div>
+                      <h3 className="text-xl font-semibold text-yellow-900 dark:text-yellow-300">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                        {product.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-yellow-900 dark:text-yellow-300">
+                      {product.price}€
+                      <span className="text-sm font-normal text-yellow-600 dark:text-yellow-500">/mois</span>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
