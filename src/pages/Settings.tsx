@@ -50,7 +50,6 @@ export const Settings: React.FC = () => {
   } = useSubscription();
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'admin'>('profile');
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'affiliate' | 'subscription' | 'admin'>('profile');
   const [showSecretCodeModal, setShowSecretCodeModal] = useState(false);
   const [saving, setSaving] = useState(false);
