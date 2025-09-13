@@ -84,9 +84,6 @@ export const PublicForm: React.FC = () => {
      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
      
-      // Préparer les données de soumission avec les données du template si nécessaire
-      const submissionData = { ...response.data };
-      
      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
        console.warn('⚠️ Supabase non configuré pour visiteur - profil par défaut');
        setFormOwnerProfile({
