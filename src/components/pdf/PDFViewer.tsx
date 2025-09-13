@@ -12,6 +12,7 @@ interface PDFViewerProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   draggedFieldType?: string | null;
+  hideZoomControls?: boolean;
 }
 
 export interface PDFViewerRef {
@@ -30,6 +31,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   currentPage = 1,
   onPageChange,
   draggedFieldType,
+  hideZoomControls = false,
 }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -237,17 +239,20 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     <div className="flex flex-col h-full">
       {/* Barre d'outils */}
       <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 min-h-[60px]">
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={zoomOut} disabled={scale <= 0.5}>
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-center font-mono">
-            {Math.round(scale * 100)}%
-          </span>
-          <Button variant="ghost" size="sm" onClick={zoomIn} disabled={scale >= 3}>
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-        </div>
+        {!hideZoomControls && (
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={zoomOut} disabled={scale <= 0.5}>
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-center font-mono">
+              {Math.round(scale * 100)}%
+            </span>
+            <Button variant="ghost" size="sm" onClick={zoomIn} disabled={scale >= 3}>
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {hideZoomControls && <div></div>}
 
         {numPages > 1 && (
           <div className="flex items-center space-x-2">

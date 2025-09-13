@@ -615,6 +615,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     scale={scale}
                     onScaleChange={setScale}
                     draggedFieldType={draggedFieldType}
+                    hideZoomControls={true}
                   >
                     {fields.map(field => (
                       <PDFFieldOverlay
