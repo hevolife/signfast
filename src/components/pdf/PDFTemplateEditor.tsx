@@ -36,9 +36,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   onFormLinkChange,
   onTemplateNameChange,
 }) => {
-  // État pour les dimensions PDF - doit être déclaré en premier
-  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
-  
+  // États principaux
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [fields, setFields] = useState<PDFField[]>([]);
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -47,11 +45,11 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const [currentLinkedFormId, setCurrentLinkedFormId] = useState<string | null>(linkedFormId || null);
   const [actualFormVariables, setActualFormVariables] = useState<string[]>(formVariables);
   const [isMobile, setIsMobile] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [draggedFieldType, setDraggedFieldType] = useState<PDFField['type'] | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [pdfLoaded, setPdfLoaded] = useState(false);
   const [currentTemplateName, setCurrentTemplateName] = useState(templateName || '');
+  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   const pdfViewerRef = useRef<PDFViewerRef>(null);
 
   // Détecter mobile
@@ -62,12 +60,12 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Charger PDF existant
+  // Charger PDF existant - une seule fois
   useEffect(() => {
-    if (existingPdfUrl && !pdfFile && !pdfLoaded) {
+    if (existingPdfUrl && !pdfFile) {
       loadExistingPdf();
     }
-  }, [existingPdfUrl, pdfLoaded]);
+  }, [existingPdfUrl]);
 
   // Mettre à jour le nom du template quand il change
   useEffect(() => {
@@ -75,46 +73,23 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       setCurrentTemplateName(templateName);
     }
   }, [templateName]);
-  // Initialiser les champs après chargement du PDF
-  useEffect(() => {
-    if (pdfFile && initialFields.length > 0 && !isInitialized && pdfDimensions.length > 0) {
-      console.log('🎯 Initialisation des champs existants');
-      console.log('🎯 Initial fields:', initialFields);
-      console.log('🎯 PDF dimensions disponibles:', pdfDimensions.length, 'pages');
-      
-      // Délai pour s'assurer que le PDF est complètement rendu
-      setTimeout(() => {
-        setFields(initialFields);
-        setIsInitialized(true);
-        console.log('🎯 Champs initialisés:', initialFields.length, 'champs');
-        
-        // Force plusieurs re-renders pour s'assurer du positionnement
-        setTimeout(() => {
-          console.log('🎯 Force refresh 1');
-          setFields(prev => [...prev]);
-          
-          setTimeout(() => {
-            console.log('🎯 Force refresh 2');
-            setFields(prev => [...prev]);
-          }, 200);
-        }, 100);
-      }, 500);
-    }
-  }, [pdfFile, initialFields, isInitialized, pdfDimensions]);
 
-  // Callback pour recevoir les dimensions du PDF
+  // Initialiser les champs - optimisé
+  useEffect(() => {
+    if (initialFields.length > 0 && !isInitialized) {
+      console.log('🎯 Initialisation des champs:', initialFields.length);
+      setFields(initialFields);
+      setIsInitialized(true);
+    }
+  }, [initialFields, isInitialized]);
+
+  // Callback pour recevoir les dimensions du PDF - optimisé
   const handlePDFLoaded = useCallback((dimensions: { width: number; height: number }[]) => {
     console.log('📄 PDF dimensions reçues:', dimensions);
     setPdfDimensions(dimensions);
-    
-    // Forcer le rendu de la première page après chargement des dimensions
-    setTimeout(() => {
-      console.log('📄 Forçage rendu page 1 après chargement dimensions');
-      setCurrentPage(1);
-    }, 200);
   }, []);
 
-  // Charger variables du formulaire lié
+  // Charger variables du formulaire lié - optimisé
   useEffect(() => {
     if (currentLinkedFormId) {
       loadLinkedFormVariables();
@@ -127,7 +102,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     if (!existingPdfUrl) return;
     
     try {
-      setPdfLoaded(true);
       const response = await fetch(existingPdfUrl);
       const blob = await response.blob();
       const file = new File([blob], templateName || 'template.pdf', { type: 'application/pdf' });
@@ -136,7 +110,6 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
     } catch (error) {
       console.error('Erreur chargement PDF:', error);
       toast.error('Erreur lors du chargement du PDF');
-      setPdfLoaded(false);
     }
   };
 
@@ -214,21 +187,14 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [currentPage]);
 
   const updateField = useCallback((id: string, updates: Partial<PDFField>) => {
-    console.log('🔄 updateField appelé pour:', id);
-    console.log('🔄 Anciennes valeurs:', fields.find(f => f.id === id));
-    console.log('🔄 Nouvelles valeurs:', updates);
-    
     setFields(prev => prev.map(field => 
       field.id === id ? { 
         ...field, 
         ...updates,
-        // Force la mise à jour des ratios
         xRatio: updates.xRatio !== undefined ? updates.xRatio : field.xRatio,
         yRatio: updates.yRatio !== undefined ? updates.yRatio : field.yRatio,
       } : field
     ));
-    
-    console.log('🔄 Champ mis à jour');
   }, []);
 
   const deleteField = useCallback((id: string) => {
@@ -239,38 +205,21 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   }, [selectedField]);
 
   const handlePageClick = useCallback((canvasX: number, canvasY: number, page: number) => {
-    console.log('🎯 === HANDLE PAGE CLICK ===');
-    console.log('🎯 Page reçue du clic:', page);
-    console.log('🎯 Page courante (state):', currentPage);
-    console.log('🎯 Mode placement actif:', !!draggedFieldType);
-    console.log('🎯 Type de champ à placer:', draggedFieldType);
-    console.log('🎯 Coordonnées reçues:', { canvasX, canvasY });
-    console.log('🎯 PDF dimensions disponibles:', pdfDimensions.length, 'pages');
-    
     // Si on est en mode placement de champ
     if (draggedFieldType) {
-      console.log('🎯 === PLACEMENT DE CHAMP ===');
-      console.log('🎯 PLACEMENT SUR PAGE:', page);
-      console.log('🎯 Type de champ:', draggedFieldType);
-      
       if (!pdfViewerRef.current) return;
 
-      console.log('🎯 Récupération dimensions pour page:', page);
       const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(page);
       if (!canvasDimensions) {
-        console.error('🎯 ❌ Dimensions canvas non disponibles pour page:', page);
         toast.error(`Impossible de placer le champ sur la page ${page}`);
-        console.error('🎯 ❌ Vérification: canvas existe?', !!pdfViewerRef.current.getCanvasElement(page));
         return;
       }
       
-      console.log('🎯 Dimensions canvas page', page, ':', canvasDimensions);
 
       // Calculer les ratios depuis la position de clic
       const xRatio = canvasX / canvasDimensions.width;
       const yRatio = canvasY / canvasDimensions.height;
       
-      console.log('🎯 Ratios calculés:', { xRatio, yRatio });
 
       // Ratios de taille selon le type
       const defaultRatios = {
@@ -284,12 +233,11 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
       const { width: widthRatio, height: heightRatio } = defaultRatios[draggedFieldType] || { width: 0.2, height: 0.04 };
       
-      console.log('🖱️ Ratios de taille:', { widthRatio, heightRatio });
 
       const newField: PDFField = {
         id: uuidv4(),
         type: draggedFieldType,
-        page: page, // FORCER LA PAGE CLIQUÉE
+        page: page,
         variable: '',
         xRatio,
         yRatio,
@@ -303,29 +251,15 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         offsetY: 10,
       };
 
-      console.log('🎯 === NOUVEAU CHAMP CRÉÉ ===');
-      console.log('🎯 Champ créé:', {
-        id: newField.id,
-        type: draggedFieldType,
-        page: page,
-        position: { xRatio, yRatio },
-        size: { widthRatio, heightRatio },
-      });
 
       setFields(prev => {
         const newFields = [...prev, newField];
-        console.log('🎯 Total champs après ajout:', newFields.length);
-        console.log('🎯 Répartition par page:', newFields.reduce((acc, f) => {
-          acc[f.page] = (acc[f.page] || 0) + 1;
-          return acc;
-        }, {} as Record<number, number>));
         return newFields;
       });
       setSelectedField(newField.id);
       
       // Changer vers la page où le champ a été placé
       if (page !== currentPage) {
-        console.log('🎯 Changement de page courante vers:', page);
         setCurrentPage(page);
       }
       
@@ -336,12 +270,10 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
     // Mode normal - changer de page
     if (currentPage !== page) {
-      console.log('🎯 === CHANGEMENT DE PAGE NORMAL ===');
-      console.log('🎯 Changement de page vers:', page);
       setCurrentPage(page);
       setSelectedField(null);
     }
-  }, [draggedFieldType, currentPage, pdfDimensions]);
+  }, [draggedFieldType, currentPage]);
 
   // Annuler le mode placement si on appuie sur Échap
   React.useEffect(() => {
