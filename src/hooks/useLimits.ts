@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDemo } from '../contexts/DemoContext';
 import { useSubscription } from './useSubscription';
 import { useForms } from './useForms';
 import { usePDFTemplates } from './usePDFTemplates';
@@ -15,6 +16,7 @@ interface LimitData {
 
 export const useLimits = () => {
   const { user } = useAuth();
+  const { isDemoMode } = useDemo();
   const { isSubscribed } = useSubscription();
   const { forms } = useForms();
   const { templates } = usePDFTemplates();
@@ -40,32 +42,32 @@ export const useLimits = () => {
   // Calculer les limites selon l'abonnement
   const getFormsLimits = (): LimitData => {
     const current = forms.length;
-    const max = isSubscribed ? Infinity : stripeConfig.freeLimits.maxForms;
+    const max = (isSubscribed || isDemoMode) ? Infinity : stripeConfig.freeLimits.maxForms;
     return {
       current,
       max,
-      canCreate: isSubscribed || current < max,
+      canCreate: isSubscribed || isDemoMode || current < max,
     };
   };
 
   const getPdfTemplatesLimits = (): LimitData => {
     const current = templates.length;
-    const max = isSubscribed ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
+    const max = (isSubscribed || isDemoMode) ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
     return {
       current,
       max,
-      canCreate: isSubscribed || current < max,
+      canCreate: isSubscribed || isDemoMode || current < max,
     };
   };
 
   const getSavedPdfsLimits = (): LimitData => {
     const current = savedPdfsCount;
-    const max = isSubscribed ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
+    const max = (isSubscribed || isDemoMode) ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
     return {
       current,
       max,
-      canCreate: isSubscribed || current < max,
-      canSave: isSubscribed || current < max,
+      canCreate: isSubscribed || isDemoMode || current < max,
+      canSave: isSubscribed || isDemoMode || current < max,
     };
   };
 

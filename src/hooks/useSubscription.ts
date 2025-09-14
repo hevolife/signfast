@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDemo } from '../contexts/DemoContext';
 import { supabase } from '../lib/supabase';
 
 export interface SubscriptionData {
@@ -16,6 +17,7 @@ export interface SubscriptionData {
 
 export const useSubscription = () => {
   const { user } = useAuth();
+  const { isDemoMode } = useDemo();
   const [subscription, setSubscription] = useState<SubscriptionData>({
     isSubscribed: false,
     subscriptionStatus: null,
@@ -33,20 +35,36 @@ export const useSubscription = () => {
       fetchSubscription();
     } else {
       setSubscription({
-        isSubscribed: false,
+        isSubscribed: isDemoMode, // Activer l'abonnement en mode démo
         subscriptionStatus: null,
         priceId: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        hasSecretCode: false,
-        secretCodeType: null,
+        hasSecretCode: isDemoMode, // Simuler un code secret en mode démo
+        secretCodeType: isDemoMode ? 'lifetime' : null,
         secretCodeExpiresAt: null,
         loading: false,
       });
     }
-  }, [user]);
+  }, [user, isDemoMode]);
 
   const fetchSubscription = async () => {
+    // En mode démo, simuler un abonnement à vie
+    if (isDemoMode) {
+      setSubscription({
+        isSubscribed: true,
+        subscriptionStatus: 'active',
+        priceId: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        hasSecretCode: true,
+        secretCodeType: 'lifetime',
+        secretCodeExpiresAt: null,
+        loading: false,
+      });
+      return;
+    }
+
     try {
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
