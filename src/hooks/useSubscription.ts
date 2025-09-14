@@ -157,6 +157,7 @@ export const useSubscription = () => {
               }
             }
           }
+        }
       } catch (secretCodeError) {
         // Silent error
       }
@@ -215,8 +216,6 @@ export const useSubscription = () => {
 
   return {
     ...subscription,
-    isImpersonating,
-    stopImpersonation,
     refreshSubscription,
   };
 };
