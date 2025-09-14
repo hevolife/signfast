@@ -6,14 +6,15 @@ import { PDFTemplate } from '../types/pdf';
 export const useDemoForms = () => {
   const { isDemoMode, demoForms, createDemoForm, updateDemoForm, deleteDemoForm } = useDemo();
   const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(Date.now());
 
   // Écouter les changements de configuration admin
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'demo_admin_forms' && isDemoMode) {
         console.log('📝 Mise à jour des formulaires de démo détectée');
-        setLastUpdate(Date.now());
+        // Force un re-render
+        setLoading(true);
+        setTimeout(() => setLoading(false), 100);
       }
     };
 
@@ -21,10 +22,7 @@ export const useDemoForms = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [isDemoMode]);
 
-  const forms = isDemoMode ? demoForms.map(form => ({
-    ...form,
-    // Convertir au format Form attendu
-  } as Form)) : [];
+  const forms = isDemoMode ? demoForms : [];
 
   const totalCount = forms.length;
 
@@ -51,12 +49,16 @@ export const useDemoForms = () => {
   };
 
   const refetch = async () => {
-    // En mode démo, pas besoin de refetch
+    // En mode démo, simuler un refetch
+    setLoading(true);
+    setTimeout(() => setLoading(false), 200);
     return;
   };
 
   const fetchPage = async (page: number, limit: number) => {
-    // En mode démo, pas de pagination
+    // En mode démo, simuler le chargement
+    setLoading(true);
+    setTimeout(() => setLoading(false), 200);
     return;
   };
 
@@ -75,14 +77,15 @@ export const useDemoForms = () => {
 export const useDemoTemplates = () => {
   const { isDemoMode, demoTemplates, createDemoTemplate, updateDemoTemplate, deleteDemoTemplate } = useDemo();
   const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(Date.now());
 
   // Écouter les changements de configuration admin
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'demo_admin_templates' && isDemoMode) {
         console.log('📄 Mise à jour des templates de démo détectée');
-        setLastUpdate(Date.now());
+        // Force un re-render
+        setLoading(true);
+        setTimeout(() => setLoading(false), 100);
       }
     };
 
@@ -90,19 +93,15 @@ export const useDemoTemplates = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [isDemoMode]);
 
-  const templates = isDemoMode ? demoTemplates.map(template => ({
-    ...template,
-    // Convertir au format PDFTemplate attendu
-  } as PDFTemplate)) : [];
+  const templates = isDemoMode ? demoTemplates : [];
 
   const totalCount = templates.length;
 
   const createTemplate = async (templateData: Partial<PDFTemplate>) => {
     if (!isDemoMode) return null;
 
-    // Vérifier les limites selon les paramètres de démo
-    const { demoSettings } = useDemo();
-    const maxTemplates = demoSettings?.maxTemplates || 3;
+    // Limite de 3 templates en mode démo
+    const maxTemplates = 3;
     
     if (templates.length >= maxTemplates) {
       return null;
@@ -123,12 +122,16 @@ export const useDemoTemplates = () => {
   };
 
   const refetch = async () => {
-    // En mode démo, pas besoin de refetch
+    // En mode démo, simuler un refetch
+    setLoading(true);
+    setTimeout(() => setLoading(false), 200);
     return;
   };
 
   const fetchPage = async (page: number, limit: number) => {
-    // En mode démo, pas de pagination
+    // En mode démo, simuler le chargement
+    setLoading(true);
+    setTimeout(() => setLoading(false), 200);
     return;
   };
 

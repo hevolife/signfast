@@ -23,7 +23,6 @@ export const EditForm: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'builder' | 'settings' | 'pdf' | 'share'>('builder');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
@@ -37,34 +36,6 @@ export const EditForm: React.FC = () => {
       }
     }
   }, [forms, id, navigate]);
-
-  // Gérer la navigation bloquante
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    const handlePopState = (e: PopStateEvent) => {
-      if (hasUnsavedChanges) {
-        const confirmLeave = window.confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?');
-        if (!confirmLeave) {
-          e.preventDefault();
-          window.history.pushState(null, '', location.pathname);
-        }
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [hasUnsavedChanges, location.pathname]);
 
   // Validate PDF template exists
   useEffect(() => {
@@ -96,7 +67,6 @@ export const EditForm: React.FC = () => {
       const success = await updateForm(id, { fields });
       if (success) {
         toast.success('Formulaire sauvegardé avec succès !');
-        setForm({ ...form, fields });
         setHasUnsavedChanges(false);
         
         // Sauvegarder les formulaires dans localStorage ET sessionStorage pour les templates PDF
@@ -125,12 +95,6 @@ export const EditForm: React.FC = () => {
       setSaving(false);
     }
   };
-
-  // Marquer comme modifié quand on change les champs
-  const handleFieldsChange = (fields: FormField[]) => {
-    setHasUnsavedChanges(true);
-    handleSaveForm(fields);
-  };
   const handlePublishForm = async () => {
     if (!form || !id) return;
 
@@ -144,7 +108,6 @@ export const EditForm: React.FC = () => {
       const success = await updateForm(id, { is_published: !form.is_published });
       if (success) {
         setForm({ ...form, is_published: !form.is_published });
-        setHasUnsavedChanges(false);
         toast.success(form.is_published ? 'Formulaire dépublié' : 'Formulaire publié avec succès !');
       } else {
         toast.error('Erreur lors de la publication');
@@ -316,7 +279,7 @@ export const EditForm: React.FC = () => {
         {activeTab === 'builder' && (
           <FormBuilder
             initialFields={form.fields || []}
-            onSave={handleFieldsChange}
+            onSave={handleSaveForm}
             saving={saving}
           />
         )}
@@ -335,7 +298,6 @@ export const EditForm: React.FC = () => {
                   value={form.title}
                   onChange={(e) => {
                     setForm({ ...form, title: e.target.value });
-                    setHasUnsavedChanges(true);
                   }}
                 />
               </div>
@@ -347,7 +309,6 @@ export const EditForm: React.FC = () => {
                   value={form.description || ''}
                   onChange={(e) => {
                     setForm({ ...form, description: e.target.value });
-                    setHasUnsavedChanges(true);
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                   rows={3}
@@ -363,7 +324,6 @@ export const EditForm: React.FC = () => {
                       ...form,
                       settings: { ...form.settings, allowMultiple: e.target.checked }
                     });
-                    setHasUnsavedChanges(true);
                   }}
                   className="text-blue-600"
                 />
@@ -373,36 +333,33 @@ export const EditForm: React.FC = () => {
               </div>
               
               {/* Bouton de sauvegarde pour les paramètres */}
-              {hasUnsavedChanges && (
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <Button
-                    onClick={async () => {
-                      setSaving(true);
-                      try {
-                        const success = await updateForm(id!, {
-                          title: form.title,
-                          description: form.description,
-                          settings: form.settings
-                        });
-                        if (success) {
-                          toast.success('Paramètres sauvegardés !');
-                          setHasUnsavedChanges(false);
-                        } else {
-                          toast.error('Erreur lors de la sauvegarde');
-                        }
-                      } catch (error) {
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Button
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      const success = await updateForm(id!, {
+                        title: form.title,
+                        description: form.description,
+                        settings: form.settings
+                      });
+                      if (success) {
+                        toast.success('Paramètres sauvegardés !');
+                      } else {
                         toast.error('Erreur lors de la sauvegarde');
-                      } finally {
-                        setSaving(false);
                       }
-                    }}
-                    disabled={saving}
-                    className="w-full"
-                  >
-                    {saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
-                  </Button>
-                </div>
-              )}
+                    } catch (error) {
+                      toast.error('Erreur lors de la sauvegarde');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  className="w-full"
+                >
+                  {saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
+                </Button>
+              </div>
               
               {/* Avertissement si génération PDF activée sans template */}
               {form.settings?.generatePdf && !form.settings?.pdfTemplateId && (
@@ -424,11 +381,9 @@ export const EditForm: React.FC = () => {
             form={form}
             onUpdate={(updates) => {
               setForm({ ...form, ...updates });
-              setHasUnsavedChanges(true);
               // Auto-save PDF settings
               if (id) {
                 updateForm(id, updates);
-                setHasUnsavedChanges(false);
                 
                 // Si un template PDF est sélectionné, mettre à jour sa liaison avec ce formulaire
                 if (updates.settings?.pdfTemplateId) {

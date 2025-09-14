@@ -16,6 +16,7 @@ export const usePDFTemplates = () => {
 
   // Si on est en mode démo, utiliser les données de démo
   if (isDemoMode) {
+    console.log('📄 Mode démo actif, utilisation hook démo');
     return demoTemplatesHook;
   }
 
@@ -96,7 +97,7 @@ export const usePDFTemplates = () => {
     // Chargement immédiat sans attendre
     setLoading(true);
     fetchTemplates(1, 10);
-  }, [user, isDemoMode, demoTemplates]);
+  }, [user]);
 
   return {
     templates,

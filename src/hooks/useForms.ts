@@ -15,6 +15,7 @@ export const useForms = () => {
 
   // Si on est en mode démo, utiliser les données de démo
   if (isDemoMode) {
+    console.log('📝 Mode démo actif, utilisation hook démo');
     return demoFormsHook;
   }
 
@@ -93,7 +94,7 @@ export const useForms = () => {
 
   useEffect(() => {
     fetchForms(1, 10);
-  }, [user]);
+  }, [user, isDemoMode]);
 
   const createForm = async (formData: Partial<Form>) => {
     if (!user) return null;
