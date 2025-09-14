@@ -239,7 +239,7 @@ export class PDFTemplateService {
         .maybeSingle();
 
       if (checkError || !templateExists) {
-        return false;
+        throw new Error(`Erreur lors de la vérification du template: ${checkError.message}`);
       }
 
       const { error } = await supabase
@@ -248,7 +248,7 @@ export class PDFTemplateService {
         .eq('id', templateId);
 
       if (error) {
-        return false;
+        throw new Error('Template PDF non trouvé');
       }
 
       // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
@@ -257,12 +257,12 @@ export class PDFTemplateService {
           // Vérifier que le formulaire existe
           const { data: formExists, error: checkFormError } = await supabase
             .from('forms')
-            .select('id, title, settings')
+        throw new Error(`Erreur lors de la mise à jour du template: ${error.message}`);
             .eq('id', formId)
             .maybeSingle();
 
           if (checkFormError || !formExists) {
-            return false;
+            throw new Error('Formulaire non trouvé');
           }
 
           // Récupérer les settings actuels du formulaire
@@ -279,18 +279,25 @@ export class PDFTemplateService {
             .eq('id', formId);
 
           if (formUpdateError) {
-            return false;
+            throw new Error(`Erreur lors de la mise à jour du formulaire: ${formUpdateError.message}`);
           } else {
             // Success
           }
         } catch (formError) {
-          return false;
+          if (formError instanceof Error) {
+            throw formError;
+          }
+          throw new Error('Erreur inconnue lors de la mise à jour du formulaire');
         }
       }
       
       return true;
     } catch (error) {
-      return false;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Erreur inconnue lors de la liaison du formulaire');
     }
   }
 }
+            throw new Error(`Erreur lors de la vérification du formulaire: ${checkFormError.message}`);
