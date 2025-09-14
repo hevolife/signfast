@@ -86,6 +86,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'codes' | 'affiliates' | 'demo'>('overview');
+  const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [newCodeType, setNewCodeType] = useState<'monthly' | 'lifetime'>('monthly');
   const [newCodeDescription, setNewCodeDescription] = useState('');
@@ -94,6 +95,14 @@ export const SuperAdminDashboard: React.FC = () => {
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<string | null>(null);
   const [newSubscriptionDuration, setNewSubscriptionDuration] = useState<'1month' | '2months' | '6months' | '1year' | 'lifetime'>('1month');
+
+  // Détecter mobile
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleEditSubscription = (userId: string) => {
     setEditingSubscription(userId);
@@ -446,15 +455,15 @@ export const SuperAdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* En-tête simplifié */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 Administration
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
                 Gestion de la plateforme SignFast
               </p>
             </div>
@@ -464,7 +473,8 @@ export const SuperAdminDashboard: React.FC = () => {
               onClick={handleToggleMaintenance}
               disabled={maintenanceLoading}
               variant={isMaintenanceMode ? "primary" : "danger"}
-              className="flex items-center space-x-2"
+              size={isMobile ? "sm" : "md"}
+              className="flex items-center space-x-1 sm:space-x-2 w-full sm:w-auto justify-center"
             >
               {maintenanceLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -473,22 +483,22 @@ export const SuperAdminDashboard: React.FC = () => {
               ) : (
                 <AlertTriangle className="h-4 w-4" />
               )}
-              <span>
+              <span className="text-xs sm:text-sm">
                 {maintenanceLoading 
                   ? 'Mise à jour...' 
                   : isMaintenanceMode 
-                  ? 'Désactiver maintenance' 
-                  : 'Activer maintenance'
+                  ? isMobile ? 'Désactiver' : 'Désactiver maintenance'
+                  : isMobile ? 'Activer' : 'Activer maintenance'
                 }
               </span>
             </Button>
           </div>
           
           {isMaintenanceMode && (
-            <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+            <div className="mt-4 p-2 sm:p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
               <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-medium">
+                <span className="text-xs sm:text-sm font-medium">
                   Site en maintenance - Seuls les super admins peuvent accéder
                 </span>
               </div>
@@ -498,7 +508,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
         {/* Navigation simplifiée */}
         <div className="mb-8">
-          <nav className="flex space-x-1 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm">
+          <nav className="flex flex-wrap gap-1 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm overflow-x-auto">
             {[
               { id: 'overview', label: 'Vue d\'ensemble', icon: Activity },
               { id: 'users', label: 'Utilisateurs', icon: Users, count: totalUsers },
@@ -509,16 +519,17 @@ export const SuperAdminDashboard: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
-                <span>{tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                 {tab.count !== undefined && (
-                  <span className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs">
+                  <span className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1 sm:px-2 py-0.5 rounded-full text-xs">
                     {tab.count}
                   </span>
                 )}
@@ -531,67 +542,67 @@ export const SuperAdminDashboard: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Statistiques principales */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                         Utilisateurs
                       </p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {totalUsers}
                       </p>
                     </div>
-                    <Users className="h-8 w-8 text-blue-600" />
+                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                         Abonnés Pro
                       </p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {subscribedUsers}
                       </p>
                     </div>
-                    <Crown className="h-8 w-8 text-green-600" />
+                    <Crown className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                         Codes actifs
                       </p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {activeSecretCodes}
                       </p>
                     </div>
-                    <Key className="h-8 w-8 text-purple-600" />
+                    <Key className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                         Formulaires
                       </p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {totalForms}
                       </p>
                     </div>
-                    <FileText className="h-8 w-8 text-orange-600" />
+                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -600,7 +611,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Activité récente */}
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                   Utilisateurs récents
                 </h3>
               </CardHeader>
@@ -609,21 +620,21 @@ export const SuperAdminDashboard: React.FC = () => {
                   {users.slice(0, 5).map((user) => {
                     const status = getSubscriptionStatus(user);
                     return (
-                      <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <div key={user.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2 sm:space-y-0">
+                        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
                             <Users className="h-4 w-4 text-blue-600" />
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-gray-900 dark:text-white text-sm sm:text-base truncate">
                               {getUserDisplayName(user)}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs sm:text-sm text-gray-500 truncate">
                               {user.email}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-end space-x-2 flex-shrink-0">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             status.color === 'purple' 
                               ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
@@ -632,7 +643,7 @@ export const SuperAdminDashboard: React.FC = () => {
                               : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                           }`}>
                             {status.icon}
-                            <span className="ml-1">{status.status}</span>
+                            <span className="ml-1 hidden sm:inline">{status.status}</span>
                           </span>
                         </div>
                       </div>
@@ -649,14 +660,14 @@ export const SuperAdminDashboard: React.FC = () => {
           <div className="space-y-6">
             {/* Recherche */}
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Rechercher par email, nom ou entreprise..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 text-sm"
                   />
                 </div>
               </CardContent>
@@ -670,21 +681,21 @@ export const SuperAdminDashboard: React.FC = () => {
 
                 return (
                   <Card key={adminUser.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
+                    <CardContent className="p-3 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                         {/* Informations utilisateur */}
-                        <div className="flex items-center space-x-4 flex-1">
-                          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
                             {adminUser.profile?.company_name ? (
-                              <Building className="h-6 w-6 text-blue-600" />
+                              <Building className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                             ) : (
-                              <Users className="h-6 w-6 text-blue-600" />
+                              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                             )}
                           </div>
                           
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-3 mb-1">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                              <h3 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                                 {displayName}
                               </h3>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -695,16 +706,16 @@ export const SuperAdminDashboard: React.FC = () => {
                                   : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                               }`}>
                                 {subscriptionInfo.icon}
-                                <span className="ml-1">{subscriptionInfo.status}</span>
+                                <span className="ml-1 hidden sm:inline">{subscriptionInfo.status}</span>
                               </span>
                             </div>
                             
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <Mail className="h-3 w-3" />
+                            <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
+                              <Mail className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate">{adminUser.email}</span>
                             </div>
                             
-                            <div className="flex items-center space-x-4 mt-2 text-xs text-gray-400">
+                            <div className="flex items-center space-x-2 sm:space-x-4 mt-1 text-xs text-gray-400">
                               <span>📝 {adminUser.stats.forms_count}</span>
                               <span>📄 {adminUser.stats.templates_count}</span>
                               <span>💾 {adminUser.stats.pdfs_count}</span>
@@ -714,13 +725,13 @@ export const SuperAdminDashboard: React.FC = () => {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-end space-x-2 flex-shrink-0">
                           {editingSubscription === adminUser.id ? (
-                            <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg w-full sm:w-auto">
                               <select
                                 value={newSubscriptionDuration}
                                 onChange={(e) => setNewSubscriptionDuration(e.target.value as any)}
-                                className="text-xs border border-blue-300 rounded px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                className="text-xs border border-blue-300 rounded px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full sm:w-auto"
                               >
                                 <option value="1month">1 mois</option>
                                 <option value="2months">2 mois</option>
@@ -728,41 +739,43 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <option value="1year">1 an</option>
                                 <option value="lifetime">À vie</option>
                               </select>
-                              <Button
-                                size="sm"
-                                onClick={() => handleSaveSubscription(adminUser.id)}
-                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1"
-                              >
-                                <Save className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={handleCancelEditSubscription}
-                                className="text-gray-600 hover:text-gray-800 px-2 py-1"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveSubscription(adminUser.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 flex-1 sm:flex-none"
+                                >
+                                  <Save className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={handleCancelEditSubscription}
+                                  className="text-gray-600 hover:text-gray-800 px-2 py-1 flex-1 sm:flex-none"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           ) : (
-                            <>
+                            <div className="flex space-x-2">
                               <Button
                                 onClick={() => handleEditSubscription(adminUser.id)}
                                 variant="ghost"
                                 size="sm"
-                                className="text-blue-600 hover:text-blue-700"
+                                className="text-blue-600 hover:text-blue-700 px-2 py-1"
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                               <Button
                                 onClick={() => impersonateUser(adminUser)}
                                 size="sm"
-                                className="bg-red-600 hover:bg-red-700 text-white"
+                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1"
                                 disabled={!session?.access_token}
                               >
                                 <UserCheck className="h-4 w-4" />
                               </Button>
-                            </>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -794,20 +807,21 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Création de code */}
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                   Créer un code secret
                 </h3>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Type
                     </label>
                     <select
                       value={newCodeType}
                       onChange={(e) => setNewCodeType(e.target.value as 'monthly' | 'lifetime')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"
                     >
                       <option value="monthly">Mensuel</option>
                       <option value="lifetime">À vie</option>
@@ -816,6 +830,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   
                   <Input
                     label="Utilisations"
+                    className="text-sm"
                     type="number"
                     min="1"
                     max="1000"
@@ -825,28 +840,30 @@ export const SuperAdminDashboard: React.FC = () => {
                   
                   <Input
                     label="Description"
+                    className="text-sm"
                     value={newCodeDescription}
                     onChange={(e) => setNewCodeDescription(e.target.value)}
                     placeholder="Description du code"
                   />
                   
-                  <div className="flex items-end">
-                    <Button onClick={createSecretCode} className="w-full">
+                  <div className="flex items-end lg:col-span-1">
+                    <Button onClick={createSecretCode} className="w-full text-sm">
                       <Plus className="h-4 w-4 mr-2" />
                       Créer
                     </Button>
+                  </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Liste des codes */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {secretCodes.length === 0 ? (
                 <Card>
-                  <CardContent className="text-center py-8">
-                    <Key className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">
+                  <CardContent className="text-center py-6 sm:py-8">
+                    <Key className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                       Aucun code secret créé
                     </p>
                   </CardContent>
@@ -854,27 +871,27 @@ export const SuperAdminDashboard: React.FC = () => {
               ) : (
                 secretCodes.map((code) => (
                   <Card key={code.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 flex-1">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 flex-1 min-w-0">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             code.type === 'lifetime' 
                               ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
                               : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                          }`}>
+                          } self-start sm:self-center`}>
                             {code.type === 'lifetime' ? <Crown className="h-3 w-3 mr-1" /> : <Calendar className="h-3 w-3 mr-1" />}
                             {code.type === 'lifetime' ? 'À vie' : 'Mensuel'}
                           </span>
                           
-                          <div className="flex items-center space-x-2">
-                            <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs sm:text-sm font-mono truncate">
                               {showPasswords[code.code] ? code.code : '••••••••'}
                             </code>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => togglePasswordVisibility(code.code)}
-                              className="p-1"
+                              className="p-1 flex-shrink-0"
                             >
                               {showPasswords[code.code] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                             </Button>
@@ -882,34 +899,36 @@ export const SuperAdminDashboard: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => copyCode(code.code)}
-                              className="p-1"
+                              className="p-1 flex-shrink-0"
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                           
-                          <div className="flex-1">
-                            <div className="text-sm text-gray-900 dark:text-white">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                               {code.description}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 truncate">
                               {code.current_uses}/{code.max_uses || '∞'} utilisations
                               {code.expires_at && (
-                                <span className="ml-2">• Expire le {formatDateFR(code.expires_at)}</span>
+                                <span className="block sm:inline sm:ml-2">Expire le {formatDateFR(code.expires_at)}</span>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteSecretCode(code.id, code.code)}
-                          className="text-red-600 hover:text-red-700"
-                          disabled={!session?.access_token}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end sm:justify-start">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteSecretCode(code.id, code.code)}
+                            className="text-red-600 hover:text-red-700 px-2 py-1"
+                            disabled={!session?.access_token}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
