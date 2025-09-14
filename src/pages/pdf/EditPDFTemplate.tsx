@@ -6,6 +6,7 @@ import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useForms } from '../../hooks/useForms';
 import { usePDFTemplates } from '../../hooks/usePDFTemplates';
+import { useDemo } from '../../contexts/DemoContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,7 @@ export const EditPDFTemplate: React.FC = () => {
   const { user } = useAuth();
   const { forms, refetch: refetchForms } = useForms();
   const { templates, loading: templatesLoading } = usePDFTemplates();
+  const { isDemoMode, updateDemoTemplate, updateDemoForm } = useDemo();
   const [template, setTemplate] = useState<PDFTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -215,57 +217,77 @@ export const EditPDFTemplate: React.FC = () => {
     try {
       console.log('🔗 Début liaison template-formulaire:', id, '→', formId);
       
-      // Mettre à jour la liaison dans Supabase
-      const success = await PDFTemplateService.linkTemplateToForm(id, formId);
-      
-      console.log('✅ Liaison Supabase réussie');
+      // Vérifier si on est en mode démo
+      if (isDemoMode) {
+        console.log('🎭 Mode démo détecté, mise à jour locale');
+        
+        // Mettre à jour le template en mode démo
+        updateDemoTemplate(id, { linkedFormId: formId });
+        
+        // Mettre à jour le formulaire en mode démo si nécessaire
+        if (formId) {
+          updateDemoForm(formId, {
+            settings: {
+              pdfTemplateId: id,
+              generatePdf: true,
+            }
+          });
+        }
+        
+        console.log('✅ Liaison démo réussie');
+      } else {
+        // Mettre à jour la liaison dans Supabase
+        const success = await PDFTemplateService.linkTemplateToForm(id, formId);
+        
+        console.log('✅ Liaison Supabase réussie');
+        
+        // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
+        if (formId && user) {
+          console.log('🔗 Mise à jour du formulaire cible:', formId);
+          const selectedForm = forms.find(f => f.id === formId);
+          
+          if (!selectedForm) {
+            console.warn('⚠️ Formulaire non trouvé dans la liste locale, actualisation...');
+            await refetchForms();
+            const refreshedForms = forms.find(f => f.id === formId);
+            if (!refreshedForms) {
+              console.error('❌ Formulaire toujours non trouvé après actualisation');
+              toast.error('Formulaire non trouvé');
+              return;
+            }
+          }
+          
+          try {
+            const { error: formUpdateError } = await supabase
+              .from('forms')
+              .update({
+                settings: {
+                  ...selectedForm?.settings,
+                  pdfTemplateId: id,
+                  generatePdf: true, // Activer automatiquement la génération PDF
+                }
+              })
+              .eq('id', formId)
+              .eq('user_id', user.id);
+
+            if (formUpdateError) {
+              console.warn('⚠️ Erreur mise à jour formulaire:', formUpdateError);
+              toast.error('Template lié mais erreur mise à jour formulaire');
+            } else {
+              console.log('✅ Formulaire mis à jour avec le template ID');
+              // Rafraîchir la liste des formulaires pour refléter les changements
+              await refetchForms();
+              console.log('✅ Liste des formulaires actualisée');
+            }
+          } catch (formError) {
+            console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
+            toast.error('Template lié mais erreur mise à jour formulaire');
+          }
+        }
+      }
       
       // Mettre à jour le template local
       setTemplate({ ...template, linkedFormId: formId });
-      
-      // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
-      if (formId && user) {
-        console.log('🔗 Mise à jour du formulaire cible:', formId);
-        const selectedForm = forms.find(f => f.id === formId);
-        
-        if (!selectedForm) {
-          console.warn('⚠️ Formulaire non trouvé dans la liste locale, actualisation...');
-          await refetchForms();
-          const refreshedForms = forms.find(f => f.id === formId);
-          if (!refreshedForms) {
-            console.error('❌ Formulaire toujours non trouvé après actualisation');
-            toast.error('Formulaire non trouvé');
-            return;
-          }
-        }
-        
-        try {
-          const { error: formUpdateError } = await supabase
-            .from('forms')
-            .update({
-              settings: {
-                ...selectedForm?.settings,
-                pdfTemplateId: id,
-                generatePdf: true, // Activer automatiquement la génération PDF
-              }
-            })
-            .eq('id', formId)
-            .eq('user_id', user.id);
-
-          if (formUpdateError) {
-            console.warn('⚠️ Erreur mise à jour formulaire:', formUpdateError);
-            toast.warn('Template lié mais erreur mise à jour formulaire');
-          } else {
-            console.log('✅ Formulaire mis à jour avec le template ID');
-            // Rafraîchir la liste des formulaires pour refléter les changements
-            await refetchForms();
-            console.log('✅ Liste des formulaires actualisée');
-          }
-        } catch (formError) {
-          console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
-          toast.warn('Template lié mais erreur mise à jour formulaire');
-        }
-      }
       
       toast.success(formId ? 'Formulaire lié avec succès !' : 'Formulaire délié avec succès !');
     } catch (error) {
