@@ -137,7 +137,9 @@ export const useForms = () => {
     
     if (isImpersonating && impersonationData) {
       targetUserId = impersonationData.target_user_id;
+      targetUserId = impersonationData.target_user_id;
       console.log('🎭 Mode impersonation: mise à jour pour', impersonationData.target_email);
+      console.log('🎭 Target user ID:', targetUserId);
       console.log('🎭 Target user ID:', targetUserId);
     }
 
@@ -186,19 +188,32 @@ export const useForms = () => {
     }
 
     try {
+      console.log('📝 Tentative mise à jour avec:', { id, targetUserId, updates });
+      
       const { error } = await supabase
         .from('forms')
         .delete()
         .eq('id', id)
         .eq('user_id', targetUserId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erreur Supabase updateForm:', error);
+        console.error('❌ Détails erreur:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
       
       console.log('✅ Formulaire supprimé avec succès');
       await fetchForms(1, 10); // Recharger la liste
       return true;
     } catch (error) {
-      console.error('❌ Erreur deleteForm:', error);
+      console.error('❌ Erreur générale updateForm:', error);
+      console.error('❌ Type d\'erreur:', typeof error);
+      console.error('❌ Message d\'erreur:', error instanceof Error ? error.message : String(error));
       return false;
     }
   };
