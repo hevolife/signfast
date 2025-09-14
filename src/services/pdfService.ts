@@ -542,12 +542,12 @@ export class PDFService {
       console.log('💾 === DÉBUT listPDFs ===');
       
       // Cache plus agressif pour éviter les requêtes répétées
-      const cacheKey = `pdf_list_${page}_${limit}`;
+      const cacheKey = `pdf_list_${page}_${limit}_v2`;
       const cached = sessionStorage.getItem(cacheKey);
       const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
       
-      // Utiliser le cache si moins de 10 secondes (cache plus court mais plus agressif)
-      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 10000) {
+      // Utiliser le cache si moins de 30 secondes
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 30000) {
         console.log('💾 Utilisation cache pour listPDFs');
         return JSON.parse(cached);
       }
@@ -563,67 +563,127 @@ export class PDFService {
       const targetUserId = user.id;
       console.log('💾 Liste PDFs pour userId:', targetUserId);
       
-      // Requête ultra-optimisée : récupérer données et count en parallèle avec timeout
-      const [countResult, dataResult] = await Promise.all([
-        // Requête de comptage avec timeout
-        Promise.race([
+      // Stratégie de chargement progressive : d'abord les métadonnées essentielles
+      console.log('💾 Chargement métadonnées essentielles...');
+      
+      // Étape 1 : Compter rapidement
+      let totalCount = 0;
+      try {
+        const { count, error: countError } = await Promise.race([
           supabase
             .from('pdf_storage')
             .select('id', { count: 'estimated', head: true })
             .eq('user_id', targetUserId),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout count')), 2000)
+            setTimeout(() => reject(new Error('Timeout count')), 1500)
           )
-        ]),
-        // Requête de données avec timeout
-        Promise.race([
+        ]);
+        
+        if (countError) {
+          console.warn('⚠️ Erreur comptage, estimation à 0');
+          totalCount = 0;
+        } else {
+          totalCount = count || 0;
+        }
+      } catch (countError) {
+        console.warn('⚠️ Timeout comptage, estimation basée sur cache');
+        totalCount = 0;
+      }
+      
+      // Étape 2 : Charger les données essentielles seulement
+      let pdfsData = [];
+      try {
+        const { data, error } = await Promise.race([
           supabase
             .from('pdf_storage')
-            .select('file_name, response_id, template_name, form_title, file_size, created_at, form_data')
+            .select('file_name, response_id, template_name, form_title, file_size, created_at')
             .eq('user_id', targetUserId)
             .range((page - 1) * limit, page * limit - 1)
             .order('created_at', { ascending: false }),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout data')), 3000)
+            setTimeout(() => reject(new Error('Timeout data')), 2000)
           )
-        ])
-      ]);
+        ]);
 
-      const { count: totalCount, error: countError } = countResult;
-      const { data, error } = dataResult;
-
-      if (error) {
-        console.error('❌ Erreur récupération PDFs:', error);
-        // En cas d'erreur, retourner les données du cache si disponibles
+        if (error) {
+          throw error;
+        }
+        
+        pdfsData = data || [];
+        console.log('💾 Métadonnées chargées:', pdfsData.length, 'PDFs');
+        
+      } catch (dataError) {
+        console.error('❌ Erreur chargement métadonnées:', dataError);
+        // En cas d'erreur, essayer le cache
         if (cached) {
-          console.log('💾 Fallback vers cache en cas d\'erreur');
+          console.log('💾 Fallback vers cache en cas d\'erreur métadonnées');
           return JSON.parse(cached);
         }
         return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
+      
+      // Étape 3 : Charger les form_data en arrière-plan pour les noms
+      const pdfsWithFormData = await Promise.all(
+        pdfsData.map(async (pdf) => {
+          try {
+            // Essayer de charger les form_data avec timeout très court
+            const { data: formDataResult, error: formDataError } = await Promise.race([
+              supabase
+                .from('pdf_storage')
+                .select('form_data')
+                .eq('file_name', pdf.file_name)
+                .eq('user_id', targetUserId)
+                .single(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout form_data')), 500)
+              )
+            ]);
+            
+            if (formDataError || !formDataResult) {
+              // Fallback : retourner sans form_data
+              return {
+                fileName: pdf.file_name,
+                responseId: pdf.response_id || 'supabase',
+                templateName: pdf.template_name || 'Template PDF',
+                formTitle: pdf.form_title,
+                createdAt: pdf.created_at,
+                size: pdf.file_size || 0,
+                formData: {}, // Vide en cas d'erreur
+              };
+            }
+            
+            return {
+              fileName: pdf.file_name,
+              responseId: pdf.response_id || 'supabase',
+              templateName: pdf.template_name || 'Template PDF',
+              formTitle: pdf.form_title,
+              createdAt: pdf.created_at,
+              size: pdf.file_size || 0,
+              formData: formDataResult.form_data || {},
+            };
+          } catch (error) {
+            // En cas d'erreur, retourner les métadonnées de base
+            console.warn('⚠️ Erreur chargement form_data pour:', pdf.file_name);
+            return {
+              fileName: pdf.file_name,
+              responseId: pdf.response_id || 'supabase',
+              templateName: pdf.template_name || 'Template PDF',
+              formTitle: pdf.form_title,
+              createdAt: pdf.created_at,
+              size: pdf.file_size || 0,
+              formData: {}, // Vide en cas d'erreur
+            };
+          }
+        })
+      );
 
-      if (countError) {
-        console.warn('⚠️ Erreur comptage PDFs:', countError);
-      }
+      const totalPages = Math.ceil(totalCount / limit);
 
-      const total = totalCount || 0;
-      const totalPages = Math.ceil(total / limit);
-
-      const pdfs = (data || []).map(item => ({
-        fileName: item.file_name,
-        responseId: item.response_id || 'supabase',
-        templateName: item.template_name || 'Template PDF',
-        formTitle: item.form_title,
-        createdAt: item.created_at,
-        size: item.file_size || 0,
-        formData: item.form_data || {}, // Charger les form_data pour l'affichage des noms
-      }));
-
-      console.log('💾 PDFs récupérés:', pdfs.length, 'sur', total);
+      console.log('💾 PDFs récupérés:', pdfsWithFormData.length, 'sur', totalCount);
 
       const result = {
-        pdfs,
-        totalCount: total,
+        pdfs: pdfsWithFormData,
+        totalCount,
         totalPages
       };
       
@@ -635,7 +695,7 @@ export class PDFService {
         // Nettoyer les anciens caches
         for (let i = 0; i < sessionStorage.length; i++) {
           const key = sessionStorage.key(i);
-          if (key?.startsWith('pdf_list_') && key !== cacheKey) {
+          if (key?.startsWith('pdf_list_') && key !== cacheKey && !key.includes('_time')) {
             const timeKey = `${key}_time`;
             const time = sessionStorage.getItem(timeKey);
             if (!time || Date.now() - parseInt(time) > 60000) { // Supprimer les caches > 1 minute
@@ -654,7 +714,7 @@ export class PDFService {
       
       // En cas d'erreur générale, essayer le cache
       try {
-        const cacheKey = `pdf_list_${page}_${limit}`;
+        const cacheKey = `pdf_list_${page}_${limit}_v2`;
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           console.log('💾 Fallback cache en cas d\'erreur générale');
