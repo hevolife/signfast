@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-4">
-            {user || isDemoMode ? (
+            {!!user || isDemoMode ? (
               <>
                 {isDemoMode && (
                   <div className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
@@ -148,7 +148,7 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile: Only dark mode toggle and logo */}
           <div className="md:hidden flex items-center space-x-2">
-            {user || isDemoMode && (
+            {(!!user || isDemoMode) && (
               <Button
                 variant="ghost"
                 size="sm"
