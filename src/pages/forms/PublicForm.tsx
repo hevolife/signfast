@@ -29,6 +29,7 @@ export const PublicForm: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showFinalMessage, setShowFinalMessage] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [generatedPDF, setGeneratedPDF] = useState<Uint8Array | null>(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
@@ -365,6 +366,11 @@ export const PublicForm: React.FC = () => {
 
       setSubmitted(true);
       toast.success('Formulaire envoyé avec succès !');
+      
+      // Attendre 3 secondes avant d'afficher le message final
+      setTimeout(() => {
+        setShowFinalMessage(true);
+      }, 3000);
       
     } catch (error) {
       toast.error('Erreur lors de l\'envoi');
@@ -877,13 +883,32 @@ export const PublicForm: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
           <CardContent className="text-center py-16">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Merci pour votre réponse !
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Votre formulaire a été envoyé avec succès.
-            </p>
+            {!showFinalMessage ? (
+              <>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Merci pour votre réponse !
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Patientez quelques secondes...
+                </p>
+                <div className="mt-4 flex items-center justify-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-75"></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-150"></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Parfait !
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Votre formulaire a été envoyé avec succès.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
