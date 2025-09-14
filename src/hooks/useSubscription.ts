@@ -53,6 +53,7 @@ export const useSubscription = () => {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('Supabase non configuré, pas d\'abonnement disponible');
         setSubscription(prev => ({ ...prev, loading: false }));
         return;
       }

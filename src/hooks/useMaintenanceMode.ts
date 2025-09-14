@@ -12,6 +12,17 @@ export const useMaintenanceMode = () => {
 
   const checkMaintenanceMode = async () => {
     try {
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('Supabase non configuré, mode maintenance désactivé par défaut');
+        setIsMaintenanceMode(false);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('system_settings')
         .select('value')

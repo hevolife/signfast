@@ -9,6 +9,15 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supab
 
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
+  // Vérifier si Supabase est configuré avant de faire des requêtes
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+    console.warn('Supabase non configuré, requête ignorée');
+    throw new Error('Supabase non configuré');
+  }
+
   const response = await fetch(url, options);
   
   // Check for session expiration
