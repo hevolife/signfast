@@ -38,7 +38,7 @@ export const FormResults: React.FC = () => {
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [loadingResponseData, setLoadingResponseData] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     if (forms.length > 0 && id) {

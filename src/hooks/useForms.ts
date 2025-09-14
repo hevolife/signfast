@@ -123,7 +123,7 @@ export const useFormResponses = (formId: string) => {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchResponses = async (page: number = 1, limit: number = 20) => {
+  const fetchResponses = async (page: number = 1, limit: number = 10) => {
     const offset = (page - 1) * limit;
     
     try {
