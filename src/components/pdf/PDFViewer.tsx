@@ -87,6 +87,20 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       if (file instanceof File) {
         const arrayBuffer = await file.arrayBuffer();
         pdfData = new Uint8Array(arrayBuffer);
+      } else if (typeof file === 'string') {
+        // Handle base64 data URL
+        if (file.startsWith('data:application/pdf;base64,')) {
+          const base64Data = file.split(',')[1];
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          pdfData = bytes;
+        } else {
+          // Assume it's already a URL or raw data
+          pdfData = file;
+        }
       } else {
         pdfData = file;
       }
