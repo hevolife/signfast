@@ -253,41 +253,32 @@ export class PDFTemplateService {
 
       // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
       if (formId) {
-        try {
-          // Vérifier que le formulaire existe
-          const { data: formExists, error: checkFormError } = await supabase
-            .from('forms')
-            .select('id, settings')
-            .eq('id', formId)
-            .maybeSingle();
+        // Vérifier que le formulaire existe
+        const { data: formExists, error: checkFormError } = await supabase
+          .from('forms')
+          .select('id, settings')
+          .eq('id', formId)
+          .maybeSingle();
 
-          if (checkFormError || !formExists) {
-            throw new Error('Formulaire non trouvé');
-          }
+        if (checkFormError || !formExists) {
+          throw new Error('Formulaire non trouvé');
+        }
 
-          // Récupérer les settings actuels du formulaire
-          const { error: formUpdateError } = await supabase
-            .from('forms')
-            .update({
-              settings: {
-                ...formExists.settings,
-                pdfTemplateId: templateId,
-                generatePdf: true, // Activer automatiquement la génération PDF
-                savePdfToServer: true, // Activer aussi la sauvegarde
-              }
-            })
-            .eq('id', formId);
+        // Récupérer les settings actuels du formulaire
+        const { error: formUpdateError } = await supabase
+          .from('forms')
+          .update({
+            settings: {
+              ...formExists.settings,
+              pdfTemplateId: templateId,
+              generatePdf: true, // Activer automatiquement la génération PDF
+              savePdfToServer: true, // Activer aussi la sauvegarde
+            }
+          })
+          .eq('id', formId);
 
-          if (formUpdateError) {
-            throw new Error(`Erreur lors de la mise à jour du formulaire: ${formUpdateError.message}`);
-          } else {
-            // Success
-          }
-        } catch (formError) {
-          return false;
-            throw formError;
-          }
-          throw new Error('Erreur inconnue lors de la mise à jour du formulaire');
+        if (formUpdateError) {
+          throw new Error(`Erreur lors de la mise à jour du formulaire: ${formUpdateError.message}`);
         }
       }
       
