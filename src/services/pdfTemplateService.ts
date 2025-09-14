@@ -33,24 +33,14 @@ export class PDFTemplateService {
   // RÉCUPÉRER UN TEMPLATE PAR ID (ACCÈS PUBLIC)
   static async getTemplate(templateId: string): Promise<PDFTemplate | null> {
     try {
-      // Vérifier si Supabase est configuré
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('Supabase non configuré, impossible de récupérer le template');
-        return null;
-      }
-
       const { data, error } = await supabase
         .from('pdf_templates')
         .select('*')
         .eq('id', templateId)
-        .eq('is_public', true) // Templates publics accessibles à tous
+        .eq('is_public', true) // Seulement les templates publics
         .single();
 
       if (error) {
-        console.warn('Erreur récupération template public:', error);
         return null;
       }
 
@@ -74,10 +64,8 @@ export class PDFTemplateService {
         user_id: data.user_id,
       };
 
-      console.log('✅ Template public récupéré:', template.name, 'avec', template.fields.length, 'champs');
       return template;
     } catch (error) {
-      console.error('❌ Erreur récupération template public:', error);
       return null;
     }
   }

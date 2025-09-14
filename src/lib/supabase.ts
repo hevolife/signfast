@@ -8,14 +8,14 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supab
 }
 
 // Custom fetch function to handle session expiration
-const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
+const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   // Vérifier si Supabase est configuré avant de faire des requêtes
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   
   if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
     console.warn('Supabase non configuré, requête ignorée');
-    return Promise.reject(new Error('Supabase non configuré'));
+    throw new Error('Supabase non configuré');
   }
 
   const response = await fetch(url, options);
@@ -27,16 +27,10 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       if (body.code === 'session_not_found') {
         // Session expired, sign out the user
         console.log('Session expired, signing out user');
-        await supabase.auth.signOut();
-        // Throw specific error to prevent further API calls
-        throw new Error('AUTH_SESSION_EXPIRED');
+        supabase.auth.signOut();
       }
     } catch (error) {
-      // If we can't parse the response body, check if it's our auth error
-      if (error instanceof Error && error.message === 'AUTH_SESSION_EXPIRED') {
-        throw error;
-      }
-      // Otherwise ignore parsing errors
+      // If we can't parse the response body, ignore
     }
   }
   
