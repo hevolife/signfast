@@ -60,9 +60,11 @@ export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co', 
   supabaseKey || 'placeholder-key', 
   {
-  global: {
-    fetch: customFetch,
-  },
+    global: {
+      fetch: safeFetch,
+    },
+  }
+);
 });
 
 // Export createClient for admin operations

@@ -50,8 +50,11 @@ export const useSubscription = () => {
 
   const fetchSubscription = async () => {
     try {
+      console.log('💳 Début fetchSubscription');
+      
       // En mode démo, simuler un abonnement à vie
       if (isDemoMode) {
+        console.log('💳 Mode démo détecté, simulation abonnement');
         setSubscription({
           isSubscribed: true,
           subscriptionStatus: 'active',
@@ -66,9 +69,48 @@ export const useSubscription = () => {
         return;
       }
 
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('💳 Supabase non configuré, abonnement par défaut');
+        setSubscription({
+          isSubscribed: false,
+          subscriptionStatus: null,
+          priceId: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          hasSecretCode: false,
+          secretCodeType: null,
+          secretCodeExpiresAt: null,
+          loading: false,
+        });
+        return;
+      }
+
       // L'utilisateur effectif est déjà géré par le contexte Auth
       let targetUserId = user.id;
-      console.log('💳 Vérification abonnement pour userId:', targetUserId);
+      console.log('💳 User ID initial:', targetUserId);
+      
+      // Gestion de l'impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('💳 Impersonation détectée, target userId:', targetUserId);
+        } catch (error) {
+          console.warn('💳 Erreur parsing impersonation data:', error);
+        }
+      }
+
+      console.log('💳 Vérification abonnement pour userId final:', targetUserId);
+
+      // Vérifier l'abonnement Stripe avec gestion d'erreur
+      let stripeSubscription = null;
+      try {
+        console.log('💳 Récupération abonnements Stripe...');
         const impersonationData = localStorage.getItem('admin_impersonation');
         
         if (impersonationData) {
@@ -80,26 +122,30 @@ export const useSubscription = () => {
           }
         }
 
-        // Vérifier l'abonnement Stripe
-        let stripeSubscription = null;
-        try {
           const { data, error } = await supabase
             .from('stripe_user_subscriptions')
             .select('*')
-            .limit(100); // Récupérer tous pour debug
+            .limit(100);
 
+          if (error) {
+            console.warn('💳 Erreur récupération abonnements:', error);
+          } else {
+            console.log('💳 Abonnements récupérés:', data?.length || 0);
           // Chercher l'abonnement pour cet utilisateur
           stripeSubscription = data?.find(s => s.customer_id === targetUserId);
-        } catch (stripeError) {
-          // Silent error
+            console.log('💳 Abonnement trouvé:', !!stripeSubscription);
+          }
+      } catch (stripeError) {
+        console.warn('💳 Erreur Stripe:', stripeError);
         }
 
-        // Vérifier les codes secrets avec plus de détails
+      // Vérifier les codes secrets avec gestion d'erreur
         let hasActiveSecretCode = false;
         let secretCodeType = null;
         let secretCodeExpiresAt = null;
         
         try {
+          console.log('💳 Vérification codes secrets...');
           // Requête simplifiée pour récupérer les codes de l'utilisateur
           const { data: userCodes, error: userCodesError } = await supabase
             .from('user_secret_codes')
@@ -107,8 +153,9 @@ export const useSubscription = () => {
             .eq('user_id', targetUserId);
 
           if (userCodesError) {
-            // Silent error
+            console.warn('💳 Erreur récupération codes utilisateur:', userCodesError);
           } else {
+            console.log('💳 Codes utilisateur récupérés:', userCodes?.length || 0);
             if (userCodes && userCodes.length > 0) {
               // Pour chaque code de l'utilisateur, vérifier s'il est valide
               for (const userCode of userCodes) {
@@ -147,7 +194,7 @@ export const useSubscription = () => {
             }
           }
         } catch (secretCodeError) {
-          // Silent error
+          console.warn('💳 Erreur codes secrets:', secretCodeError);
         }
 
         // Déterminer si l'utilisateur a un accès premium
@@ -155,6 +202,8 @@ export const useSubscription = () => {
           (stripeSubscription.subscription_status === 'active' || 
            stripeSubscription.subscription_status === 'trialing');
         
+        console.log('💳 Accès Stripe:', hasStripeAccess);
+        console.log('💳 Code secret actif:', hasActiveSecretCode);
         const isSubscribed = hasStripeAccess || hasActiveSecretCode;
 
         const finalState = {
@@ -170,8 +219,10 @@ export const useSubscription = () => {
         };
         
         setSubscription(finalState);
+        console.log('💳 État final abonnement:', finalState);
 
       } catch (error) {
+        console.error('💳 Erreur générale fetchSubscription:', error);
         // En cas d'erreur réseau, définir des valeurs par défaut
         setSubscription({
           isSubscribed: false,
