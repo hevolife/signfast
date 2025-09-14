@@ -117,7 +117,7 @@ export const SuperAdminDashboard: React.FC = () => {
       const description = `Extension admin ${newSubscriptionDuration} pour utilisateur ${userId}`;
       
       // Calculer la date d'expiration
-      let expiresAt = null;
+      expiresAt = null;
       if (codeType === 'monthly') {
         const durationMap = {
           '1month': 30,
