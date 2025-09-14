@@ -14,7 +14,8 @@ import {
   Users,
   Crown,
   Eye,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
 import { FormField } from '../../types/form';
 import { PDFField } from '../../types/pdf';
@@ -66,6 +67,7 @@ export const DemoManagementPanel: React.FC = () => {
   const [editingForm, setEditingForm] = useState<DemoFormTemplate | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<DemoPDFTemplate | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   useEffect(() => {
     loadDemoConfiguration();
@@ -315,6 +317,48 @@ export const DemoManagementPanel: React.FC = () => {
     
     setDemoTemplates([...demoTemplates, newTemplate]);
     setEditingTemplate(newTemplate);
+  };
+
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || file.type !== 'application/pdf') {
+      toast.error('Veuillez sélectionner un fichier PDF valide');
+      return;
+    }
+
+    setUploadingPdf(true);
+    
+    try {
+      // Convertir le PDF en base64
+      const pdfDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Créer un nouveau template avec le PDF uploadé
+      const newTemplate: DemoPDFTemplate = {
+        id: uuidv4(),
+        name: file.name.replace('.pdf', ''),
+        description: `Template PDF uploadé - ${file.name}`,
+        originalPdfUrl: pdfDataUrl,
+        fields: [],
+        pages: 1,
+      };
+      
+      setDemoTemplates([...demoTemplates, newTemplate]);
+      setEditingTemplate(newTemplate);
+      toast.success('PDF uploadé avec succès ! Vous pouvez maintenant ajouter des champs.');
+      
+      // Reset input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Erreur upload PDF:', error);
+      toast.error('Erreur lors de l\'upload du PDF');
+    } finally {
+      setUploadingPdf(false);
+    }
   };
 
   const updateDemoForm = (id: string, updates: Partial<DemoFormTemplate>) => {
@@ -741,13 +785,35 @@ export const DemoManagementPanel: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Templates PDF de démonstration
             </h3>
-            <Button
-              onClick={addDemoTemplate}
-              className="flex items-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Nouveau template</span>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={addDemoTemplate}
+                variant="secondary"
+                className="flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Template vide</span>
+              </Button>
+              <Button
+                onClick={() => document.getElementById('demo-pdf-upload')?.click()}
+                disabled={uploadingPdf}
+                className="flex items-center space-x-2"
+              >
+                {uploadingPdf ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                <span>{uploadingPdf ? 'Upload...' : 'Upload PDF'}</span>
+              </Button>
+              <input
+                id="demo-pdf-upload"
+                type="file"
+                accept=".pdf"
+                onChange={handlePdfUpload}
+                className="hidden"
+              />
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -826,6 +892,29 @@ export const DemoManagementPanel: React.FC = () => {
                     value={editingTemplate.pages}
                     onChange={(e) => updateDemoTemplate(editingTemplate.id, { pages: parseInt(e.target.value) || 1 })}
                   />
+
+                  {editingTemplate.originalPdfUrl && (
+                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <FileText className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-900 dark:text-green-300">
+                          PDF Template chargé
+                        </span>
+                      </div>
+                      <p className="text-xs text-green-700 dark:text-green-400">
+                        Taille: {Math.round(editingTemplate.originalPdfUrl.length / 1024)} KB
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateDemoTemplate(editingTemplate.id, { originalPdfUrl: '' })}
+                        className="mt-2 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Supprimer le PDF
+                      </Button>
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
