@@ -49,152 +49,153 @@ export const useSubscription = () => {
   }, [user, isDemoMode]);
 
   const fetchSubscription = async () => {
-    // En mode démo, simuler un abonnement à vie
-    if (isDemoMode) {
-      setSubscription({
-        isSubscribed: true,
-        subscriptionStatus: 'active',
-        priceId: null,
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        hasSecretCode: true,
-        secretCodeType: 'lifetime',
-        secretCodeExpiresAt: null,
-        loading: false,
-      });
-      return;
-    }
+    try {
+      // En mode démo, simuler un abonnement à vie
+      if (isDemoMode) {
+        setSubscription({
+          isSubscribed: true,
+          subscriptionStatus: 'active',
+          priceId: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          hasSecretCode: true,
+          secretCodeType: 'lifetime',
+          secretCodeExpiresAt: null,
+          loading: false,
+        });
+        return;
+      }
 
-    // L'utilisateur effectif est déjà géré par le contexte Auth
-    const targetUserId = user.id;
-    console.log('💳 Vérification abonnement pour userId:', targetUserId);
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      let targetUserId = user.id;
-      
-      if (impersonationData) {
+      // L'utilisateur effectif est déjà géré par le contexte Auth
+      const targetUserId = user.id;
+      console.log('💳 Vérification abonnement pour userId:', targetUserId);
+        const impersonationData = localStorage.getItem('admin_impersonation');
+        let targetUserId = user.id;
+        
+        if (impersonationData) {
+          try {
+            const data = JSON.parse(impersonationData);
+            targetUserId = data.target_user_id;
+          } catch (error) {
+            // Silent error
+          }
+        }
+
+        // Vérifier l'abonnement Stripe
+        let stripeSubscription = null;
         try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-        } catch (error) {
+          const { data, error } = await supabase
+            .from('stripe_user_subscriptions')
+            .select('*')
+            .limit(100); // Récupérer tous pour debug
+
+          // Chercher l'abonnement pour cet utilisateur
+          stripeSubscription = data?.find(s => s.customer_id === targetUserId);
+        } catch (stripeError) {
           // Silent error
         }
-      }
 
-      // Vérifier l'abonnement Stripe
-      let stripeSubscription = null;
-      try {
-        const { data, error } = await supabase
-          .from('stripe_user_subscriptions')
-          .select('*')
-          .limit(100); // Récupérer tous pour debug
+        // Vérifier les codes secrets avec plus de détails
+        let hasActiveSecretCode = false;
+        let secretCodeType = null;
+        let secretCodeExpiresAt = null;
+        
+        try {
+          // Requête simplifiée pour récupérer les codes de l'utilisateur
+          const { data: userCodes, error: userCodesError } = await supabase
+            .from('user_secret_codes')
+            .select('code_id, expires_at')
+            .eq('user_id', targetUserId);
 
-        // Chercher l'abonnement pour cet utilisateur
-        stripeSubscription = data?.find(s => s.customer_id === targetUserId);
-      } catch (stripeError) {
-        // Silent error
-      }
+          if (userCodesError) {
+            // Silent error
+          } else {
+            if (userCodes && userCodes.length > 0) {
+              // Pour chaque code de l'utilisateur, vérifier s'il est valide
+              for (const userCode of userCodes) {
+                // Récupérer les détails du code secret
+                const { data: secretCode, error: secretError } = await supabase
+                  .from('secret_codes')
+                  .select('type, is_active, expires_at')
+                  .eq('id', userCode.code_id)
+                  .single();
+                
+                if (secretError || !secretCode) {
+                  continue;
+                }
+                
+                if (!secretCode.is_active) {
+                  continue;
+                }
+                
+                const codeType = secretCode.type;
+                const userExpiresAt = userCode.expires_at;
+                const now = new Date();
+                
+                // Vérifier la validité du code
+                const isLifetime = codeType === 'lifetime';
+                const isValidMonthly = codeType === 'monthly' && (!userExpiresAt || new Date(userExpiresAt) > now);
+                const isValid = isLifetime || isValidMonthly;
 
-      // Vérifier les codes secrets avec plus de détails
-      let hasActiveSecretCode = false;
-      let secretCodeType = null;
-      let secretCodeExpiresAt = null;
-      
-      try {
-        // Requête simplifiée pour récupérer les codes de l'utilisateur
-        const { data: userCodes, error: userCodesError } = await supabase
-          .from('user_secret_codes')
-          .select('code_id, expires_at')
-          .eq('user_id', targetUserId);
-
-        if (userCodesError) {
-          // Silent error
-        } else {
-          if (userCodes && userCodes.length > 0) {
-            // Pour chaque code de l'utilisateur, vérifier s'il est valide
-            for (const userCode of userCodes) {
-              // Récupérer les détails du code secret
-              const { data: secretCode, error: secretError } = await supabase
-                .from('secret_codes')
-                .select('type, is_active, expires_at')
-                .eq('id', userCode.code_id)
-                .single();
-              
-              if (secretError || !secretCode) {
-                continue;
-              }
-              
-              if (!secretCode.is_active) {
-                continue;
-              }
-              
-              const codeType = secretCode.type;
-              const userExpiresAt = userCode.expires_at;
-              const now = new Date();
-              
-              // Vérifier la validité du code
-              const isLifetime = codeType === 'lifetime';
-              const isValidMonthly = codeType === 'monthly' && (!userExpiresAt || new Date(userExpiresAt) > now);
-              const isValid = isLifetime || isValidMonthly;
-
-              if (isValid) {
-                hasActiveSecretCode = true;
-                secretCodeType = codeType;
-                secretCodeExpiresAt = userExpiresAt;
-                // Prendre le premier code valide
-                break;
+                if (isValid) {
+                  hasActiveSecretCode = true;
+                  secretCodeType = codeType;
+                  secretCodeExpiresAt = userExpiresAt;
+                  // Prendre le premier code valide
+                  break;
+                }
               }
             }
           }
+        } catch (secretCodeError) {
+          // Silent error
         }
-      } catch (secretCodeError) {
-        // Silent error
+
+        // Déterminer si l'utilisateur a un accès premium
+        const hasStripeAccess = stripeSubscription && 
+          (stripeSubscription.subscription_status === 'active' || 
+           stripeSubscription.subscription_status === 'trialing');
+        
+        const isSubscribed = hasStripeAccess || hasActiveSecretCode;
+
+        const finalState = {
+          isSubscribed,
+          subscriptionStatus: stripeSubscription?.subscription_status || null,
+          priceId: stripeSubscription?.price_id || null,
+          currentPeriodEnd: stripeSubscription?.current_period_end || null,
+          cancelAtPeriodEnd: stripeSubscription?.cancel_at_period_end || false,
+          hasSecretCode: hasActiveSecretCode,
+          secretCodeType,
+          secretCodeExpiresAt,
+          loading: false,
+        };
+        
+        setSubscription(finalState);
+
+      } catch (error) {
+        // En cas d'erreur réseau, définir des valeurs par défaut
+        setSubscription({
+          isSubscribed: false,
+          subscriptionStatus: null,
+          priceId: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          hasSecretCode: false,
+          secretCodeType: null,
+          secretCodeExpiresAt: null,
+          loading: false,
+        });
       }
+    };
 
-      // Déterminer si l'utilisateur a un accès premium
-      const hasStripeAccess = stripeSubscription && 
-        (stripeSubscription.subscription_status === 'active' || 
-         stripeSubscription.subscription_status === 'trialing');
-      
-      const isSubscribed = hasStripeAccess || hasActiveSecretCode;
+    const refreshSubscription = () => {
+      if (user) {
+        fetchSubscription();
+      }
+    };
 
-      const finalState = {
-        isSubscribed,
-        subscriptionStatus: stripeSubscription?.subscription_status || null,
-        priceId: stripeSubscription?.price_id || null,
-        currentPeriodEnd: stripeSubscription?.current_period_end || null,
-        cancelAtPeriodEnd: stripeSubscription?.cancel_at_period_end || false,
-        hasSecretCode: hasActiveSecretCode,
-        secretCodeType,
-        secretCodeExpiresAt,
-        loading: false,
-      };
-      
-      setSubscription(finalState);
-
-    } catch (error) {
-      // En cas d'erreur réseau, définir des valeurs par défaut
-      setSubscription({
-        isSubscribed: false,
-        subscriptionStatus: null,
-        priceId: null,
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        hasSecretCode: false,
-        secretCodeType: null,
-        secretCodeExpiresAt: null,
-        loading: false,
-      });
-    }
+    return {
+      ...subscription,
+      refreshSubscription,
+    };
   };
-
-  const refreshSubscription = () => {
-    if (user) {
-      fetchSubscription();
-    }
-  };
-
-  return {
-    ...subscription,
-    refreshSubscription,
-  };
-};
