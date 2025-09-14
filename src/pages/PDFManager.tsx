@@ -19,6 +19,7 @@ interface SavedPDF {
   responseId: string;
   templateName: string;
   formTitle: string;
+  displayName: string;
   createdAt: string;
   size: number;
 }
@@ -329,10 +330,10 @@ export const PDFManager: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
-                          {pdf.formTitle}
+                          {pdf.displayName}
                         </h3>
                         <p className="text-sm text-green-700 dark:text-green-400 line-clamp-2">
-                          Template: {pdf.templateName}
+                          {pdf.formTitle} • {pdf.templateName}
                         </p>
                       </div>
                     </div>
