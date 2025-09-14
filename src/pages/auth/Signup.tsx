@@ -44,6 +44,14 @@ export const Signup: React.FC = () => {
           toast.error('Trop de tentatives d\'inscription. Veuillez patienter quelques secondes avant de réessayer.', {
             duration: 6000,
           });
+        } else if (error.message.includes('User already registered') || error.message.includes('already registered')) {
+          toast.error('Un compte existe déjà avec cette adresse email. Essayez de vous connecter ou utilisez une autre adresse.', {
+            duration: 6000,
+          });
+        } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+          toast.error('Cette adresse email est déjà utilisée. Connectez-vous ou utilisez une autre adresse.', {
+            duration: 6000,
+          });
         } else {
           toast.error(error.message);
         }
