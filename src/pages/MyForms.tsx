@@ -121,26 +121,6 @@ export const MyForms: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-            
-            {/* Bouton nouveau formulaire */}
-            <div className="mt-6">
-              {formsLimits.canCreate ? (
-                <Link to="/forms/new">
-                  <Button className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white">
-                    <Plus className="h-4 w-4" />
-                    <span>Nouveau formulaire</span>
-                  </Button>
-                </Link>
-              ) : (
-                <Button 
-                  onClick={handleCreateForm}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Nouveau formulaire</span>
-                </Button>
-              )}
-            </div>
           </div>
         </div>
 
