@@ -12,6 +12,16 @@ export const useForms = () => {
   const fetchForms = async (page: number = 1, limit: number = 10) => {
     if (!user) return;
 
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+      console.warn('Supabase non configuré, impossible de récupérer les formulaires');
+      setLoading(false);
+      return;
+    }
+
     // Vérifier si on est en mode impersonation
     const impersonationData = localStorage.getItem('admin_impersonation');
     let targetUserId = user.id;
@@ -33,7 +43,7 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (countError) {
-        console.error('Error counting forms:', countError);
+        console.warn('Impossible de compter les formulaires:', countError.message);
         setTotalCount(0);
       } else {
         setTotalCount(count || 0);
@@ -64,7 +74,9 @@ export const useForms = () => {
         // Silent error
       }
     } catch (error) {
-      // Silent error
+      console.warn('Impossible de récupérer les formulaires:', error instanceof Error ? error.message : 'Erreur inconnue');
+      setForms([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
