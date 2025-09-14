@@ -132,34 +132,28 @@ export const useForms = () => {
       return false;
     }
 
-    console.log('📝 === DÉBUT UPDATE FORM DEBUG ===');
-    console.log('📝 Form ID à mettre à jour:', id);
-    console.log('📝 User depuis contexte:', user?.id, user?.email);
+    console.log('📝 === DÉBUT UPDATE FORM ===');
+    console.log('📝 Form ID:', id);
+    console.log('📝 User ID:', user?.id);
+    console.log('📝 User email:', user?.email);
     console.log('📝 IsImpersonating:', isImpersonating);
-    console.log('📝 ImpersonationData:', impersonationData);
-    console.log('📝 Updates à appliquer:', updates);
+    console.log('📝 Updates keys:', Object.keys(updates));
     
-    let targetUserId = user.id;
-    console.log('📝 User ID initial:', targetUserId);
+    const targetUserId = user.id;
+    console.log('📝 Target User ID:', targetUserId);
     
     if (isImpersonating && impersonationData) {
       targetUserId = impersonationData.target_user_id;
       targetUserId = impersonationData.target_user_id;
-      console.log('🎭 Mode impersonation détecté');
-      console.log('🎭 Admin user:', impersonationData.admin_email);
-      console.log('🎭 Target user:', impersonationData.target_email);
-      console.log('🎭 Target user ID:', targetUserId);
+      console.log('🎭 IMPERSONATION ACTIVE');
+      console.log('🎭 Admin:', impersonationData.admin_email);
+      console.log('🎭 Target:', impersonationData.target_email);
+      console.log('🎭 Target ID:', impersonationData.target_user_id);
       console.log('🎭 Target user ID:', targetUserId);
     }
 
     try {
-      console.log('📝 === TENTATIVE MISE À JOUR SUPABASE ===');
-      console.log('📝 Paramètres finaux:', {
-        formId: id,
-        targetUserId: targetUserId,
-        updatesKeys: Object.keys(updates),
-        updatesSize: JSON.stringify(updates).length
-      });
+      console.log('📝 APPEL SUPABASE UPDATE...');
       
       const { error } = await supabase
         .from('forms')
@@ -168,35 +162,19 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (error) {
-        console.error('📝 === ERREUR SUPABASE ===');
+        console.error('📝 ERREUR SUPABASE:', error);
         console.error('📝 Message:', error.message);
         console.error('📝 Code:', error.code);
-        console.error('📝 Détails:', error.details);
-        console.error('📝 Hint:', error.hint);
-        console.error('📝 Erreur complète:', error);
-        console.error('📝 Contexte de l\'erreur:', {
-          formId: id,
-          targetUserId: targetUserId,
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
         throw error;
       }
       
-      console.log('📝 === SUCCÈS MISE À JOUR ===');
-      console.log('📝 Formulaire mis à jour avec succès pour user:', targetUserId);
+      console.log('📝 SUCCÈS - Formulaire mis à jour');
       await fetchForms(1, 10); // Recharger la liste
-      console.log('📝 Liste des formulaires rechargée');
+      console.log('📝 Liste rechargée');
       return true;
     } catch (error) {
-      console.error('📝 === ERREUR GÉNÉRALE UPDATE FORM ===');
-      console.error('📝 Type d\'erreur:', typeof error);
-      console.error('📝 Instance Error?:', error instanceof Error);
+      console.error('📝 ERREUR GÉNÉRALE:', error);
       console.error('📝 Message:', error instanceof Error ? error.message : String(error));
-      console.error('📝 Stack:', error instanceof Error ? error.stack : 'Pas de stack');
-      console.error('📝 Erreur complète:', error);
       return false;
     }
   };
