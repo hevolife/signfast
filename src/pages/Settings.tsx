@@ -860,7 +860,7 @@ export const Settings: React.FC = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="pt-4">
+                    <div className="pt-4 space-y-3">
                       <Button
                         onClick={handleSubscribe}
                         disabled={saving}
@@ -868,6 +868,76 @@ export const Settings: React.FC = () => {
                       >
                         {saving ? 'Redirection...' : 'S\'abonner maintenant'}
                       </Button>
+                      
+                      {/* Option d'extension manuelle */}
+                      <div className="border-t pt-3">
+                        {!showSubscriptionManager ? (
+                          <Button
+                            onClick={() => setShowSubscriptionManager(true)}
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                          >
+                            <Gift className="h-4 w-4 mr-2" />
+                            Étendre mon abonnement manuellement
+                          </Button>
+                        ) : (
+                          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-300">
+                                Extension d'abonnement
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowSubscriptionManager(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">
+                                Durée d'extension
+                              </label>
+                              <select
+                                value={selectedDuration}
+                                onChange={(e) => setSelectedDuration(e.target.value as any)}
+                                className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                              >
+                                <option value="1month">1 mois</option>
+                                <option value="2months">2 mois</option>
+                                <option value="6months">6 mois</option>
+                                <option value="1year">1 an</option>
+                                <option value="lifetime">À vie</option>
+                              </select>
+                            </div>
+                            
+                            <Button
+                              onClick={handleExtendSubscription}
+                              disabled={subscriptionLoading}
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                            >
+                              {subscriptionLoading ? (
+                                <div className="flex items-center space-x-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                  <span>Extension...</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-2">
+                                  <Gift className="h-4 w-4" />
+                                  <span>Étendre l'abonnement</span>
+                                </div>
+                              )}
+                            </Button>
+                            
+                            <p className="text-xs text-purple-600 dark:text-purple-400 text-center">
+                              ⚠️ Cette action créera un code secret automatiquement
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </CardContent>

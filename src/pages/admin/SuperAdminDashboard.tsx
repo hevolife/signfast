@@ -605,13 +605,61 @@ export const SuperAdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Bouton d'action */}
-                        <div className="flex-shrink-0 self-start">
+                        {/* Actions */}
+                        <div className="flex-shrink-0 self-start space-y-2">
+                          {/* Gestion abonnement */}
+                          {editingSubscription === adminUser.id ? (
+                            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border space-y-2">
+                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Modifier l'abonnement
+                              </div>
+                              <select
+                                value={newSubscriptionDuration}
+                                onChange={(e) => setNewSubscriptionDuration(e.target.value as any)}
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              >
+                                <option value="1month">1 mois</option>
+                                <option value="2months">2 mois</option>
+                                <option value="6months">6 mois</option>
+                                <option value="1year">1 an</option>
+                                <option value="lifetime">À vie</option>
+                              </select>
+                              <div className="flex space-x-1">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveSubscription(adminUser.id)}
+                                  className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1"
+                                >
+                                  <Save className="h-3 w-3 mr-1" />
+                                  Appliquer
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={handleCancelEditSubscription}
+                                  className="text-gray-600 hover:text-gray-800 text-xs py-1"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => handleEditSubscription(adminUser.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="w-full flex items-center justify-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 text-xs py-1"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                              <span>Modifier abonnement</span>
+                            </Button>
+                          )}
+                          
                           <Button
                             onClick={() => impersonateUser(adminUser)}
-                            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium shadow-md hover:shadow-lg transition-all"
+                            className="w-full flex items-center justify-center space-x-1 bg-red-600 hover:bg-red-700 text-white text-xs py-1 shadow-md hover:shadow-lg transition-all"
                           >
-                            <UserCheck className="h-4 w-4" />
+                            <UserCheck className="h-3 w-3" />
                             <span className="hidden sm:inline">Se connecter en tant que</span>
                             <span className="sm:hidden">Impersonner</span>
                           </Button>
