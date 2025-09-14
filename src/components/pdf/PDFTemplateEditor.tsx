@@ -491,36 +491,29 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
 
   const selectedFieldData = selectedField ? fields.find(f => f.id === selectedField) : null;
 
-  // Bloquer sur mobile - après tous les hooks
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-md w-full mx-auto pt-20">
-            <Card>
-              <CardContent className="text-center py-16">
-                <FileText className="h-16 w-16 text-blue-600 mx-auto mb-6" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Éditeur de Template PDF
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  L'éditeur de template PDF nécessite un écran plus large pour une expérience optimale.
-                </p>
-                <Link to="/pdf/templates">
-                  <Button>Retour aux templates</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Avertissement mobile */}
+          {isMobile && (
+            <Card className="mb-6 border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <FileText className="h-6 w-6 text-yellow-600" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-300">
+                      Éditeur optimisé pour ordinateur
+                    </h3>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                      Pour une meilleure expérience, utilisez un écran plus large
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* En-tête */}
           <div className="flex justify-between items-center mb-8">
             <div>
