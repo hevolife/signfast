@@ -117,7 +117,7 @@ export const useSubscription = () => {
         // Récupérer l'abonnement Stripe pour l'utilisateur cible via la table stripe_customers
         const [countResult, dataResult] = await Promise.race([
           Promise.all([
-          .from('stripe_customers')
+          supabase.from('stripe_customers')
           .select('customer_id')
           .eq('user_id', targetUserId)
           .maybeSingle(),
