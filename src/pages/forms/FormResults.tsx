@@ -23,7 +23,9 @@ import {
   FileText,
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Sparkles,
+  Activity
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -313,130 +315,139 @@ export const FormResults: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* En-tête */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 space-y-4 sm:space-y-0">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <Link to="/forms">
-                <Button variant="ghost" size="sm" className="flex items-center space-x-1">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Retour</span>
-                </Button>
-              </Link>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+        {/* Header moderne avec gradient */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 rounded-3xl shadow-2xl mb-8">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-4 left-4 w-24 h-24 bg-yellow-400/20 rounded-full blur-xl"></div>
+          
+          <div className="relative px-6 sm:px-8 py-8 sm:py-12">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-6 shadow-lg">
+                <BarChart3 className="h-8 w-8 text-white" />
+              </div>
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <Link to="/forms">
+                  <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold shadow-lg">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <span>Retour</span>
+                  </Button>
+                </Link>
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
                 Statistiques
               </h1>
+              <p className="text-lg sm:text-xl text-white/90 mb-2">
+                Formulaire : <span className="font-bold">{form.title}</span>
+              </p>
+              <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-white/90 text-sm font-medium mb-6">
+                <Activity className="h-4 w-4" />
+                <span>{totalCount} réponse{totalCount > 1 ? 's' : ''} • Page {currentPage}/{totalPages}</span>
+              </div>
+              
+              {/* Actions principales */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fetchPage(currentPage, itemsPerPage)}
+                  className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold shadow-lg"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <span>Actualiser</span>
+                </Button>
+                <Button
+                  onClick={handleDeleteAllResponses}
+                  disabled={responses.length === 0}
+                  className="bg-red-500/80 backdrop-blur-sm text-white border border-red-400/30 hover:bg-red-600/80 font-semibold shadow-lg"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  <span>Tout supprimer</span>
+                </Button>
+                <Button
+                  onClick={exportToCSV}
+                  disabled={responses.length === 0}
+                  className="bg-green-500/80 backdrop-blur-sm text-white border border-green-400/30 hover:bg-green-600/80 font-semibold shadow-lg"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  <span>Export CSV</span>
+                </Button>
+              </div>
             </div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Formulaire : <span className="font-medium">{form.title}</span>
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {totalCount} réponse{totalCount > 1 ? 's' : ''} au total • Page {currentPage} sur {totalPages}
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fetchPage(currentPage, itemsPerPage)}
-              className="flex items-center space-x-1"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Actualiser</span>
-            </Button>
-            <Button
-              onClick={handleDeleteAllResponses}
-              disabled={responses.length === 0}
-              variant="danger"
-              size="sm"
-              className="flex items-center space-x-1"
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Tout supprimer</span>
-            </Button>
-            <Button
-              onClick={exportToCSV}
-              disabled={responses.length === 0}
-              className="flex items-center space-x-1"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export CSV</span>
-            </Button>
           </div>
         </div>
 
         {/* Cartes de statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <Card className="group bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                  <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
                     Réponses totales
                   </p>
-                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-300">
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-100">
                     {totalResponses}
                   </p>
                 </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <Users className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-            <CardContent className="p-6">
+          <Card className="group bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                  <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 mb-1">
                     Aujourd'hui
                   </p>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-300">
+                  <p className="text-2xl sm:text-3xl font-bold text-green-900 dark:text-green-100">
                     {todayResponses}
                   </p>
                 </div>
-                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                  <Calendar className="h-6 w-6 text-green-600" />
+                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
-            <CardContent className="p-6">
+          <Card className="group bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                  <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">
                     Cette semaine
                   </p>
-                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-300">
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-900 dark:text-purple-100">
                     {thisWeekResponses}
                   </p>
                 </div>
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800">
-            <CardContent className="p-6">
+          <Card className="group bg-gradient-to-br from-orange-50  to-red-100 dark:from-orange-900/30 dark:to-red-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                  <p className="text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-300 mb-1">
                     Moyenne/jour
                   </p>
-                  <p className="text-3xl font-bold text-orange-900 dark:text-orange-300">
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-900 dark:text-orange-100">
                     {avgResponsesPerDay}
                   </p>
                 </div>
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-                  <Clock className="h-6 w-6 text-orange-600" />
+                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
                 </div>
               </div>
             </CardContent>
@@ -444,26 +455,26 @@ export const FormResults: React.FC = () => {
         </div>
 
         {/* Filtres et recherche */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input
                     placeholder="Rechercher dans les réponses..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium"
                   />
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+              <div className="flex items-center space-x-3">
+                <Filter className="h-4 w-4 text-gray-500" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                  className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white font-medium bg-white/70 backdrop-blur-sm shadow-lg"
                 >
                   <option value="date">Plus récent</option>
                   <option value="name">Par nom</option>
@@ -481,29 +492,29 @@ export const FormResults: React.FC = () => {
             </div>
           </div>
         ) : filteredResponses.length === 0 ? (
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
             <CardContent className="text-center py-16">
               <div className="mb-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 text-gray-400 rounded-full mb-6">
-                  <BarChart3 className="h-8 w-8" />
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-3xl mb-6 shadow-xl">
+                  <BarChart3 className="h-10 w-10" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 {searchTerm ? 'Aucune réponse trouvée' : 'Aucune réponse'}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
                 {searchTerm 
                   ? 'Essayez de modifier votre recherche'
                   : 'Les réponses à ce formulaire apparaîtront ici'
                 }
               </p>
               {!form.is_published && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 max-w-md mx-auto">
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-6 rounded-xl border border-yellow-200 dark:border-yellow-800 max-w-md mx-auto shadow-lg">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200">
                     💡 <strong>Astuce :</strong> Publiez votre formulaire pour commencer à recevoir des réponses
                   </p>
                   <Link to={`/forms/${id}/edit`} className="mt-2 inline-block">
-                    <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                    <Button size="sm" className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300">
                       Publier le formulaire
                     </Button>
                   </Link>
@@ -514,20 +525,20 @@ export const FormResults: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {filteredResponses.map((response) => (
-              <Card key={response.id} className="hover:shadow-md transition-shadow">
+              <Card key={response.id} className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
                     {/* Données de la réponse */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                      <div className="flex items-center space-x-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
                           <CheckCircle className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                             Réponse #{response.id.slice(-8)}
                           </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                             {formatDateTimeFR(response.created_at)}
                             {response.ip_address && (
                               <span className="ml-2">• IP: {response.ip_address}</span>
@@ -537,11 +548,11 @@ export const FormResults: React.FC = () => {
                       </div>
 
                       {/* Aperçu des données principales */}
-                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-4 rounded-xl shadow-inner">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 font-semibold">
                           📋 Réponse complète • {form.fields?.length || 0} champs
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-1 font-medium">
                           Cliquez sur "Voir détails" pour afficher le contenu
                         </div>
                       </div>
@@ -553,19 +564,19 @@ export const FormResults: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewResponse(response)}
-                        className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
+                        className="flex items-center space-x-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <Eye className="h-4 w-4" />
-                        <span className="hidden sm:inline">Voir détails</span>
+                        <span>Voir détails</span>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteResponse(response.id)}
-                        className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        className="flex items-center space-x-1 bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Supprimer</span>
+                        <span>Supprimer</span>
                       </Button>
                     </div>
                   </div>
@@ -575,10 +586,10 @@ export const FormResults: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Card className="mt-6">
+              <Card className="mt-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} réponses
                     </div>
                     <div className="flex items-center space-x-2">
@@ -587,7 +598,7 @@ export const FormResults: React.FC = () => {
                         size="sm"
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="flex items-center space-x-1"
+                        className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-semibold"
                       >
                         <ArrowLeft className="h-4 w-4" />
                         <span className="hidden sm:inline">Précédent</span>
@@ -610,10 +621,10 @@ export const FormResults: React.FC = () => {
                           return (
                             <Button
                               key={pageNum}
-                              variant={currentPage === pageNum ? "primary" : "ghost"}
+                              variant={currentPage === pageNum ? "primary" : "secondary"}
                               size="sm"
                               onClick={() => handlePageChange(pageNum)}
-                              className="w-8 h-8 p-0"
+                              className={`w-8 h-8 p-0 rounded-xl font-bold ${currentPage === pageNum ? 'shadow-lg' : 'bg-gray-100 dark:bg-gray-800'}`}
                             >
                               {pageNum}
                             </Button>
@@ -626,7 +637,7 @@ export const FormResults: React.FC = () => {
                         size="sm"
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="flex items-center space-x-1"
+                        className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-semibold"
                       >
                         <span className="hidden sm:inline">Suivant</span>
                         <ArrowRight className="h-4 w-4" />
@@ -642,14 +653,14 @@ export const FormResults: React.FC = () => {
         {/* Modal de détail de réponse */}
         {showResponseModal && selectedResponse && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                       Détails de la réponse
                     </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Soumise le {formatDateTimeFR(selectedResponse.created_at)}
                     </p>
                   </div>
@@ -657,6 +668,7 @@ export const FormResults: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowResponseModal(false)}
+                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
                   >
                     ×
                   </Button>
@@ -743,39 +755,39 @@ export const FormResults: React.FC = () => {
                   };
 
                   return (
-                    <div key={field.id} className="border-b border-gray-200 dark:border-gray-700 pb-4">
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <div key={field.id} className="border-b border-gray-200/50 dark:border-gray-700/50 pb-4">
+                      <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         {field.label}
                         {field.required && <span className="text-red-500 ml-1">*</span>}
                         {field.validation?.mask && (
-                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-900/20 px-1 rounded">
+                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
                             {field.validation.mask}
                           </span>
                         )}
                       </div>
-                      <div className="text-gray-900 dark:text-white">
+                      <div className="text-gray-900 dark:text-white font-medium">
                         {typeof value === 'string' && value.startsWith('data:image') ? (
                           <div>
                             <img
                               src={value}
                               alt={field.label}
-                              className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
+                              className="max-w-xs max-h-32 object-contain border-2 border-gray-200 rounded-xl shadow-lg"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Image uploadée</p>
+                            <p className="text-xs text-gray-500 mt-2 font-medium">Image uploadée</p>
                           </div>
                         ) : Array.isArray(value) ? (
                           <div className="flex flex-wrap gap-1">
                             {value.map((item, idx) => (
-                              <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs dark:bg-blue-900 dark:text-blue-300">
+                              <span key={idx} className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm dark:from-blue-900 dark:to-indigo-900 dark:text-blue-300">
                                 {item}
                               </span>
                             ))}
                           </div>
                         ) : (
                           <div>
-                            <p className="whitespace-pre-wrap font-medium">{String(getDisplayValue(value, field))}</p>
+                            <p className="whitespace-pre-wrap font-semibold">{String(getDisplayValue(value, field))}</p>
                             {field.validation?.mask && getDisplayValue(value, field) !== String(value) && (
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-gray-500 mt-2 font-medium">
                                 Valeur brute : {String(value)}
                               </p>
                             )}
@@ -789,11 +801,11 @@ export const FormResults: React.FC = () => {
                 )}
 
                 {/* Métadonnées */}
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-4 rounded-xl shadow-inner">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                     Informations techniques
                   </h4>
-                  <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                  <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
                     <div>ID de réponse : {selectedResponse.id}</div>
                     <div>Date de soumission : {formatDateTimeFR(selectedResponse.created_at)}</div>
                     {selectedResponse.ip_address && (
