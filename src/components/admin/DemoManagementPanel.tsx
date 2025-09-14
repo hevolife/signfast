@@ -21,6 +21,7 @@ import { FormField } from '../../types/form';
 import { PDFField } from '../../types/pdf';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
+import { useDemo } from '../../contexts/DemoContext';
 
 interface DemoSettings {
   durationMinutes: number;
@@ -48,6 +49,7 @@ interface DemoPDFTemplate {
 
 export const DemoManagementPanel: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'settings' | 'forms' | 'templates'>('settings');
+  const { refreshDemoSettings } = useDemo();
   const [demoSettings, setDemoSettings] = useState<DemoSettings>({
     durationMinutes: 30,
     maxForms: 3,
@@ -254,6 +256,9 @@ export const DemoManagementPanel: React.FC = () => {
       
       // Sauvegarder les templates de démo
       localStorage.setItem('demo_admin_templates', JSON.stringify(demoTemplates));
+      
+      // Actualiser les paramètres dans le contexte démo
+      refreshDemoSettings();
       
       toast.success('Configuration de démo sauvegardée !');
     } catch (error) {

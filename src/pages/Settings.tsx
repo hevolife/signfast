@@ -73,6 +73,9 @@ export const Settings: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [newEmail, setNewEmail] = useState(user?.email || '');
   const [emailPassword, setEmailPassword] = useState('');
+  const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState<'1month' | '2months' | '6months' | '1year' | 'lifetime'>('1month');
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   React.useEffect(() => {
     if (profile) {
@@ -284,6 +287,83 @@ export const Settings: React.FC = () => {
       toast.error('Erreur lors de la création de la session de paiement');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleExtendSubscription = async () => {
+    if (!user) {
+      toast.error('Utilisateur non connecté');
+      return;
+    }
+
+    setSubscriptionLoading(true);
+    
+    try {
+      // Créer un code secret avec la durée sélectionnée
+      const codeType = selectedDuration === 'lifetime' ? 'lifetime' : 'monthly';
+      const description = `Extension manuelle ${selectedDuration} par l'utilisateur`;
+      
+      // Calculer la date d'expiration pour les codes mensuels
+      let expiresAt = null;
+      if (codeType === 'monthly') {
+        const durationMap = {
+          '1month': 30,
+          '2months': 60,
+          '6months': 180,
+          '1year': 365,
+        };
+        const days = durationMap[selectedDuration] || 30;
+        expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      }
+
+      // Créer le code secret directement dans la base
+      const code = `USER${Date.now().toString().slice(-8).toUpperCase()}`;
+      
+      const { data: secretCode, error: createError } = await supabase
+        .from('secret_codes')
+        .insert([{
+          code,
+          type: codeType,
+          description,
+          max_uses: 1,
+          current_uses: 0,
+          expires_at: expiresAt,
+          is_active: true,
+        }])
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Erreur création code:', createError);
+        toast.error('Erreur lors de la création du code secret');
+        return;
+      }
+
+      // Activer automatiquement le code pour l'utilisateur
+      const { data: result, error: activateError } = await supabase.rpc('activate_secret_code', {
+        code_input: code,
+        user_id_input: user.id
+      });
+
+      if (activateError || !result?.success) {
+        console.error('Erreur activation code:', activateError);
+        toast.error('Code créé mais erreur d\'activation');
+        return;
+      }
+
+      toast.success(`🎉 Abonnement ${selectedDuration} activé avec succès !`);
+      setShowSubscriptionManager(false);
+      
+      // Recharger la page pour actualiser les données d'abonnement
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Erreur extension abonnement:', error);
+      toast.error('Erreur lors de l\'extension de l\'abonnement');
+    } finally {
+      setSubscriptionLoading(false);
     }
   };
 

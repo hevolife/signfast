@@ -41,6 +41,7 @@ interface DemoContextType {
   demoForms: DemoForm[];
   demoTemplates: DemoTemplate[];
   timeRemaining: number;
+  demoSettings: any;
   startDemo: () => void;
   endDemo: () => void;
   createDemoForm: (formData: Partial<DemoForm>) => DemoForm | null;
@@ -49,6 +50,7 @@ interface DemoContextType {
   createDemoTemplate: (templateData: Partial<DemoTemplate>) => DemoTemplate | null;
   updateDemoTemplate: (id: string, updates: Partial<DemoTemplate>) => boolean;
   deleteDemoTemplate: (id: string) => boolean;
+  refreshDemoSettings: () => void;
 }
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
@@ -67,9 +69,25 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [demoForms, setDemoForms] = useState<DemoForm[]>([]);
   const [demoTemplates, setDemoTemplates] = useState<DemoTemplate[]>([]);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [demoSettings, setDemoSettings] = useState<any>({
+    durationMinutes: 30,
+    maxForms: 3,
+    maxTemplates: 3,
+    welcomeMessage: 'Bienvenue dans la démo SignFast ! Testez toutes les fonctionnalités pendant 30 minutes.',
+    features: [
+      'Création de formulaires illimitée',
+      'Templates PDF avec champs dynamiques',
+      'Génération PDF automatique',
+      'Signature électronique',
+      'Interface responsive'
+    ]
+  });
 
   // Vérifier si une démo est en cours au chargement
   useEffect(() => {
+    // Charger les paramètres de démo depuis localStorage
+    loadDemoSettings();
+    
     const savedDemo = localStorage.getItem('signfast_demo');
     if (savedDemo) {
       try {
@@ -92,6 +110,23 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const loadDemoSettings = () => {
+    try {
+      const savedSettings = localStorage.getItem('demo_admin_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setDemoSettings(settings);
+        console.log('🎭 Paramètres de démo chargés:', settings);
+      }
+    } catch (error) {
+      console.error('Erreur chargement paramètres démo:', error);
+    }
+  };
+
+  const refreshDemoSettings = () => {
+    loadDemoSettings();
+  };
+
   // Timer pour décompter le temps restant
   useEffect(() => {
     if (!isDemoMode || timeRemaining <= 0) return;
@@ -110,8 +145,14 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isDemoMode, timeRemaining]);
 
   const startDemo = () => {
+    // Charger les paramètres de démo actuels
+    loadDemoSettings();
+    const currentSettings = JSON.parse(localStorage.getItem('demo_admin_settings') || '{}');
+    const durationMinutes = currentSettings.durationMinutes || 30;
+    const maxForms = currentSettings.maxForms || 3;
+    
     const now = Date.now();
-    const expiresAt = now + (30 * 60 * 1000); // 30 minutes
+    const expiresAt = now + (durationMinutes * 60 * 1000);
     
     const newDemoUser: DemoUser = {
       id: uuidv4(),
@@ -294,7 +335,9 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDemoUser(newDemoUser);
     setDemoForms([initialDemoForm]);
     setDemoTemplates(demoTemplates);
-    setTimeRemaining(30 * 60); // 30 minutes en secondes
+    setTimeRemaining(durationMinutes * 60);
+    
+    console.log('🎭 Démo démarrée avec durée:', durationMinutes, 'minutes');
   };
 
   const endDemo = () => {
@@ -309,8 +352,9 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createDemoForm = (formData: Partial<DemoForm>): DemoForm | null => {
     if (!isDemoMode || !demoUser) return null;
 
-    // Limite de 3 formulaires en mode démo
-    if (demoForms.length >= 3) {
+    // Limite selon les paramètres admin
+    const maxForms = demoSettings.maxForms || 3;
+    if (demoForms.length >= maxForms) {
       return null;
     }
 
@@ -379,8 +423,9 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createDemoTemplate = (templateData: Partial<DemoTemplate>): DemoTemplate | null => {
     if (!isDemoMode || !demoUser) return null;
 
-    // Limite de 3 templates en mode démo
-    if (demoTemplates.length >= 3) {
+    // Limite selon les paramètres admin
+    const maxTemplates = demoSettings.maxTemplates || 3;
+    if (demoTemplates.length >= maxTemplates) {
       return null;
     }
 
@@ -445,6 +490,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     demoForms,
     demoTemplates,
     timeRemaining,
+    demoSettings,
     startDemo,
     endDemo,
     createDemoForm,
@@ -453,6 +499,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     createDemoTemplate,
     updateDemoTemplate,
     deleteDemoTemplate,
+    refreshDemoSettings,
   };
 
   return (
