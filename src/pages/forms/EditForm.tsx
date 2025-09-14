@@ -46,7 +46,7 @@ export const EditForm: React.FC = () => {
         
         if (!templateExists) {
           console.warn('Template PDF non trouvé, mais on garde la configuration pour permettre la correction manuelle');
-          toast.warn('Le template PDF associé n\'existe plus. Veuillez en sélectionner un autre dans l\'onglet PDF.');
+          toast.error('Le template PDF associé n\'existe plus. Veuillez en sélectionner un autre dans l\'onglet PDF.');
         }
       } catch (error) {
         console.warn('Erreur lors de la vérification du template PDF:', error);
