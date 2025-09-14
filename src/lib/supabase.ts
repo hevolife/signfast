@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supabaseKey === 'your-anon-key' || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
 }
 
@@ -13,7 +13,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   
-  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+  if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supabaseKey === 'your-anon-key' || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
     console.warn('Supabase non configuré, requête ignorée');
     throw new Error('Supabase non configuré');
   }
@@ -37,7 +37,10 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   return response;
 };
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseKey || 'placeholder-key', 
+  {
   global: {
     fetch: customFetch,
   },
