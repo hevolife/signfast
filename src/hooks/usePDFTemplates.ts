@@ -21,17 +21,6 @@ export const usePDFTemplates = () => {
   }
 
   const fetchTemplates = async (page: number = 1, limit: number = 10) => {
-    // Démarrer avec un loading plus court
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('📄 Timeout de chargement, affichage de la liste vide');
-        setTemplates([]);
-        setTotalCount(0);
-        setTotalPages(0);
-        setLoading(false);
-      }
-    }, 2000); // 2 secondes max
-
     try {
       if (user) {
         // L'utilisateur effectif est déjà géré par le contexte Auth
@@ -41,14 +30,12 @@ export const usePDFTemplates = () => {
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
           const result = await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
-          clearTimeout(loadingTimeout);
           setTemplates(result.templates);
           setTotalCount(result.totalCount);
           setTotalPages(result.totalPages);
           console.log('📄 Templates chargés:', result.templates.length);
         } catch (supabaseError) {
           console.warn('📄 Erreur Supabase, fallback localStorage:', supabaseError);
-          clearTimeout(loadingTimeout);
           // Fallback vers localStorage si Supabase n'est pas disponible
           const saved = localStorage.getItem('pdfTemplates');
           if (saved) {
@@ -62,7 +49,6 @@ export const usePDFTemplates = () => {
           }
         }
       } else {
-        clearTimeout(loadingTimeout);
         // Utilisateur non connecté : fallback localStorage
         const saved = localStorage.getItem('pdfTemplates');
         if (saved) {
@@ -77,20 +63,20 @@ export const usePDFTemplates = () => {
       }
     } catch (error) {
       console.error('📄 Erreur générale fetchTemplates:', error);
-      clearTimeout(loadingTimeout);
       setTemplates([]);
       setTotalCount(0);
       setTotalPages(0);
     } finally {
-      clearTimeout(loadingTimeout);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Chargement immédiat sans attendre
-    setLoading(true);
-    fetchTemplates(1, 10);
+    if (user) {
+      fetchTemplates(1, 10);
+    } else {
+      setLoading(false);
+    }
   }, [user]);
 
   return {

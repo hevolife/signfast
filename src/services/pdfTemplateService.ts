@@ -115,48 +115,59 @@ export class PDFTemplateService {
     totalPages: number;
   }> {
     try {
+      console.log('📄 === DÉBUT getUserTemplates ===');
+      
+      // Cache pour éviter les requêtes répétées
+      const cacheKey = `pdf_templates_${userId}_${page}_${limit}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+      
+      // Utiliser le cache si moins de 30 secondes
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 30000) {
+        console.log('📄 Utilisation cache pour getUserTemplates');
+        return JSON.parse(cached);
+      }
+      
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.log('📄 Supabase non configuré');
         return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
-      // Timeout pour éviter les blocages
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout Supabase')), 3000);
-      });
-
-      // Compter le total d'abord
-      const countPromise = supabase
+      console.log('📄 Récupération templates pour userId:', userId);
+      
+      // Requêtes parallèles optimisées
+      const [countResult, dataResult] = await Promise.all([
+        supabase
         .from('pdf_templates')
         .select('id', { count: 'estimated', head: true })
-        .eq('user_id', userId);
+        .eq('user_id', userId),
+        supabase
+        .from('pdf_templates')
+        .select('*')
+        .eq('user_id', userId)
+        .range((page - 1) * limit, page * limit - 1)
+        .order('created_at', { ascending: false })
+      ]);
 
-      const { count, error: countError } = await Promise.race([countPromise, timeoutPromise]);
-
+      const { count, error: countError } = countResult;
+      const { data, error } = dataResult;
+      
       if (countError) {
+        console.warn('📄 Erreur comptage templates:', countError);
+        return { templates: [], totalCount: 0, totalPages: 0 };
+      }
+
+      if (error) {
+        console.error('📄 Erreur récupération templates:', error);
         return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
       const totalCount = count || 0;
       const totalPages = Math.ceil(totalCount / limit);
-      const offset = (page - 1) * limit;
-
-      // Récupérer les templates avec pagination
-      const queryPromise = supabase
-        .from('pdf_templates')
-        .select('*')
-        .eq('user_id', userId)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-      if (error) {
-        return { templates: [], totalCount: 0, totalPages: 0 };
-      }
 
       const templates = data.map(item => ({
         id: item.id,
@@ -177,12 +188,25 @@ export class PDFTemplateService {
         user_id: item.user_id,
       }));
 
-      return {
+      console.log('📄 Templates récupérés:', templates.length, 'sur', totalCount);
+
+      const result = {
         templates,
         totalCount,
         totalPages
       };
+      
+      // Mettre en cache le résultat
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(result));
+        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+      } catch (cacheError) {
+        // Ignorer les erreurs de cache
+      }
+      
+      return result;
     } catch (error) {
+      console.error('📄 Erreur générale getUserTemplates:', error);
       return { templates: [], totalCount: 0, totalPages: 0 };
     }
   }
