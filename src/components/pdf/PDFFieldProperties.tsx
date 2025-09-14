@@ -348,6 +348,28 @@ export const PDFFieldProperties: React.FC<PDFFieldPropertiesProps> = ({
         />
 
         {/* Alignement sur grille */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            const gridSize = 0.01; // Grille de 1% pour les ratios
+            const snappedXRatio = Math.round((field.xRatio || 0) / gridSize) * gridSize;
+            const snappedYRatio = Math.round((field.yRatio || 0) / gridSize) * gridSize;
+            onUpdate({ xRatio: snappedXRatio, yRatio: snappedYRatio });
+          }}
+          className="w-full text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-800"
+        >
+          📐 Aligner sur grille (1%)
+        </Button>
+
+        {/* Informations du champ */}
+        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+          <h4 className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">
+            Informations du champ
+          </h4>
+          <div className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
+            <div>Type: {field.type}</div>
+            <div>Page: {field.page}</div>
             <div>Ratios position: ({(field.xRatio || 0).toFixed(3)}, {(field.yRatio || 0).toFixed(3)})</div>
             <div>Ratios taille: {(field.widthRatio || 0.1).toFixed(3)} × {(field.heightRatio || 0.05).toFixed(3)}</div>
             {(field.offsetX || field.offsetY) && (
