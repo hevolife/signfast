@@ -28,9 +28,15 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         // Session expired, sign out the user
         console.log('Session expired, signing out user');
         await supabase.auth.signOut();
+        // Throw specific error to prevent further API calls
+        throw new Error('AUTH_SESSION_EXPIRED');
       }
     } catch (error) {
-      // If we can't parse the response body, ignore
+      // If we can't parse the response body, check if it's our auth error
+      if (error instanceof Error && error.message === 'AUTH_SESSION_EXPIRED') {
+        throw error;
+      }
+      // Otherwise ignore parsing errors
     }
   }
   
