@@ -6,6 +6,20 @@ import { PDFTemplate } from '../types/pdf';
 export const useDemoForms = () => {
   const { isDemoMode, demoForms, createDemoForm, updateDemoForm, deleteDemoForm } = useDemo();
   const [loading, setLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
+
+  // Écouter les changements de configuration admin
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'demo_admin_forms' && isDemoMode) {
+        console.log('📝 Mise à jour des formulaires de démo détectée');
+        setLastUpdate(Date.now());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isDemoMode]);
 
   const forms = isDemoMode ? demoForms.map(form => ({
     ...form,
@@ -61,6 +75,20 @@ export const useDemoForms = () => {
 export const useDemoTemplates = () => {
   const { isDemoMode, demoTemplates, createDemoTemplate, updateDemoTemplate, deleteDemoTemplate } = useDemo();
   const [loading, setLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
+
+  // Écouter les changements de configuration admin
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'demo_admin_templates' && isDemoMode) {
+        console.log('📄 Mise à jour des templates de démo détectée');
+        setLastUpdate(Date.now());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isDemoMode]);
 
   const templates = isDemoMode ? demoTemplates.map(template => ({
     ...template,

@@ -260,7 +260,34 @@ export const DemoManagementPanel: React.FC = () => {
       // Actualiser les paramètres dans le contexte démo
       refreshDemoSettings();
       
+      // Déclencher un événement storage pour notifier les autres onglets/fenêtres
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'demo_admin_settings',
+        newValue: JSON.stringify(demoSettings),
+        storageArea: localStorage
+      }));
+      
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'demo_admin_forms',
+        newValue: JSON.stringify(demoForms),
+        storageArea: localStorage
+      }));
+      
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'demo_admin_templates',
+        newValue: JSON.stringify(demoTemplates),
+        storageArea: localStorage
+      }));
+      
       toast.success('Configuration de démo sauvegardée !');
+      
+      // Message informatif pour les démos en cours
+      setTimeout(() => {
+        toast('💡 Les démos en cours seront mises à jour au prochain démarrage', {
+          duration: 4000,
+          icon: '🔄'
+        });
+      }, 1000);
     } catch (error) {
       toast.error('Erreur lors de la sauvegarde');
     } finally {

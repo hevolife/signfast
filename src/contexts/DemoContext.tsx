@@ -83,10 +83,81 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]
   });
 
+  // Écouter les changements de configuration admin
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'demo_admin_settings' || e.key === 'demo_admin_forms' || e.key === 'demo_admin_templates') {
+        console.log('🎭 Changement détecté dans la configuration admin:', e.key);
+        loadDemoSettings();
+        loadDemoTemplatesAndForms();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Charger les templates et formulaires de démo depuis la config admin
+  const loadDemoTemplatesAndForms = () => {
+    try {
+      // Charger les formulaires de démo depuis la config admin
+      const savedForms = localStorage.getItem('demo_admin_forms');
+      if (savedForms) {
+        const adminForms = JSON.parse(savedForms);
+        console.log('🎭 Chargement formulaires admin:', adminForms.length);
+        
+        // Mettre à jour les formulaires de démo existants
+        if (isDemoMode && demoUser) {
+          const updatedForms = adminForms.map((adminForm: any) => ({
+            ...adminForm,
+            user_id: demoUser.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_published: true,
+          }));
+          
+          setDemoForms(updatedForms);
+          
+          // Mettre à jour le localStorage de la démo
+          const demoData = JSON.parse(localStorage.getItem('signfast_demo') || '{}');
+          demoData.forms = updatedForms;
+          localStorage.setItem('signfast_demo', JSON.stringify(demoData));
+        }
+      }
+
+      // Charger les templates de démo depuis la config admin
+      const savedTemplates = localStorage.getItem('demo_admin_templates');
+      if (savedTemplates) {
+        const adminTemplates = JSON.parse(savedTemplates);
+        console.log('🎭 Chargement templates admin:', adminTemplates.length);
+        
+        // Mettre à jour les templates de démo existants
+        if (isDemoMode && demoUser) {
+          const updatedTemplates = adminTemplates.map((adminTemplate: any) => ({
+            ...adminTemplate,
+            user_id: demoUser.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }));
+          
+          setDemoTemplates(updatedTemplates);
+          
+          // Mettre à jour le localStorage de la démo
+          const demoData = JSON.parse(localStorage.getItem('signfast_demo') || '{}');
+          demoData.templates = updatedTemplates;
+          localStorage.setItem('signfast_demo', JSON.stringify(demoData));
+        }
+      }
+    } catch (error) {
+      console.error('Erreur chargement templates/forms admin:', error);
+    }
+  };
+
   // Vérifier si une démo est en cours au chargement
   useEffect(() => {
     // Charger les paramètres de démo depuis localStorage
     loadDemoSettings();
+    loadDemoTemplatesAndForms();
     
     const savedDemo = localStorage.getItem('signfast_demo');
     if (savedDemo) {
@@ -125,6 +196,14 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshDemoSettings = () => {
     loadDemoSettings();
+    loadDemoTemplatesAndForms();
+    
+    // Forcer la mise à jour des composants qui utilisent les données de démo
+    if (isDemoMode) {
+      console.log('🎭 Actualisation forcée des données de démo');
+      // Déclencher un re-render en modifiant légèrement le state
+      setTimeRemaining(prev => prev);
+    }
   };
 
   // Timer pour décompter le temps restant
@@ -147,9 +226,14 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const startDemo = () => {
     // Charger les paramètres de démo actuels
     loadDemoSettings();
+    loadDemoTemplatesAndForms();
     const currentSettings = JSON.parse(localStorage.getItem('demo_admin_settings') || '{}');
     const durationMinutes = currentSettings.durationMinutes || 30;
     const maxForms = currentSettings.maxForms || 3;
+    
+    // Charger les formulaires et templates depuis la config admin
+    const adminForms = JSON.parse(localStorage.getItem('demo_admin_forms') || '[]');
+    const adminTemplates = JSON.parse(localStorage.getItem('demo_admin_templates') || '[]');
     
     const now = Date.now();
     const expiresAt = now + (durationMinutes * 60 * 1000);
@@ -161,171 +245,208 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       expiresAt,
     };
 
-    // Créer un formulaire de démonstration
-    const demoFormFields: FormField[] = [
-      {
-        id: uuidv4(),
-        type: 'text',
-        label: 'Nom complet',
-        required: true,
-        placeholder: 'Votre nom et prénom'
-      },
-      {
-        id: uuidv4(),
-        type: 'email',
-        label: 'Adresse email',
-        required: true,
-        placeholder: 'votre@email.com'
-      },
-      {
-        id: uuidv4(),
-        type: 'phone',
-        label: 'Téléphone',
-        required: false,
-        placeholder: '01 23 45 67 89'
-      },
-      {
-        id: uuidv4(),
-        type: 'radio',
-        label: 'Type de contrat',
-        required: true,
-        options: ['Location', 'Prestation de service', 'Contrat de travail']
-      },
-      {
-        id: uuidv4(),
-        type: 'date',
-        label: 'Date de début',
-        required: true
-      },
-      {
-        id: uuidv4(),
-        type: 'signature',
-        label: 'Signature électronique',
-        required: true
+    // Utiliser les formulaires et templates depuis la config admin
+    let initialDemoForms: DemoForm[] = [];
+    let initialDemoTemplates: DemoTemplate[] = [];
+    
+    // Charger depuis la config admin si disponible
+    try {
+      const adminForms = JSON.parse(localStorage.getItem('demo_admin_forms') || '[]');
+      const adminTemplates = JSON.parse(localStorage.getItem('demo_admin_templates') || '[]');
+      
+      if (adminForms.length > 0) {
+        initialDemoForms = adminForms.map((adminForm: any) => ({
+          ...adminForm,
+          user_id: newDemoUser.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_published: true,
+        }));
+        console.log('🎭 Utilisation formulaires admin:', initialDemoForms.length);
       }
-    ];
+      
+      if (adminTemplates.length > 0) {
+        initialDemoTemplates = adminTemplates.map((adminTemplate: any) => ({
+          ...adminTemplate,
+          user_id: newDemoUser.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }));
+        console.log('🎭 Utilisation templates admin:', initialDemoTemplates.length);
+      }
+    } catch (error) {
+      console.error('Erreur chargement config admin:', error);
+    }
+    
+    // Fallback vers les données par défaut si aucune config admin
+    if (initialDemoForms.length === 0) {
+      console.log('🎭 Utilisation formulaire par défaut');
+      const demoFormFields: FormField[] = [
+        {
+          id: uuidv4(),
+          type: 'text',
+          label: 'Nom complet',
+          required: true,
+          placeholder: 'Votre nom et prénom'
+        },
+        {
+          id: uuidv4(),
+          type: 'email',
+          label: 'Adresse email',
+          required: true,
+          placeholder: 'votre@email.com'
+        },
+        {
+          id: uuidv4(),
+          type: 'phone',
+          label: 'Téléphone',
+          required: false,
+          placeholder: '01 23 45 67 89'
+        },
+        {
+          id: uuidv4(),
+          type: 'radio',
+          label: 'Type de contrat',
+          required: true,
+          options: ['Location', 'Prestation de service', 'Contrat de travail']
+        },
+        {
+          id: uuidv4(),
+          type: 'date',
+          label: 'Date de début',
+          required: true
+        },
+        {
+          id: uuidv4(),
+          type: 'signature',
+          label: 'Signature électronique',
+          required: true
+        }
+      ];
 
-    const initialDemoForm: DemoForm = {
-      id: uuidv4(),
-      title: 'Contrat de Démonstration',
-      description: 'Formulaire de démonstration pour tester SignFast',
-      fields: demoFormFields,
-      settings: {
-        allowMultiple: true,
-        requireAuth: false,
-        collectEmail: true,
-        generatePdf: true,
-        emailPdf: false,
-        savePdfToServer: true,
-      },
-      user_id: newDemoUser.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_published: true,
-      password: null,
-    };
-
-    // Créer des templates PDF de démonstration
-    const demoTemplates: DemoTemplate[] = [
-      {
+      initialDemoForms = [{
         id: uuidv4(),
-        name: 'Contrat de Location Meublée',
-        description: 'Template pour contrat de location avec champs pré-positionnés',
-        originalPdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggMTAwCj4+CnN0cmVhbQpCVApxCjcyIDcyMCBUZApxCi9GMSAxMiBUZgooQ09OVFJBVCBERSBMT0NBVElPTikgVGoKRVQKcQo3MiA2ODAgVGQKcQovRjEgMTAgVGYKKE5vbSBkdSBsb2NhdGFpcmU6KSBUagpFVApxCjcyIDY0MCBUZA==',
-        fields: [
-          {
-            id: uuidv4(),
-            type: 'text',
-            page: 1,
-            variable: '${nom}',
-            xRatio: 0.3,
-            yRatio: 0.2,
-            widthRatio: 0.25,
-            heightRatio: 0.04,
-            fontSize: 12,
-            fontColor: '#000000',
-            backgroundColor: '#ffffff',
-            required: true,
-          },
-          {
-            id: uuidv4(),
-            type: 'date',
-            page: 1,
-            variable: '${date_debut}',
-            xRatio: 0.6,
-            yRatio: 0.3,
-            widthRatio: 0.15,
-            heightRatio: 0.04,
-            fontSize: 12,
-            fontColor: '#000000',
-            backgroundColor: '#ffffff',
-            required: true,
-          },
-          {
-            id: uuidv4(),
-            type: 'signature',
-            page: 1,
-            variable: '${signature}',
-            xRatio: 0.1,
-            yRatio: 0.7,
-            widthRatio: 0.35,
-            heightRatio: 0.1,
-            required: true,
-          }
-        ],
-        linkedFormId: initialDemoForm.id,
-        pages: 1,
+        title: 'Contrat de Démonstration',
+        description: 'Formulaire de démonstration pour tester SignFast',
+        fields: demoFormFields,
+        settings: {
+          allowMultiple: true,
+          requireAuth: false,
+          collectEmail: true,
+          generatePdf: true,
+          emailPdf: false,
+          savePdfToServer: true,
+        },
+        user_id: newDemoUser.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        user_id: newDemoUser.id,
-      },
-      {
-        id: uuidv4(),
-        name: 'Facture de Prestation',
-        description: 'Template pour factures avec calculs automatiques',
-        originalPdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggODAKPj4Kc3RyZWFtCkJUCnEKNzIgNzIwIFRkCnEKL0YxIDEyIFRmCihGQUNUVVJFKSBUagpFVApxCjcyIDY4MCBUZA==',
-        fields: [
-          {
-            id: uuidv4(),
-            type: 'text',
-            page: 1,
-            variable: '${entreprise}',
-            xRatio: 0.1,
-            yRatio: 0.15,
-            widthRatio: 0.3,
-            heightRatio: 0.04,
-            fontSize: 12,
-            fontColor: '#000000',
-            backgroundColor: '#ffffff',
-            required: true,
-          },
-          {
-            id: uuidv4(),
-            type: 'number',
-            page: 1,
-            variable: '${montant}',
-            xRatio: 0.7,
-            yRatio: 0.5,
-            widthRatio: 0.15,
-            heightRatio: 0.04,
-            fontSize: 12,
-            fontColor: '#000000',
-            backgroundColor: '#ffffff',
-            required: true,
-          }
-        ],
-        pages: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: newDemoUser.id,
-      }
-    ];
-
+        is_published: true,
+        password: null,
+      }];
+    }
+    
+    if (initialDemoTemplates.length === 0) {
+      console.log('🎭 Utilisation templates par défaut');
+      initialDemoTemplates = [
+        {
+          id: uuidv4(),
+          name: 'Contrat de Location Meublée',
+          description: 'Template pour contrat de location avec champs pré-positionnés',
+          originalPdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggMTAwCj4+CnN0cmVhbQpCVApxCjcyIDcyMCBUZApxCi9GMSAxMiBUZgooQ09OVFJBVCBERSBMT0NBVElPTikgVGoKRVQKcQo3MiA2ODAgVGQKcQovRjEgMTAgVGYKKE5vbSBkdSBsb2NhdGFpcmU6KSBUagpFVApxCjcyIDY0MCBUZA==',
+          fields: [
+            {
+              id: uuidv4(),
+              type: 'text',
+              page: 1,
+              variable: '${nom}',
+              xRatio: 0.3,
+              yRatio: 0.2,
+              widthRatio: 0.25,
+              heightRatio: 0.04,
+              fontSize: 12,
+              fontColor: '#000000',
+              backgroundColor: '#ffffff',
+              required: true,
+            },
+            {
+              id: uuidv4(),
+              type: 'date',
+              page: 1,
+              variable: '${date_debut}',
+              xRatio: 0.6,
+              yRatio: 0.3,
+              widthRatio: 0.15,
+              heightRatio: 0.04,
+              fontSize: 12,
+              fontColor: '#000000',
+              backgroundColor: '#ffffff',
+              required: true,
+            },
+            {
+              id: uuidv4(),
+              type: 'signature',
+              page: 1,
+              variable: '${signature}',
+              xRatio: 0.1,
+              yRatio: 0.7,
+              widthRatio: 0.35,
+              heightRatio: 0.1,
+              required: true,
+            }
+          ],
+          linkedFormId: initialDemoForms[0]?.id,
+          pages: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: newDemoUser.id,
+        },
+        {
+          id: uuidv4(),
+          name: 'Facture de Prestation',
+          description: 'Template pour factures avec calculs automatiques',
+          originalPdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggODAKPj4Kc3RyZWFtCkJUCnEKNzIgNzIwIFRkCnEKL0YxIDEyIFRmCihGQUNUVVJFKSBUagpFVApxCjcyIDY4MCBUZA==',
+          fields: [
+            {
+              id: uuidv4(),
+              type: 'text',
+              page: 1,
+              variable: '${entreprise}',
+              xRatio: 0.1,
+              yRatio: 0.15,
+              widthRatio: 0.3,
+              heightRatio: 0.04,
+              fontSize: 12,
+              fontColor: '#000000',
+              backgroundColor: '#ffffff',
+              required: true,
+            },
+            {
+              id: uuidv4(),
+              type: 'number',
+              page: 1,
+              variable: '${montant}',
+              xRatio: 0.7,
+              yRatio: 0.5,
+              widthRatio: 0.15,
+              heightRatio: 0.04,
+              fontSize: 12,
+              fontColor: '#000000',
+              backgroundColor: '#ffffff',
+              required: true,
+            }
+          ],
+          pages: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: newDemoUser.id,
+        }
+      ];
+    }
 
     const demoData = {
       user: newDemoUser,
-      forms: [initialDemoForm],
-      templates: demoTemplates,
+      forms: initialDemoForms,
+      templates: initialDemoTemplates,
       expiresAt,
     };
 
@@ -333,11 +454,13 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIsDemoMode(true);
     setDemoUser(newDemoUser);
-    setDemoForms([initialDemoForm]);
-    setDemoTemplates(demoTemplates);
+    setDemoForms(initialDemoForms);
+    setDemoTemplates(initialDemoTemplates);
     setTimeRemaining(durationMinutes * 60);
     
     console.log('🎭 Démo démarrée avec durée:', durationMinutes, 'minutes');
+    console.log('🎭 Formulaires chargés:', initialDemoForms.length);
+    console.log('🎭 Templates chargés:', initialDemoTemplates.length);
   };
 
   const endDemo = () => {
