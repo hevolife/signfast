@@ -464,17 +464,6 @@ export class PDFGenerator {
       const offsetX = (width - drawWidth) / 2;
       const offsetY = (height - drawHeight) / 2;
       
-      // Fond blanc avec bordure
-      page.drawRectangle({
-        x: x + offsetX - 1,
-        y: y + offsetY - 1,
-        width: drawWidth + 2,
-        height: drawHeight + 2,
-        color: rgb(1, 1, 1),
-        borderColor: rgb(0.7, 0.7, 0.7),
-        borderWidth: 0.3,
-      });
-      
       // Dessiner la signature
       page.drawImage(image, {
         x: x + offsetX,
