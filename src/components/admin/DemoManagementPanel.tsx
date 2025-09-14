@@ -143,8 +143,6 @@ export const DemoManagementPanel: React.FC = () => {
               generatePdf: true,
               emailPdf: false,
               savePdfToServer: true,
-              offsetX: -73,
-              offsetY: 12,
             }
           }
         ]);

@@ -299,8 +299,8 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         fontColor: '#000000',
         backgroundColor: '#ffffff',
         required: false,
-        offsetX: -73,
-        offsetY: 12,
+        offsetX: -75,
+        offsetY: 10,
       };
 
       console.log('🎯 === NOUVEAU CHAMP CRÉÉ ===');
