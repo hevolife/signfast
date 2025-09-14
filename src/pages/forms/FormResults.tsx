@@ -126,11 +126,11 @@ export const FormResults: React.FC = () => {
       try {
         toast.loading('🗑️ Suppression de toutes les réponses en cours...', { duration: 10000 });
         
-        // 1. Récupérer tous les PDFs associés aux réponses de ce formulaire
+        // 1. Récupérer TOUS les PDFs associés à TOUTES les réponses de ce formulaire (pas seulement la page courante)
         const { data: associatedPdfs, error: pdfFetchError } = await supabase
           .from('pdf_storage')
-          .select('file_name, response_id')
-          .in('response_id', responses.map(r => r.id));
+          .select('file_name, response_id, responses!inner(form_id)')
+          .eq('responses.form_id', id);
 
         if (pdfFetchError) {
           console.warn('⚠️ Erreur récupération PDFs associés:', pdfFetchError);
