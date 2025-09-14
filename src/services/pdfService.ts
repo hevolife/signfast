@@ -312,6 +312,7 @@ export class PDFService {
       responseId: string;
       templateName: string;
       formTitle: string;
+      userDisplayName: string;
       createdAt: string;
       size: number;
     }>;
@@ -338,7 +339,7 @@ export class PDFService {
           .eq('user_id', targetUserId),
         supabase
           .from('pdf_storage')
-          .select('file_name, response_id, template_name, form_title, file_size, created_at')
+          .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
           .eq('user_id', targetUserId)
           .range((page - 1) * limit, page * limit - 1)
           .order('created_at', { ascending: false })
@@ -366,6 +367,7 @@ export class PDFService {
         responseId: item.response_id || 'supabase',
         templateName: item.template_name || 'Template PDF',
         formTitle: item.form_title,
+        userDisplayName: this.extractUserDisplayName(item.form_data || {}),
         createdAt: item.created_at,
         size: item.file_size || 0,
       }));
@@ -385,6 +387,99 @@ export class PDFService {
     }
   }
 
+  // EXTRAIRE LE NOM D'AFFICHAGE DEPUIS LES FORM_DATA
+  private static extractUserDisplayName(formData: Record<string, any>): string {
+    if (!formData || typeof formData !== 'object') {
+      return 'Utilisateur';
+    }
+
+    // Nettoyer les données (ignorer les placeholders techniques)
+    const cleanData: Record<string, any> = {};
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value === 'string' && 
+          !value.startsWith('[SIGNATURE_') && 
+          !value.startsWith('[IMAGE_') &&
+          value.trim() !== '') {
+        cleanData[key.toLowerCase()] = value.trim();
+      }
+    });
+
+    // 1. Rechercher un nom complet
+    const fullNameKeys = ['nom_complet', 'nom complet', 'full_name', 'fullname', 'name'];
+    for (const key of fullNameKeys) {
+      if (cleanData[key]) {
+        return cleanData[key];
+      }
+    }
+
+    // 2. Combiner prénom + nom
+    const firstNameKeys = ['prenom', 'prénom', 'first_name', 'firstname'];
+    const lastNameKeys = ['nom', 'nom_famille', 'last_name', 'lastname', 'family_name'];
+    
+    let firstName = '';
+    let lastName = '';
+    
+    // Trouver le prénom
+    for (const key of firstNameKeys) {
+      if (cleanData[key]) {
+        firstName = cleanData[key];
+        break;
+      }
+    }
+    
+    // Trouver le nom (éviter les entreprises)
+    for (const key of lastNameKeys) {
+      if (cleanData[key]) {
+        const value = cleanData[key];
+        // Éviter les noms d'entreprise (contiennent souvent SARL, SAS, etc.)
+        if (!value.match(/\b(sarl|sas|eurl|sasu|sa|snc|sci|auto.?entrepreneur|entreprise|company|corp|ltd|inc)\b/i)) {
+          lastName = value;
+          break;
+        }
+      }
+    }
+    
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    }
+
+    // 3. Rechercher un email et extraire la partie avant @
+    const emailKeys = ['email', 'adresse_email', 'mail', 'e_mail'];
+    for (const key of emailKeys) {
+      if (cleanData[key] && cleanData[key].includes('@')) {
+        const emailPart = cleanData[key].split('@')[0];
+        // Nettoyer et formater
+        return emailPart.replace(/[._-]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+      }
+    }
+
+    // 4. Rechercher un nom d'entreprise en dernier recours
+    const companyKeys = ['entreprise', 'company', 'societe', 'société', 'nom_entreprise', 'company_name'];
+    for (const key of companyKeys) {
+      if (cleanData[key]) {
+        return cleanData[key];
+      }
+    }
+
+    // 5. Fallback : premier champ texte non vide
+    const firstTextValue = Object.values(cleanData).find(value => 
+      typeof value === 'string' && 
+      value.length > 0 && 
+      value.length < 100 && // Éviter les textes trop longs
+      !value.includes('@') && // Éviter les emails
+      !value.match(/^\d+$/) // Éviter les nombres purs
+    );
+    
+    if (firstTextValue) {
+      return firstTextValue as string;
+    }
+
+    return 'Utilisateur';
+  }
   // NOUVELLE MÉTHODE : Récupérer les form_data à la demande pour génération PDF
   static async getPDFFormData(fileName: string): Promise<Record<string, any> | null> {
     try {
