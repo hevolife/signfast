@@ -3,10 +3,9 @@ import { useDemo } from '../../contexts/DemoContext';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { AlertTriangle, Clock, UserPlus } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export const DemoWarningBanner: React.FC = () => {
-  const { isDemoMode, timeRemaining } = useDemo();
+  const { isDemoMode, timeRemaining, endDemo } = useDemo();
 
   if (!isDemoMode) return null;
 
@@ -53,12 +52,17 @@ export const DemoWarningBanner: React.FC = () => {
             </div>
           </div>
           <div className="flex-shrink-0">
-            <Link to="/signup">
-              <Button size="sm" className="flex items-center space-x-2">
-                <UserPlus className="h-4 w-4" />
-                <span>Créer un compte</span>
-              </Button>
-            </Link>
+            <Button 
+              size="sm" 
+              className="flex items-center space-x-2"
+              onClick={() => {
+                endDemo();
+                window.location.href = '/signup';
+              }}
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Créer un compte</span>
+            </Button>
           </div>
         </div>
       </CardContent>
