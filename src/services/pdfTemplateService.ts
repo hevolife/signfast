@@ -1,9 +1,11 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseReady } from '../lib/supabase';
 import { PDFTemplate } from '../types/pdf';
 
 export class PDFTemplateService {
   // CRÉER UN TEMPLATE PDF DANS SUPABASE
   static async createTemplate(template: Omit<PDFTemplate, 'id' | 'created_at' | 'updated_at'>, userId: string): Promise<string | null> {
+    if (!isSupabaseReady) return null;
+
     try {
       const { data, error } = await supabase
         .from('pdf_templates')
@@ -32,6 +34,8 @@ export class PDFTemplateService {
 
   // RÉCUPÉRER UN TEMPLATE PAR ID (ACCÈS PUBLIC)
   static async getTemplate(templateId: string): Promise<PDFTemplate | null> {
+    if (!isSupabaseReady) return null;
+
     try {
       const { data, error } = await supabase
         .from('pdf_templates')
@@ -76,14 +80,15 @@ export class PDFTemplateService {
     totalCount: number;
     totalPages: number;
   }> {
+    if (!isSupabaseReady) {
+      return { templates: [], totalCount: 0, totalPages: 0 };
+    }
+
     try {
-      // Vérifier si Supabase est configuré
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        return { templates: [], totalCount: 0, totalPages: 0 };
-      }
+      // Timeout pour éviter les blocages
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 4000)
+      );
 
       // Requêtes parallèles optimisées
       const countPromise = supabase
@@ -99,11 +104,6 @@ export class PDFTemplateService {
         .eq('user_id', userId)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
-
-      // Exécuter en parallèle avec timeout global
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), 5000);
-      });
 
       const [countResult, dataResult] = await Promise.race([
         Promise.all([countPromise, queryPromise]),
@@ -155,6 +155,8 @@ export class PDFTemplateService {
 
   // METTRE À JOUR UN TEMPLATE
   static async updateTemplate(templateId: string, updates: Partial<PDFTemplate>): Promise<boolean> {
+    if (!isSupabaseReady) return false;
+
     try {
       const { error } = await supabase
         .from('pdf_templates')
@@ -180,6 +182,8 @@ export class PDFTemplateService {
 
   // SUPPRIMER UN TEMPLATE
   static async deleteTemplate(templateId: string): Promise<boolean> {
+    if (!isSupabaseReady) return false;
+
     try {
       const { error } = await supabase
         .from('pdf_templates')
@@ -198,6 +202,8 @@ export class PDFTemplateService {
 
   // LIER UN TEMPLATE À UN FORMULAIRE
   static async linkTemplateToForm(templateId: string, formId: string | null): Promise<boolean> {
+    if (!isSupabaseReady) return false;
+
     try {
       // Vérifier que le template existe
       const { data: templateExists, error: checkError } = await supabase

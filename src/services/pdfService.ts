@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseReady } from '../lib/supabase';
 import { stripeConfig } from '../stripe-config';
 import { PDFGenerator } from '../utils/pdfGenerator';
 
@@ -461,6 +461,8 @@ export class PDFService {
 
   // COMPTER LES PDFS (optimisé pour éviter les timeouts)
   static async countPDFs(): Promise<number> {
+    if (!isSupabaseReady) return 0;
+
     try {
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -511,6 +513,10 @@ export class PDFService {
     totalCount: number;
     totalPages: number;
   }> {
+    if (!isSupabaseReady) {
+      return { pdfs: [], totalCount: 0, totalPages: 0 };
+    }
+
     try {
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -562,14 +568,8 @@ export class PDFService {
         .order('created_at', { ascending: false });
 
       // Timeout global
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 4000)
-      );
 
-      const [countResult, dataResult] = await Promise.race([
-        Promise.all([countPromise, dataPromise]),
-        timeoutPromise
-      ]);
+      const [countResult, dataResult] = await Promise.all([countPromise, dataPromise]);
 
       const [{ count, error: countError }, { data, error: dataError }] = countResult;
 
@@ -609,6 +609,8 @@ export class PDFService {
 
   // CHARGER LES DONNÉES D'UN PDF SPÉCIFIQUE (à la demande)
   static async getPDFFormData(fileName: string): Promise<Record<string, any>> {
+    if (!isSupabaseReady) return {};
+
     try {
       const { data, error } = await supabase
         .from('pdf_storage')
@@ -625,6 +627,8 @@ export class PDFService {
 
   // SUPPRIMER UN PDF
   static async deletePDF(fileName: string): Promise<boolean> {
+    if (!isSupabaseReady) return false;
+
     try {
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -725,6 +729,10 @@ export class PDFService {
 
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
+    if (!isSupabaseReady) {
+      throw new Error('Supabase non configuré');
+    }
+
     try {
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();

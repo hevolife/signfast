@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseReady } from '../lib/supabase';
 
 // Cache pour les données utilisateur
 let userCache: { user: User | null; session: Session | null; timestamp: number } | null = null;
@@ -58,6 +58,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    // Si Supabase n'est pas configuré, ne pas essayer de récupérer la session
+    if (!isSupabaseReady) {
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     // Vérifier le cache d'abord
     if (userCache && Date.now() - userCache.timestamp < USER_CACHE_DURATION) {
       setSession(userCache.session);
@@ -118,6 +126,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [checkImpersonation]);
 
   const signUp = async (email: string, password: string) => {
+    if (!isSupabaseReady) {
+      return { data: null, error: { message: 'Supabase non configuré' } };
+    }
+
     // Invalider le cache lors de l'inscription
     userCache = null;
     
@@ -129,6 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseReady) {
+      return { data: null, error: { message: 'Supabase non configuré' } };
+    }
+
     // Invalider le cache lors de la connexion
     userCache = null;
     

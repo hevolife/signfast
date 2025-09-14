@@ -3,7 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+// Vérification plus stricte des variables d'environnement
+const isSupabaseConfigured = supabaseUrl && 
+                            supabaseKey && 
+                            !supabaseUrl.includes('placeholder') && 
+                            !supabaseKey.includes('placeholder') &&
+                            supabaseUrl.startsWith('https://') &&
+                            supabaseKey.length > 50;
+
+if (!isSupabaseConfigured) {
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
 }
 
@@ -12,19 +20,22 @@ let connectionPool: any = null;
 
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
-  // Vérifier si Supabase est configuré avant de faire des requêtes
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+  if (!isSupabaseConfigured) {
     throw new Error('Supabase non configuré');
   }
+
+  // S'assurer que l'API key est toujours présente
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    ...options?.headers,
+  };
 
   // Ajouter des headers d'optimisation
   const optimizedOptions = {
     ...options,
     headers: {
-      ...options?.headers,
+      ...headers,
       'Cache-Control': 'max-age=60', // Cache 1 minute
       'Connection': 'keep-alive',
     }
@@ -48,7 +59,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   return response;
 };
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
+export const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
   global: {
     fetch: customFetch,
   },
@@ -65,7 +76,27 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
       eventsPerSecond: 2, // Limiter les événements temps réel
     },
   },
-});
+}) : {
+  // Client mock pour mode non configuré
+  auth: {
+    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+    signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
+    signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
+    signOut: () => Promise.resolve({ error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+  },
+  from: () => ({
+    select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }) }) }),
+    insert: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
+    update: () => ({ eq: () => Promise.resolve({ error: { message: 'Supabase non configuré' } }) }),
+    delete: () => ({ eq: () => Promise.resolve({ error: { message: 'Supabase non configuré' } }) }),
+  }),
+  rpc: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
+} as any;
+
+// Export de la configuration pour vérifications
+export const isSupabaseReady = isSupabaseConfigured;
 
 // Export createClient for admin operations
 export { createClient };

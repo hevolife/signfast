@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PDFTemplate } from '../types/pdf';
 import { PDFTemplateService } from '../services/pdfTemplateService';
 import { useAuth } from '../contexts/AuthContext';
+import { isSupabaseReady } from '../lib/supabase';
 
 // Cache pour éviter les requêtes répétées
 const templatesCache = new Map<string, { data: PDFTemplate[]; timestamp: number; totalCount: number; totalPages: number }>();
@@ -26,7 +27,7 @@ export const usePDFTemplates = () => {
 
   const fetchTemplates = async (page: number = 1, limit: number = 10) => {
     try {
-      if (user) {
+      if (user && isSupabaseReady) {
         // Vérifier si on est en mode impersonation
         const impersonationData = localStorage.getItem('admin_impersonation');
         let targetUserId = user.id;
@@ -54,11 +55,6 @@ export const usePDFTemplates = () => {
         }
 
         try {
-          // Timeout de 3 secondes pour éviter les blocages
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout')), 3000);
-          });
-
           const result = await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
           
           setTemplates(result.templates);
@@ -74,7 +70,6 @@ export const usePDFTemplates = () => {
           });
 
         } catch (supabaseError) {
-          // Fallback silencieux
           setTemplates([]);
           setTotalCount(0);
           setTotalPages(0);

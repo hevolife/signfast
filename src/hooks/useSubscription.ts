@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseReady } from '../lib/supabase';
 
 // Cache pour les données d'abonnement
 let subscriptionCache: { data: SubscriptionData; timestamp: number; userId: string } | null = null;
@@ -53,11 +53,7 @@ export const useSubscription = () => {
 
   const fetchSubscription = async () => {
     try {
-      // Vérifier si Supabase est configuré
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+      if (!isSupabaseReady) {
         setSubscription(prev => ({ ...prev, loading: false }));
         return;
       }
@@ -86,17 +82,11 @@ export const useSubscription = () => {
       // Vérifier l'abonnement Stripe
       let stripeSubscription = null;
       try {
-        // Requête optimisée avec timeout
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 2000)
-        );
 
-        const queryPromise = supabase
+        const { data } = await supabase
           .from('stripe_user_subscriptions')
           .select('customer_id, subscription_status, price_id, current_period_end, cancel_at_period_end')
           .limit(50);
-
-        const { data } = await Promise.race([queryPromise, timeoutPromise]);
 
         // Chercher l'abonnement pour cet utilisateur
         stripeSubscription = data?.find(s => s.customer_id === targetUserId);
@@ -110,17 +100,11 @@ export const useSubscription = () => {
       let secretCodeExpiresAt = null;
       
       try {
-        // Requête optimisée avec timeout
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 1500)
-        );
 
-        const codesPromise = supabase
+        const { data: userCodes } = await supabase
           .from('user_secret_codes')
           .select('code_id, expires_at')
           .eq('user_id', targetUserId);
-
-        const { data: userCodes } = await Promise.race([codesPromise, timeoutPromise]);
 
         if (userCodes && userCodes.length > 0) {
           // Requête batch pour tous les codes
@@ -191,7 +175,6 @@ export const useSubscription = () => {
       setSubscription(finalState);
 
     } catch (error) {
-      // En cas d'erreur réseau, définir des valeurs par défaut
       setSubscription({
         isSubscribed: false,
         subscriptionStatus: null,

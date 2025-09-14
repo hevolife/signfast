@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseReady } from '../lib/supabase';
 import { Form, FormResponse } from '../types/form';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -24,7 +24,12 @@ export const useForms = () => {
   };
 
   const fetchForms = async (page: number = 1, limit: number = 10) => {
-    if (!user) return;
+    if (!user || !isSupabaseReady) {
+      setForms([]);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
 
     // Vérifier si on est en mode impersonation
     const impersonationData = localStorage.getItem('admin_impersonation');
@@ -52,6 +57,11 @@ export const useForms = () => {
     }
 
     try {
+      // Timeout global pour éviter les blocages
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 3000)
+      );
+
       // Requête optimisée avec sélection minimale pour le comptage
       const countPromise = supabase
         .from('forms')
@@ -69,7 +79,10 @@ export const useForms = () => {
         .order('created_at', { ascending: false });
 
       // Exécuter les requêtes en parallèle
-      const [countResult, dataResult] = await Promise.all([countPromise, dataPromise]);
+      const [countResult, dataResult] = await Promise.race([
+        Promise.all([countPromise, dataPromise]),
+        timeoutPromise
+      ]);
 
       if (countResult.error) throw countResult.error;
       if (dataResult.error) throw dataResult.error;
@@ -119,7 +132,7 @@ export const useForms = () => {
   }, [user]);
 
   const createForm = async (formData: Partial<Form>) => {
-    if (!user) return null;
+    if (!user || !isSupabaseReady) return null;
 
     try {
       const { data, error } = await supabase
@@ -142,6 +155,8 @@ export const useForms = () => {
   };
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
+    if (!isSupabaseReady) return false;
+
     try {
       const { error } = await supabase
         .from('forms')
@@ -158,6 +173,8 @@ export const useForms = () => {
   };
 
   const deleteForm = async (id: string) => {
+    if (!isSupabaseReady) return false;
+
     try {
       const { error } = await supabase
         .from('forms')
@@ -194,7 +211,12 @@ export const useFormResponses = (formId: string) => {
   const [totalCount, setTotalCount] = useState(0);
 
   const fetchResponses = async (page: number = 1, limit: number = 10) => {
-    if (!formId) return;
+    if (!formId || !isSupabaseReady) {
+      setResponses([]);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
 
     // Vérifier le cache
     const cacheKey = `responses-${formId}-${page}-${limit}`;
@@ -209,6 +231,11 @@ export const useFormResponses = (formId: string) => {
     const offset = (page - 1) * limit;
     
     try {
+      // Timeout pour éviter les blocages
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 3000)
+      );
+
       // Requêtes parallèles optimisées
       const countPromise = supabase
         .from('responses')
@@ -222,7 +249,10 @@ export const useFormResponses = (formId: string) => {
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
-      const [countResult, dataResult] = await Promise.all([countPromise, dataPromise]);
+      const [countResult, dataResult] = await Promise.race([
+        Promise.all([countPromise, dataPromise]),
+        timeoutPromise
+      ]);
 
       if (countResult.error) throw countResult.error;
       if (dataResult.error) throw dataResult.error;
@@ -254,6 +284,8 @@ export const useFormResponses = (formId: string) => {
   };
 
   const fetchSingleResponseData = async (responseId: string) => {
+    if (!isSupabaseReady) return null;
+
     try {
       const { data, error } = await supabase
         .from('responses')
