@@ -30,6 +30,7 @@ export const Dashboard: React.FC = () => {
   const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();
   const [recentFormsPage, setRecentFormsPage] = React.useState(1);
   const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
+  const [initialLoading, setInitialLoading] = React.useState(true);
   const product = stripeConfig.products[0];
 
   // Charger une page spécifique des formulaires récents
@@ -47,10 +48,19 @@ export const Dashboard: React.FC = () => {
 
   // Charger les 5 premiers formulaires au montage
   React.useEffect(() => {
+    // Chargement immédiat de l'interface
+    setInitialLoading(false);
+    // Délai court pour permettre l'affichage de l'interface
+    setTimeout(() => {
+      // Le chargement des formulaires est déjà géré par le hook useForms
+    }, 100);
+  }, []);
+
+  React.useEffect(() => {
     if (!formsLoading) {
       loadRecentFormsPage(1);
     }
-  }, []);
+  }, [formsLoading]);
 
   // Calculer les statistiques
   const totalResponses = totalForms * 8; // Estimation basée sur le nombre total de formulaires
@@ -63,6 +73,18 @@ export const Dashboard: React.FC = () => {
   const draftForms = forms.filter(form => !form.is_published).length;
   const totalFormsPages = Math.ceil(totalForms / 5);
 
+  // Afficher le loading seulement pour le chargement initial très court
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Initialisation du dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Données pour les graphiques (simulation)
   const weeklyData = [
     { day: 'Lun', responses: 12 },
@@ -73,17 +95,6 @@ export const Dashboard: React.FC = () => {
     { day: 'Sam', responses: 7 },
     { day: 'Dim', responses: 4 },
   ];
-
-  if (formsLoading || templatesLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Chargement du dashboard...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -108,6 +119,18 @@ export const Dashboard: React.FC = () => {
             <div className="mt-6">
               <SubscriptionBanner />
             </div>
+            
+            {/* Indicateur de chargement des données */}
+            {(formsLoading || templatesLoading) && (
+              <Card className="mt-6">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Chargement des données du dashboard...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
