@@ -35,7 +35,17 @@ export const PDFManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'template'>('date');
   const product = stripeConfig.products[0];
 
+  // Charger les PDFs au montage
+  useEffect(() => {
+    loadPDFs();
+  }, []);
 
+  // Marquer comme initialisé après le premier chargement
+  useEffect(() => {
+    if (!loading) {
+      setInitialLoading(false);
+    }
+  }, [loading]);
   const loadPDFs = async () => {
     // Ne pas afficher le loading si c'est le premier chargement
     if (pdfs.length > 0) {
