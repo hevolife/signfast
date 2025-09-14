@@ -571,7 +571,7 @@ export class PDFService {
         .eq('user_id', targetUserId),
         supabase
         .from('pdf_storage')
-        .select('file_name, response_id, template_name, form_title, file_size, created_at')
+        .select('file_name, response_id, template_name, form_title, file_size, created_at, form_data')
         .eq('user_id', targetUserId)
         .range((page - 1) * limit, page * limit - 1)
         .order('created_at', { ascending: false })
@@ -599,7 +599,7 @@ export class PDFService {
         formTitle: item.form_title,
         createdAt: item.created_at,
         size: item.file_size || 0,
-        formData: {}, // Charger les form_data seulement à la demande
+        formData: item.form_data || {}, // Charger les form_data pour l'affichage des noms
       }));
 
       console.log('💾 PDFs récupérés:', pdfs.length, 'sur', total);

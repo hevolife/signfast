@@ -370,10 +370,10 @@ export const PDFManager: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
-                          {getDisplayName(pdf.formData) || `Document ${pdf.formTitle}`}
+                          {getDisplayName(pdf.formData) || pdf.formTitle}
                         </h3>
                         <p className="text-sm text-green-700 dark:text-green-400 line-clamp-2">
-                          {getDisplayName(pdf.formData) ? `Formulaire: ${pdf.formTitle}` : `Template: ${pdf.templateName}`}
+                          {getDisplayName(pdf.formData) ? pdf.formTitle : `Template: ${pdf.templateName}`}
                         </p>
                       </div>
                     </div>
@@ -388,13 +388,6 @@ export const PDFManager: React.FC = () => {
                       Créé le {formatDateTimeFR(pdf.createdAt)}
                     </span>
                   </div>
-                  
-                  {/* Afficher les données détectées pour debug */}
-                  {getDisplayName(pdf.formData) && (
-                    <div className="text-xs text-green-600 dark:text-green-400 truncate mb-4">
-                      👤 Identité détectée: {getDisplayName(pdf.formData)}
-                    </div>
-                  )}
                   
                   {/* Indicateur de statut PDF */}
                   <div className="text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center space-x-1">
