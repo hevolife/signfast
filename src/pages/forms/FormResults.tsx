@@ -676,11 +676,82 @@ export const FormResults: React.FC = () => {
                   const value = selectedResponse.data[field.label];
                   if (value === undefined || value === null || value === '') return null;
 
+                  // Appliquer le masque de saisie si défini
+                  const getDisplayValue = (fieldValue: any, field: any) => {
+                    if (field.validation?.mask && typeof fieldValue === 'string') {
+                      return applyMaskToValue(fieldValue, field.validation.mask);
+                    }
+                    return fieldValue;
+                  };
+
+                  // Fonction pour appliquer un masque à une valeur
+                  const applyMaskToValue = (value: string, mask: string): string => {
+                    if (!value || !mask) return value;
+                    
+                    let masked = '';
+                    let maskIndex = 0;
+                    let valueIndex = 0;
+                    
+                    // Nettoyer la valeur (garder seulement les caractères alphanumériques)
+                    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '');
+                    
+                    while (maskIndex < mask.length && valueIndex < cleanValue.length) {
+                      const maskChar = mask[maskIndex];
+                      const inputChar = cleanValue[valueIndex];
+                      
+                      if (maskChar === '9') {
+                        // Chiffre requis
+                        if (/[0-9]/.test(inputChar)) {
+                          masked += inputChar;
+                          valueIndex++;
+                        } else {
+                          break;
+                        }
+                      } else if (maskChar === 'A') {
+                        // Lettre majuscule requise
+                        if (/[a-zA-Z]/.test(inputChar)) {
+                          masked += inputChar.toUpperCase();
+                          valueIndex++;
+                        } else {
+                          break;
+                        }
+                      } else if (maskChar === 'a') {
+                        // Lettre minuscule requise
+                        if (/[a-zA-Z]/.test(inputChar)) {
+                          masked += inputChar.toLowerCase();
+                          valueIndex++;
+                        } else {
+                          break;
+                        }
+                      } else if (maskChar === '*') {
+                        // Caractère alphanumérique
+                        if (/[a-zA-Z0-9]/.test(inputChar)) {
+                          masked += inputChar;
+                          valueIndex++;
+                        } else {
+                          break;
+                        }
+                      } else {
+                        // Caractère littéral du masque
+                        masked += maskChar;
+                      }
+                      
+                      maskIndex++;
+                    }
+                    
+                    return masked;
+                  };
+
                   return (
                     <div key={field.id} className="border-b border-gray-200 dark:border-gray-700 pb-4">
                       <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         {field.label}
                         {field.required && <span className="text-red-500 ml-1">*</span>}
+                        {field.validation?.mask && (
+                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-900/20 px-1 rounded">
+                            {field.validation.mask}
+                          </span>
+                        )}
                       </div>
                       <div className="text-gray-900 dark:text-white">
                         {typeof value === 'string' && value.startsWith('data:image') ? (
@@ -701,7 +772,14 @@ export const FormResults: React.FC = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap">{String(value)}</p>
+                          <div>
+                            <p className="whitespace-pre-wrap font-medium">{String(getDisplayValue(value, field))}</p>
+                            {field.validation?.mask && getDisplayValue(value, field) !== String(value) && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Valeur brute : {String(value)}
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
