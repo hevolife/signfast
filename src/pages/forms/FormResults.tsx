@@ -120,51 +120,23 @@ export const FormResults: React.FC = () => {
   const handleDeleteAllResponses = async () => {
     if (!id) return;
     
-    // Récupérer le nombre total réel de réponses depuis la base
-    let actualTotalCount = totalCount;
-    try {
-      const { count, error: countError } = await supabase
-        .from('responses')
-        .select('id', { count: 'estimated', head: true })
-        .eq('form_id', id);
-      
-      if (!countError && count !== null) {
-        actualTotalCount = count;
-      }
-    } catch (error) {
-      console.warn('Erreur récupération count total:', error);
-    }
-    
-    const confirmMessage = `Êtes-vous sûr de vouloir supprimer TOUTES les ${actualTotalCount} réponses de ce formulaire ?\n\nCette action supprimera aussi tous les PDFs associés et est IRRÉVERSIBLE.`;
+    const confirmMessage = `Êtes-vous sûr de vouloir supprimer les ${filteredResponses.length} réponses affichées sur cette page ?\n\nCette action supprimera aussi les PDFs associés et est IRRÉVERSIBLE.`;
     
     if (window.confirm(confirmMessage)) {
       try {
-        toast.loading('🗑️ Suppression de toutes les réponses en cours...', { duration: 10000 });
+        toast.loading('🗑️ Suppression des réponses de la page en cours...', { duration: 10000 });
         
-        // 1. Récupérer TOUS les IDs des réponses du formulaire (pas seulement la page courante)
-        const { data: allResponseIds, error: responsesError } = await supabase
-          .from('responses')
-          .select('id')
-          .eq('form_id', id);
-
-        if (responsesError) {
-          console.error('❌ Erreur récupération des réponses:', responsesError);
-          toast.dismiss();
-          toast.error('Erreur lors de la récupération des réponses');
-          return;
-        }
-
-        console.log('🗑️ Nombre total de réponses à supprimer:', allResponseIds?.length || 0);
+        // 1. Récupérer les IDs des réponses affichées sur la page courante
+        const currentPageResponseIds = filteredResponses.map(r => r.id);
+        console.log('🗑️ Nombre de réponses de la page à supprimer:', currentPageResponseIds.length);
         
-        // 2. Récupérer TOUS les PDFs associés à ces réponses
+        // 2. Récupérer les PDFs associés à ces réponses de la page
         let associatedPdfs: any[] = [];
-        if (allResponseIds && allResponseIds.length > 0) {
-          const responseIds = allResponseIds.map(r => r.id);
-          
+        if (currentPageResponseIds.length > 0) {
           const { data: pdfs, error: pdfFetchError } = await supabase
             .from('pdf_storage')
             .select('file_name, response_id')
-            .in('response_id', responseIds);
+            .in('response_id', currentPageResponseIds);
 
           if (pdfFetchError) {
             console.warn('⚠️ Erreur récupération PDFs associés:', pdfFetchError);
@@ -174,11 +146,11 @@ export const FormResults: React.FC = () => {
           }
         }
 
-        // 3. Supprimer TOUTES les réponses du formulaire (pas seulement la page courante)
+        // 3. Supprimer uniquement les réponses de la page courante
         const { error: responsesDeleteError } = await supabase
           .from('responses')
           .delete()
-          .eq('form_id', id);
+          .in('id', currentPageResponseIds);
 
         if (responsesDeleteError) {
           toast.dismiss();
@@ -187,9 +159,9 @@ export const FormResults: React.FC = () => {
           return;
         }
 
-        console.log('✅ Toutes les réponses supprimées avec succès');
+        console.log('✅ Réponses de la page supprimées avec succès');
         
-        // 4. Supprimer TOUS les PDFs associés
+        // 4. Supprimer les PDFs associés à cette page
         if (associatedPdfs.length > 0) {
           console.log('🗑️ Suppression automatique des PDFs associés:', associatedPdfs.length, 'PDFs');
           
@@ -201,25 +173,24 @@ export const FormResults: React.FC = () => {
           if (pdfsError) {
             console.warn('⚠️ Erreur suppression PDFs associés:', pdfsError);
             toast.dismiss();
-            toast.success(`${actualTotalCount} réponses supprimées (erreur suppression de ${associatedPdfs.length} PDFs associés)`);
+            toast.success(`${currentPageResponseIds.length} réponses supprimées (erreur suppression de ${associatedPdfs.length} PDFs associés)`);
           } else {
             console.log('✅ PDFs associés supprimés avec succès');
             toast.dismiss();
-            toast.success(`${actualTotalCount} réponses et ${associatedPdfs.length} PDFs associés supprimés avec succès`);
+            toast.success(`${currentPageResponseIds.length} réponses et ${associatedPdfs.length} PDFs associés supprimés avec succès`);
           }
         } else {
           toast.dismiss();
-          toast.success(`${actualTotalCount} réponses supprimées avec succès (aucun PDF associé)`);
+          toast.success(`${currentPageResponseIds.length} réponses supprimées avec succès (aucun PDF associé)`);
         }
 
-        // 5. Retourner à la première page et actualiser
-        setCurrentPage(1);
-        fetchPage(1, itemsPerPage);
+        // 5. Actualiser la page courante
+        fetchPage(currentPage, itemsPerPage);
         
       } catch (error) {
         console.error('❌ Erreur suppression massive:', error);
         toast.dismiss();
-        toast.error('Erreur lors de la suppression massive');
+        toast.error('Erreur lors de la suppression des réponses de la page');
       }
     }
   };
