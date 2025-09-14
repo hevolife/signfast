@@ -31,6 +31,12 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     ...options?.headers,
   };
 
+  // S'assurer que le Content-Type est correct pour les requêtes POST/PUT/PATCH
+  if (options?.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase())) {
+    if (!headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
   // Ajouter des headers d'optimisation
   const optimizedOptions = {
     ...options,
