@@ -25,10 +25,10 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
   useEffect(() => {
     if (selectedFormId && showVariablesPreview) {
       generateVariablesPreview(selectedFormId);
-    } else {
+    } else if (showVariablesPreview) {
       setPreviewVariables([]);
     }
-  }, [selectedFormId, forms, showVariablesPreview]);
+  }, [selectedFormId, showVariablesPreview]);
 
   const generateVariablesPreview = (formId: string) => {
     const selectedForm = forms.find(f => f.id === formId);
