@@ -100,13 +100,16 @@ export const useDemoTemplates = () => {
   const createTemplate = async (templateData: Partial<PDFTemplate>) => {
     if (!isDemoMode) return null;
 
-    // Limite de 3 templates en mode démo
-    if (templates.length >= 3) {
+    // Vérifier les limites selon les paramètres de démo
+    const { demoSettings } = useDemo();
+    const maxTemplates = demoSettings?.maxTemplates || 3;
+    
+    if (templates.length >= maxTemplates) {
       return null;
     }
 
     const newTemplate = createDemoTemplate(templateData);
-    return newTemplate;
+    return newTemplate?.id || null;
   };
 
   const updateTemplate = async (id: string, updates: Partial<PDFTemplate>) => {

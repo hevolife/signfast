@@ -4,11 +4,15 @@ import { PDFTemplateEditor } from '../../components/pdf/PDFTemplateEditor';
 import { PDFField } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDemo } from '../../contexts/DemoContext';
+import { useLimits } from '../../hooks/useLimits';
 import toast from 'react-hot-toast';
 
 export const NewPDFTemplate: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isDemoMode, createDemoTemplate } = useDemo();
+  const { pdfTemplates: templatesLimits } = useLimits();
   const [saving, setSaving] = useState(false);
   const [linkedFormId, setLinkedFormId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState<string>('');
@@ -111,11 +115,16 @@ export const NewPDFTemplate: React.FC = () => {
     setSaving(true);
     
     try {
-      if (!user) {
+      if (!user && !isDemoMode) {
         toast.error('Vous devez être connecté pour créer un template');
         return;
       }
 
+      // Vérifier les limites
+      if (!templatesLimits.canCreate) {
+        toast.error('Limite de templates atteinte. Passez Pro pour créer plus de templates.');
+        return;
+      }
       // Convertir le fichier PDF en Data URL pour le stockage
       const pdfDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -134,16 +143,27 @@ export const NewPDFTemplate: React.FC = () => {
         linkedFormId: linkedFormId,
       };
 
-      // Sauvegarder dans Supabase
-      const templateId = await PDFTemplateService.createTemplate(newTemplate, user.id);
-      
-      if (!templateId) {
-        toast.error('Erreur lors de la création du template');
-        return;
+      if (isDemoMode) {
+        // Mode démo : utiliser le contexte démo
+        const demoTemplate = createDemoTemplate(newTemplate);
+        if (demoTemplate) {
+          toast.success('Template PDF créé avec succès !');
+          navigate('/pdf/templates');
+        } else {
+          toast.error('Limite de templates atteinte en mode démo');
+        }
+      } else {
+        // Mode normal : sauvegarder dans Supabase
+        const templateId = await PDFTemplateService.createTemplate(newTemplate, user!.id);
+        
+        if (!templateId) {
+          toast.error('Erreur lors de la création du template');
+          return;
+        }
+        
+        toast.success('Template PDF créé avec succès !');
+        navigate('/pdf/templates');
       }
-      
-      toast.success('Template PDF créé avec succès !');
-      navigate('/pdf/templates');
     } catch (error) {
       console.error('Erreur:', error);
       toast.error('Erreur lors de la création du template');

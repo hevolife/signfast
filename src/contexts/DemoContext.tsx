@@ -546,8 +546,8 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createDemoTemplate = (templateData: Partial<DemoTemplate>): DemoTemplate | null => {
     if (!isDemoMode || !demoUser) return null;
 
-    // Limite selon les paramètres admin
-    const maxTemplates = demoSettings.maxTemplates || 3;
+    // Vérifier les limites selon les paramètres admin
+    const maxTemplates = demoSettings?.maxTemplates || 3;
     if (demoTemplates.length >= maxTemplates) {
       return null;
     }

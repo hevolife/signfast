@@ -3,6 +3,7 @@ import { PDFTemplate } from '../types/pdf';
 import { PDFTemplateService } from '../services/pdfTemplateService';
 import { useAuth } from '../contexts/AuthContext';
 import { useDemo } from '../contexts/DemoContext';
+import { useDemoTemplates } from './useDemoForms';
 
 export const usePDFTemplates = () => {
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
@@ -11,20 +12,14 @@ export const usePDFTemplates = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { isDemoMode, demoTemplates } = useDemo();
+  const demoTemplatesHook = useDemoTemplates();
+
+  // Si on est en mode démo, utiliser les données de démo
+  if (isDemoMode) {
+    return demoTemplatesHook;
+  }
 
   const fetchTemplates = async (page: number = 1, limit: number = 10) => {
-    // Si on est en mode démo, utiliser les templates de démo
-    if (isDemoMode) {
-      setTemplates(demoTemplates.map(template => ({
-        ...template,
-        // Convertir au format PDFTemplate attendu
-      } as PDFTemplate)));
-      setTotalCount(demoTemplates.length);
-      setTotalPages(Math.ceil(demoTemplates.length / limit));
-      setLoading(false);
-      return;
-    }
-
     // Démarrer avec un loading plus court
     const loadingTimeout = setTimeout(() => {
       if (loading) {
