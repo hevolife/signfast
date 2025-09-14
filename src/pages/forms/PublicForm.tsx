@@ -403,9 +403,49 @@ export const PublicForm: React.FC = () => {
         try {
           console.log('📄 Récupération template pour formulaire public:', form.settings.pdfTemplateId);
           
-          // Importer le service dynamiquement pour éviter les erreurs de dépendance
-          const { PDFTemplateService } = await import('../../services/pdfTemplateService');
-          const template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
+          // Essayer plusieurs méthodes pour récupérer le template
+          let template = null;
+          
+          // Méthode 1: Service PDFTemplateService
+          try {
+            const { PDFTemplateService } = await import('../../services/pdfTemplateService');
+            template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
+            console.log('📄 Template récupéré via service:', !!template);
+          } catch (serviceError) {
+            console.warn('⚠️ Erreur service PDFTemplateService:', serviceError);
+          }
+          
+          // Méthode 2: Accès direct Supabase si service échoue
+          if (!template) {
+            try {
+              console.log('📄 Tentative accès direct Supabase...');
+              const { data: templateData, error: templateError } = await supabase
+                .from('pdf_templates')
+                .select('*')
+                .eq('id', form.settings.pdfTemplateId)
+                .single();
+              
+              if (!templateError && templateData) {
+                template = {
+                  id: templateData.id,
+                  name: templateData.name,
+                  description: templateData.description,
+                  originalPdfUrl: templateData.pdf_content,
+                  fields: templateData.fields || [],
+                  linkedFormId: templateData.linked_form_id,
+                  pages: templateData.pages,
+                  created_at: templateData.created_at,
+                  updated_at: templateData.updated_at,
+                  user_id: templateData.user_id,
+                };
+                console.log('📄 Template récupéré via Supabase direct');
+              } else {
+                console.warn('⚠️ Template non trouvé dans Supabase:', templateError);
+              }
+            } catch (supabaseError) {
+              console.warn('⚠️ Erreur accès Supabase direct:', supabaseError);
+            }
+          }
           
           if (template) {
             console.log('📄 Template trouvé:', template.name, 'avec', template.fields.length, 'champs');
@@ -419,38 +459,44 @@ export const PublicForm: React.FC = () => {
             
             // Vérifier que toutes les données nécessaires sont présentes
             if (!template.originalPdfUrl) {
-              throw new Error('Template PDF content manquant');
+              console.warn('⚠️ Template PDF content manquant, utilisation PDF simple');
+              metadata.templateName = 'PDF Simple (template sans contenu)';
+              metadata.templateId = null;
+              metadata.templateFields = null;
+              metadata.templatePdfContent = null;
             }
-            if (!template.fields || template.fields.length === 0) {
+            else if (!template.fields || template.fields.length === 0) {
               console.warn('⚠️ Template sans champs configurés');
             }
           } else {
-            console.error('❌ Template non trouvé pour ID:', form.settings.pdfTemplateId);
+            console.warn('⚠️ Template non trouvé pour ID:', form.settings.pdfTemplateId);
             metadata.templateName = 'PDF Simple (template non trouvé)';
-            throw new Error(`Template PDF non trouvé: ${form.settings.pdfTemplateId}`);
+            // Ne pas faire échouer la soumission, utiliser PDF simple
+            console.log('📄 Utilisation PDF simple à la place du template manquant');
           }
         } catch (templateError) {
-          console.error('❌ Erreur récupération template:', templateError);
+          console.warn('⚠️ Erreur récupération template:', templateError);
           metadata.templateName = 'PDF Simple';
-          throw new Error(`Erreur récupération template: ${templateError.message}`);
+          // Ne pas faire échouer la soumission
+          console.log('📄 Fallback vers PDF simple suite à erreur template');
         }
       } else {
-        console.warn('⚠️ Aucun template PDF configuré pour ce formulaire');
-        throw new Error('Aucun template PDF configuré pour ce formulaire');
+        console.log('📄 Aucun template PDF configuré, utilisation PDF simple');
       }
 
       // Sauvegarder les métadonnées pour génération ultérieure
       const saveSuccess = await PDFService.savePDFMetadataForLaterGeneration(fileName, metadata);
       
       if (saveSuccess) {
-        console.log('✅ Métadonnées PDF sauvegardées pour génération ultérieure');
+        console.log('✅ Métadonnées PDF sauvegardées:', metadata.templateName);
       } else {
         console.warn('⚠️ Erreur sauvegarde métadonnées PDF');
       }
       
     } catch (error) {
-      console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
-      throw error;
+      console.warn('⚠️ Erreur sauvegarde métadonnées PDF:', error);
+      // Ne pas faire échouer la soumission du formulaire
+      console.log('📄 Soumission du formulaire maintenue malgré l\'erreur PDF');
     }
   };
 
