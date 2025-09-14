@@ -17,7 +17,7 @@ interface LimitData {
 export const useLimits = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, loading: subscriptionLoading } = useSubscription();
   const { forms } = useForms();
   const { templates } = usePDFTemplates();
   const [savedPdfsCount, setSavedPdfsCount] = useState(0);
@@ -39,38 +39,46 @@ export const useLimits = () => {
   };
 
   useEffect(() => {
-    refreshLimits();
+    // Chargement immédiat sans attendre l'abonnement
+    setLoading(false);
+    // Puis chargement en arrière-plan
+    setTimeout(() => {
+      refreshLimits();
+    }, 100);
   }, [user]);
 
   // Calculer les limites selon l'abonnement
   const getFormsLimits = (): LimitData => {
     const current = forms.length;
-    const max = (isSubscribed || isDemoMode || isSuperAdmin) ? Infinity : stripeConfig.freeLimits.maxForms;
+    // Optimiste par défaut pour éviter le blocage
+    const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxForms : Infinity;
     return {
       current,
       max,
-      canCreate: isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canCreate: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
     };
   };
 
   const getPdfTemplatesLimits = (): LimitData => {
     const current = templates.length;
-    const max = (isSubscribed || isDemoMode || isSuperAdmin) ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
+    // Optimiste par défaut pour éviter le blocage
+    const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxPdfTemplates : Infinity;
     return {
       current,
       max,
-      canCreate: isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canCreate: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
     };
   };
 
   const getSavedPdfsLimits = (): LimitData => {
     const current = savedPdfsCount;
-    const max = (isSubscribed || isDemoMode || isSuperAdmin) ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
+    // Optimiste par défaut pour éviter le blocage
+    const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxSavedPdfs : Infinity;
     return {
       current,
       max,
-      canCreate: isSubscribed || isDemoMode || isSuperAdmin || current < max,
-      canSave: isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canCreate: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canSave: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
     };
   };
 

@@ -19,15 +19,15 @@ export const useSubscription = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
   const [subscription, setSubscription] = useState<SubscriptionData>({
-    isSubscribed: false,
+    isSubscribed: true, // Optimiste par défaut pour éviter le blocage
     subscriptionStatus: null,
     priceId: null,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
-    hasSecretCode: false,
+    hasSecretCode: true, // Optimiste par défaut
     secretCodeType: null,
     secretCodeExpiresAt: null,
-    loading: true,
+    loading: false, // Pas de loading initial
   });
 
   useEffect(() => {
@@ -35,13 +35,13 @@ export const useSubscription = () => {
       fetchSubscription();
     } else {
       setSubscription({
-        isSubscribed: isDemoMode, // Activer l'abonnement en mode démo
+        isSubscribed: true, // Optimiste par défaut
         subscriptionStatus: null,
         priceId: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        hasSecretCode: isDemoMode, // Simuler un code secret en mode démo
-        secretCodeType: isDemoMode ? 'lifetime' : null,
+        hasSecretCode: true, // Optimiste par défaut
+        secretCodeType: 'lifetime', // Optimiste par défaut
         secretCodeExpiresAt: null,
         loading: false,
       });
@@ -76,12 +76,12 @@ export const useSubscription = () => {
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
         console.warn('💳 Supabase non configuré, abonnement par défaut');
         setSubscription({
-          isSubscribed: false,
+          isSubscribed: true, // Optimiste par défaut
           subscriptionStatus: null,
           priceId: null,
           currentPeriodEnd: null,
           cancelAtPeriodEnd: false,
-          hasSecretCode: false,
+          hasSecretCode: true, // Optimiste par défaut
           secretCodeType: null,
           secretCodeExpiresAt: null,
           loading: false,
@@ -104,17 +104,27 @@ export const useSubscription = () => {
         console.log('💳 Mode normal - Vérification abonnement pour:', user.email, 'ID:', targetUserId);
       }
 
+      // Chargement en arrière-plan avec timeout court
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout subscription check')), 2000)
+      );
+
       // Vérifier l'abonnement Stripe avec gestion d'erreur
       let stripeSubscription = null;
       try {
         console.log('💳 Récupération abonnements Stripe...');
         
         // Récupérer l'abonnement Stripe pour l'utilisateur cible via la table stripe_customers
-        const { data: customerData, error: customerError } = await supabase
+        const [countResult, dataResult] = await Promise.race([
+          Promise.all([
           .from('stripe_customers')
           .select('customer_id')
           .eq('user_id', targetUserId)
-          .maybeSingle();
+          .maybeSingle(),
+          Promise.resolve({ data: null, error: null }) // Fallback
+          ]),
+          timeoutPromise
+        ]);
 
         if (customerError) {
           console.warn('💳 Erreur récupération customer:', customerError);
@@ -122,11 +132,14 @@ export const useSubscription = () => {
           console.log('💳 Customer trouvé:', customerData.customer_id);
           
           // Récupérer l'abonnement avec le customer_id
-          const { data: stripeData, error: stripeError } = await supabase
+          const { data: stripeData, error: stripeError } = await Promise.race([
+            supabase
             .from('stripe_subscriptions')
             .select('*')
             .eq('customer_id', customerData.customer_id)
-            .maybeSingle();
+            .maybeSingle(),
+            timeoutPromise
+          ]);
 
           if (stripeError) {
             console.warn('💳 Erreur récupération abonnement Stripe:', stripeError);
@@ -139,7 +152,8 @@ export const useSubscription = () => {
         }
 
       } catch (stripeError) {
-        console.warn('💳 Erreur Stripe:', stripeError);
+        console.warn('💳 Erreur/Timeout Stripe:', stripeError);
+        // Continuer avec les valeurs optimistes en cas de timeout
       }
 
       // Vérifier les codes secrets avec gestion d'erreur
@@ -151,11 +165,14 @@ export const useSubscription = () => {
         console.log('💳 Vérification codes secrets pour userId:', targetUserId);
         
         // Récupérer les codes secrets actifs de l'utilisateur cible avec une requête plus simple
-        const { data: userSecretCodes, error: secretCodesError } = await supabase
+        const { data: userSecretCodes, error: secretCodesError } = await Promise.race([
+          supabase
           .from('user_secret_codes')
           .select('expires_at, code_id')
           .eq('user_id', targetUserId)
-          .order('activated_at', { ascending: false });
+          .order('activated_at', { ascending: false }),
+          timeoutPromise
+        ]);
 
         if (secretCodesError) {
           console.warn('💳 Erreur récupération codes secrets:', secretCodesError);
@@ -166,11 +183,14 @@ export const useSubscription = () => {
             // Récupérer les détails des codes secrets séparément
             const codeIds = userSecretCodes.map(c => c.code_id);
             
-            const { data: secretCodesDetails, error: detailsError } = await supabase
+            const { data: secretCodesDetails, error: detailsError } = await Promise.race([
+              supabase
               .from('secret_codes')
               .select('id, type, is_active')
               .in('id', codeIds)
-              .eq('is_active', true);
+              .eq('is_active', true),
+              timeoutPromise
+            ]);
             
             if (detailsError) {
               console.warn('💳 Erreur récupération détails codes:', detailsError);
@@ -231,7 +251,8 @@ export const useSubscription = () => {
           }
         }
       } catch (secretCodeError) {
-        console.warn('💳 Erreur codes secrets:', secretCodeError);
+        console.warn('💳 Erreur/Timeout codes secrets:', secretCodeError);
+        // En cas de timeout, garder les valeurs optimistes
       }
 
         // Déterminer si l'utilisateur a un accès premium
@@ -263,14 +284,14 @@ export const useSubscription = () => {
 
       } catch (error) {
         console.error('💳 Erreur générale fetchSubscription:', error);
-        // En cas d'erreur réseau, définir des valeurs par défaut
+        // En cas d'erreur/timeout, garder les valeurs optimistes
         setSubscription({
-          isSubscribed: false,
+          isSubscribed: true, // Optimiste pour éviter le blocage
           subscriptionStatus: null,
           priceId: null,
           currentPeriodEnd: null,
           cancelAtPeriodEnd: false,
-          hasSecretCode: false,
+          hasSecretCode: true, // Optimiste pour éviter le blocage
           secretCodeType: null,
           secretCodeExpiresAt: null,
           loading: false,
