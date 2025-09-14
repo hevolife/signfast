@@ -70,13 +70,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [signOut]);
 
   const signUp = async (email: string, password: string) => {
+    // Déterminer l'URL de redirection selon l'environnement
+    const baseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:5173' 
+      : 'https://signfastpro.com';
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${baseUrl}/dashboard`,
         data: {
-          email_confirm_url: `${window.location.origin}/dashboard`
+          email_confirm_url: `${baseUrl}/dashboard`
         }
       }
     });

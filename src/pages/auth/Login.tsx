@@ -56,10 +56,15 @@ export const Login: React.FC = () => {
     setResetLoading(true);
 
     try {
+      // Déterminer l'URL de redirection selon l'environnement
+      const baseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5173' 
+        : 'https://signfastpro.com';
+      
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${baseUrl}/dashboard`,
         data: {
-          site_url: window.location.origin,
+          site_url: baseUrl,
           site_name: 'SignFast'
         }
       });

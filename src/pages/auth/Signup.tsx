@@ -89,7 +89,7 @@ export const Signup: React.FC = () => {
           toast.success('Compte créé avec succès !');
         }
         
-        toast.success('Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription.');
+        toast.success('🎉 Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription et accéder à SignFast.');
         // Rediriger vers la page demandée ou le dashboard
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
