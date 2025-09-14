@@ -7,6 +7,9 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supab
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
 }
 
+// Pool de connexions pour optimiser les performances
+let connectionPool: any = null;
+
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   // Vérifier si Supabase est configuré avant de faire des requêtes
@@ -14,11 +17,20 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   
   if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-    console.warn('Supabase non configuré, requête ignorée');
     throw new Error('Supabase non configuré');
   }
 
-  const response = await fetch(url, options);
+  // Ajouter des headers d'optimisation
+  const optimizedOptions = {
+    ...options,
+    headers: {
+      ...options?.headers,
+      'Cache-Control': 'max-age=60', // Cache 1 minute
+      'Connection': 'keep-alive',
+    }
+  };
+
+  const response = await fetch(url, optimizedOptions);
   
   // Check for session expiration
   if (response.status === 403) {
@@ -26,7 +38,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       const body = await response.clone().json();
       if (body.code === 'session_not_found') {
         // Session expired, sign out the user
-        console.log('Session expired, signing out user');
         supabase.auth.signOut();
       }
     } catch (error) {
@@ -40,6 +51,19 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   global: {
     fetch: customFetch,
+  },
+  db: {
+    schema: 'public',
+  },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false, // Optimisation pour éviter les vérifications inutiles
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2, // Limiter les événements temps réel
+    },
   },
 });
 

@@ -85,53 +85,46 @@ export class PDFTemplateService {
         return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
-      // Timeout pour éviter les blocages
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout Supabase')), 3000);
-      });
-
-      // Compter le total d'abord
+      // Requêtes parallèles optimisées
       const countPromise = supabase
         .from('pdf_templates')
-        .select('id', { count: 'estimated', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', userId);
 
-      const { count, error: countError } = await Promise.race([countPromise, timeoutPromise]);
+      const offset = (page - 1) * limit;
 
-      if (countError) {
+      const queryPromise = supabase
+        .from('pdf_templates')
+        .select('id, name, description, pdf_content, fields, linked_form_id, pages, created_at, updated_at, user_id')
+        .eq('user_id', userId)
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      // Exécuter en parallèle avec timeout global
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 5000);
+      });
+
+      const [countResult, dataResult] = await Promise.race([
+        Promise.all([countPromise, queryPromise]),
+        timeoutPromise
+      ]);
+
+      const [{ count, error: countError }, { data, error: dataError }] = countResult;
+
+      if (countError || dataError) {
         return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
       const totalCount = count || 0;
       const totalPages = Math.ceil(totalCount / limit);
-      const offset = (page - 1) * limit;
-
-      // Récupérer les templates avec pagination
-      const queryPromise = supabase
-        .from('pdf_templates')
-        .select('*')
-        .eq('user_id', userId)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-      if (error) {
-        return { templates: [], totalCount: 0, totalPages: 0 };
-      }
 
       const templates = data.map(item => ({
         id: item.id,
         name: item.name,
         description: item.description,
         originalPdfUrl: item.pdf_content,
-        fields: (item.fields || []).map((field: any) => ({
-          ...field,
-          xRatio: typeof field.xRatio === 'number' ? field.xRatio : 0,
-          yRatio: typeof field.yRatio === 'number' ? field.yRatio : 0,
-          widthRatio: typeof field.widthRatio === 'number' ? field.widthRatio : 0.1,
-          heightRatio: typeof field.heightRatio === 'number' ? field.heightRatio : 0.05,
-        })),
+        fields: this.normalizeFields(item.fields || []),
         linkedFormId: item.linked_form_id,
         pages: item.pages,
         created_at: item.created_at,
@@ -147,6 +140,17 @@ export class PDFTemplateService {
     } catch (error) {
       return { templates: [], totalCount: 0, totalPages: 0 };
     }
+  }
+
+  // Normaliser les champs pour éviter les erreurs
+  private static normalizeFields(fields: any[]): any[] {
+    return fields.map((field: any) => ({
+      ...field,
+      xRatio: typeof field.xRatio === 'number' ? field.xRatio : 0,
+      yRatio: typeof field.yRatio === 'number' ? field.yRatio : 0,
+      widthRatio: typeof field.widthRatio === 'number' ? field.widthRatio : 0.1,
+      heightRatio: typeof field.heightRatio === 'number' ? field.heightRatio : 0.05,
+    }));
   }
 
   // METTRE À JOUR UN TEMPLATE

@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
+// Cache pour les données d'abonnement
+let subscriptionCache: { data: SubscriptionData; timestamp: number; userId: string } | null = null;
+const SUBSCRIPTION_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
 export interface SubscriptionData {
   isSubscribed: boolean;
   subscriptionStatus: string | null;
@@ -32,6 +36,7 @@ export const useSubscription = () => {
     if (user) {
       fetchSubscription();
     } else {
+      subscriptionCache = null;
       setSubscription({
         isSubscribed: false,
         subscriptionStatus: null,
@@ -53,7 +58,6 @@ export const useSubscription = () => {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('Supabase non configuré, pas d\'abonnement disponible');
         setSubscription(prev => ({ ...prev, loading: false }));
         return;
       }
@@ -71,13 +75,28 @@ export const useSubscription = () => {
         }
       }
 
+      // Vérifier le cache
+      if (subscriptionCache && 
+          subscriptionCache.userId === targetUserId &&
+          Date.now() - subscriptionCache.timestamp < SUBSCRIPTION_CACHE_DURATION) {
+        setSubscription(subscriptionCache.data);
+        return;
+      }
+
       // Vérifier l'abonnement Stripe
       let stripeSubscription = null;
       try {
-        const { data, error } = await supabase
+        // Requête optimisée avec timeout
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 2000)
+        );
+
+        const queryPromise = supabase
           .from('stripe_user_subscriptions')
-          .select('*')
-          .limit(100); // Récupérer tous pour debug
+          .select('customer_id, subscription_status, price_id, current_period_end, cancel_at_period_end')
+          .limit(50);
+
+        const { data } = await Promise.race([queryPromise, timeoutPromise]);
 
         // Chercher l'abonnement pour cet utilisateur
         stripeSubscription = data?.find(s => s.customer_id === targetUserId);
@@ -91,30 +110,33 @@ export const useSubscription = () => {
       let secretCodeExpiresAt = null;
       
       try {
-        // Requête simplifiée pour récupérer les codes de l'utilisateur
-        const { data: userCodes, error: userCodesError } = await supabase
+        // Requête optimisée avec timeout
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 1500)
+        );
+
+        const codesPromise = supabase
           .from('user_secret_codes')
           .select('code_id, expires_at')
           .eq('user_id', targetUserId);
 
-        if (userCodesError) {
-          // Silent error
-        } else {
+        const { data: userCodes } = await Promise.race([codesPromise, timeoutPromise]);
+
+        if (userCodes && userCodes.length > 0) {
+          // Requête batch pour tous les codes
+          const codeIds = userCodes.map(uc => uc.code_id);
+          const { data: secretCodes } = await supabase
+            .from('secret_codes')
+            .select('id, type, is_active, expires_at')
+            .in('id', codeIds)
+            .eq('is_active', true);
+
+          // Vérifier la validité des codes
           if (userCodes && userCodes.length > 0) {
-            // Pour chaque code de l'utilisateur, vérifier s'il est valide
             for (const userCode of userCodes) {
-              // Récupérer les détails du code secret
-              const { data: secretCode, error: secretError } = await supabase
-                .from('secret_codes')
-                .select('type, is_active, expires_at')
-                .eq('id', userCode.code_id)
-                .single();
+              const secretCode = secretCodes?.find(sc => sc.id === userCode.code_id);
               
-              if (secretError || !secretCode) {
-                continue;
-              }
-              
-              if (!secretCode.is_active) {
+              if (!secretCode || !secretCode.is_active) {
                 continue;
               }
               
@@ -131,12 +153,10 @@ export const useSubscription = () => {
                 hasActiveSecretCode = true;
                 secretCodeType = codeType;
                 secretCodeExpiresAt = userExpiresAt;
-                // Prendre le premier code valide
                 break;
               }
             }
           }
-        }
       } catch (secretCodeError) {
         // Silent error
       }
@@ -160,6 +180,13 @@ export const useSubscription = () => {
         loading: false,
       };
       
+      // Mettre en cache
+      subscriptionCache = {
+        data: finalState,
+        timestamp: Date.now(),
+        userId: targetUserId
+      };
+      
       setSubscription(finalState);
 
     } catch (error) {
@@ -179,6 +206,8 @@ export const useSubscription = () => {
   };
 
   const refreshSubscription = () => {
+    // Invalider le cache lors du refresh
+    subscriptionCache = null;
     if (user) {
       fetchSubscription();
     }
@@ -186,6 +215,8 @@ export const useSubscription = () => {
 
   return {
     ...subscription,
+    isImpersonating,
+    stopImpersonation,
     refreshSubscription,
   };
 };

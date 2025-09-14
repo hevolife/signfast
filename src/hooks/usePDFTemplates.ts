@@ -3,6 +3,10 @@ import { PDFTemplate } from '../types/pdf';
 import { PDFTemplateService } from '../services/pdfTemplateService';
 import { useAuth } from '../contexts/AuthContext';
 
+// Cache pour éviter les requêtes répétées
+const templatesCache = new Map<string, { data: PDFTemplate[]; timestamp: number; totalCount: number; totalPages: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export const usePDFTemplates = () => {
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -10,18 +14,17 @@ export const usePDFTemplates = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchTemplates = async (page: number = 1, limit: number = 10) => {
-    // Démarrer avec un loading plus court
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('📄 Timeout de chargement, affichage de la liste vide');
-        setTemplates([]);
-        setTotalCount(0);
-        setTotalPages(0);
-        setLoading(false);
+  // Nettoyer le cache expiré
+  const cleanExpiredCache = () => {
+    const now = Date.now();
+    for (const [key, value] of templatesCache.entries()) {
+      if (now - value.timestamp > CACHE_DURATION) {
+        templatesCache.delete(key);
       }
-    }, 2000); // 2 secondes max
+    }
+  };
 
+  const fetchTemplates = async (page: number = 1, limit: number = 10) => {
     try {
       if (user) {
         // Vérifier si on est en mode impersonation
@@ -37,55 +40,65 @@ export const usePDFTemplates = () => {
           }
         }
 
+        // Vérifier le cache
+        const cacheKey = `${targetUserId}-${page}-${limit}`;
+        cleanExpiredCache();
+        
+        const cached = templatesCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+          setTemplates(cached.data);
+          setTotalCount(cached.totalCount);
+          setTotalPages(cached.totalPages);
+          setLoading(false);
+          return;
+        }
+
         try {
-          // Utilisateur connecté : récupérer ses templates depuis Supabase
+          // Timeout de 3 secondes pour éviter les blocages
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout')), 3000);
+          });
+
           const result = await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
-          clearTimeout(loadingTimeout);
+          
           setTemplates(result.templates);
           setTotalCount(result.totalCount);
           setTotalPages(result.totalPages);
+
+          // Mettre en cache
+          templatesCache.set(cacheKey, {
+            data: result.templates,
+            totalCount: result.totalCount,
+            totalPages: result.totalPages,
+            timestamp: Date.now()
+          });
+
         } catch (supabaseError) {
-          clearTimeout(loadingTimeout);
-          // Fallback vers localStorage si Supabase n'est pas disponible
-          const saved = localStorage.getItem('pdfTemplates');
-          if (saved) {
-            setTemplates(JSON.parse(saved));
-            setTotalCount(JSON.parse(saved).length);
-            setTotalPages(1);
-          } else {
-            setTemplates([]);
-            setTotalCount(0);
-            setTotalPages(0);
-          }
-        }
-      } else {
-        clearTimeout(loadingTimeout);
-        // Utilisateur non connecté : fallback localStorage
-        const saved = localStorage.getItem('pdfTemplates');
-        if (saved) {
-          setTemplates(JSON.parse(saved));
-          setTotalCount(JSON.parse(saved).length);
-          setTotalPages(1);
-        } else {
+          // Fallback silencieux
           setTemplates([]);
           setTotalCount(0);
           setTotalPages(0);
         }
+      } else {
+        setTemplates([]);
+        setTotalCount(0);
+        setTotalPages(0);
       }
     } catch (error) {
-      clearTimeout(loadingTimeout);
       setTemplates([]);
       setTotalCount(0);
       setTotalPages(0);
     } finally {
-      clearTimeout(loadingTimeout);
       setLoading(false);
     }
   };
 
+  // Invalider le cache
+  const invalidateCache = () => {
+    templatesCache.clear();
+  };
+
   useEffect(() => {
-    // Chargement immédiat sans attendre
-    setLoading(true);
     fetchTemplates(1, 10);
   }, [user]);
 
@@ -96,5 +109,6 @@ export const usePDFTemplates = () => {
     loading,
     refetch: fetchTemplates,
     fetchPage: fetchTemplates,
+    invalidateCache,
   };
 };

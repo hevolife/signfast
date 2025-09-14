@@ -3,11 +3,25 @@ import { supabase } from '../lib/supabase';
 import { Form, FormResponse } from '../types/form';
 import { useAuth } from '../contexts/AuthContext';
 
+// Cache pour éviter les requêtes répétées
+const formsCache = new Map<string, { data: Form[]; timestamp: number; totalCount: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export const useForms = () => {
   const [forms, setForms] = useState<Form[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
+  // Fonction pour nettoyer le cache expiré
+  const cleanExpiredCache = () => {
+    const now = Date.now();
+    for (const [key, value] of formsCache.entries()) {
+      if (now - value.timestamp > CACHE_DURATION) {
+        formsCache.delete(key);
+      }
+    }
+  };
 
   const fetchForms = async (page: number = 1, limit: number = 10) => {
     if (!user) return;
@@ -20,54 +34,84 @@ export const useForms = () => {
       try {
         const data = JSON.parse(impersonationData);
         targetUserId = data.target_user_id;
-        console.log('🎭 Mode impersonation: récupération des formulaires pour', data.target_email);
       } catch (error) {
-        console.error('Erreur parsing impersonation data:', error);
+        // Silent error
       }
     }
+
+    // Vérifier le cache d'abord
+    const cacheKey = `${targetUserId}-${page}-${limit}`;
+    cleanExpiredCache();
+    
+    const cached = formsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setForms(cached.data);
+      setTotalCount(cached.totalCount);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Compter le total d'abord
-      const { count, error: countError } = await supabase
+      // Requête optimisée avec sélection minimale pour le comptage
+      const countPromise = supabase
         .from('forms')
-        .select('id', { count: 'estimated', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', targetUserId);
 
-      if (countError) {
-        console.error('Error counting forms:', countError);
-        setTotalCount(0);
-      } else {
-        setTotalCount(count || 0);
-      }
-
-      // Calculer l'offset pour la pagination
       const offset = (page - 1) * limit;
 
-      const { data, error } = await supabase
+      // Requête optimisée avec sélection des champs essentiels seulement
+      const dataPromise = supabase
         .from('forms')
-        .select('*')
+        .select('id, title, description, is_published, created_at, updated_at, user_id, fields, settings')
         .eq('user_id', targetUserId)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // Exécuter les requêtes en parallèle
+      const [countResult, dataResult] = await Promise.all([countPromise, dataPromise]);
+
+      if (countResult.error) throw countResult.error;
+      if (dataResult.error) throw dataResult.error;
+
+      const count = countResult.count || 0;
+      const data = dataResult.data || [];
+
       setForms(data || []);
-      
-      // Sauvegarder dans localStorage ET sessionStorage pour les templates PDF
-      try {
-        localStorage.setItem('currentUserForms', JSON.stringify(data || []));
-        sessionStorage.setItem('currentUserForms', JSON.stringify(data || []));
-        
-        if (typeof window !== 'undefined') {
-          // Silent error
+      setTotalCount(count);
+
+      // Mettre en cache le résultat
+      formsCache.set(cacheKey, {
+        data: data || [],
+        totalCount: count,
+        timestamp: Date.now()
+      });
+
+      // Sauvegarder seulement les données essentielles pour les templates PDF
+      if (page === 1) {
+        try {
+          const essentialData = data.map(form => ({
+            id: form.id,
+            title: form.title,
+            fields: form.fields
+          }));
+          localStorage.setItem('currentUserForms', JSON.stringify(essentialData));
+          sessionStorage.setItem('currentUserForms', JSON.stringify(essentialData));
+        } catch (error) {
+          // Silent error - ignore storage errors
         }
-      } catch (error) {
-        // Silent error
       }
     } catch (error) {
-      // Silent error
+      setForms([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Invalider le cache lors des mutations
+  const invalidateCache = () => {
+    formsCache.clear();
   };
 
   useEffect(() => {
@@ -89,6 +133,7 @@ export const useForms = () => {
 
       if (error) throw error;
       
+      invalidateCache();
       await fetchForms(1, 10);
       return data;
     } catch (error) {
@@ -104,6 +149,7 @@ export const useForms = () => {
         .eq('id', id);
 
       if (error) throw error;
+      invalidateCache();
       await fetchForms(1, 10);
       return true;
     } catch (error) {
@@ -119,6 +165,7 @@ export const useForms = () => {
         .eq('id', id);
 
       if (error) throw error;
+      invalidateCache();
       await fetchForms(1, 10);
       return true;
     } catch (error) {
@@ -138,40 +185,69 @@ export const useForms = () => {
   };
 };
 
+// Cache pour les réponses
+const responsesCache = new Map<string, { data: FormResponse[]; timestamp: number; totalCount: number }>();
+
 export const useFormResponses = (formId: string) => {
   const [responses, setResponses] = useState<FormResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
 
   const fetchResponses = async (page: number = 1, limit: number = 10) => {
+    if (!formId) return;
+
+    // Vérifier le cache
+    const cacheKey = `responses-${formId}-${page}-${limit}`;
+    const cached = responsesCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setResponses(cached.data);
+      setTotalCount(cached.totalCount);
+      setLoading(false);
+      return;
+    }
+
     const offset = (page - 1) * limit;
     
     try {
-      // First get the total count
-      const { count, error: countError } = await supabase
+      // Requêtes parallèles optimisées
+      const countPromise = supabase
         .from('responses')
         .select('id', { count: 'exact', head: true })
         .eq('form_id', formId);
 
-      if (countError) throw countError;
-      setTotalCount(count || 0);
-
-      // Fetch only essential metadata first to avoid timeout
-      const { data, error } = await supabase
+      const dataPromise = supabase
         .from('responses')
-        .select('id, form_id, created_at, ip_address, user_agent')
+        .select('id, form_id, created_at, ip_address')
         .eq('form_id', formId)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      // Set responses with empty data field initially
-      setResponses((data || []).map(response => ({
+      const [countResult, dataResult] = await Promise.all([countPromise, dataPromise]);
+
+      if (countResult.error) throw countResult.error;
+      if (dataResult.error) throw dataResult.error;
+
+      const count = countResult.count || 0;
+      const data = dataResult.data || [];
+
+      const responsesData = data.map(response => ({
         ...response,
         data: {}
-      })));
+      }));
+
+      setResponses(responsesData);
+      setTotalCount(count);
+
+      // Mettre en cache
+      responsesCache.set(cacheKey, {
+        data: responsesData,
+        totalCount: count,
+        timestamp: Date.now()
+      });
+
     } catch (error) {
-      // Silent error
+      setResponses([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -187,7 +263,7 @@ export const useFormResponses = (formId: string) => {
 
       if (error) throw error;
       
-      // Update the specific response with its data
+      // Mettre à jour seulement la réponse spécifique
       setResponses(prev => prev.map(response => 
         response.id === responseId 
           ? { ...response, data: data.data }
@@ -196,10 +272,19 @@ export const useFormResponses = (formId: string) => {
       
       return data.data;
     } catch (error) {
-      console.error('Error fetching response data:', error);
       return null;
     }
   };
+
+  // Invalider le cache des réponses
+  const invalidateResponsesCache = () => {
+    for (const key of responsesCache.keys()) {
+      if (key.includes(`responses-${formId}`)) {
+        responsesCache.delete(key);
+      }
+    }
+  };
+
   useEffect(() => {
     if (formId) {
       fetchResponses();
@@ -213,5 +298,6 @@ export const useFormResponses = (formId: string) => {
     fetchSingleResponseData,
     refetch: fetchResponses,
     fetchPage: fetchResponses,
+    invalidateCache: invalidateResponsesCache,
   };
 };
