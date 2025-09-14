@@ -27,7 +27,6 @@ interface SavedPDF {
 export const PDFManager: React.FC = () => {
   const [pdfs, setPdfs] = useState<SavedPDF[]>([]);
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const { isSubscribed } = useSubscription();
   const { savedPdfs: savedPdfsLimits, refreshLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -35,26 +34,17 @@ export const PDFManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'template'>('date');
   const product = stripeConfig.products[0];
 
-  // Charger les PDFs au montage
+  // Charger les PDFs au montage avec optimisation
   useEffect(() => {
+    // Chargement immédiat sans délai
     loadPDFs();
   }, []);
-
-  // Marquer comme initialisé après le premier chargement
-  useEffect(() => {
-    if (!loading) {
-      setInitialLoading(false);
-    }
-  }, [loading]);
   const loadPDFs = async () => {
-    // Ne pas afficher le loading si c'est le premier chargement
-    if (pdfs.length > 0) {
-      setLoading(true);
-    }
+    setLoading(true);
     
     try {
-      // Chargement optimisé avec cache
-      const { pdfs: pdfList } = await PDFService.listPDFs(1, 50); // Charger plus d'éléments d'un coup
+      // Chargement optimisé avec plus d'éléments et cache
+      const { pdfs: pdfList } = await PDFService.listPDFs(1, 100); // Charger plus d'éléments d'un coup
       setPdfs(pdfList);
     } catch (error) {
       console.error('💾 Erreur chargement PDFs:', error);
@@ -203,18 +193,6 @@ export const PDFManager: React.FC = () => {
       }
     });
 
-  // Afficher le loading seulement pour le chargement initial très court
-  if (initialLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Initialisation...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -310,17 +288,44 @@ export const PDFManager: React.FC = () => {
 
         {/* Indicateur de chargement des PDFs */}
 
-        {filteredAndSortedPDFs.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Skeleton cards pendant le chargement */}
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredAndSortedPDFs.length === 0 ? (
           <Card>
             <CardContent className="text-center py-16">
               <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {loading ? 'Chargement...' : searchTerm ? 'Aucun PDF trouvé' : 'Aucun PDF sauvegardé'}
+                {searchTerm ? 'Aucun PDF trouvé' : 'Aucun PDF sauvegardé'}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                {loading 
-                  ? 'Récupération de vos PDFs en cours'
-                  : searchTerm 
+                {searchTerm 
                   ? 'Essayez de modifier votre recherche'
                   : 'Les PDFs générés depuis les formulaires apparaîtront ici'
                 }

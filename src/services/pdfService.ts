@@ -541,13 +541,13 @@ export class PDFService {
     try {
       console.log('💾 === DÉBUT listPDFs ===');
       
-      // Cache pour éviter les requêtes répétées
+      // Cache plus agressif pour éviter les requêtes répétées
       const cacheKey = `pdf_list_${page}_${limit}`;
       const cached = sessionStorage.getItem(cacheKey);
       const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
       
-      // Utiliser le cache si moins de 30 secondes
-      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 30000) {
+      // Utiliser le cache si moins de 10 secondes (cache plus court mais plus agressif)
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 10000) {
         console.log('💾 Utilisation cache pour listPDFs');
         return JSON.parse(cached);
       }
@@ -563,18 +563,30 @@ export class PDFService {
       const targetUserId = user.id;
       console.log('💾 Liste PDFs pour userId:', targetUserId);
       
-      // Requête optimisée : récupérer données et count en parallèle
+      // Requête ultra-optimisée : récupérer données et count en parallèle avec timeout
       const [countResult, dataResult] = await Promise.all([
-        supabase
-        .from('pdf_storage')
-        .select('id', { count: 'estimated', head: true })
-        .eq('user_id', targetUserId),
-        supabase
-        .from('pdf_storage')
-        .select('file_name, response_id, template_name, form_title, file_size, created_at, form_data')
-        .eq('user_id', targetUserId)
-        .range((page - 1) * limit, page * limit - 1)
-        .order('created_at', { ascending: false })
+        // Requête de comptage avec timeout
+        Promise.race([
+          supabase
+            .from('pdf_storage')
+            .select('id', { count: 'estimated', head: true })
+            .eq('user_id', targetUserId),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout count')), 2000)
+          )
+        ]),
+        // Requête de données avec timeout
+        Promise.race([
+          supabase
+            .from('pdf_storage')
+            .select('file_name, response_id, template_name, form_title, file_size, created_at, form_data')
+            .eq('user_id', targetUserId)
+            .range((page - 1) * limit, page * limit - 1)
+            .order('created_at', { ascending: false }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout data')), 3000)
+          )
+        ])
       ]);
 
       const { count: totalCount, error: countError } = countResult;
@@ -582,6 +594,11 @@ export class PDFService {
 
       if (error) {
         console.error('❌ Erreur récupération PDFs:', error);
+        // En cas d'erreur, retourner les données du cache si disponibles
+        if (cached) {
+          console.log('💾 Fallback vers cache en cas d\'erreur');
+          return JSON.parse(cached);
+        }
         return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
 
@@ -614,6 +631,19 @@ export class PDFService {
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify(result));
         sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+        
+        // Nettoyer les anciens caches
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith('pdf_list_') && key !== cacheKey) {
+            const timeKey = `${key}_time`;
+            const time = sessionStorage.getItem(timeKey);
+            if (!time || Date.now() - parseInt(time) > 60000) { // Supprimer les caches > 1 minute
+              sessionStorage.removeItem(key);
+              sessionStorage.removeItem(timeKey);
+            }
+          }
+        }
       } catch (cacheError) {
         // Ignorer les erreurs de cache
       }
@@ -621,6 +651,19 @@ export class PDFService {
       return result;
     } catch (error) {
       console.error('❌ Erreur générale listPDFs:', error);
+      
+      // En cas d'erreur générale, essayer le cache
+      try {
+        const cacheKey = `pdf_list_${page}_${limit}`;
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          console.log('💾 Fallback cache en cas d\'erreur générale');
+          return JSON.parse(cached);
+        }
+      } catch (cacheError) {
+        // Ignorer les erreurs de cache
+      }
+      
       return { pdfs: [], totalCount: 0, totalPages: 0 };
     }
   }
