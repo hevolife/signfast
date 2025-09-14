@@ -300,4 +300,4 @@ export class PDFTemplateService {
     }
   }
 }
-            throw new Error(`Erreur lors de la vérification du formulaire: ${formError.message}`);
+            throw formError;
