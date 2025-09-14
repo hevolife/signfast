@@ -257,7 +257,7 @@ export class PDFTemplateService {
           // Vérifier que le formulaire existe
           const { data: formExists, error: checkFormError } = await supabase
             .from('forms')
-        throw new Error(`Erreur lors de la mise à jour du template: ${error.message}`);
+            .select('id, settings')
             .eq('id', formId)
             .maybeSingle();
 
