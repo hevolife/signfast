@@ -15,7 +15,9 @@ import {
   Shield,
   LogIn,
   UserPlus,
-  Info
+  Info,
+  Sparkles,
+  Crown
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
@@ -49,31 +51,44 @@ export const MobileBottomNav: React.FC = () => {
   const getColorClasses = (color: string, active: boolean) => {
     const colorMap = {
       blue: active 
-        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20',
+        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600 hover:shadow-md',
       green: active 
-        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20',
+        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600 hover:shadow-md',
       purple: active 
-        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-purple-900/20',
+        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600 hover:shadow-md',
       orange: active 
-        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-900/20',
+        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600 hover:shadow-md',
       indigo: active 
-        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20',
+        ? 'bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-700 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-indigo-100 hover:text-indigo-600 hover:shadow-md',
     };
     return colorMap[color] || colorMap.blue;
   };
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg pb-4 ${isDemoMode ? 'border-t-2 border-t-blue-500' : ''}`} style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+    <div className={`fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 z-50 lg:hidden shadow-2xl pb-4 ${isDemoMode ? 'border-t-2 border-t-blue-500' : ''}`} style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
       {isDemoMode && (
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-1">
-          <span className="text-xs font-medium">Mode Démo Actif</span>
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-2 shadow-lg">
+          <span className="text-xs font-bold flex items-center justify-center space-x-1">
+            <Sparkles className="h-3 w-3" />
+            <span>Mode Démo Actif</span>
+          </span>
         </div>
       )}
+      
+      {isSubscribed && !isDemoMode && (
+        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-center py-2 shadow-lg">
+          <span className="text-xs font-bold flex items-center justify-center space-x-1">
+            <Crown className="h-3 w-3" />
+            <span>{product.name} Actif</span>
+          </span>
+        </div>
+      )}
+      
       <div className={`flex justify-around items-center gap-1 ${user ? 'py-2 px-1' : 'py-2 px-1'}`}>
         {visibleItems.map((item, index) => {
           const active = !item.isButton && isActive(item.path);
@@ -84,25 +99,25 @@ export const MobileBottomNav: React.FC = () => {
             <button
               key={`button-${index}`}
               onClick={item.onClick}
-              className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all active:scale-95 ${getColorClasses(item.color, false)}`}
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all active:scale-95 hover:scale-105 ${getColorClasses(item.color, false)}`}
             >
-              <div className="p-1 bg-white/30 rounded-md mb-0.5">
+              <div className="p-1.5 bg-white/50 backdrop-blur-sm rounded-lg mb-1 shadow-md">
                 <span className="text-sm">{item.emoji}</span>
               </div>
-              <span className="text-[10px] font-medium text-center leading-tight">{item.label}</span>
+              <span className="text-[10px] font-bold text-center leading-tight">{item.label}</span>
             </button>
           ) : (
             <Link
               key={`link-${item.path}`}
               to={item.path}
-              className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all active:scale-95 min-w-0 ${
+              className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all active:scale-95 hover:scale-105 min-w-0 ${
                 active ? `${getColorClasses(item.color, true)}` : getColorClasses(item.color, false)
               }`}
             >
-              <div className="p-1 bg-white/30 rounded-md mb-0.5">
+              <div className="p-1.5 bg-white/50 backdrop-blur-sm rounded-lg mb-1 shadow-md">
                 <span className="text-sm">{item.emoji}</span>
               </div>
-              <span className="text-[10px] font-medium text-center leading-tight truncate max-w-16">{item.label}</span>
+              <span className="text-[10px] font-bold text-center leading-tight truncate max-w-16">{item.label}</span>
             </Link>
           );
         })}
