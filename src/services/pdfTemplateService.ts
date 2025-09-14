@@ -268,3 +268,33 @@ export class PDFTemplateService {
     }
   }
 }
+
+export const createPDFTemplate = async (templateData: Omit<PDFTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<PDFTemplate> => {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase non configuré');
+  }
+
+  // Ensure user_id is set from current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('Utilisateur non authentifié');
+  }
+
+  const dataToInsert = {
+    ...templateData,
+    user_id: user.id // Force the user_id to current authenticated user
+  };
+
+  const { data, error } = await supabase
+    .from('pdf_templates')
+    .insert(dataToInsert)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('❌ Erreur création template:', error.message);
+    throw new Error(`Erreur lors de la création du template: ${error.message}`);
+  }
+
+  return data;
+};
