@@ -110,12 +110,7 @@ export class PDFService {
       };
 
       // Sauvegarder dans Supabase avec timeout réduit
-      const { error } = await Promise.race([
-        supabase.from('pdf_storage').insert([pdfData]),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout sauvegarde métadonnées PDF')), 3000)
-        )
-      ]);
+      const { error } = await supabase.from('pdf_storage').insert([pdfData]);
 
       if (error) {
         throw new Error(`Erreur sauvegarde métadonnées: ${error.message}`);
@@ -153,14 +148,14 @@ export class PDFService {
     
     for (const [key, value] of Object.entries(formData)) {
       if (typeof value === 'string' && value.startsWith('data:image')) {
-        // Conserver les images pour génération ultérieure
+        // Compresser drastiquement les images pour éviter les timeouts
         const originalSize = Math.round(value.length / 1024);
-        console.log(`💾 Conservation image ${key}: ${originalSize}KB`);
+        console.log(`💾 Compression image ${key}: ${originalSize}KB`);
         
-        if (originalSize > 2000) {
-          // Compression légère si très gros (garde la qualité pour le PDF final)
-          console.warn(`⚠️ Image ${key} très grosse (${originalSize}KB), compression légère`);
-          cleaned[key] = this.lightCompress(value);
+        if (originalSize > 100) {
+          // Compression agressive pour éviter les timeouts
+          console.log(`🗜️ Compression agressive image ${key}: ${originalSize}KB`);
+          cleaned[key] = this.aggressiveCompress(value);
         } else {
           cleaned[key] = value;
         }
@@ -172,26 +167,25 @@ export class PDFService {
     return cleaned;
   }
 
-  // COMPRESSION D'URGENCE POUR IMAGES TRÈS VOLUMINEUSES
-  private static lightCompress(base64Image: string): string {
+  // COMPRESSION AGRESSIVE POUR ÉVITER LES TIMEOUTS
+  private static aggressiveCompress(base64Image: string): string {
     try {
       const [header, data] = base64Image.split(',');
       if (!data) return base64Image;
       
-      // Compression légère : prendre 3 caractères sur 4
+      // Compression agressive : prendre 1 caractère sur 4
       let compressedData = '';
-      for (let i = 0; i < data.length; i += 4) {
+      for (let i = 0; i < data.length; i += 8) {
         compressedData += data[i];
-        if (i + 1 < data.length) compressedData += data[i + 1];
         if (i + 2 < data.length) compressedData += data[i + 2];
       }
       
       const result = `${header},${compressedData}`;
-      console.log(`🗜️ Compression légère: ${Math.round(base64Image.length / 1024)}KB → ${Math.round(result.length / 1024)}KB`);
+      console.log(`🗜️ Compression agressive: ${Math.round(base64Image.length / 1024)}KB → ${Math.round(result.length / 1024)}KB`);
       
       return result;
     } catch (error) {
-      console.error('Erreur compression légère:', error);
+      console.error('Erreur compression agressive:', error);
       return base64Image;
     }
   }
