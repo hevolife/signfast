@@ -23,7 +23,7 @@ export const EditForm: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState('builder');
 
   useEffect(() => {
     if (forms.length > 0 && id) {
