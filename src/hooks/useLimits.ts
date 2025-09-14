@@ -23,6 +23,9 @@ export const useLimits = () => {
   const [savedPdfsCount, setSavedPdfsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Vérifier si l'utilisateur est super admin
+  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+
   const refreshLimits = async () => {
     try {
       const count = await PDFService.countPDFs();
@@ -42,32 +45,32 @@ export const useLimits = () => {
   // Calculer les limites selon l'abonnement
   const getFormsLimits = (): LimitData => {
     const current = forms.length;
-    const max = (isSubscribed || isDemoMode) ? Infinity : stripeConfig.freeLimits.maxForms;
+    const max = (isSubscribed || isDemoMode || isSuperAdmin) ? Infinity : stripeConfig.freeLimits.maxForms;
     return {
       current,
       max,
-      canCreate: isSubscribed || isDemoMode || current < max,
+      canCreate: isSubscribed || isDemoMode || isSuperAdmin || current < max,
     };
   };
 
   const getPdfTemplatesLimits = (): LimitData => {
     const current = templates.length;
-    const max = (isSubscribed || isDemoMode) ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
+    const max = (isSubscribed || isDemoMode || isSuperAdmin) ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
     return {
       current,
       max,
-      canCreate: isSubscribed || isDemoMode || current < max,
+      canCreate: isSubscribed || isDemoMode || isSuperAdmin || current < max,
     };
   };
 
   const getSavedPdfsLimits = (): LimitData => {
     const current = savedPdfsCount;
-    const max = (isSubscribed || isDemoMode) ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
+    const max = (isSubscribed || isDemoMode || isSuperAdmin) ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
     return {
       current,
       max,
-      canCreate: isSubscribed || isDemoMode || current < max,
-      canSave: isSubscribed || isDemoMode || current < max,
+      canCreate: isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canSave: isSubscribed || isDemoMode || isSuperAdmin || current < max,
     };
   };
 
