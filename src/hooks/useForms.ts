@@ -124,15 +124,20 @@ export const useFormResponses = (formId: string) => {
 
   const fetchResponses = async () => {
     try {
+      // Fetch only essential metadata first to avoid timeout
       const { data, error } = await supabase
         .from('responses')
-        .select('*')
+        .select('id, form_id, created_at, ip_address, user_agent')
         .eq('form_id', formId)
         .limit(500)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setResponses(data || []);
+      // Set responses with empty data field initially
+      setResponses((data || []).map(response => ({
+        ...response,
+        data: {}
+      })));
     } catch (error) {
       // Silent error
     } finally {
@@ -140,6 +145,29 @@ export const useFormResponses = (formId: string) => {
     }
   };
 
+  const fetchSingleResponseData = async (responseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('responses')
+        .select('data')
+        .eq('id', responseId)
+        .single();
+
+      if (error) throw error;
+      
+      // Update the specific response with its data
+      setResponses(prev => prev.map(response => 
+        response.id === responseId 
+          ? { ...response, data: data.data }
+          : response
+      ));
+      
+      return data.data;
+    } catch (error) {
+      console.error('Error fetching response data:', error);
+      return null;
+    }
+  };
   useEffect(() => {
     if (formId) {
       fetchResponses();
@@ -149,6 +177,7 @@ export const useFormResponses = (formId: string) => {
   return {
     responses,
     loading,
+    fetchSingleResponseData,
     refetch: fetchResponses,
   };
 };

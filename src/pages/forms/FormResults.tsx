@@ -29,12 +29,13 @@ import toast from 'react-hot-toast';
 export const FormResults: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { forms } = useForms();
-  const { responses, loading: responsesLoading, refetch } = useFormResponses(id || '');
+  const { responses, loading: responsesLoading, fetchSingleResponseData, refetch } = useFormResponses(id || '');
   const [form, setForm] = useState<Form | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
+  const [loadingResponseData, setLoadingResponseData] = useState(false);
 
   useEffect(() => {
     if (forms.length > 0 && id) {
@@ -43,6 +44,17 @@ export const FormResults: React.FC = () => {
     }
   }, [forms, id]);
 
+  const handleViewResponse = async (response: FormResponse) => {
+    setSelectedResponse(response);
+    setShowResponseModal(true);
+    
+    // If response data is empty, fetch it
+    if (Object.keys(response.data).length === 0) {
+      setLoadingResponseData(true);
+      await fetchSingleResponseData(response.id);
+      setLoadingResponseData(false);
+    }
+  };
   const handleDeleteResponse = async (responseId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette réponse ?')) {
       try {
@@ -385,30 +397,14 @@ export const FormResults: React.FC = () => {
                       </div>
 
                       {/* Aperçu des données principales */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {form.fields?.slice(0, 4).map((field) => {
-                          const value = getFieldValue(response, field.label);
-                          if (!value || value === '[Image]') return null;
-                          
-                          return (
-                            <div key={field.id} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                {field.label}
-                              </div>
-                              <div className="text-sm text-gray-900 dark:text-white truncate">
-                                {value}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Indicateur s'il y a plus de champs */}
-                      {form.fields && form.fields.length > 4 && (
-                        <div className="mt-3 text-xs text-gray-500">
-                          +{form.fields.length - 4} autres champs...
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          📋 Réponse complète • {form.fields?.length || 0} champs
                         </div>
-                      )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Cliquez sur "Voir détails" pour afficher le contenu
+                        </div>
+                      </div>
                     </div>
 
                     {/* Actions */}
@@ -416,10 +412,7 @@ export const FormResults: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSelectedResponse(response);
-                          setShowResponseModal(true);
-                        }}
+                        onClick={() => handleViewResponse(response)}
                         className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
                       >
                         <Eye className="h-4 w-4" />
@@ -466,6 +459,14 @@ export const FormResults: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {loadingResponseData ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Chargement des données...</p>
+                    </div>
+                  </div>
+                ) : (
                 {form.fields?.map((field) => {
                   const value = selectedResponse.data[field.label];
                   if (value === undefined || value === null || value === '') return null;
@@ -501,6 +502,7 @@ export const FormResults: React.FC = () => {
                     </div>
                   );
                 })}
+                )}
 
                 {/* Métadonnées */}
                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
