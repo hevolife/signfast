@@ -121,15 +121,27 @@ export const useForms = () => {
 export const useFormResponses = (formId: string) => {
   const [responses, setResponses] = useState<FormResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchResponses = async () => {
+  const fetchResponses = async (page: number = 1, limit: number = 20) => {
+    const offset = (page - 1) * limit;
+    
     try {
+      // First get the total count
+      const { count, error: countError } = await supabase
+        .from('responses')
+        .select('id', { count: 'exact', head: true })
+        .eq('form_id', formId);
+
+      if (countError) throw countError;
+      setTotalCount(count || 0);
+
       // Fetch only essential metadata first to avoid timeout
       const { data, error } = await supabase
         .from('responses')
         .select('id, form_id, created_at, ip_address, user_agent')
         .eq('form_id', formId)
-        .limit(500)
+        .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -176,8 +188,10 @@ export const useFormResponses = (formId: string) => {
 
   return {
     responses,
+    totalCount,
     loading,
     fetchSingleResponseData,
     refetch: fetchResponses,
+    fetchPage: fetchResponses,
   };
 };

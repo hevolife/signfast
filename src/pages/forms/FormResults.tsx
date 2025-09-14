@@ -29,13 +29,15 @@ import toast from 'react-hot-toast';
 export const FormResults: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { forms } = useForms();
-  const { responses, loading: responsesLoading, fetchSingleResponseData, refetch } = useFormResponses(id || '');
+  const { responses, totalCount, loading: responsesLoading, fetchSingleResponseData, refetch, fetchPage } = useFormResponses(id || '');
   const [form, setForm] = useState<Form | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [loadingResponseData, setLoadingResponseData] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     if (forms.length > 0 && id) {
@@ -44,6 +46,12 @@ export const FormResults: React.FC = () => {
     }
   }, [forms, id]);
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchPage(page, itemsPerPage);
+  };
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
   const handleViewResponse = async (response: FormResponse) => {
     setSelectedResponse(response);
     setShowResponseModal(true);
@@ -67,7 +75,8 @@ export const FormResults: React.FC = () => {
           toast.error('Erreur lors de la suppression');
         } else {
           toast.success('Réponse supprimée avec succès');
-          refetch();
+          // Refresh current page
+          fetchPage(currentPage, itemsPerPage);
         }
       } catch (error) {
         toast.error('Erreur lors de la suppression');
@@ -148,7 +157,7 @@ export const FormResults: React.FC = () => {
   });
 
   // Calculer les statistiques
-  const totalResponses = responses.length;
+  const totalResponses = totalCount;
   const todayResponses = responses.filter(r => {
     const today = new Date();
     const responseDate = new Date(r.created_at);
@@ -206,12 +215,15 @@ export const FormResults: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400">
               Formulaire : <span className="font-medium">{form.title}</span>
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {totalCount} réponse{totalCount > 1 ? 's' : ''} au total • Page {currentPage} sur {totalPages}
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
               size="sm"
-              onClick={refetch}
+              onClick={() => fetchPage(currentPage, itemsPerPage)}
               className="flex items-center space-x-1"
             >
               <RefreshCw className="h-4 w-4" />
@@ -432,6 +444,70 @@ export const FormResults: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Card className="mt-6">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} réponses
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center space-x-1"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">Précédent</span>
+                      </Button>
+                      
+                      <div className="flex items-center space-x-1">
+                        {/* Afficher les numéros de page */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "primary" : "ghost"}
+                              size="sm"
+                              onClick={() => handlePageChange(pageNum)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center space-x-1"
+                      >
+                        <span className="hidden sm:inline">Suivant</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
