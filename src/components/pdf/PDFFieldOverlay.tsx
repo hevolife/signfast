@@ -365,25 +365,7 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       )}
       
       {/* Poignées de redimensionnement */}
-      {isSelected && !isDragging && !isResizing && (
-        <>
-          <div 
-            className="resize-handle absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize border border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
-            onMouseDown={(e) => handleResizeStart(e, 'se')}
-            title="Redimensionner"
-          />
-          <div 
-            className="resize-handle absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 cursor-s-resize border border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
-            onMouseDown={(e) => handleResizeStart(e, 's')}
-            title="Redimensionner hauteur"
-          />
-          <div 
-            className="resize-handle absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 cursor-e-resize border border-white shadow-lg z-30 hover:bg-blue-600 transition-colors rounded-sm"
-            onMouseDown={(e) => handleResizeStart(e, 'e')}
-            title="Redimensionner largeur"
-          />
-        </>
-      )}
+      {/* Poignées de redimensionnement désactivées */}
     </div>
   );
 };
