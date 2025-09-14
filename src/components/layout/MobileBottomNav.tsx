@@ -34,7 +34,7 @@ export const MobileBottomNav: React.FC = () => {
   };
 
   // Si pas d'utilisateur connecté, afficher seulement quelques éléments
-  const visibleItems = user ? [
+  const visibleItems = (user || isDemoMode) ? [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true, color: 'blue', emoji: '📊' },
     { path: '/forms', icon: FileText, label: 'Formulaires', show: true, color: 'green', emoji: '📝' },
     { path: '/pdf/templates', icon: FileText, label: 'Templates', show: true, color: 'purple', emoji: '📄' },

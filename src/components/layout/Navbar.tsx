@@ -50,7 +50,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
+            {(user || isDemoMode) ? (
               <>
                 {isDemoMode && (
                   <div className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 )}
                 {/* Bannière d'impersonation */}
-                {isImpersonating && (
+                {user && isImpersonating && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -94,7 +94,7 @@ export const Navbar: React.FC = () => {
                     <span>Stockage</span>
                   </Button>
                 </Link>
-                {isSuperAdmin && (
+                {user && isSuperAdmin && (
                   <Link to="/admin">
                     <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-red-600 hover:text-red-700">
                       <Shield className="h-4 w-4" />
@@ -138,7 +138,7 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile: Only dark mode toggle and logo */}
           <div className="md:hidden flex items-center space-x-2">
-            {user && (
+            {(user || isDemoMode) && (
               <Button
                 variant="ghost"
                 size="sm"
