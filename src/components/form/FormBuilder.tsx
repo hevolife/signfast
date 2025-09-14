@@ -57,7 +57,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       setShowMobilePalette(false);
       setShowMobileProperties(true);
     }
-  }, []);
+  }, [isMobile]);
 
   const handleFieldDrop = useCallback((fieldType: FormField['type']) => {
     addField(fieldType);
@@ -141,7 +141,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     fieldsToUpdate.forEach(field => {
       updateField(field.id, { placeholder: field.label });
     });
-    toast.success(`Libellés copiés vers les placeholders pour ${fieldsToUpdate.length} champ(s)`);
+    // toast.success(`Libellés copiés vers les placeholders pour ${fieldsToUpdate.length} champ(s)`);
   };
 
   const bulkSetRequired = (required: boolean) => {
@@ -385,87 +385,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         )}
       </div>
     </div>
-  );
-};
-                <FormCanvas
-                  fields={fields}
-                  selectedField={selectedField}
-                  selectedFields={selectedFields}
-                  isMultiSelectMode={isMultiSelectMode}
-                  onSelectField={handleFieldSelect}
-                  onUpdateField={updateField}
-                  onRemoveField={removeField}
-                  onMoveField={moveField}
-                  onFieldDrop={handleFieldDrop}
-                />
-
-                {/* Palette mobile - overlay */}
-                {showMobilePalette && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-                    <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl max-h-[60vh] overflow-y-auto border-t-4 border-blue-500">
-                      <div className="flex justify-between items-center p-4 border-b border-blue-200 dark:border-blue-700">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-lg">🎨</span>
-                          </div>
-                          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300">
-                          Ajouter un champ
-                          </h3>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowMobilePalette(false)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="p-4">
-                        <FieldPalette onAddField={addField} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Propriétés mobile - overlay */}
-                {showMobileProperties && selectedFieldData && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-                    <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-t-xl max-h-[60vh] overflow-y-auto border-t-4 border-purple-500">
-                      <div className="flex justify-between items-center p-4 border-b border-purple-200 dark:border-purple-700">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-lg">⚙️</span>
-                          </div>
-                          <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
-                          Propriétés du champ
-                          </h3>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowMobileProperties(false)}
-                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:hover:bg-purple-800"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="p-4">
-                        <FieldPropertiesEditor
-                          field={selectedFieldData}
-                          onUpdate={(updates) => updateField(selectedFieldData.id, updates)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-    </DndProvider>
   );
 };
 
