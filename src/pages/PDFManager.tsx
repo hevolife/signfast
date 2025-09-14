@@ -35,80 +35,16 @@ export const PDFManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'template'>('date');
   const product = stripeConfig.products[0];
 
-  // Debug function to check PDF data
-  const debugPDFData = async () => {
-    console.log('🔍 === DEBUG PDF STORAGE ===');
-    
-    try {
-      // 1. Vérifier l'utilisateur actuel
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      console.log('🔍 Utilisateur auth:', user?.id, user?.email);
-      
-      // 2. Vérifier l'impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      if (impersonationData) {
-        const data = JSON.parse(impersonationData);
-        console.log('🔍 Impersonation active:', data.target_user_id, data.target_email);
-      } else {
-        console.log('🔍 Pas d\'impersonation');
-      }
-      
-      // 3. Lister TOUS les PDFs dans la table
-      const { data: allPdfs, error: allError } = await supabase
-        .from('pdf_storage')
-        .select('file_name, user_id, form_title, created_at')
-        .order('created_at', { ascending: false });
-      
-      console.log('🔍 TOUS les PDFs dans la table:', allPdfs?.length || 0);
-      allPdfs?.forEach((pdf, index) => {
-        console.log(`🔍 PDF ${index + 1}:`, {
-          fileName: pdf.file_name,
-          userId: pdf.user_id,
-          formTitle: pdf.form_title,
-          createdAt: pdf.created_at
-        });
-      });
-      
-      // 4. Vérifier les PDFs pour l'utilisateur cible
-      const targetUserId = impersonationData ? JSON.parse(impersonationData).target_user_id : user?.id;
-      console.log('🔍 Target user ID:', targetUserId);
-      
-      if (targetUserId) {
-        const { data: userPdfs, error: userError } = await supabase
-          .from('pdf_storage')
-          .select('*')
-          .eq('user_id', targetUserId);
-        
-        console.log('🔍 PDFs pour target user:', userPdfs?.length || 0);
-        userPdfs?.forEach((pdf, index) => {
-          console.log(`🔍 User PDF ${index + 1}:`, {
-            fileName: pdf.file_name,
-            formTitle: pdf.form_title,
-            templateName: pdf.template_name,
-            createdAt: pdf.created_at
-          });
-        });
-      }
-      
-    } catch (error) {
-      console.error('🔍 Erreur debug:', error);
-    }
-  };
-
-  useEffect(() => {
-    debugPDFData();
-    // Chargement immédiat de l'interface, puis des PDFs
-    setInitialLoading(false);
-    // Délai court pour permettre l'affichage de l'interface
-    setTimeout(() => {
-      loadPDFs();
-    }, 100);
-  }, []);
 
   const loadPDFs = async () => {
-    setLoading(true);
+    // Ne pas afficher le loading si c'est le premier chargement
+    if (pdfs.length > 0) {
+      setLoading(true);
+    }
+    
     try {
-      const { pdfs: pdfList } = await PDFService.listPDFs();
+      // Chargement optimisé avec cache
+      const { pdfs: pdfList } = await PDFService.listPDFs(1, 50); // Charger plus d'éléments d'un coup
       setPdfs(pdfList);
     } catch (error) {
       console.error('💾 Erreur chargement PDFs:', error);
@@ -367,30 +303,18 @@ export const PDFManager: React.FC = () => {
         {filteredAndSortedPDFs.length === 0 ? (
           <Card>
             <CardContent className="text-center py-16">
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Chargement en cours...
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Récupération de vos PDFs sauvegardés
-                  </p>
-                </>
-              ) : (
-                <>
-                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {searchTerm ? 'Aucun PDF trouvé' : 'Aucun PDF sauvegardé'}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {searchTerm 
-                      ? 'Essayez de modifier votre recherche'
-                      : 'Les PDFs générés depuis les formulaires apparaîtront ici'
-                    }
-                  </p>
-                </>
-              )}
+              <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {loading ? 'Chargement...' : searchTerm ? 'Aucun PDF trouvé' : 'Aucun PDF sauvegardé'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {loading 
+                  ? 'Récupération de vos PDFs en cours'
+                  : searchTerm 
+                  ? 'Essayez de modifier votre recherche'
+                  : 'Les PDFs générés depuis les formulaires apparaîtront ici'
+                }
+              </p>
             </CardContent>
           </Card>
         ) : (

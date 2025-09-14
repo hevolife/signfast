@@ -541,6 +541,17 @@ export class PDFService {
     try {
       console.log('💾 === DÉBUT listPDFs ===');
       
+      // Cache pour éviter les requêtes répétées
+      const cacheKey = `pdf_list_${page}_${limit}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+      
+      // Utiliser le cache si moins de 30 secondes
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 30000) {
+        console.log('💾 Utilisation cache pour listPDFs');
+        return JSON.parse(cached);
+      }
+      
       // Récupérer l'utilisateur effectif (impersonation gérée par le contexte Auth)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -552,35 +563,34 @@ export class PDFService {
       const targetUserId = user.id;
       console.log('💾 Liste PDFs pour userId:', targetUserId);
       
-      // Compter le total d'abord
-      const { count: totalCount, error: countError } = await supabase
+      // Requête optimisée : récupérer données et count en parallèle
+      const [countResult, dataResult] = await Promise.all([
+        supabase
         .from('pdf_storage')
         .select('id', { count: 'estimated', head: true })
-        .eq('user_id', targetUserId);
-
-      if (countError) {
-        console.error('❌ Erreur comptage PDFs:', countError);
-        return { pdfs: [], totalCount: 0, totalPages: 0 };
-      }
-
-      const total = totalCount || 0;
-      const totalPages = Math.ceil(total / limit);
-      const offset = (page - 1) * limit;
-
-      console.log('💾 Pagination:', { page, limit, offset, total, totalPages });
-
-      // Récupérer les PDFs avec pagination
-      const { data, error } = await supabase
+        .eq('user_id', targetUserId),
+        supabase
         .from('pdf_storage')
-        .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
+        .select('file_name, response_id, template_name, form_title, file_size, created_at')
         .eq('user_id', targetUserId)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
+        .range((page - 1) * limit, page * limit - 1)
+        .order('created_at', { ascending: false })
+      ]);
+
+      const { count: totalCount, error: countError } = countResult;
+      const { data, error } = dataResult;
 
       if (error) {
         console.error('❌ Erreur récupération PDFs:', error);
         return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
+
+      if (countError) {
+        console.warn('⚠️ Erreur comptage PDFs:', countError);
+      }
+
+      const total = totalCount || 0;
+      const totalPages = Math.ceil(total / limit);
 
       const pdfs = (data || []).map(item => ({
         fileName: item.file_name,
@@ -589,16 +599,26 @@ export class PDFService {
         formTitle: item.form_title,
         createdAt: item.created_at,
         size: item.file_size || 0,
-        formData: item.form_data || {},
+        formData: {}, // Charger les form_data seulement à la demande
       }));
 
       console.log('💾 PDFs récupérés:', pdfs.length, 'sur', total);
 
-      return {
+      const result = {
         pdfs,
         totalCount: total,
         totalPages
       };
+      
+      // Mettre en cache le résultat
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(result));
+        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+      } catch (cacheError) {
+        // Ignorer les erreurs de cache
+      }
+      
+      return result;
     } catch (error) {
       console.error('❌ Erreur générale listPDFs:', error);
       return { pdfs: [], totalCount: 0, totalPages: 0 };
