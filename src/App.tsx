@@ -15,6 +15,7 @@ import { Dashboard } from './pages/Dashboard';
 import { MyForms } from './pages/MyForms';
 import { NewForm } from './pages/forms/NewForm';
 import { EditForm } from './pages/forms/EditForm';
+import { FormResults } from './pages/forms/FormResults';
 import { PublicForm } from './pages/forms/PublicForm';
 import { PDFTemplates } from './pages/pdf/PDFTemplates';
 import { NewPDFTemplate } from './pages/pdf/NewPDFTemplate';
@@ -76,6 +77,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <EditForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/forms/:id/results"
+            element={
+              <ProtectedRoute>
+                <FormResults />
               </ProtectedRoute>
             }
           />
