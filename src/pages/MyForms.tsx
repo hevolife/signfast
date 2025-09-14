@@ -131,6 +131,24 @@ export const MyForms: React.FC = () => {
               </Card>
             )}
           </div>
+          <div className="flex-shrink-0">
+            {formsLimits.canCreate ? (
+              <Link to="/forms/new">
+                <Button className="flex items-center space-x-2">
+                  <Plus className="h-5 w-5" />
+                  <span>Nouveau formulaire</span>
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                onClick={handleCreateForm}
+                className="flex items-center space-x-2"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Nouveau formulaire</span>
+              </Button>
+            )}
+          </div>
         </div>
 
         {forms.length === 0 ? (
