@@ -288,6 +288,9 @@ export class PDFTemplateService {
             throw formError;
           }
           throw new Error('Erreur inconnue lors de la mise à jour du formulaire');
+            throw formError;
+          }
+          throw new Error('Erreur inconnue lors de la mise à jour du formulaire');
         }
       }
       
@@ -299,5 +302,4 @@ export class PDFTemplateService {
       throw new Error('Erreur inconnue lors de la liaison du formulaire');
     }
   }
-}
             throw formError;
