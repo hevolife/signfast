@@ -28,7 +28,10 @@ import {
   Gift,
   UserCheck,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Edit2,
+  Save,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMaintenanceMode } from '../../hooks/useMaintenanceMode';
@@ -89,6 +92,8 @@ export const SuperAdminDashboard: React.FC = () => {
   const [newCodeMaxUses, setNewCodeMaxUses] = useState<number>(1);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<string | null>(null);
+  const [newSubscriptionDuration, setNewSubscriptionDuration] = useState<'1month' | '2months' | '6months' | '1year' | 'lifetime'>('1month');
 
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
