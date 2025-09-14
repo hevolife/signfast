@@ -52,12 +52,14 @@ export const DemoWarningBanner: React.FC = () => {
               </p>
             </div>
           </div>
-          <Link to="/signup">
-            <Button size="sm" className="flex items-center space-x-2">
-              <UserPlus className="h-4 w-4" />
-              <span>Créer un compte</span>
-            </Button>
-          </Link>
+          <div className="flex-shrink-0">
+            <Link to="/signup">
+              <Button size="sm" className="flex items-center space-x-2">
+                <UserPlus className="h-4 w-4" />
+                <span>Créer un compte</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>
