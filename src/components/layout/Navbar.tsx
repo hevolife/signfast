@@ -114,19 +114,6 @@ export const Navbar: React.FC = () => {
                   </div>
                 )}
                 
-                {isSubscribed && !isDemoMode && (
-                  <div className="bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 px-4 py-2 rounded-full shadow-lg">
-                    <span className="text-xs font-bold text-yellow-800 dark:text-yellow-300 flex items-center space-x-1">
-                      <Crown className="h-3 w-3" />
-                      <span>{product.name}</span>
-                    </span>
-                  </div>
-                )}
-
-                      Mode Démo
-                    </span>
-                  </div>
-                )}
                 {/* Bannière d'impersonation */}
                 {!isDemoMode && isImpersonating && impersonationData && (
                   <div className="flex items-center space-x-2 bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 px-4 py-2 rounded-full shadow-lg">
