@@ -39,7 +39,14 @@ export const Signup: React.FC = () => {
       const { error } = await signUp(email, password);
       
       if (error) {
-        toast.error(error.message);
+        // Gérer spécifiquement l'erreur de rate limit
+        if (error.message.includes('over_email_send_rate_limit') || error.message.includes('rate_limit')) {
+          toast.error('Trop de tentatives d\'inscription. Veuillez patienter quelques secondes avant de réessayer.', {
+            duration: 6000,
+          });
+        } else {
+          toast.error(error.message);
+        }
       } else {
         // Si inscription réussie et code d'affiliation présent, tracker le parrainage
         if (data.user && affiliateCode) {
