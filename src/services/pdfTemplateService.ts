@@ -71,14 +71,18 @@ export class PDFTemplateService {
   }
 
   // LISTER LES TEMPLATES DE L'UTILISATEUR
-  static async getUserTemplates(userId: string): Promise<PDFTemplate[]> {
+  static async getUserTemplates(userId: string, page: number = 1, limit: number = 10): Promise<{
+    templates: PDFTemplate[];
+    totalCount: number;
+    totalPages: number;
+  }> {
     try {
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        return [];
+        return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
       // Timeout pour éviter les blocages
@@ -86,19 +90,37 @@ export class PDFTemplateService {
         setTimeout(() => reject(new Error('Timeout Supabase')), 3000);
       });
 
+      // Compter le total d'abord
+      const countPromise = supabase
+        .from('pdf_templates')
+        .select('id', { count: 'estimated', head: true })
+        .eq('user_id', userId);
+
+      const { count, error: countError } = await Promise.race([countPromise, timeoutPromise]);
+
+      if (countError) {
+        return { templates: [], totalCount: 0, totalPages: 0 };
+      }
+
+      const totalCount = count || 0;
+      const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+
+      // Récupérer les templates avec pagination
       const queryPromise = supabase
         .from('pdf_templates')
         .select('*')
         .eq('user_id', userId)
+        .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error) {
-        return [];
+        return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
-      return data.map(item => ({
+      const templates = data.map(item => ({
         id: item.id,
         name: item.name,
         description: item.description,
@@ -116,8 +138,14 @@ export class PDFTemplateService {
         updated_at: item.updated_at,
         user_id: item.user_id,
       }));
+
+      return {
+        templates,
+        totalCount,
+        totalPages
+      };
     } catch (error) {
-      return [];
+      return { templates: [], totalCount: 0, totalPages: 0 };
     }
   }
 

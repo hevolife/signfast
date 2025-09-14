@@ -15,11 +15,13 @@ import { Plus, FileText, Edit, Trash2, Download, Lock, Crown } from 'lucide-reac
 import toast from 'react-hot-toast';
 
 export const PDFTemplates: React.FC = () => {
-  const { templates, loading, refetch } = usePDFTemplates();
+  const { templates, totalCount, totalPages, loading, fetchPage } = usePDFTemplates();
   const { isSubscribed } = useSubscription();
   const { pdfTemplates: templatesLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const product = stripeConfig.products[0];
 
   // Gérer le chargement initial
@@ -29,12 +31,23 @@ export const PDFTemplates: React.FC = () => {
     }
   }, [loading, initialLoadDone]);
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchPage(page, itemsPerPage);
+  };
+
   const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le template "${name}" ?`)) {
       try {
         const success = await PDFTemplateService.deleteTemplate(id);
         if (success) {
-          await refetch(); // Recharger la liste
+          // Si on supprime le dernier template d'une page, retourner à la page précédente
+          if (templates.length === 1 && currentPage > 1) {
+            handlePageChange(currentPage - 1);
+          } else {
+            // Sinon, recharger la page courante
+            fetchPage(currentPage, itemsPerPage);
+          }
           toast.success('Template supprimé avec succès');
         } else {
           toast.error('Erreur lors de la suppression');
@@ -82,8 +95,13 @@ export const PDFTemplates: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               {isSubscribed 
                 ? `Créez des templates illimités avec ${product.name}`
-                : 'Gérez vos templates PDF avec champs dynamiques'
+                : `Gérez vos templates PDF avec champs dynamiques`
               }
+              {totalCount > 0 && (
+                <span className="block text-sm text-gray-500 mt-1">
+                  {totalCount} template{totalCount > 1 ? 's' : ''} au total • Page {currentPage} sur {totalPages}
+                </span>
+              )}
             </p>
             
             {/* Bloc limites atteintes */}
@@ -228,6 +246,70 @@ export const PDFTemplates: React.FC = () => {
             );
             })}
           </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Card className="mt-6">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} templates
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center space-x-1"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Précédent</span>
+                  </Button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {/* Afficher les numéros de page */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "primary" : "ghost"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center space-x-1"
+                  >
+                    <span className="hidden sm:inline">Suivant</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
         
         <LimitReachedModal

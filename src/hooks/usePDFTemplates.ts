@@ -5,15 +5,19 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const usePDFTemplates = () => {
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = async (page: number = 1, limit: number = 10) => {
     // Démarrer avec un loading plus court
     const loadingTimeout = setTimeout(() => {
       if (loading) {
         console.log('📄 Timeout de chargement, affichage de la liste vide');
         setTemplates([]);
+        setTotalCount(0);
+        setTotalPages(0);
         setLoading(false);
       }
     }, 2000); // 2 secondes max
@@ -35,17 +39,23 @@ export const usePDFTemplates = () => {
 
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
-          const supabaseTemplates = await PDFTemplateService.getUserTemplates(targetUserId);
+          const result = await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
           clearTimeout(loadingTimeout);
-          setTemplates(supabaseTemplates);
+          setTemplates(result.templates);
+          setTotalCount(result.totalCount);
+          setTotalPages(result.totalPages);
         } catch (supabaseError) {
           clearTimeout(loadingTimeout);
           // Fallback vers localStorage si Supabase n'est pas disponible
           const saved = localStorage.getItem('pdfTemplates');
           if (saved) {
             setTemplates(JSON.parse(saved));
+            setTotalCount(JSON.parse(saved).length);
+            setTotalPages(1);
           } else {
             setTemplates([]);
+            setTotalCount(0);
+            setTotalPages(0);
           }
         }
       } else {
@@ -54,13 +64,19 @@ export const usePDFTemplates = () => {
         const saved = localStorage.getItem('pdfTemplates');
         if (saved) {
           setTemplates(JSON.parse(saved));
+          setTotalCount(JSON.parse(saved).length);
+          setTotalPages(1);
         } else {
           setTemplates([]);
+          setTotalCount(0);
+          setTotalPages(0);
         }
       }
     } catch (error) {
       clearTimeout(loadingTimeout);
       setTemplates([]);
+      setTotalCount(0);
+      setTotalPages(0);
     } finally {
       clearTimeout(loadingTimeout);
       setLoading(false);
@@ -70,12 +86,15 @@ export const usePDFTemplates = () => {
   useEffect(() => {
     // Chargement immédiat sans attendre
     setLoading(true);
-    fetchTemplates();
+    fetchTemplates(1, 10);
   }, [user]);
 
   return {
     templates,
+    totalCount,
+    totalPages,
     loading,
     refetch: fetchTemplates,
+    fetchPage: fetchTemplates,
   };
 };
