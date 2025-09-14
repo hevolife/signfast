@@ -284,10 +284,7 @@ export class PDFTemplateService {
             // Success
           }
         } catch (formError) {
-          if (formError instanceof Error) {
-            throw formError;
-          }
-          throw new Error('Erreur inconnue lors de la mise à jour du formulaire');
+          return false;
             throw formError;
           }
           throw new Error('Erreur inconnue lors de la mise à jour du formulaire');
@@ -296,10 +293,7 @@ export class PDFTemplateService {
       
       return true;
     } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Erreur inconnue lors de la liaison du formulaire');
+      return false;
     }
   }
             throw formError;
