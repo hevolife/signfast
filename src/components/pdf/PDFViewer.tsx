@@ -39,6 +39,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number }[]>([]);
+  const renderTasksRef = useRef<Map<number, any>>(new Map());
 
   useImperativeHandle(ref, () => ({
     getPDFDimensions: (pageNumber: number) => {
@@ -140,6 +141,18 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const renderCurrentPage = async () => {
     if (!pdfDoc) return;
     
+    // Annuler toute tâche de rendu en cours pour cette page
+    const existingTask = renderTasksRef.current.get(currentPage);
+    if (existingTask) {
+      try {
+        existingTask.cancel();
+        console.log(`🚫 Tâche de rendu annulée pour page ${currentPage}`);
+      } catch (error) {
+        // Ignorer les erreurs d'annulation
+      }
+      renderTasksRef.current.delete(currentPage);
+    }
+    
     console.log(`📄 Rendu de la page ${currentPage} à l'échelle ${scale}`);
     
     try {
@@ -176,10 +189,17 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
         viewport: viewport,
       };
 
-      await page.render(renderContext).promise;
+      const renderTask = page.render(renderContext);
+      renderTasksRef.current.set(currentPage, renderTask);
+      
+      await renderTask.promise;
+      renderTasksRef.current.delete(currentPage);
       console.log(`📄 Page ${currentPage} rendue (${canvas.width}×${canvas.height})`);
     } catch (error) {
-      console.error('Erreur rendu:', error);
+      if (error.name !== 'RenderingCancelledException') {
+        console.error('Erreur rendu:', error);
+      }
+      renderTasksRef.current.delete(currentPage);
     }
   };
 
