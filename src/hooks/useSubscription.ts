@@ -109,19 +109,35 @@ export const useSubscription = () => {
       try {
         console.log('💳 Récupération abonnements Stripe...');
         
-        // Récupérer l'abonnement Stripe pour l'utilisateur cible
-        const { data: stripeData, error: stripeError } = await supabase
-          .from('stripe_user_subscriptions')
-          .select('*')
-          .eq('customer_id', targetUserId)
+        // Récupérer l'abonnement Stripe pour l'utilisateur cible via la table stripe_customers
+        const { data: customerData, error: customerError } = await supabase
+          .from('stripe_customers')
+          .select('customer_id')
+          .eq('user_id', targetUserId)
           .maybeSingle();
 
-        if (stripeError) {
-          console.warn('💳 Erreur récupération abonnement Stripe:', stripeError);
+        if (customerError) {
+          console.warn('💳 Erreur récupération customer:', customerError);
+        } else if (customerData) {
+          console.log('💳 Customer trouvé:', customerData.customer_id);
+          
+          // Récupérer l'abonnement avec le customer_id
+          const { data: stripeData, error: stripeError } = await supabase
+            .from('stripe_subscriptions')
+            .select('*')
+            .eq('customer_id', customerData.customer_id)
+            .maybeSingle();
+
+          if (stripeError) {
+            console.warn('💳 Erreur récupération abonnement Stripe:', stripeError);
+          } else {
+            stripeSubscription = stripeData;
+            console.log('💳 Abonnement Stripe trouvé:', !!stripeSubscription, stripeSubscription?.status);
+          }
         } else {
-          stripeSubscription = stripeData;
-          console.log('💳 Abonnement Stripe trouvé:', !!stripeSubscription, stripeSubscription?.subscription_status);
+          console.log('💳 Aucun customer Stripe trouvé pour cet utilisateur');
         }
+
       } catch (stripeError) {
         console.warn('💳 Erreur Stripe:', stripeError);
       }
@@ -183,19 +199,19 @@ export const useSubscription = () => {
 
         // Déterminer si l'utilisateur a un accès premium
         const hasStripeAccess = stripeSubscription && 
-          (stripeSubscription.subscription_status === 'active' || 
-           stripeSubscription.subscription_status === 'trialing');
+          (stripeSubscription.status === 'active' || 
+           stripeSubscription.status === 'trialing');
         
         console.log('💳 === RÉSUMÉ ABONNEMENT ===');
         console.log('💳 User cible:', targetUserId);
-        console.log('💳 Accès Stripe:', hasStripeAccess, stripeSubscription?.subscription_status);
+        console.log('💳 Accès Stripe:', hasStripeAccess, stripeSubscription?.status);
         console.log('💳 Code secret actif:', hasActiveSecretCode, secretCodeType);
         const isSubscribed = hasStripeAccess || hasActiveSecretCode;
         console.log('💳 ABONNÉ FINAL:', isSubscribed);
 
         const finalState = {
           isSubscribed,
-          subscriptionStatus: stripeSubscription?.subscription_status || null,
+          subscriptionStatus: stripeSubscription?.status || null,
           priceId: stripeSubscription?.price_id || null,
           currentPeriodEnd: stripeSubscription?.current_period_end || null,
           cancelAtPeriodEnd: stripeSubscription?.cancel_at_period_end || false,
