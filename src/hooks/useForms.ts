@@ -164,6 +164,19 @@ export const useFormResponses = (formId: string) => {
   const [responses, setResponses] = useState<FormResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const { isDemoMode } = useDemo();
+
+  // If in demo mode, return empty data without making Supabase requests
+  if (isDemoMode) {
+    return {
+      responses: [],
+      totalCount: 0,
+      loading: false,
+      fetchSingleResponseData: async () => null,
+      refetch: async () => {},
+      fetchPage: async () => {},
+    };
+  }
 
   const fetchResponses = async (page: number = 1, limit: number = 10) => {
     const offset = (page - 1) * limit;
