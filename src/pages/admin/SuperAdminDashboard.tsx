@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -183,6 +183,14 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const loadUsers = async () => {
     try {
+      if (!isSupabaseConfigured()) {
+        console.warn('⚠️ Supabase non configuré, impossible de charger les utilisateurs');
+        toast.error('Configuration Supabase manquante. Veuillez configurer Supabase pour accéder aux fonctionnalités admin.');
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
       if (!session?.access_token) {
         setLoading(false);
         return;

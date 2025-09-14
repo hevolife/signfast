@@ -88,6 +88,9 @@ export const supabase = createClient(
 // Export createClient for admin operations
 export { createClient };
 
+// Export the configuration check function
+export { isSupabaseConfigured };
+
 export type Database = {
   public: {
     Tables: {
