@@ -179,7 +179,6 @@ const AppContent: React.FC = () => {
             />
           </Routes>
         </main>
-        {!isPublicForm && <MobileBottomNav />}
         <Toaster
           position="top-right"
           toastOptions={{
