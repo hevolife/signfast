@@ -58,6 +58,10 @@ export const Login: React.FC = () => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
+        data: {
+          site_url: window.location.origin,
+          site_name: 'SignFast'
+        }
       });
 
       if (error) {
