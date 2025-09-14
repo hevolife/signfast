@@ -315,20 +315,9 @@ export class PDFService {
           if (templateId && templateId.length < 100) {
             console.log('📄 Tentative récupération template par ID:', templateId);
             try {
-              // Utiliser le service pour récupérer le template public
-              const { PDFTemplateService } = await import('./pdfTemplateService');
-              const template = await PDFTemplateService.getTemplate(templateId);
-              
-              if (template) {
-                templateData = {
-                  templateId: template.id,
-                  templateFields: template.fields,
-                  templatePdfContent: template.originalPdfUrl,
-                };
-                console.log('📄 Template récupéré via service');
-              } else {
-                console.warn('⚠️ Template non trouvé via service');
-              }
+              // Import direct pour éviter les problèmes de dépendance circulaire
+              templateData = await this.getTemplateForGeneration(templateId);
+              console.log('📄 Template récupéré via service');
             } catch (serviceError) {
               console.warn('⚠️ Erreur service template:', serviceError);
               
@@ -337,7 +326,7 @@ export class PDFService {
                 .from('pdf_templates')
                 .select('id, name, pdf_content, fields')
                 .eq('id', templateId)
-                .eq('is_public', true)
+                .or('is_public.eq.true,linked_form_id.in.(select id from forms where is_published = true)')
                 .single();
               
               if (!templateError && templateFromDb) {
@@ -839,6 +828,50 @@ export class PDFService {
       return localData ? JSON.parse(localData) : {};
     } catch (error) {
       return {};
+    }
+  }
+
+  // RÉCUPÉRER UN TEMPLATE POUR GÉNÉRATION (MÉTHODE INTERNE)
+  private static async getTemplateForGeneration(templateId: string): Promise<any | null> {
+    try {
+      console.log('📄 Récupération template pour génération:', templateId);
+      
+      const { data, error } = await supabase
+        .from('pdf_templates')
+        .select('*')
+        .eq('id', templateId)
+        .or('is_public.eq.true,linked_form_id.in.(select id from forms where is_published = true)')
+        .single();
+
+      if (error) {
+        console.error('❌ Erreur récupération template:', error);
+        throw new Error(`Template PDF non trouvé: ${templateId}`);
+      }
+
+      console.log('✅ Template trouvé pour génération:', data.name);
+      
+      // Convertir au format attendu
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        originalPdfUrl: data.pdf_content,
+        fields: (data.fields || []).map((field: any) => ({
+          ...field,
+          xRatio: typeof field.xRatio === 'number' ? field.xRatio : 0,
+          yRatio: typeof field.yRatio === 'number' ? field.yRatio : 0,
+          widthRatio: typeof field.widthRatio === 'number' ? field.widthRatio : 0.1,
+          heightRatio: typeof field.heightRatio === 'number' ? field.heightRatio : 0.05,
+        })),
+        linkedFormId: data.linked_form_id,
+        pages: data.pages,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        user_id: data.user_id,
+      };
+    } catch (error) {
+      console.error('❌ Erreur récupération template pour génération:', error);
+      throw error;
     }
   }
 }
