@@ -66,10 +66,15 @@ export const Dashboard: React.FC = () => {
   }, [formsLoading]);
 
   // Calculer les statistiques
-  const totalResponses = totalForms * 8; // Estimation basée sur le nombre total de formulaires
   const displayedResponses = forms.reduce((acc, form) => {
-    // Simulation - dans un vrai cas, vous récupéreriez les vraies données
-    return acc + Math.floor(Math.random() * 50);
+    // Simulation basée sur l'âge du formulaire et s'il est publié
+    if (!form.is_published) return acc;
+    
+    const daysSinceCreation = Math.max(1, Math.ceil((Date.now() - new Date(form.created_at).getTime()) / (1000 * 60 * 60 * 24)));
+    const baseResponses = Math.min(daysSinceCreation * 2, 100); // Max 100 réponses par formulaire
+    const randomVariation = Math.floor(Math.random() * 20); // Variation de 0-19
+    
+    return acc + baseResponses + randomVariation;
   }, 0);
 
   const publishedForms = forms.filter(form => form.is_published).length;
