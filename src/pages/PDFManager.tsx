@@ -19,7 +19,7 @@ interface SavedPDF {
   responseId: string;
   templateName: string;
   formTitle: string;
-  userDisplayName: string;
+  displayName: string;
   createdAt: string;
   size: number;
 }
@@ -329,10 +329,10 @@ export const PDFManager: React.FC = () => {
                         <span className="text-white text-lg">💾</span>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 truncate">
-                          {pdf.userDisplayName}
+                        <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
+                          {pdf.displayName}
                         </h3>
-                        <p className="text-sm text-green-700 dark:text-green-400 truncate">
+                        <p className="text-sm text-green-700 dark:text-green-400 line-clamp-2">
                           {pdf.formTitle} • {pdf.templateName}
                         </p>
                       </div>
