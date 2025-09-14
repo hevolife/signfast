@@ -67,10 +67,9 @@ export const useSubscription = () => {
       }
 
       // L'utilisateur effectif est déjà géré par le contexte Auth
-      const targetUserId = user.id;
+      let targetUserId = user.id;
       console.log('💳 Vérification abonnement pour userId:', targetUserId);
         const impersonationData = localStorage.getItem('admin_impersonation');
-        let targetUserId = user.id;
         
         if (impersonationData) {
           try {
