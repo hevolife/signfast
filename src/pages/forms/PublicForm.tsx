@@ -335,6 +335,60 @@ export const PublicForm: React.FC = () => {
         }
       });
 
+      // Appliquer les masques de saisie pour le PDF
+      form.fields?.forEach(field => {
+        if (field.validation?.mask && formData[field.id]) {
+          const rawValue = formData[field.id];
+          const maskedValue = applyMaskToValue(rawValue, field.validation.mask);
+          
+          // Mettre à jour toutes les clés associées à ce champ
+          const normalizedKey = normalizeKey(field.label);
+          const keys = [
+            field.label,
+            normalizedKey,
+            field.label.toLowerCase(),
+          ];
+          
+          keys.forEach(key => {
+            if (pdfSubmissionData[key] === rawValue) {
+              pdfSubmissionData[key] = maskedValue;
+              console.log(`🎭 Masque appliqué pour ${key}: "${rawValue}" → "${maskedValue}"`);
+            }
+          });
+        }
+        
+        // Traiter aussi les champs conditionnels
+        if (field.conditionalFields && formData[field.id]) {
+          const selectedValues = Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]];
+          
+          selectedValues.forEach(selectedValue => {
+            const conditionalFields = field.conditionalFields?.[selectedValue];
+            if (conditionalFields) {
+              conditionalFields.forEach(conditionalField => {
+                if (conditionalField.validation?.mask && formData[conditionalField.id]) {
+                  const rawValue = formData[conditionalField.id];
+                  const maskedValue = applyMaskToValue(rawValue, conditionalField.validation.mask);
+                  
+                  const conditionalNormalizedKey = normalizeKey(conditionalField.label);
+                  const conditionalKeys = [
+                    conditionalField.label,
+                    conditionalNormalizedKey,
+                    conditionalField.label.toLowerCase(),
+                  ];
+                  
+                  conditionalKeys.forEach(key => {
+                    if (pdfSubmissionData[key] === rawValue) {
+                      pdfSubmissionData[key] = maskedValue;
+                      console.log(`🎭 Masque conditionnel appliqué pour ${key}: "${rawValue}" → "${maskedValue}"`);
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+
       // Sauvegarder dans la base avec les données allégées
       const { data: responseData, error } = await supabase
         .from('responses')
@@ -504,6 +558,64 @@ export const PublicForm: React.FC = () => {
       // Ne pas faire échouer la soumission du formulaire
       console.log('📄 Soumission du formulaire maintenue malgré l\'erreur PDF');
     }
+  };
+
+  // Fonction pour appliquer un masque à une valeur
+  const applyMaskToValue = (value: string, mask: string): string => {
+    if (!value || !mask) return value;
+    
+    let masked = '';
+    let maskIndex = 0;
+    let valueIndex = 0;
+    
+    // Nettoyer la valeur (garder seulement les caractères alphanumériques)
+    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    
+    while (maskIndex < mask.length && valueIndex < cleanValue.length) {
+      const maskChar = mask[maskIndex];
+      const inputChar = cleanValue[valueIndex];
+      
+      if (maskChar === '9') {
+        // Chiffre requis
+        if (/[0-9]/.test(inputChar)) {
+          masked += inputChar;
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else if (maskChar === 'A') {
+        // Lettre majuscule requise
+        if (/[a-zA-Z]/.test(inputChar)) {
+          masked += inputChar.toUpperCase();
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else if (maskChar === 'a') {
+        // Lettre minuscule requise
+        if (/[a-zA-Z]/.test(inputChar)) {
+          masked += inputChar.toLowerCase();
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else if (maskChar === '*') {
+        // Caractère alphanumérique
+        if (/[a-zA-Z0-9]/.test(inputChar)) {
+          masked += inputChar;
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else {
+        // Caractère littéral du masque
+        masked += maskChar;
+      }
+      
+      maskIndex++;
+    }
+    
+    return masked;
   };
 
   const downloadPDF = () => {
