@@ -547,29 +547,30 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         </div>
 
         {/* Nom du template */}
-        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nom du template
-              </label>
-              <Input
-                value={currentTemplateName}
-                onChange={(e) => onTemplateNameChange?.(e.target.value)}
-                placeholder="Ex: Contrat de location, Facture..."
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Formulaire lié
-              </label>
-              <FormSelector
-                selectedFormId={currentLinkedFormId}
-                onFormChange={handleFormLinkChange}
-                showVariablesPreview={false}
-              />
-            </div>
+        <div className="mb-6 space-y-4">
+          {/* Nom du template */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Nom du template
+            </label>
+            <Input
+              value={currentTemplateName}
+              onChange={(e) => onTemplateNameChange?.(e.target.value)}
+              placeholder="Ex: Contrat de location, Facture..."
+              className="w-full"
+            />
+          </div>
+          
+          {/* Formulaire lié */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Formulaire lié
+            </label>
+            <FormSelector
+              selectedFormId={currentLinkedFormId}
+              onFormChange={handleFormLinkChange}
+              showVariablesPreview={false}
+            />
           </div>
         </div>
 
