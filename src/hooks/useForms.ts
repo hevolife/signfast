@@ -5,10 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const useForms = () => {
   const [forms, setForms] = useState<Form[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchForms = async () => {
+  const fetchForms = async (page: number = 1, limit: number = 10) => {
     if (!user) return;
 
     // Vérifier si on est en mode impersonation
@@ -25,10 +26,27 @@ export const useForms = () => {
       }
     }
     try {
+      // Compter le total d'abord
+      const { count, error: countError } = await supabase
+        .from('forms')
+        .select('id', { count: 'estimated', head: true })
+        .eq('user_id', targetUserId);
+
+      if (countError) {
+        console.error('Error counting forms:', countError);
+        setTotalCount(0);
+      } else {
+        setTotalCount(count || 0);
+      }
+
+      // Calculer l'offset pour la pagination
+      const offset = (page - 1) * limit;
+
       const { data, error } = await supabase
         .from('forms')
         .select('*')
         .eq('user_id', targetUserId)
+        .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -53,7 +71,7 @@ export const useForms = () => {
   };
 
   useEffect(() => {
-    fetchForms();
+    fetchForms(1, 10);
   }, [user]);
 
   const createForm = async (formData: Partial<Form>) => {
@@ -71,7 +89,7 @@ export const useForms = () => {
 
       if (error) throw error;
       
-      await fetchForms();
+      await fetchForms(1, 10);
       return data;
     } catch (error) {
       return null;
@@ -86,7 +104,7 @@ export const useForms = () => {
         .eq('id', id);
 
       if (error) throw error;
-      await fetchForms();
+      await fetchForms(1, 10);
       return true;
     } catch (error) {
       return false;
@@ -101,7 +119,7 @@ export const useForms = () => {
         .eq('id', id);
 
       if (error) throw error;
-      await fetchForms();
+      await fetchForms(1, 10);
       return true;
     } catch (error) {
       return false;
@@ -110,11 +128,13 @@ export const useForms = () => {
 
   return {
     forms,
+    totalCount,
     loading,
     createForm,
     updateForm,
     deleteForm,
     refetch: fetchForms,
+    fetchPage: fetchForms,
   };
 };
 

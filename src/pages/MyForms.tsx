@@ -10,19 +10,36 @@ import { stripeConfig } from '../stripe-config';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Plus, Eye, BarChart3, Edit, Trash2, ExternalLink, Lock, Crown } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const MyForms: React.FC = () => {
-  const { forms, loading, deleteForm } = useForms();
+  const { forms, totalCount, loading, deleteForm, fetchPage } = useForms();
   const { isSubscribed } = useSubscription();
   const { forms: formsLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage] = React.useState(10);
   const product = stripeConfig.products[0];
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchPage(page, itemsPerPage);
+  };
 
   const handleDelete = async (id: string, title: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le formulaire "${title}" ?`)) {
       const success = await deleteForm(id);
       if (success) {
+        // Si on supprime le dernier formulaire d'une page, retourner à la page précédente
+        if (forms.length === 1 && currentPage > 1) {
+          handlePageChange(currentPage - 1);
+        } else {
+          // Sinon, recharger la page courante
+          fetchPage(currentPage, itemsPerPage);
+        }
         toast.success('Formulaire supprimé avec succès');
       } else {
         toast.error('Erreur lors de la suppression');
@@ -73,6 +90,11 @@ export const MyForms: React.FC = () => {
                 ? `Gérez et analysez vos formulaires illimités avec ${product.name}`
                 : 'Gérez et analysez vos formulaires'
               }
+              {totalCount > 0 && (
+                <span className="block text-sm text-gray-500 mt-1">
+                  {totalCount} formulaire{totalCount > 1 ? 's' : ''} au total • Page {currentPage} sur {totalPages}
+                </span>
+              )}
             </p>
             
             {/* Bloc limites atteintes */}
@@ -242,6 +264,70 @@ export const MyForms: React.FC = () => {
             );
             })}
           </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Card className="mt-6">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} formulaires
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center space-x-1"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Précédent</span>
+                  </Button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {/* Afficher les numéros de page */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "primary" : "ghost"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center space-x-1"
+                  >
+                    <span className="hidden sm:inline">Suivant</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
         
         <LimitReachedModal
