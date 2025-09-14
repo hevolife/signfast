@@ -11,7 +11,7 @@ import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { stripeConfig } from '../../stripe-config';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { Plus, FileText, Edit, Trash2, Download, Lock, Crown } from 'lucide-react';
+import { Plus, FileText, Edit, Trash2, Download, Lock, Crown, ArrowLeft, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const PDFTemplates: React.FC = () => {
