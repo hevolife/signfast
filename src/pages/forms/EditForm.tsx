@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { FormBuilder } from '../../components/form/FormBuilder';
 import { PDFSettingsPanel } from '../../components/form/PDFSettingsPanel';
 import { useForms } from '../../hooks/useForms';
@@ -19,6 +20,7 @@ export const EditForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { forms, updateForm, loading } = useForms();
   const { isSubscribed } = useSubscription();
   const [form, setForm] = useState<any>(null);
