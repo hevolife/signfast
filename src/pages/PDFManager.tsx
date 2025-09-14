@@ -21,7 +21,6 @@ interface SavedPDF {
   formTitle: string;
   createdAt: string;
   size: number;
-  formData: Record<string, any>;
 }
 
 export const PDFManager: React.FC = () => {
@@ -128,51 +127,6 @@ export const PDFManager: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getDisplayName = (formData: Record<string, any>): string | null => {
-    if (!formData) return null;
-    
-    // Rechercher différentes variations de nom/prénom
-    const nom = formData.nom || formData.Nom || formData.lastname || formData.last_name || 
-                formData['Nom de famille'] || formData['nom de famille'] || formData.surname;
-    
-    const prenom = formData.prenom || formData.prénom || formData.firstname || formData.first_name || 
-                   formData['Prénom'] || formData['prénom'] || formData.givenname || formData['given name'];
-    
-    // Rechercher d'autres champs qui pourraient contenir un nom
-    const nomComplet = formData['nom complet'] || formData['Nom complet'] || formData['full name'] || 
-                       formData.fullname || formData['nom_complet'];
-    
-    const nomUtilisateur = formData.username || formData['nom utilisateur'] || formData.login;
-    
-    // Priorité d'affichage
-    if (prenom && nom) return `${prenom} ${nom}`;
-    if (nomComplet) return nomComplet;
-    if (nom) return nom;
-    if (prenom) return prenom;
-    if (nomUtilisateur) return nomUtilisateur;
-    
-    // Rechercher tout champ contenant "nom" dans la clé
-    const nomFields = Object.entries(formData).find(([key, value]) => 
-      key.toLowerCase().includes('nom') && 
-      typeof value === 'string' && 
-      value.trim().length > 0 &&
-      !key.startsWith('_') // Éviter les champs techniques
-    );
-    
-    if (nomFields) return nomFields[1] as string;
-    
-    // Rechercher tout champ contenant "prénom" dans la clé
-    const prenomFields = Object.entries(formData).find(([key, value]) => 
-      key.toLowerCase().includes('prénom') && 
-      typeof value === 'string' && 
-      value.trim().length > 0 &&
-      !key.startsWith('_')
-    );
-    
-    if (prenomFields) return prenomFields[1] as string;
-    
-    return null;
-  };
 
   const filteredAndSortedPDFs = pdfs
     .filter(pdf => 
@@ -375,10 +329,10 @@ export const PDFManager: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
-                          {getDisplayName(pdf.formData) || pdf.formTitle}
+                          {pdf.formTitle}
                         </h3>
                         <p className="text-sm text-green-700 dark:text-green-400 line-clamp-2">
-                          {getDisplayName(pdf.formData) ? pdf.formTitle : `Template: ${pdf.templateName}`}
+                          Template: {pdf.templateName}
                         </p>
                       </div>
                     </div>
@@ -397,7 +351,7 @@ export const PDFManager: React.FC = () => {
                   {/* Indicateur de statut PDF */}
                   <div className="text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center space-x-1">
                     <span>📋</span>
-                    <span>Métadonnées sauvegardées - PDF à générer</span>
+                    <span>Prêt à générer - Cliquez sur "Générer PDF"</span>
                   </div>
                   
                   <div className="flex items-center gap-2">
