@@ -282,7 +282,7 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
                 <Input
                   placeholder="https://votre-site.com/webhook"
                   value={form.settings?.webhookUrl || ''}
-                  onChange={(e) => handleSettingsUpdate('webhookUrl', e.target.value)}
+                  onChange={(e) => handleSettingsUpdate('webhookUrl', e.target.value || undefined)}
                 />
                 <p className="text-xs text-gray-500">
                   URL où envoyer les données du formulaire et le PDF généré
