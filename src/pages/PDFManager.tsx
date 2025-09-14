@@ -363,16 +363,6 @@ export const PDFManager: React.FC = () => {
         </Card>
 
         {/* Indicateur de chargement des PDFs */}
-        {loading && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-center space-x-3">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-gray-600 dark:text-gray-400">Chargement des PDFs sauvegardés...</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {filteredAndSortedPDFs.length === 0 ? (
           <Card>
