@@ -103,14 +103,7 @@ export const PDFManager: React.FC = () => {
     setLoading(true);
     try {
       const pdfList = await PDFService.listPDFs();
-      // Ensure we always set an array, handle both array and object responses
-      if (Array.isArray(pdfList)) {
-        setPdfs(pdfList);
-      } else if (pdfList && Array.isArray(pdfList.pdfs)) {
-        setPdfs(pdfList.pdfs);
-      } else {
-        setPdfs([]);
-      }
+      setPdfs(pdfList);
     } catch (error) {
       console.error('💾 Erreur chargement PDFs:', error);
       toast.error('Erreur lors du chargement des PDFs');

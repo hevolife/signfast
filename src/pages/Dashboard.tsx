@@ -8,7 +8,6 @@ import { SubscriptionBanner } from '../components/subscription/SubscriptionBanne
 import { stripeConfig } from '../stripe-config';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
-import { cache } from '../utils/cache';
 import { 
   Plus, 
   FileText, 
@@ -21,8 +20,7 @@ import {
   ArrowRight,
   Activity,
   Gift,
-  ArrowLeft,
-  RefreshCw
+  ArrowLeft
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
@@ -34,28 +32,6 @@ export const Dashboard: React.FC = () => {
   const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
   const product = stripeConfig.products[0];
 
-  // Fonction pour rafraîchir toutes les données
-  const refreshAllData = async () => {
-    setRecentFormsLoading(true);
-    try {
-      // Vider les caches pour forcer le rechargement
-      cache.clear();
-      
-      // Recharger les données
-      await Promise.all([
-        fetchPage(1, 5),
-        // Les autres hooks se rechargeront automatiquement
-      ]);
-      
-      toast.success('Données actualisées !');
-    } catch (error) {
-      console.error('Erreur actualisation:', error);
-      toast.error('Erreur lors de l\'actualisation');
-    } finally {
-      setRecentFormsLoading(false);
-    }
-  };
-
   // Charger une page spécifique des formulaires récents
   const loadRecentFormsPage = async (page: number) => {
     setRecentFormsLoading(true);
@@ -64,7 +40,6 @@ export const Dashboard: React.FC = () => {
       setRecentFormsPage(page);
     } catch (error) {
       console.error('Erreur chargement formulaires récents:', error);
-      toast.error('Erreur lors du chargement des formulaires');
     } finally {
       setRecentFormsLoading(false);
     }
@@ -116,28 +91,15 @@ export const Dashboard: React.FC = () => {
         {/* En-tête du dashboard */}
         <div className="text-center mb-8">
           <div>
-            <div className="flex items-center justify-center space-x-4 mb-4">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Dashboard SignFast
-                {isSubscribed && (
-                  <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                    <Crown className="h-4 w-4 mr-1" />
-                    {hasSecretCode ? 'Premium (Code Secret)' : product.name}
-                  </span>
-                )}
-              </h1>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refreshAllData}
-                disabled={recentFormsLoading}
-                className="flex items-center space-x-1"
-                title="Actualiser toutes les données"
-              >
-                <RefreshCw className={`h-4 w-4 ${recentFormsLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualiser</span>
-              </Button>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Dashboard SignFast
+              {isSubscribed && (
+                <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                  <Crown className="h-4 w-4 mr-1" />
+                  {hasSecretCode ? 'Premium (Code Secret)' : product.name}
+                </span>
+              )}
+            </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               Vue d'ensemble de votre activité SignFast
             </p>
