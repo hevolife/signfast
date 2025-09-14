@@ -9,7 +9,7 @@ export const useForms = () => {
   const [forms, setForms] = useState<Form[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, isImpersonating, impersonationData } = useAuth();
   const { isDemoMode } = useDemo();
   const demoFormsHook = useDemoForms();
 
@@ -20,7 +20,10 @@ export const useForms = () => {
   }
 
   const fetchForms = async (page: number = 1, limit: number = 10) => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     // Check if Supabase is configured
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -32,19 +35,14 @@ export const useForms = () => {
       return;
     }
 
-    // Vérifier si on est en mode impersonation
-    const impersonationData = localStorage.getItem('admin_impersonation');
-    let targetUserId = user.id;
+    // L'utilisateur effectif est déjà géré par le contexte Auth
+    const targetUserId = user.id;
+    console.log('📝 Récupération formulaires pour userId:', targetUserId);
     
-    if (impersonationData) {
-      try {
-        const data = JSON.parse(impersonationData);
-        targetUserId = data.target_user_id;
-        console.log('🎭 Mode impersonation: récupération des formulaires pour', data.target_email);
-      } catch (error) {
-        console.error('Erreur parsing impersonation data:', error);
-      }
+    if (isImpersonating && impersonationData) {
+      console.log('🎭 Mode impersonation actif pour:', impersonationData.target_email);
     }
+
     try {
       // Compter le total d'abord
       const { count, error: countError } = await supabase
@@ -97,20 +95,16 @@ export const useForms = () => {
   }, [user, isDemoMode]);
 
   const createForm = async (formData: Partial<Form>) => {
-    if (!user) return null;
+    if (!user) {
+      console.error('❌ Pas d\'utilisateur pour createForm');
+      return null;
+    }
 
-    // Vérifier si on est en mode impersonation
-    const impersonationData = localStorage.getItem('admin_impersonation');
-    let targetUserId = user.id;
+    const targetUserId = user.id;
+    console.log('📝 Création formulaire pour userId:', targetUserId);
     
-    if (impersonationData) {
-      try {
-        const data = JSON.parse(impersonationData);
-        targetUserId = data.target_user_id;
-        console.log('🎭 Mode impersonation: création formulaire pour', data.target_email);
-      } catch (error) {
-        console.error('Erreur parsing impersonation data:', error);
-      }
+    if (isImpersonating && impersonationData) {
+      console.log('🎭 Mode impersonation: création pour', impersonationData.target_email);
     }
 
     try {
@@ -133,20 +127,16 @@ export const useForms = () => {
   };
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
-    if (!user) return false;
+    if (!user) {
+      console.error('❌ Pas d\'utilisateur pour updateForm');
+      return false;
+    }
 
-    // Vérifier si on est en mode impersonation
-    const impersonationData = localStorage.getItem('admin_impersonation');
-    let targetUserId = user.id;
+    const targetUserId = user.id;
+    console.log('📝 Mise à jour formulaire pour userId:', targetUserId);
     
-    if (impersonationData) {
-      try {
-        const data = JSON.parse(impersonationData);
-        targetUserId = data.target_user_id;
-        console.log('🎭 Mode impersonation: mise à jour formulaire pour', data.target_email);
-      } catch (error) {
-        console.error('Erreur parsing impersonation data:', error);
-      }
+    if (isImpersonating && impersonationData) {
+      console.log('🎭 Mode impersonation: mise à jour pour', impersonationData.target_email);
     }
 
     try {
@@ -157,28 +147,27 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (error) throw error;
-      await fetchForms(1, 10);
+      
+      console.log('✅ Formulaire mis à jour avec succès');
+      await fetchForms(1, 10); // Recharger la liste
       return true;
     } catch (error) {
+      console.error('❌ Erreur updateForm:', error);
       return false;
     }
   };
 
   const deleteForm = async (id: string) => {
-    if (!user) return false;
+    if (!user) {
+      console.error('❌ Pas d\'utilisateur pour deleteForm');
+      return false;
+    }
 
-    // Vérifier si on est en mode impersonation
-    const impersonationData = localStorage.getItem('admin_impersonation');
-    let targetUserId = user.id;
+    const targetUserId = user.id;
+    console.log('📝 Suppression formulaire pour userId:', targetUserId);
     
-    if (impersonationData) {
-      try {
-        const data = JSON.parse(impersonationData);
-        targetUserId = data.target_user_id;
-        console.log('🎭 Mode impersonation: suppression formulaire pour', data.target_email);
-      } catch (error) {
-        console.error('Erreur parsing impersonation data:', error);
-      }
+    if (isImpersonating && impersonationData) {
+      console.log('🎭 Mode impersonation: suppression pour', impersonationData.target_email);
     }
 
     try {
@@ -189,9 +178,12 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (error) throw error;
-      await fetchForms(1, 10);
+      
+      console.log('✅ Formulaire supprimé avec succès');
+      await fetchForms(1, 10); // Recharger la liste
       return true;
     } catch (error) {
+      console.error('❌ Erreur deleteForm:', error);
       return false;
     }
   };
