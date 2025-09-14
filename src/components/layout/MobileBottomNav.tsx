@@ -66,7 +66,7 @@ export const MobileBottomNav: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg pb-4" style={{ paddingBottom: 'calc(15px + env(safe-area-inset-bottom))' }}>
       <div className={`flex justify-around items-center gap-1 ${user ? 'py-2 px-1' : 'py-2 px-1'}`}>
         {visibleItems.map((item, index) => {
           const active = !item.isButton && isActive(item.path);
