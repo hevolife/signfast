@@ -9,32 +9,51 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supaba
 
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
-  // Vérifier si Supabase est configuré avant de faire des requêtes
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supabaseKey === 'your-anon-key' || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-    console.warn('Supabase non configuré, requête ignorée');
-    throw new Error('Supabase non configuré');
-  }
-
-  const response = await fetch(url, options);
-  
-  // Check for session expiration
-  if (response.status === 403) {
-    try {
-      const body = await response.clone().json();
-      if (body.code === 'session_not_found') {
-        // Session expired, sign out the user
-        console.log('Session expired, signing out user');
-        supabase.auth.signOut();
+  try {
+    const response = await fetch(url, options);
+    
+    // Check for session expiration
+    if (response.status === 403) {
+      try {
+        const body = await response.clone().json();
+        if (body.code === 'session_not_found') {
+          // Session expired, sign out the user
+          console.log('Session expired, signing out user');
+          supabase.auth.signOut();
+        }
+      } catch (error) {
+        // If we can't parse the response body, ignore
       }
-    } catch (error) {
-      // If we can't parse the response body, ignore
     }
+    
+    return response;
+  } catch (error) {
+    console.warn('Network error in customFetch:', error);
+    // Re-throw the error to let the calling code handle it
+    throw error;
+  }
+};
+
+// Check if Supabase is properly configured
+const isSupabaseConfigured = () => {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  return url && key && 
+         url !== 'your-project-url' && 
+         key !== 'your-anon-key' && 
+         !url.includes('placeholder') && 
+         !key.includes('placeholder');
+};
+
+// Safe fetch wrapper that handles configuration issues
+const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured, skipping request');
+    throw new Error('Supabase not configured');
   }
   
-  return response;
+  return customFetch(url, options);
 };
 
 export const supabase = createClient(
