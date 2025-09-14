@@ -125,6 +125,21 @@ export const NewPDFTemplate: React.FC = () => {
         toast.error('Limite de templates atteinte. Passez Pro pour créer plus de templates.');
         return;
       }
+
+      // Déterminer l'utilisateur cible (gestion impersonation)
+      let targetUserId = user!.id;
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      
+      if (impersonationData) {
+        try {
+          const data = JSON.parse(impersonationData);
+          targetUserId = data.target_user_id;
+          console.log('🎭 Mode impersonation: création template pour', data.target_email);
+        } catch (error) {
+          console.error('Erreur parsing impersonation data:', error);
+        }
+      }
+
       // Convertir le fichier PDF en Data URL pour le stockage
       const pdfDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -154,7 +169,7 @@ export const NewPDFTemplate: React.FC = () => {
         }
       } else {
         // Mode normal : sauvegarder dans Supabase
-        const templateId = await PDFTemplateService.createTemplate(newTemplate, user!.id);
+        const templateId = await PDFTemplateService.createTemplate(newTemplate, targetUserId);
         
         if (!templateId) {
           toast.error('Erreur lors de la création du template');

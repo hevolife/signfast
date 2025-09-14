@@ -71,6 +71,18 @@ export const EditForm: React.FC = () => {
         
         // Sauvegarder les formulaires dans localStorage ET sessionStorage pour les templates PDF
         const currentUserForms = forms.map(f => f.id === id ? { ...f, fields } : f);
+        
+        // En mode impersonation, utiliser l'ID de l'utilisateur cible
+        const impersonationData = localStorage.getItem('admin_impersonation');
+        if (impersonationData) {
+          try {
+            const data = JSON.parse(impersonationData);
+            console.log('🎭 Sauvegarde formulaires pour utilisateur cible:', data.target_email);
+          } catch (error) {
+            console.error('Erreur parsing impersonation data:', error);
+          }
+        }
+        
         localStorage.setItem('currentUserForms', JSON.stringify(currentUserForms));
         sessionStorage.setItem('currentUserForms', JSON.stringify(currentUserForms));
         

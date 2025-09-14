@@ -99,12 +99,26 @@ export const useForms = () => {
   const createForm = async (formData: Partial<Form>) => {
     if (!user) return null;
 
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+        console.log('🎭 Mode impersonation: création formulaire pour', data.target_email);
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+      }
+    }
+
     try {
       const { data, error } = await supabase
         .from('forms')
         .insert([{
           ...formData,
-          user_id: user.id,
+          user_id: targetUserId,
         }])
         .select()
         .single();
@@ -119,11 +133,28 @@ export const useForms = () => {
   };
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
+    if (!user) return false;
+
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+        console.log('🎭 Mode impersonation: mise à jour formulaire pour', data.target_email);
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('forms')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', targetUserId);
 
       if (error) throw error;
       await fetchForms(1, 10);
@@ -134,11 +165,28 @@ export const useForms = () => {
   };
 
   const deleteForm = async (id: string) => {
+    if (!user) return false;
+
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+        console.log('🎭 Mode impersonation: suppression formulaire pour', data.target_email);
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('forms')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', targetUserId);
 
       if (error) throw error;
       await fetchForms(1, 10);

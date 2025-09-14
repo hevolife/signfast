@@ -204,6 +204,10 @@ export const EditPDFTemplate: React.FC = () => {
           toast.error('Erreur lors de la mise à jour du template');
         }
       } else {
+        console.log('📄 Mode normal: mise à jour template dans Supabase');
+        console.log('📄 Template ID:', id);
+        console.log('📄 Updates:', updates);
+        
         // Mode normal : mettre à jour dans Supabase
         const success = await PDFTemplateService.updateTemplate(id, updates);
         

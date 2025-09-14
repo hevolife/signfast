@@ -5,6 +5,8 @@ export class PDFTemplateService {
   // CRÉER UN TEMPLATE PDF DANS SUPABASE
   static async createTemplate(template: Omit<PDFTemplate, 'id' | 'created_at' | 'updated_at'>, userId: string): Promise<string | null> {
     try {
+      console.log('📄 Création template PDF pour userId:', userId);
+      
       const { data, error } = await supabase
         .from('pdf_templates')
         .insert([{
@@ -188,6 +190,22 @@ export class PDFTemplateService {
   // METTRE À JOUR UN TEMPLATE
   static async updateTemplate(templateId: string, updates: Partial<PDFTemplate>): Promise<boolean> {
     try {
+      console.log('📄 Mise à jour template PDF:', templateId);
+      
+      // Vérifier d'abord que le template existe et récupérer son user_id
+      const { data: existingTemplate, error: checkError } = await supabase
+        .from('pdf_templates')
+        .select('user_id')
+        .eq('id', templateId)
+        .single();
+
+      if (checkError || !existingTemplate) {
+        console.error('❌ Template non trouvé:', templateId);
+        return false;
+      }
+
+      console.log('📄 Template trouvé, user_id:', existingTemplate.user_id);
+
       const { error } = await supabase
         .from('pdf_templates')
         .update({
@@ -198,14 +216,18 @@ export class PDFTemplateService {
           linked_form_id: updates.linkedFormId,
           pages: updates.pages,
         })
-        .eq('id', templateId);
+        .eq('id', templateId)
+        .eq('user_id', existingTemplate.user_id);
 
       if (error) {
+        console.error('❌ Erreur mise à jour template:', error);
         return false;
       }
 
+      console.log('✅ Template mis à jour avec succès');
       return true;
     } catch (error) {
+      console.error('❌ Erreur générale mise à jour template:', error);
       return false;
     }
   }
@@ -213,17 +235,37 @@ export class PDFTemplateService {
   // SUPPRIMER UN TEMPLATE
   static async deleteTemplate(templateId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
+      console.log('🗑️ Suppression template PDF:', templateId);
+      
+      // Vérifier d'abord que le template existe et récupérer son user_id
+      const { data: existingTemplate, error: checkError } = await supabase
         .from('pdf_templates')
-        .delete()
-        .eq('id', templateId);
+        .select('user_id')
+        .eq('id', templateId)
+        .single();
 
-      if (error) {
+      if (checkError || !existingTemplate) {
+        console.error('❌ Template non trouvé pour suppression:', templateId);
         return false;
       }
 
+      console.log('📄 Template trouvé pour suppression, user_id:', existingTemplate.user_id);
+
+      const { error } = await supabase
+        .from('pdf_templates')
+        .delete()
+        .eq('id', templateId)
+        .eq('user_id', existingTemplate.user_id);
+
+      if (error) {
+        console.error('❌ Erreur suppression template:', error);
+        return false;
+      }
+
+      console.log('✅ Template supprimé avec succès');
       return true;
     } catch (error) {
+      console.error('❌ Erreur générale suppression template:', error);
       return false;
     }
   }
