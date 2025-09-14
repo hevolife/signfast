@@ -552,6 +552,18 @@ export class PDFService {
         }
       }
 
+      // Récupérer les métadonnées du PDF avant suppression pour identifier la réponse liée
+      const { data: pdfData, error: fetchError } = await supabase
+        .from('pdf_storage')
+        .select('response_id')
+        .eq('file_name', fileName)
+        .eq('user_id', targetUserId)
+        .single();
+
+      if (fetchError) {
+        console.warn('⚠️ Impossible de récupérer les métadonnées PDF:', fetchError);
+      }
+
       // Supprimer l'enregistrement de la base de données
       const { error } = await supabase
         .from('pdf_storage')
@@ -564,6 +576,22 @@ export class PDFService {
         return false;
       }
 
+      // Supprimer automatiquement la réponse liée si elle existe
+      if (pdfData?.response_id) {
+        console.log('🗑️ Suppression automatique de la réponse liée:', pdfData.response_id);
+        
+        const { error: responseError } = await supabase
+          .from('responses')
+          .delete()
+          .eq('id', pdfData.response_id);
+
+        if (responseError) {
+          console.warn('⚠️ Erreur suppression réponse liée:', responseError);
+          // Ne pas faire échouer la suppression du PDF pour autant
+        } else {
+          console.log('✅ Réponse liée supprimée avec succès');
+        }
+      }
       console.log('✅ PDF supprimé de la base de données:', fileName);
       return true;
     } catch (error) {
@@ -640,6 +668,17 @@ export class PDFService {
         }
       }
 
+      // Récupérer tous les response_id avant suppression
+      const { data: pdfDataList, error: fetchError } = await supabase
+        .from('pdf_storage')
+        .select('response_id')
+        .eq('user_id', targetUserId)
+        .not('response_id', 'is', null);
+
+      if (fetchError) {
+        console.warn('⚠️ Impossible de récupérer les métadonnées PDFs:', fetchError);
+      }
+
       // Compter les PDFs avant suppression
       const { count: pdfCount } = await supabase
         .from('pdf_storage')
@@ -659,6 +698,26 @@ export class PDFService {
         throw new Error(`Erreur lors de la suppression: ${error.message}`);
       }
 
+      // Supprimer automatiquement toutes les réponses liées
+      if (pdfDataList && pdfDataList.length > 0) {
+        const responseIds = pdfDataList.map(pdf => pdf.response_id).filter(Boolean);
+        
+        if (responseIds.length > 0) {
+          console.log('🗑️ Suppression automatique des réponses liées:', responseIds.length, 'réponses');
+          
+          const { error: responsesError } = await supabase
+            .from('responses')
+            .delete()
+            .in('id', responseIds);
+
+          if (responsesError) {
+            console.warn('⚠️ Erreur suppression réponses liées:', responsesError);
+            // Ne pas faire échouer la suppression des PDFs pour autant
+          } else {
+            console.log('✅ Réponses liées supprimées avec succès:', responseIds.length);
+          }
+        }
+      }
       console.log('✅ Tous les PDFs supprimés de la base de données:', pdfCount || 0, 'enregistrements');
     } catch (error) {
       console.error('❌ Erreur générale suppression massive:', error);
