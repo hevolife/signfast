@@ -126,8 +126,49 @@ export const FormResults: React.FC = () => {
       try {
         toast.loading('🗑️ Suppression de toutes les réponses en cours...', { duration: 10000 });
         
-        // 1. Récupérer TOUS les PDFs associés à TOUTES les réponses de ce formulaire (pas seulement la page courante)
-        const { data: associatedPdfs, error: pdfFetchError } = await supabase
+        // 1. D'abord récupérer tous les IDs des réponses de ce formulaire
+        const { data: allResponses, error: responsesError } = await supabase
+          .from('responses')
+          .select('id')
+          .eq('form_id', id);
+
+        if (responsesError) {
+          console.warn('⚠️ Erreur récupération des réponses:', responsesError);
+        }
+
+        // 2. Ensuite récupérer les PDFs associés à ces réponses
+        let associatedPdfs = null;
+        if (allResponses && allResponses.length > 0) {
+          const responseIds = allResponses.map(r => r.id);
+          const { data: pdfs, error: pdfFetchError } = await supabase
+            .from('pdf_storage')
+            .select('file_name, response_id')
+            .in('response_id', responseIds);
+
+          if (pdfFetchError) {
+            console.warn('⚠️ Erreur récupération PDFs associés:', pdfFetchError);
+          } else {
+            associatedPdfs = pdfs;
+          }
+        }
+
+        // 3. Supprimer toutes les réponses du formulaire
+        const { error: responsesDeleteError } = await supabase
+          .from('responses')
+          .delete()
+          .eq('form_id', id);
+
+        if (responsesDeleteError) {
+          toast.dismiss();
+          toast.error('Erreur lors de la suppression des réponses');
+          return;
+        }
+
+        // 4. Supprimer tous les PDFs associés
+        if (associatedPdfs && associatedPdfs.length > 0) {
+          console.log('🗑️ Suppression automatique des PDFs associés:', associatedPdfs.length, 'PDFs');
+          
+          const { error: pdfsError } = await supabase
           .from('pdf_storage')
           .select('file_name, response_id, responses!inner(form_id)')
           .eq('responses.form_id', id);
@@ -146,32 +187,7 @@ export const FormResults: React.FC = () => {
           toast.dismiss();
           toast.error('Erreur lors de la suppression des réponses');
           return;
-        }
-
-        // 3. Supprimer tous les PDFs associés
-        if (associatedPdfs && associatedPdfs.length > 0) {
-          console.log('🗑️ Suppression automatique des PDFs associés:', associatedPdfs.length, 'PDFs');
-          
-          const { error: pdfsError } = await supabase
-            .from('pdf_storage')
-            .delete()
-            .in('file_name', associatedPdfs.map(pdf => pdf.file_name));
-
-          if (pdfsError) {
-            console.warn('⚠️ Erreur suppression PDFs associés:', pdfsError);
-            toast.dismiss();
-            toast.success(`${totalCount} réponses supprimées (erreur suppression de certains PDFs)`);
-          } else {
-            console.log('✅ PDFs associés supprimés avec succès:', associatedPdfs.length);
-            toast.dismiss();
-            toast.success(`${totalCount} réponses et ${associatedPdfs.length} PDFs associés supprimés avec succès`);
-          }
-        } else {
-          toast.dismiss();
-          toast.success(`${totalCount} réponses supprimées avec succès`);
-        }
-
-        // 4. Actualiser la liste
+        // 5. Actualiser la liste
         setCurrentPage(1);
         fetchPage(1, itemsPerPage);
         
