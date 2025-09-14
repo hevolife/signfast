@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { TouchBackend } from 'react-dnd-touch-backend';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DemoProvider } from './contexts/DemoContext';
@@ -33,6 +36,22 @@ const AppContent: React.FC = () => {
   const { user } = useAuth();
   const { isMaintenanceMode, loading: maintenanceLoading } = useMaintenanceMode();
   const isPublicForm = location.pathname.startsWith('/form/');
+  const [isMobile, setIsMobile] = React.useState(false);
+  
+  // Détecter si on est sur mobile
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Backend DnD adaptatif
+  const dndBackend = isMobile ? TouchBackend : HTML5Backend;
+  const dndOptions = isMobile ? { enableMouseEvents: true } : {};
   
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
@@ -43,134 +62,136 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isPublicForm ? '' : 'pb-16 md:pb-0'}`}>
-      {/* Timer de démo affiché sur toutes les pages */}
-      <DemoTimer />
-      {!isPublicForm && <Navbar />}
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/forms"
-            element={
-              <ProtectedRoute>
-                <MyForms />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/forms/new"
-            element={
-              <ProtectedRoute>
-                <NewForm />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/forms/:id/edit"
-            element={
-              <ProtectedRoute>
-                <EditForm />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/forms/:id/results"
-            element={
-              <ProtectedRoute>
-                <FormResults />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/form/:id" element={<PublicForm />} />
-          <Route
-            path="/pdf/templates"
-            element={
-              <ProtectedRoute>
-                <PDFTemplates />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/pdf/templates/new"
-            element={
-              <ProtectedRoute>
-                <NewPDFTemplate />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/pdf/templates/:id/edit"
-            element={
-              <ProtectedRoute>
-                <EditPDFTemplate />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/pdf/manager"
-            element={
-              <ProtectedRoute>
-                <PDFManager />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/subscription"
-            element={
-              <ProtectedRoute>
-                <Subscription />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/success"
-            element={
-              <ProtectedRoute>
-                <SuccessPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <SuperAdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </main>
-      {!isPublicForm && <MobileBottomNav />}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-        }}
-      />
-    </div>
+    <DndProvider backend={dndBackend} options={dndOptions}>
+      <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isPublicForm ? '' : 'pb-16 md:pb-0'}`}>
+        {/* Timer de démo affiché sur toutes les pages */}
+        <DemoTimer />
+        {!isPublicForm && <Navbar />}
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forms"
+              element={
+                <ProtectedRoute>
+                  <MyForms />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forms/new"
+              element={
+                <ProtectedRoute>
+                  <NewForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forms/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forms/:id/results"
+              element={
+                <ProtectedRoute>
+                  <FormResults />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/form/:id" element={<PublicForm />} />
+            <Route
+              path="/pdf/templates"
+              element={
+                <ProtectedRoute>
+                  <PDFTemplates />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pdf/templates/new"
+              element={
+                <ProtectedRoute>
+                  <NewPDFTemplate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pdf/templates/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditPDFTemplate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pdf/manager"
+              element={
+                <ProtectedRoute>
+                  <PDFManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subscription"
+              element={
+                <ProtectedRoute>
+                  <Subscription />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/success"
+              element={
+                <ProtectedRoute>
+                  <SuccessPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <SuperAdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </main>
+        {!isPublicForm && <MobileBottomNav />}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
+      </div>
+    </DndProvider>
   );
 };
 function App() {
