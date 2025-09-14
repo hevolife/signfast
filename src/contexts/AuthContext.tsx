@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { useDemo } from './DemoContext';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isDemoMode, demoUser } = useDemo();
+
+  // Si on est en mode démo, simuler un utilisateur
+  const effectiveUser = isDemoMode && demoUser ? {
+    id: demoUser.id,
+    email: demoUser.email,
+    created_at: new Date(demoUser.createdAt).toISOString(),
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    role: 'authenticated',
+  } as User : user;
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -73,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const value = {
-    user,
+    user: effectiveUser,
     session,
     loading,
     signUp,

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
+import { useDemo } from '../../contexts/DemoContext';
 import { stripeConfig } from '../../stripe-config';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import { 
@@ -22,6 +23,7 @@ export const MobileBottomNav: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const location = useLocation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDemoMode } = useDemo();
   const product = stripeConfig.products[0];
   
   // Vérifier si l'utilisateur est super admin
@@ -66,7 +68,12 @@ export const MobileBottomNav: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg pb-4" style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+    <div className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden shadow-lg pb-4 ${isDemoMode ? 'border-t-2 border-t-blue-500' : ''}`} style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+      {isDemoMode && (
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-1">
+          <span className="text-xs font-medium">Mode Démo Actif</span>
+        </div>
+      )}
       <div className={`flex justify-around items-center gap-1 ${user ? 'py-2 px-1' : 'py-2 px-1'}`}>
         {visibleItems.map((item, index) => {
           const active = !item.isButton && isActive(item.path);

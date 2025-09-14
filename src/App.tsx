@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DemoProvider } from './contexts/DemoContext';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 import { MaintenanceMode } from './components/MaintenanceMode';
 import { Navbar } from './components/layout/Navbar';
@@ -172,9 +173,11 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <DemoProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </DemoProvider>
     </AuthProvider>
   );
 }

@@ -2,12 +2,21 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Form, FormResponse } from '../types/form';
 import { useAuth } from '../contexts/AuthContext';
+import { useDemo } from '../contexts/DemoContext';
+import { useDemoForms } from './useDemoForms';
 
 export const useForms = () => {
   const [forms, setForms] = useState<Form[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { isDemoMode } = useDemo();
+  const demoFormsHook = useDemoForms();
+
+  // Si on est en mode démo, utiliser les données de démo
+  if (isDemoMode) {
+    return demoFormsHook;
+  }
 
   const fetchForms = async (page: number = 1, limit: number = 10) => {
     if (!user) return;

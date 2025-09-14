@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
+import { useDemo } from '../../contexts/DemoContext';
 import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
 import { FormInput, LogOut, LayoutDashboard, Moon, Sun, FileText, HardDrive, Crown, Settings, Shield } from 'lucide-react';
@@ -13,6 +14,7 @@ export const Navbar: React.FC = () => {
   const { isSubscribed, subscriptionStatus } = useSubscription();
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDemoMode, endDemo } = useDemo();
   const product = stripeConfig.products[0];
   
   // Vérifier si l'utilisateur est super admin
@@ -20,6 +22,13 @@ export const Navbar: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
+      // Si on est en mode démo, juste terminer la démo
+      if (isDemoMode) {
+        endDemo();
+        navigate('/');
+        return;
+      }
+      
       await signOut();
       // La redirection est gérée dans signOut()
     } catch (error) {
@@ -43,6 +52,13 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
+                {isDemoMode && (
+                  <div className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+                    <span className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                      Mode Démo
+                    </span>
+                  </div>
+                )}
                 {/* Bannière d'impersonation */}
                 {isImpersonating && (
                   <Button
@@ -99,7 +115,7 @@ export const Navbar: React.FC = () => {
                   className="flex items-center space-x-2 text-red-600 hover:text-red-700"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Déconnexion</span>
+                  <span>{isDemoMode ? 'Quitter démo' : 'Déconnexion'}</span>
                 </Button>
               </>
             ) : (

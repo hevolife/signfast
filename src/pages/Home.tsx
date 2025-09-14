@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
+import { useDemo } from '../contexts/DemoContext';
 import { 
   FormInput, 
   BarChart3, 
@@ -24,6 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
+  const { startDemo } = useDemo();
   const location = useLocation();
 
   // Rediriger vers le dashboard si l'utilisateur est connecté
@@ -64,12 +66,18 @@ export const Home: React.FC = () => {
                   Créer mon premier contrat
                 </Button>
               </Link>
-              <Link to="#demo">
-                <Button variant="ghost" size="lg" className="text-white border-white/30 hover:bg-white/10 px-8 py-4 text-lg">
+              <Button 
+                variant="ghost" 
+                size="lg" 
+                className="text-white border-white/30 hover:bg-white/10 px-8 py-4 text-lg"
+                onClick={() => {
+                  startDemo();
+                  window.location.href = '/dashboard';
+                }}
+              >
                   <span>Voir la démo</span>
                   <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
+              </Button>
             </div>
 
             {/* Stats */}

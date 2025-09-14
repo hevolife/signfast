@@ -6,6 +6,8 @@ import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { SubscriptionBanner } from '../components/subscription/SubscriptionBanner';
 import { LimitReachedModal } from '../components/subscription/LimitReachedModal';
+import { DemoWarningBanner } from '../components/demo/DemoWarningBanner';
+import { useDemo } from '../contexts/DemoContext';
 import { stripeConfig } from '../stripe-config';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -18,6 +20,7 @@ export const MyForms: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const { forms: formsLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = React.useState(false);
+  const { isDemoMode } = useDemo();
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
@@ -61,8 +64,13 @@ export const MyForms: React.FC = () => {
   };
 
   const handleCreateForm = () => {
-    if (!formsLimits.canCreate) {
+    if (!isDemoMode && !formsLimits.canCreate) {
       setShowLimitModal(true);
+      return;
+    }
+    
+    if (isDemoMode && forms.length >= 3) {
+      toast.error('Limite de 3 formulaires en mode démo. Créez un compte pour plus !');
       return;
     }
     // Navigation handled by Link component
@@ -107,6 +115,7 @@ export const MyForms: React.FC = () => {
             
             {/* Bloc limites atteintes */}
             <div className="mt-6">
+              {isDemoMode && <DemoWarningBanner />}
               <SubscriptionBanner />
             </div>
             
@@ -146,6 +155,13 @@ export const MyForms: React.FC = () => {
                 <Button onClick={handleCreateForm}>
                   Créer mon premier formulaire
                 </Button>
+              )}
+              {isDemoMode && forms.length >= 3 && (
+                <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm text-orange-800 dark:text-orange-200">
+                    💡 Limite de 3 formulaires en mode démo. Créez un compte gratuit pour plus !
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
