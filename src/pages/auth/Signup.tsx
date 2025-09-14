@@ -36,7 +36,7 @@ export const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
+      const { data, error } = await signUp(email, password);
       
       if (error) {
         // Gérer spécifiquement l'erreur de rate limit
@@ -81,7 +81,7 @@ export const Signup: React.FC = () => {
           toast.success('Compte créé avec succès !');
         }
         
-        toast.success('Compte créé avec succès !');
+        toast.success('Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription.');
         // Rediriger vers la page demandée ou le dashboard
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
