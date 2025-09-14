@@ -57,10 +57,17 @@ export const FormResults: React.FC = () => {
     setSelectedResponse(response);
     setShowResponseModal(true);
     
-    // If response data is empty, fetch it
-    if (Object.keys(response.data).length === 0) {
-      setLoadingResponseData(true);
-      await fetchSingleResponseData(response.id);
+    // Always fetch the full response data when viewing details
+    setLoadingResponseData(true);
+    try {
+      const fullData = await fetchSingleResponseData(response.id);
+      if (fullData) {
+        // Update the selected response with the full data
+        setSelectedResponse(prev => prev ? { ...prev, data: fullData } : null);
+      }
+    } catch (error) {
+      console.error('Erreur chargement données réponse:', error);
+    } finally {
       setLoadingResponseData(false);
     }
   };
