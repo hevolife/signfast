@@ -127,16 +127,24 @@ export class PDFGenerator {
     
     // Pour les signatures, recherche spéciale et prioritaire
     if (field.type === 'signature') {
-      // 1. Recherche directe par variable exacte (PRIORITÉ ABSOLUE)
+      console.log('✍️ === RECHERCHE SIGNATURE POUR VARIABLE ===');
+      console.log('✍️ Variable recherchée:', variableName);
+      console.log('✍️ Données disponibles:', Object.keys(data));
+      console.log('✍️ Signatures disponibles:', Object.keys(data).filter(key => 
+        typeof data[key] === 'string' && data[key].startsWith('data:image')
+      ));
+      
+      // 1. Recherche STRICTEMENT par variable exacte (PRIORITÉ ABSOLUE)
       let signatureValue = data[variableName];
       
-      // 2. Si trouvée et valide, la retourner immédiatement
+      console.log('✍️ Recherche exacte pour', variableName, ':', !!signatureValue);
+      
       if (signatureValue && typeof signatureValue === 'string' && signatureValue.startsWith('data:image')) {
-        console.log('✅ Signature trouvée pour variable exacte:', variableName);
+        console.log('✍️ ✅ Signature trouvée pour variable exacte:', variableName);
         return signatureValue;
       }
       
-      // 3. Recherche insensible à la casse SEULEMENT pour la variable spécifique
+      // 2. Recherche insensible à la casse SEULEMENT pour la variable spécifique
       if (!signatureValue) {
         const lowerVariableName = variableName.toLowerCase();
         const matchingKey = Object.keys(data).find(key => 
@@ -145,42 +153,17 @@ export class PDFGenerator {
         
         if (matchingKey && typeof data[matchingKey] === 'string' && data[matchingKey].startsWith('data:image')) {
           signatureValue = data[matchingKey];
-          console.log('✅ Signature trouvée via casse insensible:', matchingKey);
+          console.log('✍️ ✅ Signature trouvée via casse insensible:', matchingKey);
           return signatureValue;
         }
       }
       
-      // 4. SEULEMENT si la variable contient "signature" dans son nom, faire une recherche générique
-      if (!signatureValue) {
-        const varNameLower = variableName.toLowerCase();
-        
-        // Recherche générique SEULEMENT si la variable elle-même contient "signature"
-        if (varNameLower.includes('signature') || varNameLower.includes('sign')) {
-          console.log('🔍 Variable générique signature détectée, recherche par mots-clés');
-          const signatureKeys = Object.keys(data).filter(key => 
-            key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')
-          );
-          
-          for (const key of signatureKeys) {
-            const val = data[key];
-            if (typeof val === 'string' && val.startsWith('data:image')) {
-              signatureValue = val;
-              console.log('✅ Signature trouvée via mots-clés génériques:', key);
-              break;
-            }
-          }
-        }
-      }
+      // 3. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
+      console.log('✍️ ❌ Aucune signature trouvée pour variable:', variableName);
+      console.log('✍️ Variables disponibles:', Object.keys(data));
       
-      // NE PLUS FAIRE DE FALLBACK AUTOMATIQUE - respecter la variable spécifique
-      
-      if (signatureValue) {
-        console.log('✅ Signature finale pour', variableName, ':', !!signatureValue);
-        return signatureValue;
-      } else {
-        console.warn('❌ Aucune signature trouvée pour variable:', variableName);
-        return '';
-      }
+      // Retourner vide si aucune signature correspondante trouvée
+      return '';
     }
     
     // Pour les images, recherche spéciale similaire aux signatures

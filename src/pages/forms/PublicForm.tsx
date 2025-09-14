@@ -249,7 +249,8 @@ export const PublicForm: React.FC = () => {
           
           // Pour les signatures, ajouter des clés spéciales
           if (field.type === 'signature') {
-            keys.push('signature', 'Signature', 'SIGNATURE');
+            // Ne pas ajouter de clés génériques pour les signatures
+            // Chaque signature doit avoir sa propre variable unique
           }
           
           // Pour les images, ajouter des clés spéciales
@@ -259,7 +260,7 @@ export const PublicForm: React.FC = () => {
           
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            // Sauvegarder avec toutes les clés possibles
+            // Sauvegarder UNIQUEMENT avec les clés spécifiques au champ
             keys.forEach(key => {
               pdfSubmissionData[key] = fieldValue;
               dbSubmissionData[key] = `[SIGNATURE_${field.id}]`;
@@ -300,13 +301,13 @@ export const PublicForm: React.FC = () => {
                   ];
                   
                   if (conditionalField.type === 'signature') {
-                    conditionalKeys.push('signature', 'Signature', 'SIGNATURE');
+                    // Ne pas ajouter de clés génériques pour les signatures conditionnelles
                   }
                   
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
                     conditionalKeys.forEach(key => {
                       pdfSubmissionData[key] = conditionalValue;
-                      dbSubmissionData[key] = conditionalValue; // GARDER LA SIGNATURE COMPLÈTE
+                      dbSubmissionData[key] = `[SIGNATURE_${conditionalField.id}]`;
                     });
                   } else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
                     conditionalKeys.forEach(key => {
