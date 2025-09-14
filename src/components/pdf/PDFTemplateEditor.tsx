@@ -624,7 +624,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                 </div>
               </div>
             </CardContent>
-          </div>
+          </Card>
         </div>
 
         {!pdfFile ? (
