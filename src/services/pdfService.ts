@@ -330,21 +330,21 @@ export class PDFService {
                 .from('pdf_templates')
                 .select('id, name, pdf_content, fields')
                 .eq('id', templateId)
-                .eq('is_public', true)
+                .eq('is_public', true) // Accès public pour tous les utilisateurs
                 .single();
               
               if (!templateError && templateFromDb) {
+                console.log('📄 Template récupéré depuis Supabase par ID:', templateFromDb.name);
                 templateData = {
                   templateId: templateFromDb.id,
                   templateFields: templateFromDb.fields,
                   templatePdfContent: templateFromDb.pdf_content,
                 };
-                console.log('📄 Template récupéré depuis Supabase par ID');
               } else {
-                console.warn('⚠️ Template non trouvé en base pour ID:', templateId);
+                console.warn('⚠️ Template public non trouvé en base pour ID:', templateId, 'erreur:', templateError);
               }
             } catch (dbError) {
-              console.warn('⚠️ Erreur récupération template depuis DB:', dbError);
+              console.warn('⚠️ Erreur récupération template public depuis DB:', dbError);
             }
           } else {
             // Essayer de parser comme JSON en dernier recours
