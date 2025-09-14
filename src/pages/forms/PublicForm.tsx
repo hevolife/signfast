@@ -26,7 +26,8 @@ export const PublicForm: React.FC = () => {
   const { forms } = useForms();
   const [form, setForm] = useState<Form | null>(null);
   const [formOwnerProfile, setFormOwnerProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [formLoaded, setFormLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showFinalMessage, setShowFinalMessage] = useState(false);
@@ -52,7 +53,10 @@ export const PublicForm: React.FC = () => {
   }, [form, user, forms, isSubscribed]);
 
   const fetchForm = async () => {
+    setLoading(true);
     try {
+      console.log('📄 Début chargement formulaire public:', id);
+      
       const { data, error } = await supabase
         .from('forms')
         .select('*')
@@ -62,17 +66,53 @@ export const PublicForm: React.FC = () => {
 
       if (error) {
         console.error('Error fetching form:', error);
+        setForm(null);
+        setFormLoaded(true);
         return;
       }
 
+      console.log('✅ Formulaire chargé:', data.title);
       setForm(data);
+      setFormLoaded(true);
       
       // Récupérer le profil du propriétaire du formulaire pour afficher le logo
       if (data.user_id) {
-        fetchFormOwnerProfile(data.user_id);
+        // Charger le profil en arrière-plan sans bloquer l'affichage
+        fetchFormOwnerProfile(data.user_id).catch(error => {
+          console.warn('Erreur chargement profil propriétaire:', error);
+          // Créer un profil vide pour éviter le loading infini
+          setFormOwnerProfile({
+            id: '',
+            user_id: data.user_id,
+            first_name: null,
+            last_name: null,
+            company_name: null,
+            address: null,
+            siret: null,
+            logo_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        });
+      } else {
+        // Pas de propriétaire, créer un profil vide
+        setFormOwnerProfile({
+          id: '',
+          user_id: '',
+          first_name: null,
+          last_name: null,
+          company_name: null,
+          address: null,
+          siret: null,
+          logo_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       }
     } catch (error) {
-      // Silent error
+      console.error('Erreur générale chargement formulaire:', error);
+      setForm(null);
+      setFormLoaded(true);
     } finally {
       setLoading(false);
     }
@@ -85,6 +125,7 @@ export const PublicForm: React.FC = () => {
      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
      
      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.log('📄 Supabase non configuré, profil par défaut');
        setFormOwnerProfile({
          id: '',
          user_id: userId,
@@ -139,6 +180,8 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
+      console.log('📄 Chargement profil propriétaire:', userId);
+      
       setFormOwnerProfile(data);
     } catch (error) {
       // Créer un profil vide en cas d'erreur
@@ -391,6 +434,7 @@ export const PublicForm: React.FC = () => {
       });
 
       // Sauvegarder dans la base avec les données allégées
+        console.warn('Erreur chargement profil:', error);
       const { data: responseData, error } = await supabase
         .from('responses')
         .insert([{
@@ -432,7 +476,7 @@ export const PublicForm: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+        console.log('📄 Aucun profil trouvé, création profil vide');
 
   const savePDFMetadataForLaterGeneration = async (response: any, submissionData: Record<string, any>) => {
     try {
@@ -545,6 +589,7 @@ export const PublicForm: React.FC = () => {
         console.log('📄 Aucun template PDF configuré, utilisation PDF simple');
       }
 
+      console.log('✅ Profil propriétaire chargé:', data.company_name || data.first_name || 'Utilisateur');
       // Sauvegarder les métadonnées pour génération ultérieure
       const saveSuccess = await PDFService.savePDFMetadataForLaterGeneration(fileName, metadata);
       
@@ -555,7 +600,7 @@ export const PublicForm: React.FC = () => {
       }
       
     } catch (error) {
-      console.warn('⚠️ Erreur sauvegarde métadonnées PDF:', error);
+      console.error('Erreur fetchFormOwnerProfile:', error);
       // Ne pas faire échouer la soumission du formulaire
       console.log('📄 Soumission du formulaire maintenue malgré l\'erreur PDF');
     }
@@ -973,7 +1018,7 @@ export const PublicForm: React.FC = () => {
     );
   }
 
-  if (!form) {
+  if (!form && formLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
@@ -989,6 +1034,47 @@ export const PublicForm: React.FC = () => {
         </Card>
       </div>
     );
+  }
+
+  // Afficher un skeleton pendant le chargement initial
+  if (!formLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Skeleton du logo */}
+          <div className="text-center mb-8">
+            <div className="h-24 flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+            </div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse"></div>
+          </div>
+          
+          {/* Skeleton du formulaire */}
+          <Card>
+            <CardHeader>
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto mb-4 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  </div>
+                ))}
+                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Si le formulaire n'est pas encore chargé, ne rien afficher
+  if (!form) {
+    return null;
   }
 
   if (submitted) {
@@ -1034,12 +1120,7 @@ export const PublicForm: React.FC = () => {
         {/* Logo de l'entreprise - Toujours affiché pour debug */}
         <div className="text-center mb-8">
           <div className="mb-6">
-            {formOwnerProfile === null ? (
-              <div className="h-24 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="text-gray-400 text-sm ml-2">Chargement du profil...</span>
-              </div>
-            ) : formOwnerProfile?.logo_url ? (
+            {formOwnerProfile?.logo_url ? (
               <img
                 src={formOwnerProfile.logo_url}
                 alt={formOwnerProfile.company_name || "Logo de l'entreprise"}
@@ -1060,24 +1141,19 @@ export const PublicForm: React.FC = () => {
                       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                   </div>
-                  {/* Utiliser la signature originale en attendant l'optimisation */}
                 </div>
               </div>
             )}
           </div>
           
           {/* Informations de l'entreprise */}
-          {formOwnerProfile === null ? (
-            <p className="text-xs text-gray-500 mt-2">
-              Chargement des informations...
-            </p>
-          ) : formOwnerProfile?.company_name ? (
+          {formOwnerProfile?.company_name ? (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               {formOwnerProfile.company_name}
             </p>
           ) : (
             <p className="text-xs text-gray-500 mt-2">
-              {formOwnerProfile.first_name || formOwnerProfile.last_name 
+              {formOwnerProfile?.first_name || formOwnerProfile?.last_name 
                 ? `${formOwnerProfile.first_name || ''} ${formOwnerProfile.last_name || ''}`.trim()
                 : 'Utilisateur SignFast'
               }
