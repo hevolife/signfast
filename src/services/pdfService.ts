@@ -293,6 +293,9 @@ export class PDFService {
         hasFormData: !!metadata.form_data,
         hasPdfContent: !!metadata.pdf_content
       });
+
+      console.log('📄 Contenu PDF brut:', metadata.pdf_content?.substring(0, 100));
+      
       // 2. Générer le PDF
       let pdfBytes: Uint8Array;
       let templateData: any = null;
@@ -300,20 +303,28 @@ export class PDFService {
       // Récupérer les métadonnées du template
       if (metadata.pdf_content) {
         try {
-          // Essayer de parser les métadonnées du template
-          templateData = JSON.parse(metadata.pdf_content);
-          console.log('📄 Template data récupéré:', {
-            hasTemplateId: !!templateData?.templateId,
-            hasFields: !!templateData?.templateFields,
-            hasContent: !!templateData?.templatePdfContent
-          });
-        } catch (error) {
-          console.warn('⚠️ Erreur parsing template metadata:', error);
-          
-          // Fallback: essayer comme ID de template simple
-          const templateId = metadata.pdf_content;
-          if (templateId && templateId.length < 100) {
-            console.log('📄 Tentative récupération template par ID:', templateId);
+          // Vérifier si c'est du JSON ou une URL directe
+          if (metadata.pdf_content.startsWith('{')) {
+            // C'est du JSON avec les métadonnées du template
+            templateData = JSON.parse(metadata.pdf_content);
+            console.log('📄 Template data JSON récupéré:', {
+              hasTemplateId: !!templateData?.templateId,
+              hasFields: !!templateData?.templateFields,
+              hasContent: !!templateData?.templatePdfContent
+            });
+          } else if (metadata.pdf_content.startsWith('data:application/pdf')) {
+            // C'est directement le contenu PDF en base64
+            console.log('📄 PDF content direct détecté (base64)');
+            templateData = {
+              templateId: 'direct',
+              templateFields: [],
+              templatePdfContent: metadata.pdf_content,
+            };
+          } else if (metadata.pdf_content.length < 100 && !metadata.pdf_content.includes(',')) {
+            // C'est probablement un ID de template
+            console.log('📄 Template ID détecté:', metadata.pdf_content);
+            const templateId = metadata.pdf_content;
+            
             try {
               const { data: templateFromDb, error: templateError } = await supabase
                 .from('pdf_templates')
@@ -328,12 +339,24 @@ export class PDFService {
                   templateFields: templateFromDb.fields,
                   templatePdfContent: templateFromDb.pdf_content,
                 };
-                console.log('📄 Template récupéré depuis Supabase');
+                console.log('📄 Template récupéré depuis Supabase par ID');
+              } else {
+                console.warn('⚠️ Template non trouvé en base pour ID:', templateId);
               }
             } catch (dbError) {
               console.warn('⚠️ Erreur récupération template depuis DB:', dbError);
             }
+          } else {
+            // Essayer de parser comme JSON en dernier recours
+            try {
+              templateData = JSON.parse(metadata.pdf_content);
+              console.log('📄 Template data JSON parsé en fallback');
+            } catch (parseError) {
+              console.warn('⚠️ Impossible de parser le contenu PDF:', parseError);
+            }
           }
+        } catch (error) {
+          console.warn('⚠️ Erreur parsing template metadata:', error);
         }
       }
       
@@ -348,9 +371,27 @@ export class PDFService {
         };
 
         // Convertir le PDF template en bytes
-        const pdfResponse = await fetch(template.originalPdfUrl);
-        const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-        const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+        let originalPdfBytes: Uint8Array;
+        
+        if (template.originalPdfUrl.startsWith('data:application/pdf')) {
+          // C'est du base64, le décoder directement
+          console.log('📄 Décodage PDF depuis base64');
+          const base64Data = template.originalPdfUrl.split(',')[1];
+          const binaryString = atob(base64Data);
+          originalPdfBytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            originalPdfBytes[i] = binaryString.charCodeAt(i);
+          }
+        } else {
+          // C'est une URL, la récupérer
+          console.log('📄 Récupération PDF depuis URL');
+          const pdfResponse = await fetch(template.originalPdfUrl);
+          if (!pdfResponse.ok) {
+            throw new Error(`Erreur récupération PDF: ${pdfResponse.status}`);
+          }
+          const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+          originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+        }
 
         // Générer avec le template
         pdfBytes = await PDFGenerator.generatePDF(template, metadata.form_data, originalPdfBytes);
