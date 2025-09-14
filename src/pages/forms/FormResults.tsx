@@ -117,6 +117,72 @@ export const FormResults: React.FC = () => {
     }
   };
 
+  const handleDeleteAllResponses = async () => {
+    if (!id) return;
+    
+    const confirmMessage = `Êtes-vous sûr de vouloir supprimer TOUTES les ${totalCount} réponses de ce formulaire ?\n\nCette action supprimera aussi tous les PDFs associés et est IRRÉVERSIBLE.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        toast.loading('🗑️ Suppression de toutes les réponses en cours...', { duration: 10000 });
+        
+        // 1. Récupérer tous les PDFs associés aux réponses de ce formulaire
+        const { data: associatedPdfs, error: pdfFetchError } = await supabase
+          .from('pdf_storage')
+          .select('file_name, response_id')
+          .in('response_id', responses.map(r => r.id));
+
+        if (pdfFetchError) {
+          console.warn('⚠️ Erreur récupération PDFs associés:', pdfFetchError);
+        }
+
+        // 2. Supprimer toutes les réponses du formulaire
+        const { error: responsesError } = await supabase
+          .from('responses')
+          .delete()
+          .eq('form_id', id);
+
+        if (responsesError) {
+          toast.dismiss();
+          toast.error('Erreur lors de la suppression des réponses');
+          return;
+        }
+
+        // 3. Supprimer tous les PDFs associés
+        if (associatedPdfs && associatedPdfs.length > 0) {
+          console.log('🗑️ Suppression automatique des PDFs associés:', associatedPdfs.length, 'PDFs');
+          
+          const { error: pdfsError } = await supabase
+            .from('pdf_storage')
+            .delete()
+            .in('file_name', associatedPdfs.map(pdf => pdf.file_name));
+
+          if (pdfsError) {
+            console.warn('⚠️ Erreur suppression PDFs associés:', pdfsError);
+            toast.dismiss();
+            toast.success(`${totalCount} réponses supprimées (erreur suppression de certains PDFs)`);
+          } else {
+            console.log('✅ PDFs associés supprimés avec succès:', associatedPdfs.length);
+            toast.dismiss();
+            toast.success(`${totalCount} réponses et ${associatedPdfs.length} PDFs associés supprimés avec succès`);
+          }
+        } else {
+          toast.dismiss();
+          toast.success(`${totalCount} réponses supprimées avec succès`);
+        }
+
+        // 4. Actualiser la liste
+        setCurrentPage(1);
+        fetchPage(1, itemsPerPage);
+        
+      } catch (error) {
+        console.error('❌ Erreur suppression massive:', error);
+        toast.dismiss();
+        toast.error('Erreur lors de la suppression massive');
+      }
+    }
+  };
+
   const exportToCSV = () => {
     if (!form || responses.length === 0) return;
 
@@ -261,6 +327,16 @@ export const FormResults: React.FC = () => {
             >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Actualiser</span>
+            </Button>
+            <Button
+              onClick={handleDeleteAllResponses}
+              disabled={responses.length === 0}
+              variant="danger"
+              size="sm"
+              className="flex items-center space-x-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Tout supprimer</span>
             </Button>
             <Button
               onClick={exportToCSV}
