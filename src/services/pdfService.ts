@@ -25,6 +25,10 @@ export class PDFService {
         throw new Error('Impossible de sauvegarder: propriétaire du formulaire non identifié');
       }
       
+      // Extraire le nom et prénom depuis les données du formulaire
+      const extractedUserName = this.extractUserNameFromFormData(metadata.formData);
+      console.log('👤 Nom utilisateur extrait:', extractedUserName);
+      
       // Vérifier les limites avant de sauvegarder
       let currentPdfsCount = 0;
       try {
@@ -103,6 +107,7 @@ export class PDFService {
         response_id: metadata.responseId,
         template_name: metadata.templateName,
         form_title: metadata.formTitle,
+        user_name: extractedUserName, // Ajouter le nom utilisateur extrait
         form_data: cleanFormData,
         pdf_content: templateMetadata ? JSON.stringify(templateMetadata) : '', // Stocker les métadonnées du template
         file_size: 0, // Sera calculé lors de la génération
@@ -127,6 +132,164 @@ export class PDFService {
       console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
       throw error;
     }
+  }
+
+  // EXTRAIRE LE NOM ET PRÉNOM DEPUIS LES DONNÉES DU FORMULAIRE
+  private static extractUserNameFromFormData(formData: Record<string, any>): string {
+    if (!formData || typeof formData !== 'object') {
+      return '';
+    }
+
+    console.log('👤 Extraction nom depuis formData:', Object.keys(formData));
+
+    // Fonction pour nettoyer et valider un nom
+    const cleanName = (value: any): string => {
+      if (!value || typeof value !== 'string') return '';
+      
+      const cleaned = value.trim();
+      
+      // Ignorer les placeholders et données techniques
+      if (cleaned.startsWith('[') && cleaned.endsWith(']')) return '';
+      if (cleaned.includes('SIGNATURE_') || cleaned.includes('IMAGE_')) return '';
+      if (cleaned.length < 2 || cleaned.length > 100) return '';
+      
+      // Ignorer les entreprises dans les champs nom
+      const companyKeywords = ['sarl', 'sas', 'eurl', 'sa', 'sasu', 'snc', 'sci', 'auto-entrepreneur', 'micro-entreprise'];
+      if (companyKeywords.some(keyword => cleaned.toLowerCase().includes(keyword))) return '';
+      
+      return cleaned;
+    };
+
+    // 1. Recherche prioritaire : "nom complet", "nom_complet", "full_name"
+    const fullNameKeys = Object.keys(formData).filter(key => {
+      const keyLower = key.toLowerCase();
+      return keyLower.includes('nom_complet') || 
+             keyLower.includes('nomcomplet') ||
+             keyLower.includes('full_name') ||
+             keyLower.includes('fullname') ||
+             (keyLower.includes('nom') && keyLower.includes('complet'));
+    });
+
+    for (const key of fullNameKeys) {
+      const fullName = cleanName(formData[key]);
+      if (fullName) {
+        console.log('👤 ✅ Nom complet trouvé:', fullName, 'via clé:', key);
+        return fullName;
+      }
+    }
+
+    // 2. Recherche séparée : prénom + nom
+    let firstName = '';
+    let lastName = '';
+
+    // Recherche prénom
+    const firstNameKeys = Object.keys(formData).filter(key => {
+      const keyLower = key.toLowerCase();
+      return keyLower.includes('prenom') || 
+             keyLower.includes('prénom') ||
+             keyLower.includes('first_name') ||
+             keyLower.includes('firstname');
+    });
+
+    for (const key of firstNameKeys) {
+      const name = cleanName(formData[key]);
+      if (name) {
+        firstName = name;
+        console.log('👤 Prénom trouvé:', firstName, 'via clé:', key);
+        break;
+      }
+    }
+
+    // Recherche nom de famille
+    const lastNameKeys = Object.keys(formData).filter(key => {
+      const keyLower = key.toLowerCase();
+      return (keyLower.includes('nom') && !keyLower.includes('prenom') && !keyLower.includes('prénom')) ||
+             keyLower.includes('last_name') ||
+             keyLower.includes('lastname') ||
+             keyLower.includes('family_name') ||
+             keyLower.includes('surname');
+    });
+
+    for (const key of lastNameKeys) {
+      const name = cleanName(formData[key]);
+      if (name) {
+        lastName = name;
+        console.log('👤 Nom trouvé:', lastName, 'via clé:', key);
+        break;
+      }
+    }
+
+    // Combiner prénom + nom
+    if (firstName && lastName) {
+      const fullName = `${firstName} ${lastName}`.trim();
+      console.log('👤 ✅ Nom combiné:', fullName);
+      return fullName;
+    }
+
+    if (firstName) {
+      console.log('👤 ✅ Prénom seul:', firstName);
+      return firstName;
+    }
+
+    if (lastName) {
+      console.log('👤 ✅ Nom seul:', lastName);
+      return lastName;
+    }
+
+    // 3. Recherche par email et formatage intelligent
+    const emailKeys = Object.keys(formData).filter(key => {
+      const keyLower = key.toLowerCase();
+      return keyLower.includes('email') || keyLower.includes('mail');
+    });
+
+    for (const key of emailKeys) {
+      const email = cleanName(formData[key]);
+      if (email && email.includes('@')) {
+        const emailPart = email.split('@')[0];
+        // Formater jean.dupont en Jean Dupont
+        if (emailPart.includes('.')) {
+          const parts = emailPart.split('.');
+          const formattedName = parts
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+            .join(' ');
+          console.log('👤 ✅ Nom depuis email:', formattedName, 'via clé:', key);
+          return formattedName;
+        } else {
+          const formattedName = emailPart.charAt(0).toUpperCase() + emailPart.slice(1).toLowerCase();
+          console.log('👤 ✅ Nom depuis email simple:', formattedName, 'via clé:', key);
+          return formattedName;
+        }
+      }
+    }
+
+    // 4. Fallback : premier champ texte pertinent
+    const textKeys = Object.keys(formData).filter(key => {
+      const keyLower = key.toLowerCase();
+      const value = formData[key];
+      
+      return typeof value === 'string' && 
+             value.length >= 2 && 
+             value.length <= 100 &&
+             !value.startsWith('[') &&
+             !value.includes('SIGNATURE_') &&
+             !value.includes('IMAGE_') &&
+             (keyLower.includes('nom') || 
+              keyLower.includes('name') || 
+              keyLower.includes('client') ||
+              keyLower.includes('personne') ||
+              keyLower.includes('contact'));
+    });
+
+    for (const key of textKeys) {
+      const name = cleanName(formData[key]);
+      if (name) {
+        console.log('👤 ✅ Nom fallback:', name, 'via clé:', key);
+        return name;
+      }
+    }
+
+    console.log('👤 ❌ Aucun nom trouvé dans les données');
+    return '';
   }
 
   // COMPTER LES PDFS POUR UN UTILISATEUR SPÉCIFIQUE
@@ -312,6 +475,7 @@ export class PDFService {
       responseId: string;
       templateName: string;
       formTitle: string;
+      userName: string;
       createdAt: string;
       size: number;
     }>;
@@ -338,7 +502,7 @@ export class PDFService {
           .eq('user_id', targetUserId),
         supabase
           .from('pdf_storage')
-          .select('file_name, response_id, template_name, form_title, file_size, created_at')
+          .select('file_name, response_id, template_name, form_title, user_name, file_size, created_at')
           .eq('user_id', targetUserId)
           .range((page - 1) * limit, page * limit - 1)
           .order('created_at', { ascending: false })
@@ -366,6 +530,7 @@ export class PDFService {
         responseId: item.response_id || 'supabase',
         templateName: item.template_name || 'Template PDF',
         formTitle: item.form_title,
+        userName: item.user_name || '', // Ajouter le nom utilisateur
         createdAt: item.created_at,
         size: item.file_size || 0,
       }));
