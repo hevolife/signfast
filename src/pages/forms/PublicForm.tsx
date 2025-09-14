@@ -353,9 +353,12 @@ export const PublicForm: React.FC = () => {
       // Sauvegarder les métadonnées pour génération PDF à la demande
       if (form.settings?.generatePdf && form.settings?.savePdfToServer) {
         try {
+          console.log('💾 Début sauvegarde métadonnées PDF avec template...');
           await savePDFMetadataForLaterGeneration(responseData, pdfSubmissionData);
+          console.log('✅ Métadonnées PDF sauvegardées avec succès');
         } catch (error) {
-          console.warn('Erreur sauvegarde métadonnées PDF:', error);
+          console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
+          toast.error('Erreur lors de la sauvegarde PDF. Le formulaire a été envoyé mais le PDF ne pourra pas être généré.');
           // Ne pas bloquer la soumission du formulaire
         }
       }
@@ -399,22 +402,41 @@ export const PublicForm: React.FC = () => {
       if (form.settings?.pdfTemplateId) {
         try {
           console.log('📄 Récupération template pour formulaire public:', form.settings.pdfTemplateId);
+          
+          // Importer le service dynamiquement pour éviter les erreurs de dépendance
+          const { PDFTemplateService } = await import('../../services/pdfTemplateService');
           const template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
           
           if (template) {
             console.log('📄 Template trouvé:', template.name, 'avec', template.fields.length, 'champs');
+            console.log('📄 Template PDF content disponible:', !!template.originalPdfUrl);
+            console.log('📄 Template fields:', template.fields.map(f => f.variable).join(', '));
+            
             metadata.templateName = template.name;
             metadata.templateId = template.id;
             metadata.templateFields = template.fields;
             metadata.templatePdfContent = template.originalPdfUrl;
+            
+            // Vérifier que toutes les données nécessaires sont présentes
+            if (!template.originalPdfUrl) {
+              throw new Error('Template PDF content manquant');
+            }
+            if (!template.fields || template.fields.length === 0) {
+              console.warn('⚠️ Template sans champs configurés');
+            }
           } else {
-            console.warn('⚠️ Template non trouvé pour ID:', form.settings.pdfTemplateId);
+            console.error('❌ Template non trouvé pour ID:', form.settings.pdfTemplateId);
             metadata.templateName = 'PDF Simple (template non trouvé)';
+            throw new Error(`Template PDF non trouvé: ${form.settings.pdfTemplateId}`);
           }
         } catch (templateError) {
-          console.warn('⚠️ Erreur récupération template:', templateError);
+          console.error('❌ Erreur récupération template:', templateError);
           metadata.templateName = 'PDF Simple';
+          throw new Error(`Erreur récupération template: ${templateError.message}`);
         }
+      } else {
+        console.warn('⚠️ Aucun template PDF configuré pour ce formulaire');
+        throw new Error('Aucun template PDF configuré pour ce formulaire');
       }
 
       // Sauvegarder les métadonnées pour génération ultérieure

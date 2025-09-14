@@ -316,6 +316,7 @@ export class PDFService {
             console.log('📄 Tentative récupération template par ID:', templateId);
             try {
               // Utiliser le service pour récupérer le template public
+              const { PDFTemplateService } = await import('./pdfTemplateService');
               const template = await PDFTemplateService.getTemplate(templateId);
               
               if (template) {
@@ -354,43 +355,78 @@ export class PDFService {
         }
       }
       
-      if (templateData?.templateId && templateData?.templateFields && templateData?.templatePdfContent) {
+      // FORCER L'UTILISATION DU TEMPLATE SI DISPONIBLE
+      if (templateData?.templateId && templateData?.templatePdfContent) {
         console.log('📄 Génération avec template personnalisé');
+        console.log('📄 Template ID:', templateData.templateId);
+        console.log('📄 Nombre de champs template:', templateData.templateFields?.length || 0);
+        console.log('📄 PDF content disponible:', !!templateData.templatePdfContent);
+        
         // Reconstituer le template
         const template = {
           id: templateData.templateId,
           name: metadata.template_name,
-          fields: templateData.templateFields,
+          fields: templateData.templateFields || [], // Utiliser un tableau vide si pas de champs
           originalPdfUrl: templateData.templatePdfContent,
         };
 
         try {
           // Convertir le PDF template en bytes
           console.log('📄 Chargement du PDF template depuis:', template.originalPdfUrl.substring(0, 50) + '...');
-          const pdfResponse = await fetch(template.originalPdfUrl);
           
-          if (!pdfResponse.ok) {
-            throw new Error(`Erreur HTTP ${pdfResponse.status}: ${pdfResponse.statusText}`);
+          // Vérifier que l'URL du template est valide
+          if (!template.originalPdfUrl || !template.originalPdfUrl.startsWith('data:application/pdf')) {
+            throw new Error('URL du template PDF invalide ou manquante');
           }
           
-          const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-          const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+          // Convertir directement depuis base64 si c'est un data URL
+          let originalPdfBytes: Uint8Array;
+          if (template.originalPdfUrl.startsWith('data:application/pdf')) {
+            console.log('📄 Conversion depuis data URL base64');
+            const base64Data = template.originalPdfUrl.split(',')[1];
+            if (!base64Data) {
+              throw new Error('Données base64 du template manquantes');
+            }
+            const binaryString = atob(base64Data);
+            originalPdfBytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              originalPdfBytes[i] = binaryString.charCodeAt(i);
+            }
+          } else {
+            // Fallback: fetch HTTP
+            const pdfResponse = await fetch(template.originalPdfUrl);
+            
+            if (!pdfResponse.ok) {
+              throw new Error(`Erreur HTTP ${pdfResponse.status}: ${pdfResponse.statusText}`);
+            }
+            
+            const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+            originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+          }
           
           console.log('📄 PDF template chargé, taille:', Math.round(originalPdfBytes.length / 1024), 'KB');
 
+          // Importer le générateur PDF
+          const { PDFGenerator } = await import('../utils/pdfGenerator');
+          
           // Générer avec le template
           pdfBytes = await PDFGenerator.generatePDF(template, metadata.form_data, originalPdfBytes);
           console.log('📄 PDF généré avec template, taille finale:', Math.round(pdfBytes.length / 1024), 'KB');
         } catch (templateError) {
           console.error('❌ Erreur lors du chargement/génération avec template:', templateError);
-          console.log('📄 Fallback vers génération PDF simple');
-          // Fallback vers PDF simple
-          pdfBytes = await this.generateSimplePDF(metadata.form_data, metadata.form_title);
+          // NE PAS FAIRE DE FALLBACK - ÉCHOUER SI LE TEMPLATE NE FONCTIONNE PAS
+          throw new Error(`Impossible de générer le PDF avec le template: ${templateError.message}`);
         }
       } else {
-        console.log('📄 Génération PDF simple');
-        // Générer un PDF simple
-        pdfBytes = await this.generateSimplePDF(metadata.form_data, metadata.form_title);
+        console.error('❌ Template manquant ou incomplet');
+        console.log('📄 Template data disponible:', {
+          hasTemplateId: !!templateData?.templateId,
+          hasFields: !!templateData?.templateFields,
+          hasContent: !!templateData?.templatePdfContent
+        });
+        
+        // FORCER L'ÉCHEC SI PAS DE TEMPLATE
+        throw new Error('Template PDF manquant ou incomplet. Impossible de générer le PDF sans template.');
       }
 
       console.log('📄 PDF généré, taille:', Math.round(pdfBytes.length / 1024), 'KB');
