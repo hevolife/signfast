@@ -150,19 +150,19 @@ export const useSubscription = () => {
       try {
         console.log('💳 Vérification codes secrets pour userId:', targetUserId);
         
-        // Récupérer les codes secrets de l'utilisateur cible avec jointure
+        // Récupérer les codes secrets actifs de l'utilisateur cible
         const { data: userSecretCodes, error: secretCodesError } = await supabase
           .from('user_secret_codes')
           .select(`
             expires_at,
-            secret_codes!inner(
+            secret_codes (
+              id,
               type,
-              is_active,
-              expires_at
+              is_active
             )
           `)
           .eq('user_id', targetUserId)
-          .eq('secret_codes.is_active', true);
+          .not('secret_codes', 'is', null);
 
         if (secretCodesError) {
           console.warn('💳 Erreur récupération codes secrets:', secretCodesError);
@@ -170,10 +170,26 @@ export const useSubscription = () => {
           console.log('💳 Codes secrets récupérés:', userSecretCodes?.length || 0);
           
           if (userSecretCodes && userSecretCodes.length > 0) {
+            console.log('💳 Détails codes secrets:', userSecretCodes.map(c => ({
+              type: c.secret_codes?.type,
+              isActive: c.secret_codes?.is_active,
+              userExpiresAt: c.expires_at
+            })));
+            
             // Vérifier chaque code
             for (const codeData of userSecretCodes) {
-              const codeType = codeData.secret_codes?.type;
+              const secretCode = codeData.secret_codes;
+              
+              // Vérifier que le code secret existe et est actif
+              if (!secretCode || !secretCode.is_active) {
+                console.log('💳 Code secret inactif ou manquant, skip');
+                continue;
+              }
+              
+              const codeType = secretCode.type;
               const userExpiresAt = codeData.expires_at;
+              
+              console.log('💳 Vérification code:', { codeType, userExpiresAt });
               
               if (codeType === 'lifetime') {
                 hasActiveSecretCode = true;
@@ -188,9 +204,13 @@ export const useSubscription = () => {
                   secretCodeExpiresAt = userExpiresAt;
                   console.log('💳 ✅ Code mensuel actif trouvé, expire le:', userExpiresAt);
                   break;
+                } else {
+                  console.log('💳 ❌ Code mensuel expiré:', userExpiresAt);
                 }
               }
             }
+          } else {
+            console.log('💳 Aucun code secret trouvé pour cet utilisateur');
           }
         }
       } catch (secretCodeError) {
