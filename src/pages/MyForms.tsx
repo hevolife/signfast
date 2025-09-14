@@ -119,6 +119,26 @@ export const MyForms: React.FC = () => {
               <SubscriptionBanner />
             </div>
             
+            {/* Bouton nouveau formulaire */}
+            <div className="mt-6">
+              {formsLimits.canCreate ? (
+                <Link to="/forms/new">
+                  <Button className="flex items-center space-x-2">
+                    <Plus className="h-5 w-5" />
+                    <span>Nouveau formulaire</span>
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  onClick={handleCreateForm}
+                  className="flex items-center space-x-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Nouveau formulaire</span>
+                </Button>
+              )}
+            </div>
+            
             {/* Indicateur de chargement des formulaires */}
             {loading && (
               <Card className="mt-6">
@@ -129,24 +149,6 @@ export const MyForms: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </div>
-          <div className="flex-shrink-0">
-            {formsLimits.canCreate ? (
-              <Link to="/forms/new">
-                <Button className="flex items-center space-x-2">
-                  <Plus className="h-5 w-5" />
-                  <span>Nouveau formulaire</span>
-                </Button>
-              </Link>
-            ) : (
-              <Button 
-                onClick={handleCreateForm}
-                className="flex items-center space-x-2"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Nouveau formulaire</span>
-              </Button>
             )}
           </div>
         </div>
