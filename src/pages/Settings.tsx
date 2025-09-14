@@ -75,7 +75,7 @@ export const Settings: React.FC = () => {
   const [emailPassword, setEmailPassword] = useState('');
   const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<'1month' | '2months' | '6months' | '1year' | 'lifetime'>('1month');
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [isSubscriptionActionLoading, setIsSubscriptionActionLoading] = useState(false);
 
   React.useEffect(() => {
     if (profile) {
@@ -296,7 +296,7 @@ export const Settings: React.FC = () => {
       return;
     }
 
-    setSubscriptionLoading(true);
+    setIsSubscriptionActionLoading(true);
     
     try {
       // Créer un code secret avec la durée sélectionnée
@@ -363,7 +363,7 @@ export const Settings: React.FC = () => {
       console.error('Erreur extension abonnement:', error);
       toast.error('Erreur lors de l\'extension de l\'abonnement');
     } finally {
-      setSubscriptionLoading(false);
+      setIsSubscriptionActionLoading(false);
     }
   };
 
@@ -996,10 +996,10 @@ export const Settings: React.FC = () => {
                             
                             <Button
                               onClick={handleExtendSubscription}
-                              disabled={subscriptionLoading}
+                              disabled={isSubscriptionActionLoading}
                               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                             >
-                              {subscriptionLoading ? (
+                              {isSubscriptionActionLoading ? (
                                 <div className="flex items-center space-x-2">
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                   <span>Extension...</span>
