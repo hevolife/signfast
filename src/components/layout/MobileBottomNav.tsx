@@ -26,15 +26,15 @@ export const MobileBottomNav: React.FC = () => {
   const { isDemoMode } = useDemo();
   const product = stripeConfig.products[0];
   
-  // Vérifier si l'utilisateur est super admin
-  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+  // Vérifier si l'utilisateur est super admin (seulement si pas en mode démo)
+  const isSuperAdmin = !isDemoMode && user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path);
   };
 
-  // Si pas d'utilisateur connecté, afficher seulement quelques éléments
-  const visibleItems = (user || isDemoMode) ? [
+  // En mode démo ou avec utilisateur connecté, afficher tous les éléments
+  const visibleItems = user || isDemoMode ? [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true, color: 'blue', emoji: '📊' },
     { path: '/forms', icon: FileText, label: 'Formulaires', show: true, color: 'green', emoji: '📝' },
     { path: '/pdf/templates', icon: FileText, label: 'Templates', show: true, color: 'purple', emoji: '📄' },

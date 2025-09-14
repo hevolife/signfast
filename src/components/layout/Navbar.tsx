@@ -10,15 +10,25 @@ import { useDarkMode } from '../../hooks/useDarkMode';
 
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { isImpersonating, stopImpersonation } = useAuth();
   const { isSubscribed, subscriptionStatus } = useSubscription();
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isDemoMode, endDemo } = useDemo();
   const product = stripeConfig.products[0];
   
-  // Vérifier si l'utilisateur est super admin
-  const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+  // Vérifier si l'utilisateur est super admin (seulement si pas en mode démo)
+  const isSuperAdmin = !isDemoMode && user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+  
+  // Vérifier l'impersonation seulement si pas en mode démo
+  const impersonationData = !isDemoMode ? localStorage.getItem('admin_impersonation') : null;
+  const isImpersonating = !isDemoMode && !!impersonationData;
+  
+  const stopImpersonation = () => {
+    if (!isDemoMode) {
+      localStorage.removeItem('admin_impersonation');
+      window.location.reload();
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -50,7 +60,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-4">
-            {(user || isDemoMode) ? (
+            {user || isDemoMode ? (
               <>
                 {isDemoMode && (
                   <div className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
@@ -60,7 +70,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 )}
                 {/* Bannière d'impersonation */}
-                {user && isImpersonating && (
+                {!isDemoMode && user && isImpersonating && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -94,7 +104,7 @@ export const Navbar: React.FC = () => {
                     <span>Stockage</span>
                   </Button>
                 </Link>
-                {user && isSuperAdmin && (
+                {!isDemoMode && user && isSuperAdmin && (
                   <Link to="/admin">
                     <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-red-600 hover:text-red-700">
                       <Shield className="h-4 w-4" />
@@ -138,7 +148,7 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile: Only dark mode toggle and logo */}
           <div className="md:hidden flex items-center space-x-2">
-            {(user || isDemoMode) && (
+            {user || isDemoMode && (
               <Button
                 variant="ghost"
                 size="sm"
