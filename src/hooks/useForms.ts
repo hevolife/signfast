@@ -128,6 +128,7 @@ export const useFormResponses = (formId: string) => {
         .from('responses')
         .select('*')
         .eq('form_id', formId)
+        .limit(500)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
