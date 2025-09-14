@@ -139,17 +139,15 @@ export const useForms = () => {
     console.log('📝 IsImpersonating:', isImpersonating);
     console.log('📝 Updates keys:', Object.keys(updates));
     
-    const targetUserId = user.id;
+    let targetUserId = user.id;
     console.log('📝 Target User ID:', targetUserId);
     
     if (isImpersonating && impersonationData) {
-      targetUserId = impersonationData.target_user_id;
       targetUserId = impersonationData.target_user_id;
       console.log('🎭 IMPERSONATION ACTIVE');
       console.log('🎭 Admin:', impersonationData.admin_email);
       console.log('🎭 Target:', impersonationData.target_email);
       console.log('🎭 Target ID:', impersonationData.target_user_id);
-      console.log('🎭 Target user ID:', targetUserId);
     }
 
     try {
