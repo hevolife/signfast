@@ -16,6 +16,7 @@ import {
   Search, 
   Filter,
   ArrowLeft,
+  ArrowRight,
   Eye,
   Trash2,
   RefreshCw,
