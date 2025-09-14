@@ -48,10 +48,87 @@ export const useMaintenanceMode = () => {
       throw new Error('Seuls les super admins peuvent modifier le mode maintenance');
     }
 
+    if (!user?.id) {
+      throw new Error('Utilisateur non identifié');
+    }
+
     try {
+      console.log('🔧 Toggle maintenance mode:', !isMaintenanceMode);
+      
       const newValue = !isMaintenanceMode;
       
-      const { error } = await supabase
+      // Vérifier d'abord si l'enregistrement existe
+      const { data: existing, error: checkError } = await supabase
+        .from('system_settings')
+        .select('key')
+        .eq('key', 'maintenance_mode')
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('❌ Erreur vérification setting:', checkError);
+        throw new Error('Erreur lors de la vérification du paramètre');
+      }
+
+      let error;
+      
+      if (existing) {
+        // Mettre à jour l'enregistrement existant
+        const { error: updateError } = await supabase
+          .from('system_settings')
+          .update({ 
+            value: newValue.toString(),
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', 'maintenance_mode');
+        error = updateError;
+      } else {
+        // Créer un nouvel enregistrement
+        const { error: insertError } = await supabase
+          .from('system_settings')
+          .insert([{
+            key: 'maintenance_mode',
+            value: newValue.toString(),
+            updated_by: user.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+        error = insertError;
+      }
+
+      if (error) {
+        console.error('❌ Erreur maintenance mode:', error);
+        throw new Error(`Erreur lors de la mise à jour: ${error.message}`);
+      }
+
+      console.log('✅ Maintenance mode mis à jour:', newValue);
+      setIsMaintenanceMode(newValue);
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur toggle maintenance:', error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    checkMaintenanceMode();
+    
+    // Vérifier périodiquement le mode maintenance seulement si pas super admin
+    if (!isSuperAdmin) {
+      const interval = setInterval(checkMaintenanceMode, 30000); // Toutes les 30 secondes
+      return () => clearInterval(interval);
+    }
+  }, [isSuperAdmin]);
+
+  return {
+    isMaintenanceMode,
+    loading,
+    isSuperAdmin,
+    toggleMaintenanceMode,
+    refresh: checkMaintenanceMode,
+  };
+};
+
         .from('system_settings')
         .update({ 
           value: newValue.toString(),

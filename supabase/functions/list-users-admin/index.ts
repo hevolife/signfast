@@ -43,12 +43,15 @@ Deno.serve(async (req: Request) => {
     const isSuperAdmin = user.email === 'admin@signfast.com' || user.email?.endsWith('@admin.signfast.com');
     
     if (!isSuperAdmin) {
+      console.log('❌ Accès refusé pour:', user.email);
       return new Response(JSON.stringify({ error: 'Forbidden: Not a super admin' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
+    console.log('✅ Super admin confirmé:', user.email);
+    
     const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 
     if (listError) {
@@ -59,9 +62,13 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    console.log('👥 Utilisateurs auth récupérés:', authUsers.users.length);
+    
     const usersWithData = await Promise.all(
       authUsers.users.map(async (authUser) => {
         try {
+          console.log('👤 Traitement utilisateur:', authUser.email);
+          
           const { data: profile } = await supabaseAdmin
             .from('user_profiles')
             .select('*')
@@ -87,7 +94,18 @@ Deno.serve(async (req: Request) => {
           const { count: formsCount } = await supabaseAdmin.from('forms').select('id', { count: 'exact' }).eq('user_id', authUser.id);
           const { count: templatesCount } = await supabaseAdmin.from('pdf_templates').select('id', { count: 'exact' }).eq('user_id', authUser.id);
           const { count: pdfsCount } = await supabaseAdmin.from('pdf_storage').select('id', { count: 'exact' }).eq('user_id', authUser.id);
-          const { count: responsesCount } = await supabaseAdmin.from('responses').select('id', { count: 'exact' });
+          
+          // Compter les réponses pour les formulaires de cet utilisateur
+          const { count: responsesCount } = await supabaseAdmin
+            .from('responses')
+            .select('id', { count: 'exact' })
+            .in('form_id', 
+              await supabaseAdmin
+                .from('forms')
+                .select('id')
+                .eq('user_id', authUser.id)
+                .then(({ data }) => data?.map(f => f.id) || [])
+            );
 
           return {
             id: authUser.id,
@@ -122,6 +140,8 @@ Deno.serve(async (req: Request) => {
       })
     );
 
+    console.log('✅ Données utilisateurs enrichies:', usersWithData.length);
+    
     return new Response(JSON.stringify(usersWithData), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

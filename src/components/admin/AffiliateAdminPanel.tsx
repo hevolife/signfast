@@ -65,10 +65,13 @@ export const AffiliateAdminPanel: React.FC = () => {
   const loadAffiliatePrograms = async () => {
     try {
       if (!session?.access_token) {
-        console.error('❌ Session non disponible');
+        console.warn('❌ Session non disponible pour loadAffiliatePrograms');
+        setLoading(false);
         return;
       }
 
+      console.log('🤝 Début chargement programmes affiliation...');
+      
       // 1. Récupérer tous les utilisateurs via l'API admin
       const usersResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
         headers: {
@@ -78,10 +81,15 @@ export const AffiliateAdminPanel: React.FC = () => {
       });
 
       if (!usersResponse.ok) {
-        throw new Error('Erreur lors de la récupération des utilisateurs');
+        console.error('❌ Erreur API users:', usersResponse.status);
+        toast.error(`Erreur API utilisateurs: ${usersResponse.status}`);
+        setAllPrograms([]);
+        setLoading(false);
+        return;
       }
 
       const users: AdminUser[] = await usersResponse.json();
+      console.log('👥 Utilisateurs récupérés:', users.length);
 
       // 2. Récupérer tous les programmes d'affiliation
       const { data: programs, error: programsError } = await supabase
@@ -90,9 +98,15 @@ export const AffiliateAdminPanel: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (programsError) {
-        throw new Error(programsError.message);
+        console.error('❌ Erreur programmes affiliation:', programsError);
+        toast.error('Erreur lors du chargement des programmes d\'affiliation');
+        setAllPrograms([]);
+        setLoading(false);
+        return;
       }
 
+      console.log('🤝 Programmes récupérés:', programs?.length || 0);
+      
       // 3. Enrichir les programmes avec les données utilisateur
       const programsWithUserData = (programs || []).map(program => {
         const userData = users.find(u => u.id === program.user_id);
@@ -103,8 +117,10 @@ export const AffiliateAdminPanel: React.FC = () => {
       });
 
       setAllPrograms(programsWithUserData);
+      console.log('✅ Programmes affiliation chargés:', programsWithUserData.length);
       
     } catch (error: any) {
+      console.error('❌ Erreur générale loadAffiliatePrograms:', error);
       setAllPrograms([]);
       toast.error('Erreur lors du chargement des programmes d\'affiliation');
     } finally {
@@ -114,19 +130,24 @@ export const AffiliateAdminPanel: React.FC = () => {
 
   const updateCommissionRate = async (userId: string, newRate: number) => {
     try {
+      console.log('💰 Mise à jour commission:', userId, newRate);
+      
       const { error } = await supabase
         .from('affiliate_programs')
         .update({ commission_rate: newRate })
         .eq('user_id', userId);
 
       if (error) {
+        console.error('❌ Erreur mise à jour commission:', error);
         return false;
       }
 
+      console.log('✅ Commission mise à jour');
       // Rafraîchir les données
       await loadAffiliatePrograms();
       return true;
     } catch (error) {
+      console.error('❌ Erreur générale updateCommissionRate:', error);
       return false;
     }
   };
@@ -139,6 +160,11 @@ export const AffiliateAdminPanel: React.FC = () => {
   const handleSaveCommission = async (programId: string) => {
     if (newCommissionRate < 0 || newCommissionRate > 50) {
       toast.error('Le taux de commission doit être entre 0% et 50%');
+      return;
+    }
+
+    if (!session?.access_token) {
+      toast.error('Session expirée, veuillez vous reconnecter');
       return;
     }
 

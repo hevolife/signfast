@@ -107,6 +107,11 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const handleSaveSubscription = async (userId: string) => {
     try {
+      if (!session?.access_token) {
+        toast.error('Session expirée, veuillez vous reconnecter');
+        return;
+      }
+
       // Créer un code secret avec la durée sélectionnée
       const codeType = newSubscriptionDuration === 'lifetime' ? 'lifetime' : 'monthly';
       const description = `Extension admin ${newSubscriptionDuration} pour utilisateur ${userId}`;
@@ -125,34 +130,51 @@ export const SuperAdminDashboard: React.FC = () => {
       }
 
       // Créer le code secret via l'API admin
-      const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: codeType,
-          description,
-          maxUses: 1,
-        }),
-      });
-
-      if (!createResponse.ok) {
-        throw new Error('Erreur création code secret');
+      const code = `ADMIN${Date.now().toString().slice(-8).toUpperCase()}`;
+      
+      // Calculer la date d'expiration pour les codes mensuels
+      let expiresAt = null;
+      if (codeType === 'monthly') {
+        const durationMap = {
+          '1month': 30,
+          '2months': 60,
+          '6months': 180,
+          '1year': 365,
+        };
+        const days = durationMap[newSubscriptionDuration] || 30;
+        expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
       }
 
-      const codeData = await createResponse.json();
+      // Créer le code secret directement
+      const { data: secretCode, error: createError } = await supabase
+        .from('secret_codes')
+        .insert([{
+          code,
+          type: codeType,
+          description,
+          max_uses: 1,
+          current_uses: 0,
+          expires_at: expiresAt,
+          is_active: true,
+        }])
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Erreur création code:', createError);
+        toast.error('Erreur lors de la création du code secret');
+        return;
+      }
       
       // Activer automatiquement le code pour l'utilisateur
       const { error: activateError } = await supabase.rpc('activate_secret_code', {
-        code_input: codeData.code,
+        code_input: code,
         user_id_input: userId
       });
 
       if (activateError) {
         console.error('Erreur activation code:', activateError);
-        toast.error('Code créé mais erreur d\'activation');
+        toast.error(`Erreur d'activation: ${activateError.message}`);
         return;
       }
 
@@ -169,22 +191,33 @@ export const SuperAdminDashboard: React.FC = () => {
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
+  // Initialiser le chargement
   useEffect(() => {
-    if (isSuperAdmin) {
+    console.log('🔧 SuperAdminDashboard useEffect, isSuperAdmin:', isSuperAdmin, 'user:', user?.email);
+    
+    if (isSuperAdmin && session?.access_token) {
+      console.log('🔧 Chargement des données admin...');
       loadUsers();
       loadSecretCodes();
+    } else if (isSuperAdmin && !session?.access_token) {
+      console.warn('🔧 Super admin détecté mais pas de session, attente...');
+      setLoading(false);
+    } else {
+      console.log('🔧 Pas super admin, arrêt du loading');
+      setLoading(false);
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, session?.access_token]);
 
   const loadUsers = async () => {
     try {
       if (!session?.access_token) {
-        console.error('❌ Session non disponible');
-        toast.error('Session expirée, veuillez vous reconnecter');
-        navigate('/login');
+        console.warn('❌ Session non disponible pour loadUsers');
+        setLoading(false);
         return;
       }
 
+      console.log('👥 Début chargement utilisateurs...');
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users-admin`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -193,26 +226,29 @@ export const SuperAdminDashboard: React.FC = () => {
       });
 
       if (!response.ok) {
+        console.error('❌ Erreur API list-users:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Détails erreur:', errorText);
+        
         if (response.status === 403) {
-          const errorBody = await response.text();
-          
-          if (errorBody.includes('not_admin') || errorBody.includes('Not a super admin') || errorBody.includes('User not allowed')) {
-            toast.error('Accès refusé : Vous devez être connecté avec le compte super admin (admin@signfast.com)');
-            navigate('/dashboard');
-            return;
-          }
+          toast.error('Accès refusé : Vous devez être connecté avec le compte super admin');
         } else if (response.status === 401) {
           toast.error('Session expirée, veuillez vous reconnecter');
-          navigate('/login');
-          return;
+        } else {
+          toast.error(`Erreur API: ${response.status}`);
         }
-        throw new Error('Erreur lors de la récupération des utilisateurs');
+        setUsers([]);
+        setLoading(false);
+        return;
       }
 
       const data = await response.json();
+      console.log('✅ Utilisateurs chargés:', data?.length || 0);
       setUsers(data);
     } catch (error) {
-      toast.error('Erreur lors du chargement des utilisateurs. Vérifiez que vous êtes connecté avec le compte super admin.');
+      console.error('❌ Erreur générale loadUsers:', error);
+      toast.error('Erreur lors du chargement des utilisateurs. Vérifiez votre connexion.');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -220,23 +256,27 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const loadSecretCodes = async () => {
     try {
-      // Utiliser l'Edge Function pour récupérer les codes
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des codes');
+      if (!session?.access_token) {
+        console.warn('❌ Session non disponible pour loadSecretCodes');
+        setSecretCodes([]);
+        return;
       }
 
-      const data = await response.json();
-      setSecretCodes(data);
+      // Récupérer directement depuis Supabase
+      const { data, error } = await supabase
+        .from('secret_codes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Erreur récupération codes:', error);
+        setSecretCodes([]);
+      } else {
+        console.log('✅ Codes secrets chargés:', data?.length || 0);
+        setSecretCodes(data || []);
+      }
     } catch (error) {
-      toast.error('Erreur lors du chargement des codes secrets');
+      console.error('❌ Erreur générale loadSecretCodes:', error);
       setSecretCodes([]);
     }
   };
@@ -247,54 +287,72 @@ export const SuperAdminDashboard: React.FC = () => {
       return;
     }
 
+    if (!session?.access_token) {
+      toast.error('Session expirée, veuillez vous reconnecter');
+      return;
+    }
+
     try {
-      // Utiliser l'Edge Function pour créer le code
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const code = `${newCodeType.toUpperCase()}${Date.now().toString().slice(-6)}`;
+      const expiresAt = newCodeType === 'monthly' 
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const { data, error } = await supabase
+        .from('secret_codes')
+        .insert([{
+          code,
           type: newCodeType,
           description: newCodeDescription,
-          maxUses: newCodeMaxUses,
-        }),
-      });
+          max_uses: newCodeMaxUses,
+          expires_at: expiresAt,
+          is_active: true,
+          current_uses: 0,
+        }])
+        .select()
+        .single();
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la création du code');
+      if (error) {
+        console.error('❌ Erreur création code:', error);
+        toast.error('Erreur lors de la création du code');
+        return;
       }
 
-      const data = await response.json();
-      toast.success(`Code secret créé: ${data.code}`);
+      console.log('✅ Code créé:', data);
+      toast.success(`Code secret créé: ${code}`);
       setNewCodeDescription('');
       setNewCodeMaxUses(1);
       await loadSecretCodes();
     } catch (error) {
+      console.error('❌ Erreur générale createSecretCode:', error);
       toast.error('Erreur lors de la création du code');
     }
   };
 
   const deleteSecretCode = async (id: string, code: string) => {
     if (window.confirm(`Supprimer le code "${code}" ?`)) {
-      try {
-        // Utiliser l'Edge Function pour supprimer le code
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes?id=${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      if (!session?.access_token) {
+        toast.error('Session expirée, veuillez vous reconnecter');
+        return;
+      }
 
-        if (!response.ok) {
-          throw new Error('Erreur lors de la suppression du code');
+      try {
+        const { error } = await supabase
+          .from('secret_codes')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('❌ Erreur suppression code:', error);
+          toast.error('Erreur lors de la suppression');
+          return;
         }
 
+        console.log('✅ Code supprimé:', id);
         toast.success('Code supprimé');
         await loadSecretCodes();
       } catch (error) {
+        console.error('❌ Erreur générale deleteSecretCode:', error);
         toast.error('Erreur lors de la suppression');
       }
     }
@@ -307,6 +365,8 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const impersonateUser = (targetUser: AdminUser) => {
     if (window.confirm(`Vous connecter en tant que ${targetUser.email} ?`)) {
+      console.log('🎭 Début impersonation:', targetUser.email);
+      
       const impersonationData = {
         admin_user_id: user?.id,
         admin_email: user?.email,
@@ -315,8 +375,11 @@ export const SuperAdminDashboard: React.FC = () => {
         timestamp: Date.now(),
       };
 
+      console.log('🎭 Données impersonation:', impersonationData);
       localStorage.setItem('admin_impersonation', JSON.stringify(impersonationData));
       toast.success(`Impersonation activée: ${targetUser.email}`);
+      
+      console.log('🎭 Redirection vers dashboard...');
       window.location.href = '/dashboard';
     }
   };
@@ -331,13 +394,16 @@ export const SuperAdminDashboard: React.FC = () => {
   const handleToggleMaintenance = async () => {
     setMaintenanceLoading(true);
     try {
+      console.log('🔧 Toggle maintenance mode, état actuel:', isMaintenanceMode);
       await toggleMaintenanceMode();
+      console.log('✅ Maintenance mode changé');
       toast.success(
         isMaintenanceMode 
           ? '✅ Mode maintenance désactivé - Site accessible' 
           : '🔧 Mode maintenance activé - Site fermé au public'
       );
     } catch (error) {
+      console.error('❌ Erreur toggle maintenance:', error);
       toast.error('Erreur lors du changement de mode maintenance');
     } finally {
       setMaintenanceLoading(false);
@@ -648,16 +714,16 @@ export const SuperAdminDashboard: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-4 mb-4">
                             <div className="flex-shrink-0">
-                              <div className={`w-14 h-14 ${getAvatarStyle()} rounded-full flex items-center justify-center shadow-lg`}>
+                              <div className={`w-12 h-12 ${getAvatarStyle()} rounded-full flex items-center justify-center shadow-lg`}>
                                 {adminUser.profile?.company_name ? (
-                                  <Building className="h-7 w-7 text-white" />
+                                  <Building className="h-6 w-6 text-white" />
                                 ) : (
-                                  <Users className="h-7 w-7 text-white" />
+                                  <Users className="h-6 w-6 text-white" />
                                 )}
                               </div>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate mb-1">
+                              <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate mb-1">
                                 {displayName}
                               </h3>
                               <div className="flex items-center space-x-2 mb-2">
@@ -700,19 +766,19 @@ export const SuperAdminDashboard: React.FC = () => {
                           {/* Statistiques en grille compacte */}
                           <div className="grid grid-cols-4 gap-3 text-center">
                             <div className="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{adminUser.stats.forms_count}</div>
+                              <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{adminUser.stats.forms_count}</div>
                               <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Formulaires</div>
                             </div>
                             <div className="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 p-3 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="text-xl font-bold text-purple-700 dark:text-purple-300">{adminUser.stats.templates_count}</div>
+                              <div className="text-lg font-bold text-purple-700 dark:text-purple-300">{adminUser.stats.templates_count}</div>
                               <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Templates</div>
                             </div>
                             <div className="bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="text-xl font-bold text-green-700 dark:text-green-300">{adminUser.stats.pdfs_count}</div>
+                              <div className="text-lg font-bold text-green-700 dark:text-green-300">{adminUser.stats.pdfs_count}</div>
                               <div className="text-xs text-green-600 dark:text-green-400 font-medium">PDFs</div>
                             </div>
                             <div className="bg-gradient-to-br from-orange-100 to-red-200 dark:from-orange-900/30 dark:to-red-800/30 p-3 rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{adminUser.stats.responses_count}</div>
+                              <div className="text-lg font-bold text-orange-700 dark:text-orange-300">{adminUser.stats.responses_count}</div>
                               <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Réponses</div>
                             </div>
                           </div>
@@ -742,6 +808,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                   size="sm"
                                   onClick={() => handleSaveSubscription(adminUser.id)}
                                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm py-2 shadow-md hover:shadow-lg transition-all"
+                                  disabled={!session?.access_token}
                                 >
                                   <Save className="h-4 w-4 mr-1" />
                                   Appliquer
@@ -771,6 +838,7 @@ export const SuperAdminDashboard: React.FC = () => {
                           <Button
                             onClick={() => impersonateUser(adminUser)}
                             className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all py-2"
+                            disabled={!session?.access_token}
                           >
                             <UserCheck className="h-4 w-4" />
                             <span className="hidden sm:inline">Se connecter en tant que</span>
@@ -856,7 +924,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   <CardContent className="text-center py-8">
                     <Key className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 dark:text-gray-400">
-                      Aucun code secret créé
+                      {loading ? 'Chargement des codes secrets...' : 'Aucun code secret créé'}
                     </p>
                   </CardContent>
                 </Card>
@@ -924,6 +992,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         size="sm"
                         onClick={() => deleteSecretCode(code.id, code.code)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        disabled={!session?.access_token}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

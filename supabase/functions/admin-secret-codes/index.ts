@@ -136,6 +136,8 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      console.log('🗑️ Suppression code secret:', codeId);
+      
       const { error } = await supabase
         .from('secret_codes')
         .delete()
@@ -149,6 +151,8 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      console.log('✅ Code supprimé avec succès');
+      
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
