@@ -60,6 +60,8 @@ export const NewPDFTemplate: React.FC = () => {
         const formVariables: string[] = [];
         
         // Fonction récursive pour extraire tous les champs, y compris conditionnels
+              offsetX: -73,
+              offsetY: 12,
         const extractFieldVariables = (fields: any[]) => {
           fields.forEach((field: any) => {
             // Ajouter le champ principal
@@ -74,6 +76,8 @@ export const NewPDFTemplate: React.FC = () => {
             formVariables.push(`\${${variableName}}`);
             console.log('📋 Variable ajoutée:', `\${${variableName}}`, 'depuis champ:', field.label);
             
+              offsetX: -73,
+              offsetY: 12,
             // Ajouter les champs conditionnels s'ils existent
             if (field.conditionalFields) {
               console.log('📋 Champs conditionnels trouvés pour:', field.label);
@@ -85,6 +89,8 @@ export const NewPDFTemplate: React.FC = () => {
                   extractFieldVariables(conditionalFieldsArray);
                 }
               });
+              offsetX: -73,
+              offsetY: 12,
             }
           });
         };
