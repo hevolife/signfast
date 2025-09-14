@@ -19,24 +19,49 @@ import {
   BarChart3,
   ArrowRight,
   Activity,
-  Gift
+  Gift,
+  ArrowLeft
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { forms, loading: formsLoading } = useForms();
+  const { forms, totalCount: totalForms, loading: formsLoading, fetchPage } = useForms();
   const { templates, loading: templatesLoading } = usePDFTemplates();
   const { isSubscribed, hasSecretCode, secretCodeType } = useSubscription();
   const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();
+  const [recentFormsPage, setRecentFormsPage] = React.useState(1);
+  const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
   const product = stripeConfig.products[0];
 
+  // Charger une page spécifique des formulaires récents
+  const loadRecentFormsPage = async (page: number) => {
+    setRecentFormsLoading(true);
+    try {
+      await fetchPage(page, 5); // Charger 5 formulaires par page
+      setRecentFormsPage(page);
+    } catch (error) {
+      console.error('Erreur chargement formulaires récents:', error);
+    } finally {
+      setRecentFormsLoading(false);
+    }
+  };
+
+  // Charger les 5 premiers formulaires au montage
+  React.useEffect(() => {
+    if (!formsLoading) {
+      loadRecentFormsPage(1);
+    }
+  }, []);
+
   // Calculer les statistiques
-  const totalResponses = forms.reduce((acc, form) => {
+  const totalResponses = totalForms * 8; // Estimation basée sur le nombre total de formulaires
+  const displayedResponses = forms.reduce((acc, form) => {
     // Simulation - dans un vrai cas, vous récupéreriez les vraies données
     return acc + Math.floor(Math.random() * 50);
   }, 0);
 
   const publishedForms = forms.filter(form => form.is_published).length;
   const draftForms = forms.filter(form => !form.is_published).length;
+  const totalFormsPages = Math.ceil(totalForms / 5);
 
   // Données pour les graphiques (simulation)
   const weeklyData = [
@@ -163,7 +188,7 @@ export const Dashboard: React.FC = () => {
                     Réponses Totales
                   </p>
                   <p className="text-3xl font-bold text-orange-900 dark:text-orange-300">
-                    {totalResponses}
+                    {displayedResponses}
                   </p>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
                     <TrendingUp className="h-3 w-3 mr-1" />
@@ -401,13 +426,18 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Formulaires récents */}
-        {forms.length > 0 && (
+        {totalForms > 0 && (
           <Card className="mt-8 hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Formulaires récents
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Formulaires récents
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Page {recentFormsPage} sur {totalFormsPages} • {totalForms} formulaires au total
+                  </p>
+                </div>
                 <Link to="/forms" className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 font-medium">
                   <span className="text-sm">Voir tout</span>
                   <ArrowRight className="h-4 w-4" />
@@ -415,8 +445,111 @@ export const Dashboard: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {forms.slice(0, 5).map((form) => (
+              {recentFormsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600 dark:text-gray-400">Chargement...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {forms.map((form) => (
+                      <div key={form.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-4 h-4 rounded-full shadow-sm ${
+                            form.is_published ? 'bg-green-500' : 'bg-yellow-500'
+                          }`}></div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                              {form.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {form.fields?.length || 0} champs • {form.is_published ? 'Publié' : 'Brouillon'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500 font-medium">
+                            {new Date(form.created_at).toLocaleDateString()}
+                          </span>
+                          <Link to={`/forms/${form.id}/edit`}>
+                            <Button variant="ghost" size="sm" className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800">
+                              Modifier
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination pour formulaires récents */}
+                  {totalFormsPages > 1 && (
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Formulaires {((recentFormsPage - 1) * 5) + 1} à {Math.min(recentFormsPage * 5, totalForms)} sur {totalForms}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => loadRecentFormsPage(recentFormsPage - 1)}
+                          disabled={recentFormsPage === 1 || recentFormsLoading}
+                          className="flex items-center space-x-1"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          <span className="hidden sm:inline">Précédent</span>
+                        </Button>
+                        
+                        <div className="flex items-center space-x-1">
+                          {Array.from({ length: Math.min(3, totalFormsPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalFormsPages <= 3) {
+                              pageNum = i + 1;
+                            } else if (recentFormsPage <= 2) {
+                              pageNum = i + 1;
+                            } else if (recentFormsPage >= totalFormsPages - 1) {
+                              pageNum = totalFormsPages - 2 + i;
+                            } else {
+                              pageNum = recentFormsPage - 1 + i;
+                            }
+                            
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={recentFormsPage === pageNum ? "primary" : "ghost"}
+                                size="sm"
+                                onClick={() => loadRecentFormsPage(pageNum)}
+                                disabled={recentFormsLoading}
+                                className="w-8 h-8 p-0"
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => loadRecentFormsPage(recentFormsPage + 1)}
+                          disabled={recentFormsPage === totalFormsPages || recentFormsLoading}
+                          className="flex items-center space-x-1"
+                        >
+                          <span className="hidden sm:inline">Suivant</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
                   <div key={form.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
                     <div className="flex items-center space-x-3">
                       <div className={`w-4 h-4 rounded-full shadow-sm ${
