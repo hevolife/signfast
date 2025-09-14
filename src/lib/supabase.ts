@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supab
 }
 
 // Custom fetch function to handle session expiration
-const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
+const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
   // Vérifier si Supabase est configuré avant de faire des requêtes
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -27,7 +27,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       if (body.code === 'session_not_found') {
         // Session expired, sign out the user
         console.log('Session expired, signing out user');
-        supabase.auth.signOut();
+        await supabase.auth.signOut();
       }
     } catch (error) {
       // If we can't parse the response body, ignore
