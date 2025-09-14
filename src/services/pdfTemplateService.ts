@@ -287,3 +287,4 @@ export class PDFTemplateService {
       return false;
     }
   }
+}
