@@ -184,7 +184,7 @@ export const EditPDFTemplate: React.FC = () => {
 
       // Préparer les mises à jour
       const updates: Partial<PDFTemplate> = {
-        name: currentTemplateName || pdfFile.name.replace('.pdf', ''),
+        name: template.name || pdfFile.name.replace('.pdf', ''),
         description: `Template PDF avec ${fields.length} champs`,
         fields: fields,
         originalPdfUrl: pdfDataUrl,
