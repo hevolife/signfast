@@ -37,22 +37,8 @@ export const EditForm: React.FC = () => {
     }
   }, [forms, id, navigate]);
 
-  // Validate PDF template exists
-  useEffect(() => {
-    if (form && form.settings?.pdfTemplateId && id) {
-      try {
-        const templates = JSON.parse(localStorage.getItem('pdfTemplates') || '[]') as PDFTemplate[];
-        const templateExists = templates.some(template => template.id === form.settings.pdfTemplateId);
-        
-        if (!templateExists) {
-          console.warn('Template PDF non trouvé, mais on garde la configuration pour permettre la correction manuelle');
-          toast.error('Le template PDF associé n\'existe plus. Veuillez en sélectionner un autre dans l\'onglet PDF.');
-        }
-      } catch (error) {
-        console.warn('Erreur lors de la vérification du template PDF:', error);
-      }
-    }
-  }, [form, id, updateForm]);
+  // Validate PDF template exists - removed to avoid localStorage conflicts in impersonation mode
+  // Template validation is now handled in the PDFSettingsPanel component
 
   const handleSaveForm = async (fields: FormField[]) => {
     if (!form || !id) return;
