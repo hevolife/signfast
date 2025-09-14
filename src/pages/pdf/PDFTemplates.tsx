@@ -19,17 +19,19 @@ export const PDFTemplates: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const { pdfTemplates: templatesLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const product = stripeConfig.products[0];
 
-  // Gérer le chargement initial
-  React.useEffect(() => {
-    if (!loading && !initialLoadDone) {
-      setInitialLoadDone(true);
-    }
-  }, [loading, initialLoadDone]);
+  useEffect(() => {
+    // Chargement immédiat de l'interface, puis des templates
+    setInitialLoading(false);
+    // Délai court pour permettre l'affichage de l'interface
+    setTimeout(() => {
+      // Le chargement des templates est déjà géré par le hook usePDFTemplates
+    }, 100);
+  }, []);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -66,14 +68,13 @@ export const PDFTemplates: React.FC = () => {
     // Navigation handled by Link component
   };
 
-  // Afficher le loading seulement au premier chargement et pas trop longtemps
-  if (loading && !initialLoadDone) {
+  // Afficher le loading seulement pour le chargement initial très court
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Chargement des templates...</p>
-          <p className="text-xs text-gray-500 mt-2">Si le chargement est trop long, la page s'affichera automatiquement</p>
+          <p className="text-gray-600 dark:text-gray-400">Initialisation...</p>
         </div>
       </div>
     );
@@ -108,6 +109,18 @@ export const PDFTemplates: React.FC = () => {
             <div className="mt-6">
               <SubscriptionBanner />
             </div>
+            
+            {/* Indicateur de chargement des templates */}
+            {loading && (
+              <Card className="mt-6">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Chargement des templates...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Bouton nouveau template */}
             <div className="mt-6">
