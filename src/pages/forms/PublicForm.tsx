@@ -398,16 +398,21 @@ export const PublicForm: React.FC = () => {
       // Vérifier si un template PDF est configuré
       if (form.settings?.pdfTemplateId) {
         try {
+          console.log('📄 Récupération template pour formulaire public:', form.settings.pdfTemplateId);
           const template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
           
           if (template) {
+            console.log('📄 Template trouvé:', template.name, 'avec', template.fields.length, 'champs');
             metadata.templateName = template.name;
             metadata.templateId = template.id;
             metadata.templateFields = template.fields;
             metadata.templatePdfContent = template.originalPdfUrl;
+          } else {
+            console.warn('⚠️ Template non trouvé pour ID:', form.settings.pdfTemplateId);
+            metadata.templateName = 'PDF Simple (template non trouvé)';
           }
         } catch (templateError) {
-          console.warn('Erreur récupération template:', templateError);
+          console.warn('⚠️ Erreur récupération template:', templateError);
           metadata.templateName = 'PDF Simple';
         }
       }

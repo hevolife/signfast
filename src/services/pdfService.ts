@@ -315,6 +315,23 @@ export class PDFService {
           if (templateId && templateId.length < 100) {
             console.log('📄 Tentative récupération template par ID:', templateId);
             try {
+              // Utiliser le service pour récupérer le template public
+              const template = await PDFTemplateService.getTemplate(templateId);
+              
+              if (template) {
+                templateData = {
+                  templateId: template.id,
+                  templateFields: template.fields,
+                  templatePdfContent: template.originalPdfUrl,
+                };
+                console.log('📄 Template récupéré via service');
+              } else {
+                console.warn('⚠️ Template non trouvé via service');
+              }
+            } catch (serviceError) {
+              console.warn('⚠️ Erreur service template:', serviceError);
+              
+              // Fallback: accès direct Supabase
               const { data: templateFromDb, error: templateError } = await supabase
                 .from('pdf_templates')
                 .select('id, name, pdf_content, fields')
@@ -329,9 +346,9 @@ export class PDFService {
                   templatePdfContent: templateFromDb.pdf_content,
                 };
                 console.log('📄 Template récupéré depuis Supabase');
+              } else {
+                console.warn('⚠️ Template non trouvé dans Supabase:', templateError);
               }
-            } catch (dbError) {
-              console.warn('⚠️ Erreur récupération template depuis DB:', dbError);
             }
           }
         }
@@ -347,13 +364,29 @@ export class PDFService {
           originalPdfUrl: templateData.templatePdfContent,
         };
 
-        // Convertir le PDF template en bytes
-        const pdfResponse = await fetch(template.originalPdfUrl);
-        const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-        const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+        try {
+          // Convertir le PDF template en bytes
+          console.log('📄 Chargement du PDF template depuis:', template.originalPdfUrl.substring(0, 50) + '...');
+          const pdfResponse = await fetch(template.originalPdfUrl);
+          
+          if (!pdfResponse.ok) {
+            throw new Error(`Erreur HTTP ${pdfResponse.status}: ${pdfResponse.statusText}`);
+          }
+          
+          const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+          const originalPdfBytes = new Uint8Array(pdfArrayBuffer);
+          
+          console.log('📄 PDF template chargé, taille:', Math.round(originalPdfBytes.length / 1024), 'KB');
 
-        // Générer avec le template
-        pdfBytes = await PDFGenerator.generatePDF(template, metadata.form_data, originalPdfBytes);
+          // Générer avec le template
+          pdfBytes = await PDFGenerator.generatePDF(template, metadata.form_data, originalPdfBytes);
+          console.log('📄 PDF généré avec template, taille finale:', Math.round(pdfBytes.length / 1024), 'KB');
+        } catch (templateError) {
+          console.error('❌ Erreur lors du chargement/génération avec template:', templateError);
+          console.log('📄 Fallback vers génération PDF simple');
+          // Fallback vers PDF simple
+          pdfBytes = await this.generateSimplePDF(metadata.form_data, metadata.form_title);
+        }
       } else {
         console.log('📄 Génération PDF simple');
         // Générer un PDF simple
