@@ -31,7 +31,6 @@ export const Dashboard: React.FC = () => {
   const { templates, loading: templatesLoading } = usePDFTemplates();
   const { isSubscribed, hasSecretCode, secretCodeType } = useSubscription();
   const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();
-  const { isDemoMode } = useDemo();
   const [recentFormsPage, setRecentFormsPage] = React.useState(1);
   const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
   const [initialLoading, setInitialLoading] = React.useState(true);
@@ -102,7 +101,6 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {isDemoMode && <DemoTimer />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* En-tête du dashboard */}
         <div className="text-center mb-8">
@@ -116,7 +114,7 @@ export const Dashboard: React.FC = () => {
             
             {/* Bloc limites atteintes */}
             <div className="mt-6">
-              {isDemoMode && <DemoWarningBanner />}
+              <DemoWarningBanner />
               <SubscriptionBanner />
             </div>
           </div>
