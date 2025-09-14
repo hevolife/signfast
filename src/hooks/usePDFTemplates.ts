@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PDFTemplate } from '../types/pdf';
 import { PDFTemplateService } from '../services/pdfTemplateService';
 import { useAuth } from '../contexts/AuthContext';
+import { templatesCache, cachedRequest } from '../utils/cache';
 
 export const usePDFTemplates = () => {
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
@@ -11,81 +12,71 @@ export const usePDFTemplates = () => {
   const { user } = useAuth();
 
   const fetchTemplates = async (page: number = 1, limit: number = 10) => {
-    // Démarrer avec un loading plus court
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('📄 Timeout de chargement, affichage de la liste vide');
-        setTemplates([]);
-        setTotalCount(0);
-        setTotalPages(0);
-        setLoading(false);
+    if (!user) {
+      setTemplates([]);
+      setTotalCount(0);
+      setTotalPages(0);
+      setLoading(false);
+      return;
+    }
+
+    // Vérifier si on est en mode impersonation
+    const impersonationData = localStorage.getItem('admin_impersonation');
+    let targetUserId = user.id;
+    
+    if (impersonationData) {
+      try {
+        const data = JSON.parse(impersonationData);
+        targetUserId = data.target_user_id;
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
       }
-    }, 2000); // 2 secondes max
+    }
+
+    const cacheKey = `templates_${targetUserId}_${page}_${limit}`;
 
     try {
-      if (user) {
-        // Vérifier si on est en mode impersonation
-        const impersonationData = localStorage.getItem('admin_impersonation');
-        let targetUserId = user.id;
-        
-        if (impersonationData) {
-          try {
-            const data = JSON.parse(impersonationData);
-            targetUserId = data.target_user_id;
-          } catch (error) {
-            // Silent error
-          }
-        }
+      // Récupérer les templates avec cache intelligent
+      const result = await cachedRequest(
+        cacheKey,
+        async () => {
+          return await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
+        },
+        5 * 60 * 1000, // 5 minutes de cache
+        templatesCache
+      );
 
-        try {
-          // Utilisateur connecté : récupérer ses templates depuis Supabase
-          const result = await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
-          clearTimeout(loadingTimeout);
-          setTemplates(result.templates);
-          setTotalCount(result.totalCount);
-          setTotalPages(result.totalPages);
-        } catch (supabaseError) {
-          clearTimeout(loadingTimeout);
-          // Fallback vers localStorage si Supabase n'est pas disponible
-          const saved = localStorage.getItem('pdfTemplates');
-          if (saved) {
-            setTemplates(JSON.parse(saved));
-            setTotalCount(JSON.parse(saved).length);
-            setTotalPages(1);
-          } else {
-            setTemplates([]);
-            setTotalCount(0);
-            setTotalPages(0);
-          }
-        }
-      } else {
-        clearTimeout(loadingTimeout);
-        // Utilisateur non connecté : fallback localStorage
+      setTemplates(result.templates);
+      setTotalCount(result.totalCount);
+      setTotalPages(result.totalPages);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      
+      // Fallback vers localStorage si Supabase n'est pas disponible
+      try {
         const saved = localStorage.getItem('pdfTemplates');
         if (saved) {
-          setTemplates(JSON.parse(saved));
-          setTotalCount(JSON.parse(saved).length);
+          const localTemplates = JSON.parse(saved);
+          setTemplates(localTemplates);
+          setTotalCount(localTemplates.length);
           setTotalPages(1);
         } else {
           setTemplates([]);
           setTotalCount(0);
           setTotalPages(0);
         }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError);
+        setTemplates([]);
+        setTotalCount(0);
+        setTotalPages(0);
       }
-    } catch (error) {
-      clearTimeout(loadingTimeout);
-      setTemplates([]);
-      setTotalCount(0);
-      setTotalPages(0);
     } finally {
-      clearTimeout(loadingTimeout);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Chargement immédiat sans attendre
-    setLoading(true);
     fetchTemplates(1, 10);
   }, [user]);
 
