@@ -26,7 +26,8 @@ interface SavedPDF {
 
 export const PDFManager: React.FC = () => {
   const [pdfs, setPdfs] = useState<SavedPDF[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const { isSubscribed } = useSubscription();
   const { savedPdfs: savedPdfsLimits, refreshLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -96,7 +97,12 @@ export const PDFManager: React.FC = () => {
 
   useEffect(() => {
     debugPDFData();
-    loadPDFs();
+    // Chargement immédiat de l'interface, puis des PDFs
+    setInitialLoading(false);
+    // Délai court pour permettre l'affichage de l'interface
+    setTimeout(() => {
+      loadPDFs();
+    }, 100);
   }, []);
 
   const loadPDFs = async () => {
@@ -251,12 +257,13 @@ export const PDFManager: React.FC = () => {
       }
     });
 
-  if (loading) {
+  // Afficher le loading seulement pour le chargement initial très court
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Chargement des PDFs...</p>
+          <p className="text-gray-600 dark:text-gray-400">Initialisation...</p>
         </div>
       </div>
     );
@@ -291,11 +298,14 @@ export const PDFManager: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => loadPDFs()}
+                onClick={() => {
+                  setLoading(true);
+                  loadPDFs();
+                }}
                 className="flex items-center space-x-1 bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 sm:bg-transparent sm:text-gray-600 sm:hover:bg-gray-100 dark:sm:text-gray-400 dark:sm:hover:bg-gray-800"
                 title="Actualiser la liste"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Actualiser</span>
               </Button>
               <Button
@@ -313,6 +323,18 @@ export const PDFManager: React.FC = () => {
         </div>
 
         <SubscriptionBanner />
+        
+        {/* Indicateur de chargement des PDFs */}
+        {loading && (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center space-x-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <span className="text-gray-600 dark:text-gray-400">Chargement des PDFs sauvegardés...</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {/* Filtres et recherche */}
         <Card className="mb-6">
@@ -355,16 +377,30 @@ export const PDFManager: React.FC = () => {
         {filteredAndSortedPDFs.length === 0 ? (
           <Card>
             <CardContent className="text-center py-16">
-              <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {searchTerm ? 'Aucun PDF trouvé' : 'Aucun PDF sauvegardé'}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {searchTerm 
-                  ? 'Essayez de modifier votre recherche'
-                  : 'Les PDFs générés depuis les formulaires apparaîtront ici'
-                }
-              </p>
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Chargement en cours...
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Récupération de vos PDFs sauvegardés
+                  </p>
+                </>
+              ) : (
+                <>
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {searchTerm ? 'Aucun PDF trouvé' : 'Aucun PDF sauvegardé'}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {searchTerm 
+                      ? 'Essayez de modifier votre recherche'
+                      : 'Les PDFs générés depuis les formulaires apparaîtront ici'
+                    }
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         ) : (
