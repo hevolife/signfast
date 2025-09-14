@@ -11,7 +11,7 @@ import { stripeConfig } from '../stripe-config';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { FileText, Download, Trash2, Search, Calendar, HardDrive, RefreshCw, Lock, Crown } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Calendar, HardDrive, RefreshCw, Lock, Crown, ArrowLeft, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface SavedPDF {
