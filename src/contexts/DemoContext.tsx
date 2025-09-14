@@ -22,16 +22,33 @@ interface DemoForm {
   password: string | null;
 }
 
+interface DemoTemplate {
+  id: string;
+  name: string;
+  description: string;
+  originalPdfUrl: string;
+  fields: any[];
+  linkedFormId?: string;
+  pages: number;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}
+
 interface DemoContextType {
   isDemoMode: boolean;
   demoUser: DemoUser | null;
   demoForms: DemoForm[];
+  demoTemplates: DemoTemplate[];
   timeRemaining: number;
   startDemo: () => void;
   endDemo: () => void;
   createDemoForm: (formData: Partial<DemoForm>) => DemoForm | null;
   updateDemoForm: (id: string, updates: Partial<DemoForm>) => boolean;
   deleteDemoForm: (id: string) => boolean;
+  createDemoTemplate: (templateData: Partial<DemoTemplate>) => DemoTemplate | null;
+  updateDemoTemplate: (id: string, updates: Partial<DemoTemplate>) => boolean;
+  deleteDemoTemplate: (id: string) => boolean;
 }
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
@@ -48,6 +65,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [demoUser, setDemoUser] = useState<DemoUser | null>(null);
   const [demoForms, setDemoForms] = useState<DemoForm[]>([]);
+  const [demoTemplates, setDemoTemplates] = useState<DemoTemplate[]>([]);
   const [timeRemaining, setTimeRemaining] = useState(0);
 
   // Vérifier si une démo est en cours au chargement
@@ -62,6 +80,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsDemoMode(true);
           setDemoUser(demoData.user);
           setDemoForms(demoData.forms || []);
+          setDemoTemplates(demoData.templates || []);
           setTimeRemaining(Math.floor((demoData.expiresAt - now) / 1000));
         } else {
           // Démo expirée, nettoyer
@@ -145,6 +164,102 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     ];
 
+    // Créer des templates PDF de démonstration
+    const demoTemplates: DemoTemplate[] = [
+      {
+        id: uuidv4(),
+        name: 'Contrat de Location Meublée',
+        description: 'Template pour contrat de location avec champs pré-positionnés',
+        originalPdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggMTAwCj4+CnN0cmVhbQpCVApxCjcyIDcyMCBUZApxCi9GMSAxMiBUZgooQ09OVFJBVCBERSBMT0NBVElPTikgVGoKRVQKcQo3MiA2ODAgVGQKcQovRjEgMTAgVGYKKE5vbSBkdSBsb2NhdGFpcmU6KSBUagpFVApxCjcyIDY0MCBUZA==',
+        fields: [
+          {
+            id: uuidv4(),
+            type: 'text',
+            page: 1,
+            variable: '${nom}',
+            xRatio: 0.3,
+            yRatio: 0.2,
+            widthRatio: 0.25,
+            heightRatio: 0.04,
+            fontSize: 12,
+            fontColor: '#000000',
+            backgroundColor: '#ffffff',
+            required: true,
+          },
+          {
+            id: uuidv4(),
+            type: 'date',
+            page: 1,
+            variable: '${date_debut}',
+            xRatio: 0.6,
+            yRatio: 0.3,
+            widthRatio: 0.15,
+            heightRatio: 0.04,
+            fontSize: 12,
+            fontColor: '#000000',
+            backgroundColor: '#ffffff',
+            required: true,
+          },
+          {
+            id: uuidv4(),
+            type: 'signature',
+            page: 1,
+            variable: '${signature}',
+            xRatio: 0.1,
+            yRatio: 0.7,
+            widthRatio: 0.35,
+            heightRatio: 0.1,
+            required: true,
+          }
+        ],
+        linkedFormId: initialDemoForm.id,
+        pages: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: newDemoUser.id,
+      },
+      {
+        id: uuidv4(),
+        name: 'Facture de Prestation',
+        description: 'Template pour factures avec calculs automatiques',
+        originalPdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggODAKPj4Kc3RyZWFtCkJUCnEKNzIgNzIwIFRkCnEKL0YxIDEyIFRmCihGQUNUVVJFKSBUagpFVApxCjcyIDY4MCBUZA==',
+        fields: [
+          {
+            id: uuidv4(),
+            type: 'text',
+            page: 1,
+            variable: '${entreprise}',
+            xRatio: 0.1,
+            yRatio: 0.15,
+            widthRatio: 0.3,
+            heightRatio: 0.04,
+            fontSize: 12,
+            fontColor: '#000000',
+            backgroundColor: '#ffffff',
+            required: true,
+          },
+          {
+            id: uuidv4(),
+            type: 'number',
+            page: 1,
+            variable: '${montant}',
+            xRatio: 0.7,
+            yRatio: 0.5,
+            widthRatio: 0.15,
+            heightRatio: 0.04,
+            fontSize: 12,
+            fontColor: '#000000',
+            backgroundColor: '#ffffff',
+            required: true,
+          }
+        ],
+        pages: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: newDemoUser.id,
+      }
+    ];
+
     const initialDemoForm: DemoForm = {
       id: uuidv4(),
       title: 'Contrat de Démonstration',
@@ -168,6 +283,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const demoData = {
       user: newDemoUser,
       forms: [initialDemoForm],
+      templates: demoTemplates,
       expiresAt,
     };
 
@@ -176,6 +292,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsDemoMode(true);
     setDemoUser(newDemoUser);
     setDemoForms([initialDemoForm]);
+    setDemoTemplates(demoTemplates);
     setTimeRemaining(30 * 60); // 30 minutes en secondes
   };
 
@@ -184,6 +301,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsDemoMode(false);
     setDemoUser(null);
     setDemoForms([]);
+    setDemoTemplates([]);
     setTimeRemaining(0);
   };
 
@@ -257,16 +375,83 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  const createDemoTemplate = (templateData: Partial<DemoTemplate>): DemoTemplate | null => {
+    if (!isDemoMode || !demoUser) return null;
+
+    // Limite de 3 templates en mode démo
+    if (demoTemplates.length >= 3) {
+      return null;
+    }
+
+    const newTemplate: DemoTemplate = {
+      id: uuidv4(),
+      name: templateData.name || 'Nouveau template',
+      description: templateData.description || '',
+      originalPdfUrl: templateData.originalPdfUrl || '',
+      fields: templateData.fields || [],
+      linkedFormId: templateData.linkedFormId,
+      pages: templateData.pages || 1,
+      user_id: demoUser.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const updatedTemplates = [...demoTemplates, newTemplate];
+    setDemoTemplates(updatedTemplates);
+    
+    // Sauvegarder dans localStorage
+    const demoData = JSON.parse(localStorage.getItem('signfast_demo') || '{}');
+    demoData.templates = updatedTemplates;
+    localStorage.setItem('signfast_demo', JSON.stringify(demoData));
+
+    return newTemplate;
+  };
+
+  const updateDemoTemplate = (id: string, updates: Partial<DemoTemplate>): boolean => {
+    if (!isDemoMode) return false;
+
+    const updatedTemplates = demoTemplates.map(template =>
+      template.id === id ? { ...template, ...updates, updated_at: new Date().toISOString() } : template
+    );
+    
+    setDemoTemplates(updatedTemplates);
+    
+    // Sauvegarder dans localStorage
+    const demoData = JSON.parse(localStorage.getItem('signfast_demo') || '{}');
+    demoData.templates = updatedTemplates;
+    localStorage.setItem('signfast_demo', JSON.stringify(demoData));
+
+    return true;
+  };
+
+  const deleteDemoTemplate = (id: string): boolean => {
+    if (!isDemoMode) return false;
+
+    const updatedTemplates = demoTemplates.filter(template => template.id !== id);
+    setDemoTemplates(updatedTemplates);
+    
+    // Sauvegarder dans localStorage
+    const demoData = JSON.parse(localStorage.getItem('signfast_demo') || '{}');
+    demoData.templates = updatedTemplates;
+    localStorage.setItem('signfast_demo', JSON.stringify(demoData));
+
+    return true;
+  };
+
   const value = {
     isDemoMode,
     demoUser,
     demoForms,
+    demoTemplates,
     timeRemaining,
     startDemo,
     endDemo,
     createDemoForm,
     updateDemoForm,
     deleteDemoForm,
+    createDemoTemplate,
+    updateDemoTemplate,
+    deleteDemoTemplate,
   };
 
   return (

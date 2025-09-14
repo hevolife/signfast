@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PDFTemplate } from '../types/pdf';
 import { PDFTemplateService } from '../services/pdfTemplateService';
 import { useAuth } from '../contexts/AuthContext';
+import { useDemo } from '../contexts/DemoContext';
 
 export const usePDFTemplates = () => {
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
@@ -9,8 +10,21 @@ export const usePDFTemplates = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { isDemoMode, demoTemplates } = useDemo();
 
   const fetchTemplates = async (page: number = 1, limit: number = 10) => {
+    // Si on est en mode démo, utiliser les templates de démo
+    if (isDemoMode) {
+      setTemplates(demoTemplates.map(template => ({
+        ...template,
+        // Convertir au format PDFTemplate attendu
+      } as PDFTemplate)));
+      setTotalCount(demoTemplates.length);
+      setTotalPages(Math.ceil(demoTemplates.length / limit));
+      setLoading(false);
+      return;
+    }
+
     // Démarrer avec un loading plus court
     const loadingTimeout = setTimeout(() => {
       if (loading) {
@@ -87,7 +101,7 @@ export const usePDFTemplates = () => {
     // Chargement immédiat sans attendre
     setLoading(true);
     fetchTemplates(1, 10);
-  }, [user]);
+  }, [user, isDemoMode, demoTemplates]);
 
   return {
     templates,
