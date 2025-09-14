@@ -195,7 +195,14 @@ export const useForms = () => {
       console.log('📝 VÉRIFICATION RÉUSSIE - Formulaire trouvé:', verifyData.title);
       console.log('📝 Nombre de champs après update:', verifyData.fields?.length || 0);
       
-      await fetchForms(1, 10); // Recharger la liste
+      // Mettre à jour le formulaire dans la liste locale immédiatement
+      setForms(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+      
+      // Puis recharger depuis la base pour être sûr
+      setTimeout(() => {
+        fetchForms(1, 10);
+      }, 100);
+      
       console.log('📝 Liste rechargée');
       return true;
     } catch (error) {
