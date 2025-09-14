@@ -281,6 +281,9 @@ export const SuperAdminDashboard: React.FC = () => {
       stats: isActive 
         ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300 shadow-lg'
         : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600 hover:shadow-md',
+      demo: isActive 
+        ? 'bg-gradient-to-br from-pink-100 to-pink-200 text-pink-700 border-pink-300 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-pink-50 hover:to-pink-100 hover:text-pink-600 hover:shadow-md',
     };
     return colorMap[tabName] || colorMap.users;
   };
@@ -291,6 +294,7 @@ export const SuperAdminDashboard: React.FC = () => {
       codes: '🔑',
       affiliates: '🤝',
       stats: '📊',
+      demo: '🎭',
     };
     return emojiMap[tabName] || '⚙️';
   };
@@ -470,6 +474,20 @@ export const SuperAdminDashboard: React.FC = () => {
                   <span className="font-semibold">
                     <span className="hidden sm:inline">Statistiques</span>
                     <span className="sm:hidden">Stats</span>
+                  </span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('demo')}
+                className={`py-2 px-2 sm:px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 whitespace-nowrap flex-shrink-0 ${getTabColorClasses('demo', activeTab === 'demo')}`}
+              >
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <div className="p-0.5 sm:p-1 bg-white/50 rounded shadow-sm">
+                    <span className="text-sm">🎭</span>
+                  </div>
+                  <span className="font-semibold">
+                    <span className="hidden sm:inline">Démo</span>
+                    <span className="sm:hidden">Demo</span>
                   </span>
                 </div>
               </button>
@@ -753,6 +771,10 @@ export const SuperAdminDashboard: React.FC = () => {
 
         {activeTab === 'affiliates' && (
           <AffiliateAdminPanel />
+        )}
+
+        {activeTab === 'demo' && (
+          <DemoManagementPanel />
         )}
 
         {activeTab === 'stats' && (
