@@ -33,17 +33,22 @@ export class PDFTemplateService {
   // RÉCUPÉRER UN TEMPLATE PAR ID (ACCÈS PUBLIC)
   static async getTemplate(templateId: string): Promise<PDFTemplate | null> {
     try {
+      console.log('📄 Récupération template public:', templateId);
+      
       const { data, error } = await supabase
         .from('pdf_templates')
         .select('*')
         .eq('id', templateId)
-        .eq('is_public', true) // Seulement les templates publics
+        .or('is_public.eq.true,linked_form_id.in.(select id from forms where is_published = true)')
         .single();
 
       if (error) {
+        console.error('❌ Erreur Supabase récupération template:', error);
         return null;
       }
 
+      console.log('✅ Template trouvé:', data.name, 'public:', data.is_public);
+      
       // Convertir au format PDFTemplate
       const template: PDFTemplate = {
         id: data.id,
@@ -66,6 +71,7 @@ export class PDFTemplateService {
 
       return template;
     } catch (error) {
+      console.error('❌ Erreur générale récupération template:', error);
       return null;
     }
   }

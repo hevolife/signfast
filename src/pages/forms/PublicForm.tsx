@@ -408,7 +408,6 @@ export const PublicForm: React.FC = () => {
           
           // Méthode 1: Service PDFTemplateService
           try {
-            const { PDFTemplateService } = await import('../../services/pdfTemplateService');
             template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
             console.log('📄 Template récupéré via service:', !!template);
           } catch (serviceError) {
@@ -423,6 +422,7 @@ export const PublicForm: React.FC = () => {
                 .from('pdf_templates')
                 .select('*')
                 .eq('id', form.settings.pdfTemplateId)
+                .or('is_public.eq.true,linked_form_id.eq.' + form.id)
                 .single();
               
               if (!templateError && templateData) {
