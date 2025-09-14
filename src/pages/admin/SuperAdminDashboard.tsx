@@ -33,6 +33,7 @@ import {
 import toast from 'react-hot-toast';
 import { useMaintenanceMode } from '../../hooks/useMaintenanceMode';
 import { AffiliateAdminPanel } from '../../components/admin/AffiliateAdminPanel';
+import { DemoManagementPanel } from '../../components/admin/DemoManagementPanel';
 
 interface AdminUser {
   id: string;
