@@ -46,30 +46,36 @@ export const useForms = () => {
     }
 
     try {
-      // Compter le total d'abord
-      const { count, error: countError } = await supabase
-        .from('forms')
-        .select('id', { count: 'estimated', head: true })
-        .eq('user_id', targetUserId);
+      // Requêtes parallèles pour optimiser les performances
+      const offset = (page - 1) * limit;
+      
+      const [countResult, dataResult] = await Promise.all([
+        supabase
+          .from('forms')
+          .select('id', { count: 'estimated', head: true })
+          .eq('user_id', targetUserId),
+        supabase
+          .from('forms')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .range(offset, offset + limit - 1)
+          .order('created_at', { ascending: false })
+      ]);
+
+      const { count, error: countError } = countResult;
+      const { data, error } = dataResult;
+
+      if (error) {
+        throw error;
+      }
 
       if (countError) {
         console.warn('Impossible de compter les formulaires:', countError.message);
-        setTotalCount(0);
+        setTotalCount(data?.length || 0);
       } else {
         setTotalCount(count || 0);
       }
 
-      // Calculer l'offset pour la pagination
-      const offset = (page - 1) * limit;
-
-      const { data, error } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('user_id', targetUserId)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
       setForms(data || []);
       
       // Sauvegarder dans localStorage ET sessionStorage pour les templates PDF
@@ -93,7 +99,11 @@ export const useForms = () => {
   };
 
   useEffect(() => {
-    fetchForms(1, 10);
+    if (user) {
+      fetchForms(1, 10);
+    } else {
+      setLoading(false);
+    }
   }, [user, isDemoMode]);
 
   const createForm = async (formData: Partial<Form>) => {
