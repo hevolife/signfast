@@ -18,11 +18,18 @@ export const MyForms: React.FC = () => {
   const { isSubscribed } = useSubscription();
   const { forms: formsLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = React.useState(false);
+  const [initialLoading, setInitialLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
   const product = stripeConfig.products[0];
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  React.useEffect(() => {
+    // Chargement immédiat de l'interface, puis des formulaires
+    setInitialLoading(false);
+    // Le chargement des formulaires est déjà géré par le hook useForms
+  }, []);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -61,12 +68,13 @@ export const MyForms: React.FC = () => {
     // Navigation handled by Link component
   };
 
-  if (loading) {
+  // Afficher le loading seulement pour le chargement initial très court
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Chargement de vos formulaires...</p>
+          <p className="text-gray-600 dark:text-gray-400">Initialisation...</p>
         </div>
       </div>
     );
@@ -101,6 +109,18 @@ export const MyForms: React.FC = () => {
             <div className="mt-6">
               <SubscriptionBanner />
             </div>
+            
+            {/* Indicateur de chargement des formulaires */}
+            {loading && (
+              <Card className="mt-6">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Chargement des formulaires...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Bouton nouveau formulaire */}
             <div className="mt-6">
