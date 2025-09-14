@@ -280,7 +280,6 @@ export const EditPDFTemplate: React.FC = () => {
   };
 
   const handleTemplateNameChange = (name: string) => {
-    setCurrentTemplateName(name);
     setTemplate(prev => prev ? { ...prev, name } : null);
   };
 
