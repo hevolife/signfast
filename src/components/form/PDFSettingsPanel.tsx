@@ -20,6 +20,7 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
   const { templates, loading } = usePDFTemplates();
   const { forms, refetch: refetchForms } = useForms();
   const [updatingTemplate, setUpdatingTemplate] = React.useState(false);
+  const [testingWebhook, setTestingWebhook] = React.useState(false);
 
   const handleSettingsUpdate = (key: string, value: any) => {
     // Si on change de template PDF, mettre à jour la liaison dans le template
@@ -61,6 +62,59 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
     }
   };
 
+  const testWebhook = async () => {
+    if (!form.settings?.webhookUrl) {
+      toast.error('Veuillez saisir une URL de webhook');
+      return;
+    }
+
+    setTestingWebhook(true);
+    
+    try {
+      // Créer des données de test
+      const testData = {
+        test: true,
+        form_id: form.id,
+        form_title: form.title,
+        timestamp: new Date().toISOString(),
+        data: {
+          nom: 'Test',
+          email: 'test@example.com',
+          message: 'Ceci est un test de webhook depuis SignFast'
+        },
+        webhook_test: true
+      };
+
+      console.log('🧪 Test webhook vers:', form.settings.webhookUrl);
+      
+      const response = await fetch(form.settings.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'SignFast-Webhook-Test/1.0'
+        },
+        body: JSON.stringify(testData)
+      });
+
+      if (response.ok) {
+        const responseText = await response.text();
+        toast.success(`✅ Webhook testé avec succès ! (${response.status})`);
+        console.log('✅ Réponse webhook:', responseText);
+      } else {
+        toast.error(`❌ Erreur webhook: ${response.status} ${response.statusText}`);
+        console.error('❌ Erreur webhook:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Erreur test webhook:', error);
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        toast.error('❌ Impossible de joindre le webhook (CORS ou URL invalide)');
+      } else {
+        toast.error('❌ Erreur lors du test du webhook');
+      }
+    } finally {
+      setTestingWebhook(false);
+    }
+  };
   // Générer les variables disponibles à partir des champs du formulaire
   const getFormVariables = () => {
     if (!form.fields) return [];
@@ -279,14 +333,37 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
                     Webhook URL (optionnel)
                   </label>
                 </div>
-                <Input
-                  placeholder="https://votre-site.com/webhook"
-                  value={form.settings?.webhookUrl || ''}
-                  onChange={(e) => handleSettingsUpdate('webhookUrl', e.target.value || undefined)}
-                />
+                <div className="flex items-center space-x-2">
+                  <Input
+                    placeholder="https://votre-site.com/webhook"
+                    value={form.settings?.webhookUrl || ''}
+                    onChange={(e) => handleSettingsUpdate('webhookUrl', e.target.value || undefined)}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={testWebhook}
+                    disabled={!form.settings?.webhookUrl || testingWebhook}
+                    className="flex items-center space-x-1 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
+                  >
+                    {testingWebhook ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600"></div>
+                    ) : (
+                      <span>🧪</span>
+                    )}
+                    <span className="text-xs">{testingWebhook ? 'Test...' : 'Tester'}</span>
+                  </Button>
+                </div>
                 <p className="text-xs text-gray-500">
                   URL où envoyer les données du formulaire et le PDF généré
                 </p>
+                {form.settings?.webhookUrl && (
+                  <div className="text-xs text-blue-600 dark:text-blue-400">
+                    💡 Cliquez sur "Tester" pour vérifier que votre webhook fonctionne
+                  </div>
+                )}
               </div>
             </div>
 
