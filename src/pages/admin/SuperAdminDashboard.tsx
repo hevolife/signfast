@@ -95,6 +95,77 @@ export const SuperAdminDashboard: React.FC = () => {
   const [editingSubscription, setEditingSubscription] = useState<string | null>(null);
   const [newSubscriptionDuration, setNewSubscriptionDuration] = useState<'1month' | '2months' | '6months' | '1year' | 'lifetime'>('1month');
 
+  const handleEditSubscription = (userId: string) => {
+    setEditingSubscription(userId);
+    setNewSubscriptionDuration('1month');
+  };
+
+  const handleCancelEditSubscription = () => {
+    setEditingSubscription(null);
+    setNewSubscriptionDuration('1month');
+  };
+
+  const handleSaveSubscription = async (userId: string) => {
+    try {
+      // Créer un code secret avec la durée sélectionnée
+      const codeType = newSubscriptionDuration === 'lifetime' ? 'lifetime' : 'monthly';
+      const description = `Extension admin ${newSubscriptionDuration} pour utilisateur ${userId}`;
+      
+      // Calculer la date d'expiration
+      let expiresAt = null;
+      if (codeType === 'monthly') {
+        const durationMap = {
+          '1month': 30,
+          '2months': 60,
+          '6months': 180,
+          '1year': 365,
+        };
+        const days = durationMap[newSubscriptionDuration] || 30;
+        expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      }
+
+      // Créer le code secret via l'API admin
+      const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-secret-codes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: codeType,
+          description,
+          maxUses: 1,
+        }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Erreur création code secret');
+      }
+
+      const codeData = await createResponse.json();
+      
+      // Activer automatiquement le code pour l'utilisateur
+      const { error: activateError } = await supabase.rpc('activate_secret_code', {
+        code_input: codeData.code,
+        user_id_input: userId
+      });
+
+      if (activateError) {
+        console.error('Erreur activation code:', activateError);
+        toast.error('Code créé mais erreur d\'activation');
+        return;
+      }
+
+      toast.success(`✅ Abonnement ${newSubscriptionDuration} activé pour l'utilisateur !`);
+      setEditingSubscription(null);
+      await loadUsers(); // Recharger la liste
+      
+    } catch (error) {
+      console.error('Erreur modification abonnement:', error);
+      toast.error('Erreur lors de la modification de l\'abonnement');
+    }
+  };
+
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
 
