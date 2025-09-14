@@ -6,6 +6,7 @@ import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
 import { FormInput, LogOut, LayoutDashboard, Moon, Sun, FileText, HardDrive, Crown, Settings, Shield } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import { cache, formsCache, templatesCache, userCache } from '../../utils/cache';
 
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -20,6 +21,12 @@ export const Navbar: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
+      // Vider tous les caches lors de la déconnexion
+      cache.clear();
+      formsCache.clear();
+      templatesCache.clear();
+      userCache.clear();
+      
       await signOut();
       // La redirection est gérée dans signOut()
     } catch (error) {
