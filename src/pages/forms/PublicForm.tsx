@@ -220,36 +220,79 @@ export const PublicForm: React.FC = () => {
 
   // Fonction pour compresser les images avant soumission
   const compressImageData = async (data: Record<string, any>): Promise<Record<string, any>> => {
-    const { ImageCompressor } = await import('../../utils/imageCompression');
+    try {
+      const { ImageCompressor } = await import('../../utils/imageCompression');
+      const compressedData = { ...data };
+      
+      const compressionPromises = Object.entries(data).map(async ([key, value]) => {
+        if (typeof value === 'string' && value.startsWith('data:image')) {
+          try {
+            console.log(`🖼️ Compression image pour champ: ${key}`);
+            const originalSize = Math.round(value.length / 1024);
+            
+            // Compression avec paramètres optimisés
+            const compressed = await ImageCompressor.compressImage(value, {
+              maxWidth: 1920,
+              maxHeight: 1080,
+              quality: 0.7,
+              maxSizeKB: 512,
+              format: 'jpeg',
+              preserveTransparency: false
+            });
+            
+            const compressedSize = Math.round(compressed.length / 1024);
+            console.log(`🖼️ ${key}: ${originalSize}KB → ${compressedSize}KB`);
+            
+            return { key, value: compressed };
+          } catch (error) {
+            console.warn(`⚠️ Erreur compression ${key}:`, error);
+            return { key, value };
+          }
+        }
+        return { key, value };
+      });
+      
+      const results = await Promise.all(compressionPromises);
+      
+      results.forEach(({ key, value }) => {
+        compressedData[key] = value;
+      });
+      
+      return compressedData;
+    } catch (error) {
+      console.warn('⚠️ Module compression non disponible, utilisation données originales:', error);
+      return { ...data };
+    }
+  };
+
+  // Version optimisée de compressImageData pour traitement parallèle
+  const compressImageDataOptimized = async (data: Record<string, any>): Promise<Record<string, any>> => {
     const compressedData = { ...data };
     
-    for (const [key, value] of Object.entries(data)) {
-      if (typeof value === 'string' && value.startsWith('data:image')) {
-        try {
-          console.log(`🖼️ Compression image pour champ: ${key}`);
-          const originalSize = Math.round(value.length / 1024);
-          console.log(`🖼️ Taille originale: ${originalSize}KB`);
-          
-          // Compression avec paramètres optimisés
-          const compressed = await ImageCompressor.compressImage(value, {
-            maxWidth: 1920,
-            maxHeight: 1080,
-            quality: 0.7,
-            maxSizeKB: 512, // Limite à 512KB par image
-            format: 'jpeg',
-            preserveTransparency: false
-          });
-          
-          const compressedSize = Math.round(compressed.length / 1024);
-          console.log(`🖼️ Taille compressée: ${compressedSize}KB (${Math.round((1 - compressed.length / value.length) * 100)}% de réduction)`);
-          
-          compressedData[key] = compressed;
-        } catch (error) {
-          console.warn(`⚠️ Erreur compression image ${key}:`, error);
-          // Garder l'original en cas d'erreur
-          compressedData[key] = value;
+    try {
+      const { ImageCompressor } = await import('../../utils/imageCompression');
+      
+      for (const [key, value] of Object.entries(data)) {
+        if (typeof value === 'string' && value.startsWith('data:image')) {
+          try {
+            const compressed = await ImageCompressor.compressImage(value, {
+              maxWidth: 1920,
+              maxHeight: 1080,
+              quality: 0.7,
+              maxSizeKB: 512,
+              format: 'jpeg',
+              preserveTransparency: false
+            });
+            
+            compressedData[key] = compressed;
+          } catch (error) {
+            console.warn(`⚠️ Erreur compression image ${key}:`, error);
+            compressedData[key] = value;
+          }
         }
       }
+    } catch (error) {
+      console.warn('⚠️ Module compression non disponible:', error);
     }
     
     return compressedData;
@@ -261,13 +304,30 @@ export const PublicForm: React.FC = () => {
     
     setSubmitting(true);
     
+    // Afficher immédiatement le feedback de soumission
+    toast.loading('📤 Envoi du formulaire en cours...', { duration: 10000 });
+    
     try {
       // Préparer les données pour la base (sans les gros fichiers)
       const dbSubmissionData = { ...formData };
       // Préparer les données complètes pour le PDF (avec les images compressées)
-      console.log('🖼️ Début compression des images...');
-      const pdfSubmissionData = await compressImageData(formData);
-      console.log('🖼️ Compression terminée');
+      let pdfSubmissionData = { ...formData };
+      
+      // Compression des images en arrière-plan si nécessaire
+      const hasImages = Object.values(formData).some(value => 
+        typeof value === 'string' && value.startsWith('data:image')
+      );
+      
+      if (hasImages) {
+        console.log('🖼️ Images détectées, compression en arrière-plan...');
+        // Lancer la compression en parallèle
+        compressImageData(formData).then(compressed => {
+          pdfSubmissionData = compressed;
+          console.log('🖼️ Compression terminée en arrière-plan');
+        }).catch(error => {
+          console.warn('⚠️ Erreur compression, utilisation données originales:', error);
+        });
+      }
       
       // Traitement spécial pour les signatures
       // Créer un mapping direct par libellé de champ pour simplifier
@@ -434,7 +494,6 @@ export const PublicForm: React.FC = () => {
       });
 
       // Sauvegarder dans la base avec les données allégées
-        console.warn('Erreur chargement profil:', error);
       const { data: responseData, error } = await supabase
         .from('responses')
         .insert([{
@@ -446,19 +505,25 @@ export const PublicForm: React.FC = () => {
 
       if (error) {
         console.error('Error:', error);
+        toast.dismiss();
         toast.error('Erreur lors de l\'envoi du formulaire');
         return;
       }
 
+      console.log('✅ Formulaire sauvegardé en base');
+      toast.dismiss();
+      
       // Sauvegarder les métadonnées pour génération PDF à la demande
       if (form.settings?.generatePdf && form.settings?.savePdfToServer) {
         try {
           console.log('💾 Début sauvegarde métadonnées PDF avec template...');
-          await savePDFMetadataForLaterGeneration(responseData, pdfSubmissionData);
+          // Utiliser les données compressées si disponibles, sinon les originales
+          const finalPdfData = hasImages ? await compressImageData(formData) : pdfSubmissionData;
+          await savePDFMetadataForLaterGeneration(responseData, finalPdfData);
           console.log('✅ Métadonnées PDF sauvegardées avec succès');
         } catch (error) {
           console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
-          toast.error('Erreur lors de la sauvegarde PDF. Le formulaire a été envoyé mais le PDF ne pourra pas être généré.');
+          toast.error('Formulaire envoyé mais erreur sauvegarde PDF');
           // Ne pas bloquer la soumission du formulaire
         }
       }
@@ -472,11 +537,12 @@ export const PublicForm: React.FC = () => {
       }, 3000);
       
     } catch (error) {
+      toast.dismiss();
       toast.error('Erreur lors de l\'envoi');
     } finally {
       setSubmitting(false);
     }
-        console.log('📄 Aucun profil trouvé, création profil vide');
+  };
 
   const savePDFMetadataForLaterGeneration = async (response: any, submissionData: Record<string, any>) => {
     try {
@@ -589,7 +655,6 @@ export const PublicForm: React.FC = () => {
         console.log('📄 Aucun template PDF configuré, utilisation PDF simple');
       }
 
-      console.log('✅ Profil propriétaire chargé:', data.company_name || data.first_name || 'Utilisateur');
       // Sauvegarder les métadonnées pour génération ultérieure
       const saveSuccess = await PDFService.savePDFMetadataForLaterGeneration(fileName, metadata);
       
@@ -860,47 +925,43 @@ export const PublicForm: React.FC = () => {
                   if (file) {
                     // Pour les images, valider et compresser
                     if (file.type.startsWith('image/')) {
-                      // Validation de l'image
-                      import('../../utils/imageCompression').then(({ ImageCompressor }) => {
-                        const validation = ImageCompressor.validateImage(file);
-                        if (!validation.valid) {
-                          toast.error(validation.error || 'Image invalide');
-                          return;
-                        }
+                      // Validation rapide de base
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast.error('L\'image ne doit pas dépasser 10MB');
+                        return;
+                      }
+                      
+                      // Chargement immédiat pour l'aperçu
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const base64 = event.target?.result as string;
+                        handleInputChange(field.id, base64);
                         
-                        // Compression de l'image
-                        toast.loading('🖼️ Compression de l\'image...');
-                        ImageCompressor.compressImage(file, {
-                          maxWidth: 1920,
-                          maxHeight: 1080,
-                          quality: 0.75,
-                          maxSizeKB: 512,
-                          format: 'jpeg',
-                          preserveTransparency: false
-                        }).then(compressedImage => {
-                          toast.dismiss();
-                          toast.success('✅ Image compressée et prête');
-                          console.log('🖼️ Image compressée pour champ:', field.label, {
-                            originalSize: Math.round(file.size / 1024) + 'KB',
-                            compressedSize: Math.round(compressedImage.length / 1024) + 'KB',
-                            format: compressedImage.substring(5, 15)
+                        // Compression en arrière-plan
+                        import('../../utils/imageCompression').then(({ ImageCompressor }) => {
+                          ImageCompressor.compressImage(file, {
+                            maxWidth: 1920,
+                            maxHeight: 1080,
+                            quality: 0.75,
+                            maxSizeKB: 512,
+                            format: 'jpeg',
+                            preserveTransparency: false
+                          }).then(compressedImage => {
+                            // Remplacer par la version compressée
+                            handleInputChange(field.id, compressedImage);
+                            console.log('🖼️ Image compressée en arrière-plan pour:', field.label);
+                          }).catch(error => {
+                            console.warn('Erreur compression arrière-plan:', error);
+                            // Garder l'original si compression échoue
                           });
-                          handleInputChange(field.id, compressedImage);
-                        }).catch(error => {
-                          toast.dismiss();
-                          console.error('Erreur compression:', error);
-                          toast.error('Erreur lors de la compression');
+                        }).catch(() => {
+                          console.log('🖼️ Module compression non disponible, utilisation image originale');
                         });
-                      }).catch(() => {
-                        // Fallback : lecture basique
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const base64 = event.target?.result as string;
-                          console.log('🖼️ Image chargée sans compression pour champ:', field.label);
-                          handleInputChange(field.id, base64);
-                        };
-                        reader.readAsDataURL(file);
-                      });
+                      };
+                      reader.onerror = () => {
+                        toast.error('Erreur lors du chargement de l\'image');
+                      };
+                      reader.readAsDataURL(file);
                     } else {
                       // Pour les autres fichiers, stocker le nom
                       handleInputChange(field.id, file.name);
@@ -1117,7 +1178,7 @@ export const PublicForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* Logo de l'entreprise - Toujours affiché pour debug */}
+        {/* Logo de l'entreprise */}
         <div className="text-center mb-8">
           <div className="mb-6">
             {formOwnerProfile?.logo_url ? (
