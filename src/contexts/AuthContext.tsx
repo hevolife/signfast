@@ -123,15 +123,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Si on est en mode démo, simuler un utilisateur
   const effectiveUser = getEffectiveUser();
 
-    id: demoUser.id,
-    email: demoUser.email,
-    created_at: new Date(demoUser.createdAt).toISOString(),
-    app_metadata: {},
-    user_metadata: {},
-    aud: 'authenticated',
-    role: 'authenticated',
-  } as User : user;
-
   const signOut = useCallback(async () => {
     // Si on est en impersonation, juste arrêter l'impersonation
     if (isImpersonating) {
