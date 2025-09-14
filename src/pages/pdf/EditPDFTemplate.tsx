@@ -20,10 +20,14 @@ export const EditPDFTemplate: React.FC = () => {
   const [template, setTemplate] = useState<PDFTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fieldsReady, setFieldsReady] = useState(false);
 
   // Générer les variables à partir du formulaire lié
   const getFormVariables = () => {
+    console.log('📋 getFormVariables appelée, template.linkedFormId:', template?.linkedFormId);
+    
     if (!template?.linkedFormId) {
+      console.log('📋 Pas de formulaire lié, variables par défaut');
       // Variables par défaut si aucun formulaire n'est lié
       return [
         '${nom}',
@@ -42,22 +46,30 @@ export const EditPDFTemplate: React.FC = () => {
       let formsData = localStorage.getItem('currentUserForms');
       
       if (!formsData) {
+        console.log('📋 currentUserForms vide, essai sessionStorage...');
         formsData = sessionStorage.getItem('currentUserForms');
       }
       
       if (!formsData) {
+        console.log('📋 sessionStorage vide, essai forms standard...');
         formsData = localStorage.getItem('forms');
       }
       
       if (!formsData) {
+        console.log('📋 Aucune source de données trouvée');
         throw new Error('Aucune donnée de formulaires trouvée');
       }
       
       const forms = JSON.parse(formsData);
+      console.log('📋 Forms chargés:', forms.length, 'formulaires');
+      console.log('📋 Recherche formulaire ID:', template.linkedFormId);
       
       const linkedForm = forms.find((f: any) => f.id === template.linkedFormId);
       
       if (linkedForm && linkedForm.fields) {
+        console.log('📋 Formulaire lié trouvé:', linkedForm.title);
+        console.log('📋 Champs du formulaire:', linkedForm.fields.map((f: any) => f.label));
+        
         const formVariables: string[] = [];
         
         // Fonction récursive pour extraire tous les champs, y compris conditionnels
@@ -73,11 +85,16 @@ export const EditPDFTemplate: React.FC = () => {
               .replace(/^_|_$/g, '');
             
             formVariables.push(`\${${variableName}}`);
+            console.log('📋 Variable ajoutée:', `\${${variableName}}`, 'depuis champ:', field.label);
             
             // Ajouter les champs conditionnels s'ils existent
             if (field.conditionalFields) {
+              console.log('📋 Champs conditionnels trouvés pour:', field.label);
+              console.log('📋 Options conditionnelles:', Object.keys(field.conditionalFields));
               Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
                 if (Array.isArray(conditionalFieldsArray)) {
+                  console.log('📋 Extraction champs conditionnels:', conditionalFieldsArray.length, 'champs');
+                  console.log('📋 Champs conditionnels:', conditionalFieldsArray.map((cf: any) => cf.label));
                   extractFieldVariables(conditionalFieldsArray);
                 }
               });
@@ -91,23 +108,28 @@ export const EditPDFTemplate: React.FC = () => {
         // Supprimer les doublons
         const uniqueVariables = [...new Set(formVariables)];
         
+        console.log('📋 Variables extraites (avec conditionnels):', uniqueVariables);
+        console.log('📋 Nombre total de variables:', uniqueVariables.length);
+        
         // Ajouter des variables système
         uniqueVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
         
+        console.log('📋 Variables finales:', uniqueVariables);
         return uniqueVariables;
       } else {
-        console.warn('Formulaire lié non trouvé ou sans champs');
+        console.warn('📋 Formulaire lié non trouvé ou sans champs');
       }
     } catch (error) {
       console.error('Erreur lors de la récupération du formulaire lié:', error);
     }
     
     // Variables par défaut en cas d'erreur
+    console.log('📋 Retour aux variables par défaut');
     return ['${nom}', '${email}', '${date_creation}'];
   };
 
   useEffect(() => {
-    if (id && !templatesLoading && templates.length > 0) {
+    if (id && !templatesLoading && templates) {
       loadTemplate();
     }
   }, [id, templates, templatesLoading]);
@@ -116,12 +138,21 @@ export const EditPDFTemplate: React.FC = () => {
     if (!id) return;
     
     try {
+      console.log('📄 Chargement template pour édition:', id);
+      
       // Utiliser les templates du hook qui gère déjà l'impersonation
       const foundTemplate = templates.find(t => t.id === id);
       
       if (foundTemplate) {
+        console.log('✅ Template trouvé:', foundTemplate.name);
         setTemplate(foundTemplate);
+        // Marquer les champs comme prêts après un délai
+        setTimeout(() => {
+          console.log('🎯 Champs marqués comme prêts pour affichage');
+          setFieldsReady(true);
+        }, 1000);
       } else {
+        console.error('❌ Template non trouvé:', id);
         toast.error('Template PDF non trouvé');
         navigate('/pdf/templates');
       }
@@ -173,6 +204,10 @@ export const EditPDFTemplate: React.FC = () => {
           toast.error('Erreur lors de la mise à jour du template');
         }
       } else {
+        console.log('📄 Mode normal: mise à jour template dans Supabase');
+        console.log('📄 Template ID:', id);
+        console.log('📄 Updates:', updates);
+        
         // Mode normal : mettre à jour dans Supabase
         const success = await PDFTemplateService.updateTemplate(id, updates);
         
@@ -195,8 +230,12 @@ export const EditPDFTemplate: React.FC = () => {
     if (!template || !id) return;
 
     try {
+      console.log('🔗 Début liaison template-formulaire:', id, '→', formId);
+      
       // Vérifier si on est en mode démo
       if (isDemoMode) {
+        console.log('🎭 Mode démo détecté, mise à jour locale');
+        
         // Mettre à jour le template en mode démo
         updateDemoTemplate(id, { linkedFormId: formId });
         
@@ -210,18 +249,24 @@ export const EditPDFTemplate: React.FC = () => {
           });
         }
         
+        console.log('✅ Liaison démo réussie');
       } else {
         // Mettre à jour la liaison dans Supabase
         const success = await PDFTemplateService.linkTemplateToForm(id, formId);
         
+        console.log('✅ Liaison Supabase réussie');
+        
         // IMPORTANT: Mettre à jour aussi le formulaire pour qu'il pointe vers ce template
         if (formId && user) {
+          console.log('🔗 Mise à jour du formulaire cible:', formId);
           const selectedForm = forms.find(f => f.id === formId);
           
           if (!selectedForm) {
+            console.warn('⚠️ Formulaire non trouvé dans la liste locale, actualisation...');
             await refetchForms();
             const refreshedForms = forms.find(f => f.id === formId);
             if (!refreshedForms) {
+              console.error('❌ Formulaire toujours non trouvé après actualisation');
               toast.error('Formulaire non trouvé');
               return;
             }
@@ -241,12 +286,16 @@ export const EditPDFTemplate: React.FC = () => {
               .eq('user_id', user.id);
 
             if (formUpdateError) {
+              console.warn('⚠️ Erreur mise à jour formulaire:', formUpdateError);
               toast.error('Template lié mais erreur mise à jour formulaire');
             } else {
+              console.log('✅ Formulaire mis à jour avec le template ID');
               // Rafraîchir la liste des formulaires pour refléter les changements
               await refetchForms();
+              console.log('✅ Liste des formulaires actualisée');
             }
           } catch (formError) {
+            console.warn('⚠️ Erreur lors de la mise à jour du formulaire:', formError);
             toast.error('Template lié mais erreur mise à jour formulaire');
           }
         }
@@ -291,13 +340,14 @@ export const EditPDFTemplate: React.FC = () => {
   return (
     <PDFTemplateEditor
       onSave={handleSave}
-      initialFields={template.fields}
+      initialFields={fieldsReady ? template.fields : []}
       formVariables={getFormVariables()}
       existingPdfUrl={template.originalPdfUrl}
       templateName={template.name}
       linkedFormId={template.linkedFormId}
       onFormLinkChange={handleFormLinkChange}
       onTemplateNameChange={handleTemplateNameChange}
+      key={fieldsReady ? 'ready' : 'loading'}
     />
   );
 };

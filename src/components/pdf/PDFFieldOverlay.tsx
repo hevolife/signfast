@@ -31,11 +31,13 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   useEffect(() => {
     const updatePosition = () => {
       if (!pdfViewerRef.current) {
+        console.log('⚠️ PDFViewer ref non disponible');
         return;
       }
 
       const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
       if (!canvasDimensions) {
+        console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage);
         return;
       }
 
@@ -44,12 +46,23 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const width = (field.widthRatio || 0.1) * canvasDimensions.width;
       const height = (field.heightRatio || 0.05) * canvasDimensions.height;
 
+      console.log(`📐 Position recalculée pour ${field.variable || field.type}:`, {
+        ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
+        canvas: canvasDimensions,
+        position: { x, y, width, height }
+      });
 
       setPosition({ x, y, width, height });
     };
 
+    // Délai pour s'assurer que le canvas est rendu
+    const timer = setTimeout(updatePosition, 100);
+    
+    // Aussi mettre à jour immédiatement
     updatePosition();
-  }, [field.xRatio, field.yRatio, field.widthRatio, field.heightRatio, currentPage, pdfViewerRef]);
+
+    return () => clearTimeout(timer);
+  }, [field.xRatio, field.yRatio, field.widthRatio, field.heightRatio, currentPage, scale, pdfViewerRef]);
 
   // Afficher seulement si sur la page courante
   if (field.page !== currentPage) {
