@@ -135,21 +135,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error && error.message.includes('Invalid Refresh Token')) {
-        // Clear corrupted authentication state
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.warn('⚠️ Auth session error:', error.message);
+          if (error.message.includes('Invalid Refresh Token') || error.message.includes('Failed to fetch')) {
+            // Clear corrupted authentication state
+            setSession(null);
+            setUser(null);
+          }
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.warn('⚠️ Auth session fetch failed:', error);
         setSession(null);
         setUser(null);
-      } else {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
+        console.log('🔐 Auth state change:', event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);

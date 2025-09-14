@@ -132,25 +132,25 @@ export const useForms = () => {
       return false;
     }
 
-    console.log('📝 === DÉBUT UPDATE FORM ===');
-    console.log('📝 Form ID:', id);
-    console.log('📝 User ID:', user?.id);
-    console.log('📝 User email:', user?.email);
-    console.log('📝 IsImpersonating:', isImpersonating);
-    console.log('📝 Updates keys:', Object.keys(updates));
-    
-    let targetUserId = user.id;
-    console.log('📝 Target User ID:', targetUserId);
-    
-    if (isImpersonating && impersonationData) {
-      targetUserId = impersonationData.target_user_id;
-      console.log('🎭 IMPERSONATION ACTIVE');
-      console.log('🎭 Admin:', impersonationData.admin_email);
-      console.log('🎭 Target:', impersonationData.target_email);
-      console.log('🎭 Target ID:', impersonationData.target_user_id);
-    }
-
     try {
+      console.log('📝 === DÉBUT UPDATE FORM ===');
+      console.log('📝 Form ID:', id);
+      console.log('📝 User ID:', user?.id);
+      console.log('📝 User email:', user?.email);
+      console.log('📝 IsImpersonating:', isImpersonating);
+      console.log('📝 Updates keys:', Object.keys(updates));
+    
+      let targetUserId = user.id;
+      console.log('📝 Target User ID:', targetUserId);
+    
+      if (isImpersonating && impersonationData) {
+        targetUserId = impersonationData.target_user_id;
+        console.log('🎭 IMPERSONATION ACTIVE');
+        console.log('🎭 Admin:', impersonationData.admin_email);
+        console.log('🎭 Target:', impersonationData.target_email);
+        console.log('🎭 Target ID:', impersonationData.target_user_id);
+      }
+
       console.log('📝 APPEL SUPABASE UPDATE...');
       
       const { error } = await supabase
@@ -163,6 +163,13 @@ export const useForms = () => {
         console.error('📝 ERREUR SUPABASE:', error);
         console.error('📝 Message:', error.message);
         console.error('📝 Code:', error.code);
+        
+        // Check if it's a network error
+        if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
+          console.error('📝 ERREUR RÉSEAU DÉTECTÉE');
+          throw new Error('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
+        }
+        
         throw error;
       }
       
@@ -173,6 +180,12 @@ export const useForms = () => {
     } catch (error) {
       console.error('📝 ERREUR GÉNÉRALE:', error);
       console.error('📝 Message:', error instanceof Error ? error.message : String(error));
+      
+      // Re-throw with a user-friendly message
+      if (error instanceof Error && error.message.includes('Failed to fetch')) {
+        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet et réessayez.');
+      }
+      
       return false;
     }
   };
