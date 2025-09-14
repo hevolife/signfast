@@ -102,7 +102,7 @@ export const PDFManager: React.FC = () => {
   const loadPDFs = async () => {
     setLoading(true);
     try {
-      const pdfList = await PDFService.listPDFs();
+      const { pdfs: pdfList } = await PDFService.listPDFs();
       setPdfs(pdfList);
     } catch (error) {
       console.error('💾 Erreur chargement PDFs:', error);
