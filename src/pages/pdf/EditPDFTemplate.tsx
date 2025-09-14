@@ -171,7 +171,7 @@ export const EditPDFTemplate: React.FC = () => {
     setSaving(true);
     
     try {
-      if (!user) {
+      if (!user && !isDemoMode) {
         toast.error('Vous devez être connecté pour modifier un template');
         return;
       }
@@ -194,14 +194,25 @@ export const EditPDFTemplate: React.FC = () => {
         linkedFormId: template.linkedFormId, // Préserver la liaison existante
       };
 
-      // Mettre à jour dans Supabase
-      const success = await PDFTemplateService.updateTemplate(id, updates);
-      
-      if (success) {
-        toast.success('Template PDF mis à jour avec succès !');
-        navigate('/pdf/templates');
+      if (isDemoMode) {
+        // Mode démo : utiliser le contexte démo
+        const success = updateDemoTemplate(id, updates);
+        if (success) {
+          toast.success('Template PDF mis à jour avec succès !');
+          navigate('/pdf/templates');
+        } else {
+          toast.error('Erreur lors de la mise à jour du template');
+        }
       } else {
-        toast.error('Erreur lors de la mise à jour du template');
+        // Mode normal : mettre à jour dans Supabase
+        const success = await PDFTemplateService.updateTemplate(id, updates);
+        
+        if (success) {
+          toast.success('Template PDF mis à jour avec succès !');
+          navigate('/pdf/templates');
+        } else {
+          toast.error('Erreur lors de la mise à jour du template');
+        }
       }
     } catch (error) {
       console.error('Erreur:', error);
