@@ -144,28 +144,42 @@ export const PDFTemplates: React.FC = () => {
           </div>
         </div>
         {templates.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-16">
-              <div className="mb-4">
-                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Aucun template PDF
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Créez votre premier template PDF pour générer des documents automatiquement
-              </p>
-              {templatesLimits.canCreate ? (
-                <Link to="/pdf/templates/new">
-                  <Button>Créer mon premier template</Button>
-                </Link>
-              ) : (
-                <Button onClick={handleCreateTemplate}>
-                  Créer mon premier template
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          loading ? (
+            <Card>
+              <CardContent className="text-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Chargement des templates...
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Récupération de vos templates PDF en cours
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-16">
+                <div className="mb-4">
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Aucun template PDF
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Créez votre premier template PDF pour générer des documents automatiquement
+                </p>
+                {templatesLimits.canCreate ? (
+                  <Link to="/pdf/templates/new">
+                    <Button>Créer mon premier template</Button>
+                  </Link>
+                ) : (
+                  <Button onClick={handleCreateTemplate}>
+                    Créer mon premier template
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {templates.map((template, index) => {
