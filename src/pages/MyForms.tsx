@@ -139,17 +139,6 @@ export const MyForms: React.FC = () => {
               )}
             </div>
             
-            {/* Indicateur de chargement des formulaires */}
-            {loading && (
-              <Card className="mt-6">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    <span className="text-gray-600 dark:text-gray-400">Chargement des formulaires...</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 
