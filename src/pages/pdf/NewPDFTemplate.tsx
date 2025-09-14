@@ -154,8 +154,8 @@ export const NewPDFTemplate: React.FC = () => {
         description: `Template PDF avec ${fields.length} champs`,
         fields: fields,
         originalPdfUrl: pdfDataUrl,
-        pages: 1, // Placeholder pour le nombre de pages
-        linkedFormId: linkedFormId,
+        offsetX: -73,
+        offsetY: 12,
       };
 
       if (isDemoMode) {
