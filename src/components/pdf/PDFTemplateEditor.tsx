@@ -108,6 +108,12 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   const handlePDFLoaded = useCallback((dimensions: { width: number; height: number }[]) => {
     console.log('📄 PDF dimensions reçues:', dimensions);
     setPdfDimensions(dimensions);
+    
+    // Forcer le rendu de la première page après chargement des dimensions
+    setTimeout(() => {
+      console.log('📄 Forçage rendu page 1 après chargement dimensions');
+      setCurrentPage(1);
+    }, 200);
   }, []);
 
   // Charger variables du formulaire lié
@@ -639,6 +645,7 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
                     onScaleChange={setScale}
                     draggedFieldType={draggedFieldType}
                     hideZoomControls={true}
+                    key={`pdf-viewer-${currentPage}-${pdfFile?.name || 'no-file'}`}
                   >
                     {fields.map(field => (
                       <PDFFieldOverlay

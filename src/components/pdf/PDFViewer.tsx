@@ -63,7 +63,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     if (file) {
       loadPDF();
     }
-  }, [file]);
+  }, [file, currentPage]);
 
   useEffect(() => {
     if (pdfDoc && numPages > 0) {
@@ -123,6 +123,12 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       setPdfDimensions(dimensions);
       
       onPDFLoaded?.(dimensions);
+      
+      // Forcer le rendu de la page courante après chargement
+      setTimeout(() => {
+        renderCurrentPage();
+      }, 100);
+      
       setLoading(false);
     } catch (error) {
       console.error('Erreur chargement PDF:', error);
@@ -137,10 +143,21 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     console.log(`📄 Rendu de la page ${currentPage} à l'échelle ${scale}`);
     
     try {
-      const canvas = canvasRefs.current.get(currentPage);
+      // Créer ou récupérer le canvas pour la page courante
+      let canvas = canvasRefs.current.get(currentPage);
       if (!canvas) {
-        console.warn(`❌ Canvas non trouvé pour page ${currentPage}`);
-        return;
+        console.log(`📄 Création nouveau canvas pour page ${currentPage}`);
+        canvas = document.createElement('canvas');
+        canvasRefs.current.set(currentPage, canvas);
+        
+        // Remplacer le canvas dans le DOM si nécessaire
+        const existingCanvas = document.querySelector(`canvas[data-page="${currentPage}"]`);
+        if (existingCanvas && existingCanvas.parentNode) {
+          existingCanvas.parentNode.replaceChild(canvas, existingCanvas);
+          canvas.setAttribute('data-page', currentPage.toString());
+          canvas.className = existingCanvas.className;
+          canvas.onclick = existingCanvas.onclick;
+        }
       }
 
       const page = await pdfDoc.getPage(currentPage);
@@ -332,6 +349,13 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
                 if (el) {
                   canvasRefs.current.set(currentPage, el);
                   console.log(`📄 Canvas ref enregistré pour page ${currentPage}`);
+                  
+                  // Forcer le rendu si le PDF est déjà chargé
+                  if (pdfDoc && numPages > 0) {
+                    setTimeout(() => {
+                      renderCurrentPage();
+                    }, 50);
+                  }
                 }
               }}
               onClick={handleCanvasClick(currentPage)}
@@ -343,6 +367,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
                 minHeight: '800px'
               }}
               data-page={currentPage}
+              key={`canvas-${currentPage}`}
             />
           </div>
         </div>
