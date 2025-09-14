@@ -469,7 +469,8 @@ export class PDFService {
   }
 
   // LISTER LES PDFS (métadonnées uniquement)
-  static async listPDFs(): Promise<Array<{
+  static async listPDFs(page: number = 1, limit: number = 10): Promise<{
+    pdfs: Array<{
     fileName: string;
     responseId: string;
     templateName: string;
@@ -477,7 +478,10 @@ export class PDFService {
     createdAt: string;
     size: number;
     formData: Record<string, any>;
-  }>> {
+    }>;
+    totalCount: number;
+    totalPages: number;
+  }> {
     try {
       console.log('💾 === DÉBUT listPDFs ===');
       
@@ -485,7 +489,7 @@ export class PDFService {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        return [];
+        return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
 
       let targetUserId = user.id;
@@ -501,17 +505,37 @@ export class PDFService {
         }
       }
       
+      // Compter le total d'abord
+      const { count: totalCount, error: countError } = await supabase
+        .from('pdf_storage')
+        .select('id', { count: 'estimated', head: true })
+        .eq('user_id', targetUserId);
+
+      if (countError) {
+        console.error('❌ Erreur comptage PDFs:', countError);
+        return { pdfs: [], totalCount: 0, totalPages: 0 };
+      }
+
+      const total = totalCount || 0;
+      const totalPages = Math.ceil(total / limit);
+      const offset = (page - 1) * limit;
+
+      console.log('💾 Pagination:', { page, limit, offset, total, totalPages });
+
+      // Récupérer les PDFs avec pagination
       const { data, error } = await supabase
         .from('pdf_storage')
         .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
         .eq('user_id', targetUserId)
+        .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
       if (error) {
-        return [];
+        console.error('❌ Erreur récupération PDFs:', error);
+        return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
 
-      return (data || []).map(item => ({
+      const pdfs = (data || []).map(item => ({
         fileName: item.file_name,
         responseId: item.response_id || 'supabase',
         templateName: item.template_name || 'Template PDF',
@@ -520,8 +544,17 @@ export class PDFService {
         size: item.file_size || 0,
         formData: item.form_data || {},
       }));
+
+      console.log('💾 PDFs récupérés:', pdfs.length, 'sur', total);
+
+      return {
+        pdfs,
+        totalCount: total,
+        totalPages
+      };
     } catch (error) {
-      return [];
+      console.error('❌ Erreur générale listPDFs:', error);
+      return { pdfs: [], totalCount: 0, totalPages: 0 };
     }
   }
 
