@@ -616,39 +616,70 @@ export const SuperAdminDashboard: React.FC = () => {
                   return 'Utilisateur sans nom';
                 })();
 
+                // Déterminer le style de carte selon le statut
+                const getCardStyle = () => {
+                  if (adminUser.secretCode?.type === 'lifetime') {
+                    return 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 shadow-lg';
+                  } else if (adminUser.secretCode?.type === 'monthly') {
+                    return 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-lg';
+                  } else if (adminUser.subscription?.subscription_status === 'active') {
+                    return 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg';
+                  } else {
+                    return 'bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-gray-200 dark:border-gray-700 shadow-lg';
+                  }
+                };
+
+                const getAvatarStyle = () => {
+                  if (adminUser.secretCode?.type === 'lifetime') {
+                    return 'bg-gradient-to-br from-purple-500 to-pink-600';
+                  } else if (adminUser.secretCode?.type === 'monthly') {
+                    return 'bg-gradient-to-br from-indigo-500 to-purple-600';
+                  } else if (adminUser.subscription?.subscription_status === 'active') {
+                    return 'bg-gradient-to-br from-green-500 to-emerald-600';
+                  } else {
+                    return 'bg-gradient-to-br from-gray-500 to-slate-600';
+                  }
+                };
                 return (
-                  <Card key={adminUser.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 sm:p-6">
+                  <Card key={adminUser.id} className={`hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${getCardStyle()}`}>
+                    <CardContent className="p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                         {/* Informations utilisateur */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-3 mb-2">
+                          <div className="flex items-center space-x-4 mb-4">
                             <div className="flex-shrink-0">
-                              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5 text-blue-600" />
+                              <div className={`w-14 h-14 ${getAvatarStyle()} rounded-full flex items-center justify-center shadow-lg`}>
+                                {adminUser.profile?.company_name ? (
+                                  <Building className="h-7 w-7 text-white" />
+                                ) : (
+                                  <Users className="h-7 w-7 text-white" />
+                                )}
                               </div>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate mb-1">
                                 {displayName}
                               </h3>
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2 mb-2">
                                 <Mail className="h-4 w-4 text-gray-400" />
-                                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 truncate font-medium">
                                   {adminUser.email}
                                 </p>
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                ID: {adminUser.id.slice(0, 8)}...
                               </div>
                             </div>
                           </div>
 
                           {/* Statut d'abonnement */}
-                          <div className="flex items-center space-x-2 mb-3">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          <div className="flex items-center justify-between mb-4">
+                            <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold shadow-md ${
                               subscriptionInfo.color === 'purple' 
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                                 : subscriptionInfo.color === 'green'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                                : 'bg-gradient-to-r from-gray-400 to-slate-500 text-white'
                             }`}>
                               {subscriptionInfo.icon}
                               <span className="ml-1">{subscriptionInfo.status}</span>
@@ -659,35 +690,46 @@ export const SuperAdminDashboard: React.FC = () => {
                             </span>
                           </div>
 
+                          {/* Informations supplémentaires */}
+                          {adminUser.last_sign_in_at && (
+                            <div className="text-xs text-gray-500 mb-3">
+                              🕐 Dernière connexion : {formatDateFR(adminUser.last_sign_in_at)}
+                            </div>
+                          )}
+
                           {/* Statistiques en grille compacte */}
-                          <div className="grid grid-cols-3 gap-3 text-center">
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
-                              <div className="text-lg font-bold text-blue-600">{adminUser.stats.forms_count}</div>
-                              <div className="text-xs text-blue-600">Formulaires</div>
+                          <div className="grid grid-cols-4 gap-3 text-center">
+                            <div className="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{adminUser.stats.forms_count}</div>
+                              <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Formulaires</div>
                             </div>
-                            <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
-                              <div className="text-lg font-bold text-purple-600">{adminUser.stats.templates_count}</div>
-                              <div className="text-xs text-purple-600">Templates</div>
+                            <div className="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 p-3 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="text-xl font-bold text-purple-700 dark:text-purple-300">{adminUser.stats.templates_count}</div>
+                              <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Templates</div>
                             </div>
-                            <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded">
-                              <div className="text-lg font-bold text-green-600">{adminUser.stats.pdfs_count}</div>
-                              <div className="text-xs text-green-600">PDFs</div>
+                            <div className="bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="text-xl font-bold text-green-700 dark:text-green-300">{adminUser.stats.pdfs_count}</div>
+                              <div className="text-xs text-green-600 dark:text-green-400 font-medium">PDFs</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-orange-100 to-red-200 dark:from-orange-900/30 dark:to-red-800/30 p-3 rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{adminUser.stats.responses_count}</div>
+                              <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Réponses</div>
                             </div>
                           </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex-shrink-0 self-start space-y-2">
+                        <div className="flex-shrink-0 self-start space-y-3">
                           {/* Gestion abonnement */}
                           {editingSubscription === adminUser.id ? (
-                            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border space-y-2">
-                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3 shadow-lg">
+                              <div className="text-sm font-bold text-blue-900 dark:text-blue-300 text-center">
                                 Modifier l'abonnement
                               </div>
                               <select
                                 value={newSubscriptionDuration}
                                 onChange={(e) => setNewSubscriptionDuration(e.target.value as any)}
-                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white font-medium"
                               >
                                 <option value="1month">1 mois</option>
                                 <option value="2months">2 mois</option>
@@ -695,22 +737,22 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <option value="1year">1 an</option>
                                 <option value="lifetime">À vie</option>
                               </select>
-                              <div className="flex space-x-1">
+                              <div className="flex space-x-2">
                                 <Button
                                   size="sm"
                                   onClick={() => handleSaveSubscription(adminUser.id)}
-                                  className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1"
+                                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm py-2 shadow-md hover:shadow-lg transition-all"
                                 >
-                                  <Save className="h-3 w-3 mr-1" />
+                                  <Save className="h-4 w-4 mr-1" />
                                   Appliquer
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={handleCancelEditSubscription}
-                                  className="text-gray-600 hover:text-gray-800 text-xs py-1"
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm py-2"
                                 >
-                                  <X className="h-3 w-3" />
+                                  <X className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
@@ -719,18 +761,18 @@ export const SuperAdminDashboard: React.FC = () => {
                               onClick={() => handleEditSubscription(adminUser.id)}
                               variant="ghost"
                               size="sm"
-                              className="w-full flex items-center justify-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 text-xs py-1"
+                              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 hover:from-blue-200 hover:to-indigo-200 dark:from-blue-900/30 dark:to-indigo-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-md transition-all py-2"
                             >
-                              <Edit2 className="h-3 w-3" />
+                              <Edit2 className="h-4 w-4" />
                               <span>Modifier abonnement</span>
                             </Button>
                           )}
                           
                           <Button
                             onClick={() => impersonateUser(adminUser)}
-                            className="w-full flex items-center justify-center space-x-1 bg-red-600 hover:bg-red-700 text-white text-xs py-1 shadow-md hover:shadow-lg transition-all"
+                            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all py-2"
                           >
-                            <UserCheck className="h-3 w-3" />
+                            <UserCheck className="h-4 w-4" />
                             <span className="hidden sm:inline">Se connecter en tant que</span>
                             <span className="sm:hidden">Impersonner</span>
                           </Button>
