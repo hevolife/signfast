@@ -82,7 +82,7 @@ export const MobileBottomNav: React.FC = () => {
               <div className="p-1 bg-white/30 rounded-md mb-0.5">
                 <span className="text-sm">{item.emoji}</span>
               </div>
-              <span className="text-xs font-medium text-center leading-tight">{item.label}</span>
+              <span className="text-[10px] font-medium text-center leading-tight">{item.label}</span>
             </button>
           ) : (
             <Link
@@ -95,7 +95,7 @@ export const MobileBottomNav: React.FC = () => {
               <div className="p-1 bg-white/30 rounded-md mb-0.5">
                 <span className="text-sm">{item.emoji}</span>
               </div>
-              <span className="text-xs font-medium text-center leading-tight truncate max-w-14">{item.label}</span>
+              <span className="text-[10px] font-medium text-center leading-tight truncate max-w-16">{item.label}</span>
             </Link>
           );
         })}
