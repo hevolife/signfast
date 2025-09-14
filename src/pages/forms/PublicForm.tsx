@@ -974,11 +974,11 @@ export const PublicForm: React.FC = () => {
         
         <Card>
           <CardHeader>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
               {form.title}
             </h1>
             {form.description && (
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">
                 {form.description}
               </p>
             )}
@@ -1003,6 +1003,21 @@ export const PublicForm: React.FC = () => {
             </form>
           </CardContent>
         </Card>
+        
+        {/* Pied de page SignFast */}
+        <div className="text-center mt-8 py-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Propulsé par{' '}
+            <a
+              href="https://signfastpro.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
+            >
+              SignFast
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
