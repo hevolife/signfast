@@ -39,12 +39,42 @@ export class PDFTemplateService {
         .from('pdf_templates')
         .select('*')
         .eq('id', templateId)
-        .or('is_public.eq.true,linked_form_id.in.(select id from forms where is_published = true)')
+        .eq('is_public', true)
         .single();
 
       if (error) {
         console.error('❌ Erreur Supabase récupération template:', error);
-        return null;
+        
+        // Si le template n'est pas public, essayer de vérifier s'il est lié à un formulaire publié
+        if (error.code === 'PGRST116') {
+          console.log('📄 Template non public, vérification liaison formulaire...');
+          
+          const { data: linkedTemplate, error: linkedError } = await supabase
+            .from('pdf_templates')
+            .select(`
+              *,
+              forms!linked_form_id(is_published)
+            `)
+            .eq('id', templateId)
+            .single();
+          
+          if (linkedError || !linkedTemplate) {
+            console.error('❌ Template non trouvé ou non accessible:', linkedError);
+            return null;
+          }
+          
+          // Vérifier si le formulaire lié est publié
+          const isFormPublished = linkedTemplate.forms?.is_published;
+          if (!isFormPublished) {
+            console.error('❌ Template lié à un formulaire non publié');
+            return null;
+          }
+          
+          console.log('✅ Template accessible via formulaire publié');
+          data = linkedTemplate;
+        } else {
+          return null;
+        }
       }
 
       console.log('✅ Template trouvé:', data.name, 'public:', data.is_public);

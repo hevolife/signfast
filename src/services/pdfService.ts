@@ -840,12 +840,41 @@ export class PDFService {
         .from('pdf_templates')
         .select('*')
         .eq('id', templateId)
-        .or('is_public.eq.true,linked_form_id.in.(select id from forms where is_published = true)')
+        .eq('is_public', true)
         .single();
 
       if (error) {
-        console.error('❌ Erreur récupération template:', error);
-        throw new Error(`Template PDF non trouvé: ${templateId}`);
+        // Si le template n'est pas public, essayer de vérifier s'il est lié à un formulaire publié
+        if (error.code === 'PGRST116') {
+          console.log('📄 Template non public, vérification liaison formulaire...');
+          
+          const { data: linkedTemplate, error: linkedError } = await supabase
+            .from('pdf_templates')
+            .select(`
+              *,
+              forms!linked_form_id(is_published)
+            `)
+            .eq('id', templateId)
+            .single();
+          
+          if (linkedError || !linkedTemplate) {
+            console.error('❌ Template non trouvé:', linkedError);
+            throw new Error(`Template PDF non trouvé: ${templateId}`);
+          }
+          
+          // Vérifier si le formulaire lié est publié
+          const isFormPublished = linkedTemplate.forms?.is_published;
+          if (!isFormPublished) {
+            console.error('❌ Template lié à un formulaire non publié');
+            throw new Error(`Template PDF non accessible: formulaire non publié`);
+          }
+          
+          console.log('✅ Template accessible via formulaire publié');
+          data = linkedTemplate;
+        } else {
+          console.error('❌ Erreur récupération template:', error);
+          throw new Error(`Template PDF non trouvé: ${templateId}`);
+        }
       }
 
       console.log('✅ Template trouvé pour génération:', data.name);
