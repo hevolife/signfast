@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { FormInput } from 'lucide-react';
+import { FormInput, Eye, EyeOff, UserPlus, ArrowRight, Gift, Crown, Sparkles, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Signup: React.FC = () => {
@@ -12,6 +12,8 @@ export const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
@@ -102,97 +104,242 @@ export const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-pink-900/20 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
+        {/* Logo moderne */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2">
-            <FormInput className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">
+          <Link to="/" className="inline-flex items-center space-x-3 group">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <FormInput className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               SignFast
             </span>
           </Link>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 font-medium">
+            Rejoignez des milliers d'utilisateurs
+          </p>
         </div>
 
         {/* Bannière de parrainage */}
         {affiliateCode && (
-          <Card className="mb-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800">
+          <Card className="mb-6 border-0 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-xl">
             <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <span className="text-2xl">🎉</span>
-                <span className="font-semibold text-green-900 dark:text-green-300">
+              <div className="flex items-center justify-center space-x-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                  <Gift className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-bold text-green-900 dark:text-green-300 text-lg">
                   Vous avez été parrainé !
                 </span>
               </div>
-              <p className="text-sm text-green-700 dark:text-green-400">
-                Code de parrainage : <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded font-mono">{affiliateCode}</code>
-              </p>
+              <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+                <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                  Code de parrainage : 
+                  <code className="bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded font-mono ml-2 text-green-800 dark:text-green-300">
+                    {affiliateCode}
+                  </code>
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
-        <Card>
-          <CardHeader>
-            <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              Créer un compte
-            </h2>
-            <p className="text-center text-gray-600 dark:text-gray-400">
-              Commencez à créer vos formulaires
-            </p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                id="email"
-                type="email"
-                label="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="votre@email.com"
-              />
-              
-              <Input
-                id="password"
-                type="password"
-                label="Mot de passe"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-              />
 
-              <Input
-                id="confirmPassword"
-                type="password"
-                label="Confirmer le mot de passe"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-              />
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
+          <CardHeader>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl mb-6 shadow-lg">
+                <UserPlus className="h-8 w-8 text-purple-600" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Créer un compte
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">
+                Commencez à créer vos contrats en 2 minutes
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 sm:p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <Input
+                  id="email"
+                  type="email"
+                  label="Adresse email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="votre@email.com"
+                  className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all"
+                />
+                
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    label="Mot de passe"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    label="Confirmer le mot de passe"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Indicateur de force du mot de passe */}
+              {password && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Lock className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                      Force du mot de passe
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className={`flex items-center space-x-2 text-xs ${password.length >= 6 ? 'text-green-600' : 'text-gray-400'}`}>
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Au moins 6 caractères</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 text-xs ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-400'}`}>
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Une majuscule (recommandé)</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 text-xs ${/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-400'}`}>
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Un chiffre (recommandé)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl"
                 disabled={loading}
               >
-                {loading ? 'Création...' : 'Créer mon compte'}
+                {loading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Création...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-2">
+                    <UserPlus className="h-5 w-5" />
+                    <span>Créer mon compte</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                )}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Déjà un compte ?{' '}
+            <div className="mt-8 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200/50 dark:border-gray-700/50"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white/80 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 font-medium backdrop-blur-sm rounded-full">
+                    Déjà un compte ?
+                  </span>
+                </div>
+              </div>
+              
+              <div className="mt-6">
                 <Link
                   to="/login"
                   state={{ from: location.state?.from }}
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="group"
                 >
-                  Se connecter
+                  <Button 
+                    variant="ghost" 
+                    className="w-full bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-800 dark:hover:to-indigo-800 font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl border border-blue-200 dark:border-blue-800"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>Se connecter</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </Button>
                 </Link>
-              </p>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Avantages de SignFast */}
+        <div className="mt-8">
+          <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-0 shadow-xl">
+            <CardContent className="p-6">
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center space-x-2 mb-3">
+                  <Crown className="h-5 w-5 text-indigo-600" />
+                  <span className="font-bold text-indigo-900 dark:text-indigo-300">
+                    Pourquoi choisir SignFast ?
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center space-x-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+                    <span className="text-white text-sm">✅</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Gratuit pour commencer</span>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Aucune carte bancaire requise</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                    <span className="text-white text-sm">⚡</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Configuration en 2 minutes</span>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Interface intuitive et guidée</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-md">
+                    <span className="text-white text-sm">🔒</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Sécurité maximale</span>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Conforme RGPD • Hébergé en France</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
