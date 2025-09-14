@@ -172,13 +172,13 @@ const AppContent: React.FC = () => {
 };
 function App() {
   return (
-    <AuthProvider>
-      <DemoProvider>
+    <DemoProvider>
+      <AuthProvider>
         <Router>
           <AppContent />
         </Router>
-      </DemoProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </DemoProvider>
   );
 }
 
