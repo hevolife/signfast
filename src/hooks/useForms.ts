@@ -31,6 +31,8 @@ export const useForms = () => {
     
     if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.warn('Supabase non configuré, impossible de récupérer les formulaires');
+      setForms([]);
+      setTotalCount(0);
       setLoading(false);
       return;
     }

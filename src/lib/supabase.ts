@@ -49,11 +49,11 @@ const isSupabaseConfigured = () => {
 // Safe fetch wrapper that handles configuration issues
 const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   if (!isSupabaseConfigured()) {
-    console.warn('⚠️ Supabase not configured, returning mock response');
+    console.warn('⚠️ Supabase not configured, skipping request');
     // Return a mock response instead of throwing to prevent crashes
-    return new Response(JSON.stringify({ error: 'Supabase not configured' }), {
-      status: 503,
-      statusText: 'Service Unavailable',
+    return new Response(JSON.stringify({ data: null, error: null }), {
+      status: 200,
+      statusText: 'OK',
       headers: { 'Content-Type': 'application/json' }
     });
   }
@@ -61,14 +61,15 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
     return await customFetch(url, options);
   } catch (error) {
-    console.warn('⚠️ Network error, returning error response:', error);
+    console.warn('⚠️ Network error, returning empty response:', error);
     // Return a proper error response instead of throwing
     return new Response(JSON.stringify({ 
-      error: 'Network error', 
-      message: error instanceof Error ? error.message : 'Unknown error' 
+      data: null, 
+      error: null,
+      count: 0
     }), {
-      status: 503,
-      statusText: 'Service Unavailable',
+      status: 200,
+      statusText: 'OK',
       headers: { 'Content-Type': 'application/json' }
     });
   }
