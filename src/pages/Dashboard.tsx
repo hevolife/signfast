@@ -550,37 +550,3 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
-                  <div key={form.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full shadow-sm ${
-                        form.is_published ? 'bg-green-500' : 'bg-yellow-500'
-                      }`}></div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                          {form.title}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {form.fields?.length || 0} champs • {form.is_published ? 'Publié' : 'Brouillon'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500 font-medium">
-                        {new Date(form.created_at).toLocaleDateString()}
-                      </span>
-                      <Link to={`/forms/${form.id}/edit`}>
-                        <Button variant="ghost" size="sm" className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800">
-                          Modifier
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
-  );
-};
