@@ -209,6 +209,7 @@ export class PDFGenerator {
       }
       
       if (signatureValue) {
+      }
       const result = imageValue || '';
       searchCache.set(cacheKey, result);
       return result;
