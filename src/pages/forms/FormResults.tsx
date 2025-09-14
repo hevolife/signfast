@@ -169,24 +169,24 @@ export const FormResults: React.FC = () => {
           console.log('🗑️ Suppression automatique des PDFs associés:', associatedPdfs.length, 'PDFs');
           
           const { error: pdfsError } = await supabase
-          .from('pdf_storage')
-          .select('file_name, response_id, responses!inner(form_id)')
-          .eq('responses.form_id', id);
+            .from('pdf_storage')
+            .delete()
+            .in('response_id', associatedPdfs.map(pdf => pdf.response_id));
 
-        if (pdfFetchError) {
-          console.warn('⚠️ Erreur récupération PDFs associés:', pdfFetchError);
+          if (pdfsError) {
+            console.warn('⚠️ Erreur suppression PDFs associés:', pdfsError);
+            toast.dismiss();
+            toast.success('Réponses supprimées (erreur suppression PDFs associés)');
+          } else {
+            console.log('✅ PDFs associés supprimés avec succès');
+            toast.dismiss();
+            toast.success(`Toutes les réponses et ${associatedPdfs.length} PDFs associés supprimés avec succès`);
+          }
+        } else {
+          toast.dismiss();
+          toast.success('Toutes les réponses supprimées avec succès');
         }
 
-        // 2. Supprimer toutes les réponses du formulaire
-        const { error: responsesError } = await supabase
-          .from('responses')
-          .delete()
-          .eq('form_id', id);
-
-        if (responsesError) {
-          toast.dismiss();
-          toast.error('Erreur lors de la suppression des réponses');
-          return;
         // 5. Actualiser la liste
         setCurrentPage(1);
         fetchPage(1, itemsPerPage);
