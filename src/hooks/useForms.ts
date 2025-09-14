@@ -140,18 +140,19 @@ export const useForms = () => {
       console.log('📝 IsImpersonating:', isImpersonating);
       console.log('📝 Updates keys:', Object.keys(updates));
     
-      let targetUserId = user.id;
+      const targetUserId = user.id;
       console.log('📝 Target User ID:', targetUserId);
     
       if (isImpersonating && impersonationData) {
-        targetUserId = impersonationData.target_user_id;
         console.log('🎭 IMPERSONATION ACTIVE');
         console.log('🎭 Admin:', impersonationData.admin_email);
         console.log('🎭 Target:', impersonationData.target_email);
         console.log('🎭 Target ID:', impersonationData.target_user_id);
+        console.log('🎭 ATTENTION: targetUserId reste:', targetUserId, 'mais devrait être:', impersonationData.target_user_id);
       }
 
       console.log('📝 APPEL SUPABASE UPDATE...');
+      console.log('📝 Query params:', { id, targetUserId, updates });
       
       const { error } = await supabase
         .from('forms')
@@ -163,6 +164,8 @@ export const useForms = () => {
         console.error('📝 ERREUR SUPABASE:', error);
         console.error('📝 Message:', error.message);
         console.error('📝 Code:', error.code);
+        console.error('📝 Details:', error.details);
+        console.error('📝 Hint:', error.hint);
         
         // Check if it's a network error
         if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
@@ -174,6 +177,24 @@ export const useForms = () => {
       }
       
       console.log('📝 SUCCÈS - Formulaire mis à jour');
+      
+      // Vérifier que la mise à jour a bien eu lieu
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('forms')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', targetUserId)
+        .single();
+      
+      if (verifyError) {
+        console.error('📝 ERREUR VÉRIFICATION:', verifyError);
+        console.error('📝 Le formulaire n\'existe peut-être pas pour cet utilisateur');
+        return false;
+      }
+      
+      console.log('📝 VÉRIFICATION RÉUSSIE - Formulaire trouvé:', verifyData.title);
+      console.log('📝 Nombre de champs après update:', verifyData.fields?.length || 0);
+      
       await fetchForms(1, 10); // Recharger la liste
       console.log('📝 Liste rechargée');
       return true;
