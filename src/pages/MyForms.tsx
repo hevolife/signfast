@@ -154,7 +154,20 @@ export const MyForms: React.FC = () => {
         </div>
 
         {forms.length === 0 ? (
-          <Card>
+          loading ? (
+            <Card>
+              <CardContent className="text-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Chargement des formulaires...
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Récupération de vos formulaires en cours
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardContent className="text-center py-16">
               <div className="mb-4">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-6">
@@ -184,7 +197,8 @@ export const MyForms: React.FC = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          )
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {forms.map((form, index) => {
