@@ -29,7 +29,9 @@ import {
   Shield,
   Users,
   Moon,
-  Sun
+  Sun,
+  Sparkles,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { stripeConfig } from '../stripe-config';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -417,75 +419,99 @@ export const Settings: React.FC = () => {
   const product = stripeConfig.products[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-indigo-900/20 dark:to-purple-900/20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Paramètres
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Gérez votre profil et votre abonnement
-          </p>
+        {/* Header moderne avec gradient */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-700 rounded-3xl shadow-2xl mb-8">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-4 left-4 w-24 h-24 bg-yellow-400/20 rounded-full blur-xl"></div>
+          
+          <div className="relative px-6 sm:px-8 py-8 sm:py-12">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-6 shadow-lg">
+                <SettingsIcon className="h-8 w-8 text-white" />
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+                Paramètres
+              </h1>
+              <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl mx-auto">
+                Gérez votre profil, sécurité et abonnement en toute simplicité
+              </p>
+              
+              {/* Bouton Code Secret dans le header */}
+              <div className="mt-8">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSecretCodeModal(true)}
+                  className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold px-6 py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  <Key className="h-5 w-5 mr-2" />
+                  <span>J'ai un code secret</span>
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Onglets */}
-        <div className="mb-8">
+        <div className="mb-8 bg-white/60 backdrop-blur-sm rounded-2xl p-2 shadow-xl">
           <div>
-            <nav className="flex space-x-3 justify-center flex-wrap">
+            <nav className="flex space-x-2 justify-center flex-wrap">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <span className="text-sm">{getTabEmoji('profile')}</span>
                   </div>
-                  <span className="font-semibold">Profil</span>
+                  <span>Profil</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <span className="text-sm">{getTabEmoji('security')}</span>
                   </div>
-                  <span className="font-semibold">Sécurité</span>
+                  <span>Sécurité</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('affiliate')}
-                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <span className="text-sm">{getTabEmoji('affiliate')}</span>
                   </div>
-                  <span className="font-semibold">Affiliation</span>
+                  <span>Affiliation</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('subscription')}
-                className={`py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <span className="text-sm">{getTabEmoji('subscription')}</span>
                   </div>
-                  <span className="font-semibold">Abonnement</span>
+                  <span>Abonnement</span>
                 </div>
               </button>
               <button
                 onClick={toggleDarkMode}
-                className="py-2 px-3 rounded-lg font-medium text-xs transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-slate-100 hover:text-gray-600 hover:shadow-md"
+                className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-gray-100 hover:to-slate-200 hover:text-gray-700 hover:shadow-lg"
                 title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/50 rounded shadow-sm">
+                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <span className="text-sm">{isDarkMode ? '☀️' : '🌙'}</span>
                   </div>
-                  <span className="font-semibold">{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
+                  <span>{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
                 </div>
               </button>
             </nav>
@@ -496,7 +522,7 @@ export const Settings: React.FC = () => {
         {isSuperAdmin && (
           <div className="mb-8 flex justify-center">
             <Link to="/admin">
-              <Button className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white">
+              <Button className="flex items-center space-x-2 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5">
                 <Shield className="h-4 w-4" />
                 <span>Dashboard Super Admin</span>
               </Button>
@@ -507,33 +533,33 @@ export const Settings: React.FC = () => {
         {activeTab === 'profile' && (
           <div className="space-y-6">
             {/* Logo de l'entreprise */}
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 shadow-lg">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <span className="text-white text-lg">📷</span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                       Logo de l'entreprise
                     </h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Personnalisez l'apparence de vos formulaires
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-6">
+                <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
                   <div className="flex-shrink-0">
                     {profile?.logo_url ? (
                       <img
                         src={profile.logo_url}
                         alt="Logo entreprise"
-                        className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                        className="w-20 h-20 object-cover rounded-2xl border-2 border-gray-200 shadow-lg"
                       />
                     ) : (
-                      <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center shadow-lg">
                         <Building className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
@@ -549,14 +575,14 @@ export const Settings: React.FC = () => {
                     />
                     <label
                       htmlFor="logo-upload"
-                      className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer ${
+                      className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-xl shadow-lg text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-all duration-300 hover:shadow-xl ${
                         logoUploading ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
                       <Upload className="h-4 w-4 mr-2" />
                       {logoUploading ? 'Upload en cours...' : 'Changer le logo'}
                     </label>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-2 font-medium">
                       JPEG ou PNG, max 5MB
                     </p>
                   </div>
@@ -565,24 +591,24 @@ export const Settings: React.FC = () => {
             </Card>
 
             {/* Informations personnelles */}
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <span className="text-white text-lg">👤</span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                       Informations personnelles
                     </h3>
-                    <p className="text-sm text-green-700 dark:text-green-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Gérez vos informations de profil
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSaveProfile} className="space-y-4">
+                <form onSubmit={handleSaveProfile} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       label="Prénom"
@@ -606,14 +632,14 @@ export const Settings: React.FC = () => {
                   />
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                       Adresse
                     </label>
                     <textarea
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       placeholder="Adresse complète de l'entreprise"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 font-medium shadow-lg transition-all"
                       rows={3}
                     />
                   </div>
@@ -628,7 +654,7 @@ export const Settings: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
                   >
                     {saving ? 'Sauvegarde...' : 'Sauvegarder les modifications'}
                   </Button>
@@ -641,29 +667,29 @@ export const Settings: React.FC = () => {
         {activeTab === 'security' && (
           <div className="space-y-6">
             {/* Changement d'email */}
-            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 shadow-lg">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <span className="text-white text-lg">📧</span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                       Adresse email
                     </h3>
-                    <p className="text-sm text-purple-700 dark:text-purple-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Modifiez votre adresse de connexion
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleChangeEmail} className="space-y-4">
+                <form onSubmit={handleChangeEmail} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                       Email actuel
                     </label>
-                    <div className="px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400">
+                    <div className="px-4 py-3 bg-gray-100/70 dark:bg-gray-800/70 border border-gray-300/50 dark:border-gray-600/50 rounded-xl text-gray-600 dark:text-gray-400 font-medium backdrop-blur-sm">
                       {user?.email}
                     </div>
                   </div>
@@ -689,13 +715,13 @@ export const Settings: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving || newEmail === user?.email}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
                   >
                     {saving ? 'Mise à jour...' : 'Changer l\'adresse email'}
                   </Button>
                 </form>
                 
-                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="mt-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800 shadow-lg">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
                     Vous recevrez un email de confirmation à votre nouvelle adresse.
@@ -705,24 +731,24 @@ export const Settings: React.FC = () => {
             </Card>
 
             {/* Changement de mot de passe */}
-            <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800 shadow-lg">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <span className="text-white text-lg">🔐</span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-300">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                       Mot de passe
                     </h3>
-                    <p className="text-sm text-orange-700 dark:text-orange-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Changez votre mot de passe de connexion
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleChangePassword} className="space-y-4">
+                <form onSubmit={handleChangePassword} className="space-y-6">
                   <Input
                     label="Nouveau mot de passe"
                     type="password"
@@ -744,13 +770,13 @@ export const Settings: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving || !newPassword || newPassword !== confirmPassword}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
                   >
                     {saving ? 'Mise à jour...' : 'Changer le mot de passe'}
                   </Button>
                 </form>
                 
-                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
                   <p className="text-sm text-blue-800 dark:text-blue-200">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
                     Le mot de passe doit contenir au moins 6 caractères.
@@ -769,17 +795,17 @@ export const Settings: React.FC = () => {
           <div className="space-y-6">
             {/* Affichage du code secret actif */}
             {hasSecretCode && (
-              <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+              <Card className="border-0 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 shadow-xl">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <div className="flex items-center justify-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
                       <Gift className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-center">
-                      <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-300">
+                      <h3 className="text-lg sm:text-xl font-bold text-purple-900 dark:text-purple-300">
                         Code Secret Actif !
                       </h3>
-                      <p className="text-sm text-purple-700 dark:text-purple-400">
+                      <p className="text-sm text-purple-700 dark:text-purple-400 font-medium">
                         {secretCodeType === 'lifetime' 
                           ? '🎉 Accès à vie débloqué !' 
                           : `Accès premium jusqu'au ${secretCodeExpiresAt ? new Date(secretCodeExpiresAt).toLocaleDateString('fr-FR') : 'N/A'}`
@@ -791,59 +817,47 @@ export const Settings: React.FC = () => {
               </Card>
             )}
 
-            {/* Bouton Code Secret */}
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                onClick={() => setShowSecretCodeModal(true)}
-                className="flex items-center space-x-2 mx-auto bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
-              >
-                <Key className="h-4 w-4" />
-                <span>J'ai un code secret</span>
-              </Button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
               {/* Plan Gratuit */}
-              <Card className={`bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-gray-200 dark:border-gray-700 shadow-lg ${!isSubscribed ? 'ring-2 ring-gray-300' : ''}`}>
+              <Card className={`bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ${!isSubscribed ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}>
                 <CardHeader>
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-slate-600 rounded-full flex items-center justify-center shadow-lg">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-gray-500 to-slate-600 rounded-2xl flex items-center justify-center shadow-lg">
                       <span className="text-white text-lg">🆓</span>
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         Plan Gratuit
                       </h3>
-                      <p className="text-sm text-gray-700 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                         Fonctionnalités de base
                       </p>
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                       0€
-                      <span className="text-sm font-normal text-gray-500">/mois</span>
+                      <span className="text-sm font-medium text-gray-500">/mois</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Formulaires</span>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Formulaires</span>
+                      <span className="text-sm font-bold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">
                         {forms.current}/{stripeConfig.freeLimits.maxForms}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Templates PDF</span>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Templates PDF</span>
+                      <span className="text-sm font-bold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">
                         {pdfTemplates.current}/{stripeConfig.freeLimits.maxPdfTemplates}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">PDFs sauvegardés</span>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">PDFs sauvegardés</span>
+                      <span className="text-sm font-bold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">
                         {savedPdfs.current}/{stripeConfig.freeLimits.maxSavedPdfs}
                       </span>
                     </div>
@@ -851,7 +865,7 @@ export const Settings: React.FC = () => {
                   
                   {!isSubscribed && (
                     <div className="text-center pt-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                      <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg">
                         Plan actuel
                       </span>
                     </div>
@@ -860,40 +874,40 @@ export const Settings: React.FC = () => {
               </Card>
 
               {/* Plan Pro */}
-              <Card className={`bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-800 shadow-lg ${isSubscribed ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-300'} relative`}>
+              <Card className={`bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ${isSubscribed ? 'ring-2 ring-green-400 ring-opacity-50' : 'ring-2 ring-blue-400 ring-opacity-50'} relative`}>
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-600 text-white">
+                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-xl">
                     <Crown className="h-4 w-4 mr-1" />
                     Recommandé
                   </span>
                 </div>
                 <CardHeader>
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
                       <span className="text-white text-lg">👑</span>
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-yellow-900 dark:text-yellow-300">
+                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {product.name}
                       </h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                         {product.description}
                       </p>
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-yellow-900 dark:text-yellow-300">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                       {product.price}€
-                      <span className="text-sm font-normal text-yellow-600 dark:text-yellow-500">/mois</span>
+                      <span className="text-sm font-medium text-gray-500">/mois</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {product.features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2">
+                      <div key={index} className="flex items-center space-x-3">
                         <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -901,38 +915,38 @@ export const Settings: React.FC = () => {
                   {isSubscribed ? (
                     <div className="space-y-3 pt-4">
                       <div className="text-center">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold shadow-lg">
                           <Crown className="h-4 w-4 mr-1" />
                           {hasSecretCode ? 'Accès Premium Actif' : 'Abonnement actif'}
                         </span>
                       </div>
                       
                       {hasSecretCode && secretCodeType === 'lifetime' && (
-                        <div className="text-center text-sm text-purple-600 dark:text-purple-400">
+                        <div className="text-center text-sm text-purple-600 dark:text-purple-400 font-semibold bg-purple-100 dark:bg-purple-900/30 px-3 py-2 rounded-xl">
                           <Gift className="h-4 w-4 inline mr-1" />
                           Accès à vie via code secret
                         </div>
                       )}
                       
                       {hasSecretCode && secretCodeType === 'monthly' && secretCodeExpiresAt && (
-                        <div className="text-center text-sm text-purple-600 dark:text-purple-400">
+                        <div className="text-center text-sm text-purple-600 dark:text-purple-400 font-semibold bg-purple-100 dark:bg-purple-900/30 px-3 py-2 rounded-xl">
                           <Calendar className="h-4 w-4 inline mr-1" />
                           Code secret expire le {new Date(secretCodeExpiresAt).toLocaleDateString('fr-FR')}
                         </div>
                       )}
                       
                       {currentPeriodEnd && !hasSecretCode && (
-                        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                        <div className="text-center text-sm text-gray-600 dark:text-gray-400 font-semibold bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-xl">
                           <Calendar className="h-4 w-4 inline mr-1" />
                           {cancelAtPeriodEnd ? 'Se termine le' : 'Renouvellement le'} {formatDate(currentPeriodEnd)}
                         </div>
                       )}
 
                       {cancelAtPeriodEnd && (
-                        <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                        <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 p-4 rounded-xl shadow-lg">
                           <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
                             <AlertCircle className="h-4 w-4" />
-                            <span className="text-sm">
+                            <span className="text-sm font-medium">
                               Votre abonnement sera annulé à la fin de la période
                             </span>
                           </div>
