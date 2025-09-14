@@ -164,6 +164,26 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     ];
 
+    const initialDemoForm: DemoForm = {
+      id: uuidv4(),
+      title: 'Contrat de Démonstration',
+      description: 'Formulaire de démonstration pour tester SignFast',
+      fields: demoFormFields,
+      settings: {
+        allowMultiple: true,
+        requireAuth: false,
+        collectEmail: true,
+        generatePdf: true,
+        emailPdf: false,
+        savePdfToServer: true,
+      },
+      user_id: newDemoUser.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_published: true,
+      password: null,
+    };
+
     // Créer des templates PDF de démonstration
     const demoTemplates: DemoTemplate[] = [
       {
@@ -260,25 +280,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     ];
 
-    const initialDemoForm: DemoForm = {
-      id: uuidv4(),
-      title: 'Contrat de Démonstration',
-      description: 'Formulaire de démonstration pour tester SignFast',
-      fields: demoFormFields,
-      settings: {
-        allowMultiple: true,
-        requireAuth: false,
-        collectEmail: true,
-        generatePdf: true,
-        emailPdf: false,
-        savePdfToServer: true,
-      },
-      user_id: newDemoUser.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_published: true,
-      password: null,
-    };
 
     const demoData = {
       user: newDemoUser,
