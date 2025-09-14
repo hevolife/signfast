@@ -150,19 +150,12 @@ export const useSubscription = () => {
       try {
         console.log('💳 Vérification codes secrets pour userId:', targetUserId);
         
-        // Récupérer les codes secrets actifs de l'utilisateur cible
+        // Récupérer les codes secrets actifs de l'utilisateur cible avec une requête plus simple
         const { data: userSecretCodes, error: secretCodesError } = await supabase
           .from('user_secret_codes')
-          .select(`
-            expires_at,
-            secret_codes (
-              id,
-              type,
-              is_active
-            )
-          `)
+          .select('expires_at, code_id')
           .eq('user_id', targetUserId)
-          .not('secret_codes', 'is', null);
+          .order('activated_at', { ascending: false });
 
         if (secretCodesError) {
           console.warn('💳 Erreur récupération codes secrets:', secretCodesError);
@@ -170,42 +163,66 @@ export const useSubscription = () => {
           console.log('💳 Codes secrets récupérés:', userSecretCodes?.length || 0);
           
           if (userSecretCodes && userSecretCodes.length > 0) {
-            console.log('💳 Détails codes secrets:', userSecretCodes.map(c => ({
-              type: c.secret_codes?.type,
-              isActive: c.secret_codes?.is_active,
-              userExpiresAt: c.expires_at
-            })));
+            // Récupérer les détails des codes secrets séparément
+            const codeIds = userSecretCodes.map(c => c.code_id);
             
-            // Vérifier chaque code
-            for (const codeData of userSecretCodes) {
-              const secretCode = codeData.secret_codes;
+            const { data: secretCodesDetails, error: detailsError } = await supabase
+              .from('secret_codes')
+              .select('id, type, is_active')
+              .in('id', codeIds)
+              .eq('is_active', true);
+            
+            if (detailsError) {
+              console.warn('💳 Erreur récupération détails codes:', detailsError);
+            } else {
+              console.log('💳 Détails codes secrets:', secretCodesDetails?.length || 0);
               
-              // Vérifier que le code secret existe et est actif
-              if (!secretCode || !secretCode.is_active) {
-                console.log('💳 Code secret inactif ou manquant, skip');
-                continue;
-              }
+              // Mapper les codes avec leurs détails
+              const codesWithDetails = userSecretCodes.map(userCode => {
+                const codeDetails = secretCodesDetails?.find(detail => detail.id === userCode.code_id);
+                return {
+                  ...userCode,
+                  secret_codes: codeDetails
+                };
+              }).filter(code => code.secret_codes?.is_active);
               
-              const codeType = secretCode.type;
-              const userExpiresAt = codeData.expires_at;
-              
-              console.log('💳 Vérification code:', { codeType, userExpiresAt });
-              
-              if (codeType === 'lifetime') {
-                hasActiveSecretCode = true;
-                secretCodeType = codeType;
-                secretCodeExpiresAt = null;
-                console.log('💳 ✅ Code à vie actif trouvé');
-                break;
-              } else if (codeType === 'monthly') {
-                if (!userExpiresAt || new Date(userExpiresAt) > new Date()) {
+              console.log('💳 Codes actifs trouvés:', codesWithDetails.length);
+            
+              // Vérifier chaque code actif
+              for (const codeData of codesWithDetails) {
+                const secretCode = codeData.secret_codes;
+                
+                if (!secretCode) {
+                  console.log('💳 Code secret manquant, skip');
+                  continue;
+                }
+                
+                const codeType = secretCode.type;
+                const userExpiresAt = codeData.expires_at;
+                
+                console.log('💳 Vérification code:', { 
+                  codeId: secretCode.id, 
+                  codeType, 
+                  userExpiresAt,
+                  isActive: secretCode.is_active 
+                });
+                
+                if (codeType === 'lifetime') {
                   hasActiveSecretCode = true;
                   secretCodeType = codeType;
-                  secretCodeExpiresAt = userExpiresAt;
-                  console.log('💳 ✅ Code mensuel actif trouvé, expire le:', userExpiresAt);
+                  secretCodeExpiresAt = null;
+                  console.log('💳 ✅ Code à vie actif trouvé');
                   break;
-                } else {
-                  console.log('💳 ❌ Code mensuel expiré:', userExpiresAt);
+                } else if (codeType === 'monthly') {
+                  if (!userExpiresAt || new Date(userExpiresAt) > new Date()) {
+                    hasActiveSecretCode = true;
+                    secretCodeType = codeType;
+                    secretCodeExpiresAt = userExpiresAt;
+                    console.log('💳 ✅ Code mensuel actif trouvé, expire le:', userExpiresAt);
+                    break;
+                  } else {
+                    console.log('💳 ❌ Code mensuel expiré:', userExpiresAt);
+                  }
                 }
               }
             }
