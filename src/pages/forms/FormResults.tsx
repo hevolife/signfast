@@ -543,6 +543,7 @@ export const FormResults: React.FC = () => {
                     </div>
                   </div>
                 ) : (
+                <>
                 {form.fields?.map((field) => {
                   const value = selectedResponse.data[field.label];
                   if (value === undefined || value === null || value === '') return null;
@@ -578,6 +579,7 @@ export const FormResults: React.FC = () => {
                     </div>
                   );
                 })}
+                </>
                 )}
 
                 {/* Métadonnées */}
