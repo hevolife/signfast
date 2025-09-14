@@ -236,7 +236,7 @@ export class PDFTemplateService {
         .from('pdf_templates')
         .select('id, name')
         .eq('id', templateId)
-        .single();
+        .maybeSingle();
 
       if (checkError || !templateExists) {
         return false;
@@ -259,7 +259,7 @@ export class PDFTemplateService {
             .from('forms')
             .select('id, title, settings')
             .eq('id', formId)
-            .single();
+            .maybeSingle();
 
           if (checkFormError || !formExists) {
             return false;
