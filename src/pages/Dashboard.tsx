@@ -104,12 +104,6 @@ export const Dashboard: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Dashboard SignFast
-              {isSubscribed && (
-                <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                  <Crown className="h-4 w-4 mr-1" />
-                  {hasSecretCode ? 'Premium (Code Secret)' : product.name}
-                </span>
-              )}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               Vue d'ensemble de votre activité SignFast
