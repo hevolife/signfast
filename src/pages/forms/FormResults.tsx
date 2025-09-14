@@ -67,6 +67,18 @@ export const FormResults: React.FC = () => {
   const handleDeleteResponse = async (responseId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette réponse ?')) {
       try {
+        // Récupérer le PDF associé avant suppression
+        const { data: associatedPdf, error: pdfFetchError } = await supabase
+          .from('pdf_storage')
+          .select('file_name')
+          .eq('response_id', responseId)
+          .maybeSingle();
+
+        if (pdfFetchError) {
+          console.warn('⚠️ Erreur récupération PDF associé:', pdfFetchError);
+        }
+
+        // Supprimer la réponse
         const { error } = await supabase
           .from('responses')
           .delete()
@@ -75,6 +87,26 @@ export const FormResults: React.FC = () => {
         if (error) {
           toast.error('Erreur lors de la suppression');
         } else {
+          // Supprimer automatiquement le PDF associé si il existe
+          if (associatedPdf?.file_name) {
+            console.log('🗑️ Suppression automatique du PDF associé:', associatedPdf.file_name);
+            
+            const { error: pdfDeleteError } = await supabase
+              .from('pdf_storage')
+              .delete()
+              .eq('file_name', associatedPdf.file_name);
+
+            if (pdfDeleteError) {
+              console.warn('⚠️ Erreur suppression PDF associé:', pdfDeleteError);
+              toast.success('Réponse supprimée (erreur suppression PDF associé)');
+            } else {
+              console.log('✅ PDF associé supprimé avec succès');
+              toast.success('Réponse et PDF associé supprimés avec succès');
+            }
+          } else {
+            toast.success('Réponse supprimée avec succès');
+          }
+          
           toast.success('Réponse supprimée avec succès');
           // Refresh current page
           fetchPage(currentPage, itemsPerPage);
