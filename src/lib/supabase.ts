@@ -15,7 +15,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   
   if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
     console.warn('Supabase non configuré, requête ignorée');
-    throw new Error('Supabase non configuré');
+    return Promise.reject(new Error('Supabase non configuré'));
   }
 
   const response = await fetch(url, options);
