@@ -234,7 +234,7 @@ export const useForms = () => {
     }
 
     try {
-      console.log('📝 Tentative mise à jour avec:', { id, targetUserId, updates });
+      console.log('📝 Tentative suppression avec:', { id, targetUserId });
       
       const { error } = await supabase
         .from('forms')
@@ -243,7 +243,7 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (error) {
-        console.error('❌ Erreur Supabase updateForm:', error);
+        console.error('❌ Erreur Supabase deleteForm:', error);
         console.error('❌ Détails erreur:', {
           message: error.message,
           code: error.code,
@@ -257,7 +257,7 @@ export const useForms = () => {
       await fetchForms(1, 10); // Recharger la liste
       return true;
     } catch (error) {
-      console.error('❌ Erreur générale updateForm:', error);
+      console.error('❌ Erreur générale deleteForm:', error);
       console.error('❌ Type d\'erreur:', typeof error);
       console.error('❌ Message d\'erreur:', error instanceof Error ? error.message : String(error));
       return false;
