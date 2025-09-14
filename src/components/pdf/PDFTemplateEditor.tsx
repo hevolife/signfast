@@ -547,30 +547,83 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
         </div>
 
         {/* Nom du template */}
-        <div className="mb-6 space-y-4">
-          {/* Nom du template */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nom du template
-            </label>
-            <Input
-              value={currentTemplateName}
-              onChange={(e) => onTemplateNameChange?.(e.target.value)}
-              placeholder="Ex: Contrat de location, Facture..."
-              className="w-full"
-            />
-          </div>
-          
-          {/* Formulaire lié */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Formulaire lié
-            </label>
-            <FormSelector
-              selectedFormId={currentLinkedFormId}
-              onFormChange={handleFormLinkChange}
-              showVariablesPreview={false}
-            />
+        {/* Menu moderne inspiré du super admin */}
+        <div className="mb-6">
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Nom du template */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-lg">📝</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        Nom du template
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        Identifiez votre template PDF
+                      </p>
+                    </div>
+                  </div>
+                  <Input
+                    value={currentTemplateName}
+                    onChange={(e) => onTemplateNameChange?.(e.target.value)}
+                    placeholder="Ex: Contrat de location, Facture..."
+                    className="w-full bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium shadow-lg"
+                  />
+                </div>
+                
+                {/* Formulaire lié */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-lg">🔗</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        Formulaire lié
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        Source des variables dynamiques
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white/70 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+                    <FormSelector
+                      selectedFormId={currentLinkedFormId}
+                      onFormChange={handleFormLinkChange}
+                      showVariablesPreview={false}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Indicateur de statut */}
+              <div className="mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center justify-center space-x-6">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full shadow-lg ${currentTemplateName ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                    <span className={`text-sm font-medium ${currentTemplateName ? 'text-green-700 dark:text-green-300' : 'text-gray-500'}`}>
+                      {currentTemplateName ? 'Nom défini' : 'Nom requis'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full shadow-lg ${currentLinkedFormId ? 'bg-purple-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                    <span className={`text-sm font-medium ${currentLinkedFormId ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500'}`}>
+                      {currentLinkedFormId ? 'Formulaire lié' : 'Liaison optionnelle'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full shadow-lg ${pdfFile ? 'bg-blue-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                    <span className={`text-sm font-medium ${pdfFile ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500'}`}>
+                      {pdfFile ? 'PDF chargé' : 'PDF requis'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
           </div>
         </div>
 
