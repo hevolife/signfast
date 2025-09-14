@@ -287,5 +287,3 @@ export class PDFTemplateService {
       return false;
     }
   }
-            throw formError;
-}
