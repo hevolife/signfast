@@ -496,25 +496,15 @@ export class PDFService {
   // COMPTER LES PDFS (optimisé pour éviter les timeouts)
   static async countPDFs(): Promise<number> {
     try {
-      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      // Récupérer l'utilisateur effectif (impersonation gérée par le contexte Auth)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
         return 0;
       }
 
-      let targetUserId = user.id;
-      
-      // Vérifier si on est en mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-        } catch (error) {
-          // Silent error
-        }
-      }
+      const targetUserId = user.id;
+      console.log('💾 Comptage PDFs pour userId:', targetUserId);
 
       const { count, error } = await supabase
         .from('pdf_storage')
@@ -522,11 +512,14 @@ export class PDFService {
         .eq('user_id', targetUserId);
 
       if (error) {
+        console.warn('💾 Erreur comptage PDFs:', error);
         return 0;
       }
 
+      console.log('💾 Nombre de PDFs:', count || 0);
       return count || 0;
     } catch (error) {
+      console.error('💾 Erreur générale comptage PDFs:', error);
       return 0;
     }
   }
@@ -548,25 +541,16 @@ export class PDFService {
     try {
       console.log('💾 === DÉBUT listPDFs ===');
       
-      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      // Récupérer l'utilisateur effectif (impersonation gérée par le contexte Auth)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
+        console.warn('💾 Utilisateur non authentifié');
         return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
 
-      let targetUserId = user.id;
-      
-      // Vérifier si on est en mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-        } catch (error) {
-          // Silent error
-        }
-      }
+      const targetUserId = user.id;
+      console.log('💾 Liste PDFs pour userId:', targetUserId);
       
       // Compter le total d'abord
       const { count: totalCount, error: countError } = await supabase
@@ -626,7 +610,7 @@ export class PDFService {
     try {
       console.log('🗑️ Suppression PDF:', fileName);
       
-      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      // Récupérer l'utilisateur effectif (impersonation gérée par le contexte Auth)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -634,19 +618,8 @@ export class PDFService {
         return false;
       }
 
-      let targetUserId = user.id;
-      
-      // Vérifier si on est en mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-          console.log('🎭 Mode impersonation: suppression pour', data.target_email);
-        } catch (error) {
-          // Silent error
-        }
-      }
+      const targetUserId = user.id;
+      console.log('🗑️ Suppression PDF pour userId:', targetUserId);
 
       // Récupérer les métadonnées du PDF avant suppression pour identifier la réponse liée
       const { data: pdfData, error: fetchError } = await supabase
@@ -742,7 +715,7 @@ export class PDFService {
     try {
       console.log('🗑️ Suppression de tous les PDFs...');
       
-      // Récupérer l'utilisateur cible (avec gestion impersonation)
+      // Récupérer l'utilisateur effectif (impersonation gérée par le contexte Auth)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -750,19 +723,8 @@ export class PDFService {
         return;
       }
 
-      let targetUserId = user.id;
-      
-      // Vérifier si on est en mode impersonation
-      const impersonationData = localStorage.getItem('admin_impersonation');
-      if (impersonationData) {
-        try {
-          const data = JSON.parse(impersonationData);
-          targetUserId = data.target_user_id;
-          console.log('🎭 Mode impersonation: suppression massive pour', data.target_email);
-        } catch (error) {
-          // Silent error
-        }
-      }
+      const targetUserId = user.id;
+      console.log('🗑️ Suppression massive PDFs pour userId:', targetUserId);
 
       // Récupérer tous les response_id avant suppression
       const { data: pdfDataList, error: fetchError } = await supabase

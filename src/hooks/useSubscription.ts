@@ -65,18 +65,9 @@ export const useSubscription = () => {
       return;
     }
 
-    try {
-      // Vérifier si Supabase est configuré
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('Supabase non configuré, pas d\'abonnement disponible');
-        setSubscription(prev => ({ ...prev, loading: false }));
-        return;
-      }
-
-      // Vérifier si on est en mode impersonation
+    // L'utilisateur effectif est déjà géré par le contexte Auth
+    const targetUserId = user.id;
+    console.log('💳 Vérification abonnement pour userId:', targetUserId);
       const impersonationData = localStorage.getItem('admin_impersonation');
       let targetUserId = user.id;
       

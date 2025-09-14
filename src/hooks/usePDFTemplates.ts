@@ -34,18 +34,9 @@ export const usePDFTemplates = () => {
 
     try {
       if (user) {
-        // Vérifier si on est en mode impersonation
-        const impersonationData = localStorage.getItem('admin_impersonation');
-        let targetUserId = user.id;
-        
-        if (impersonationData) {
-          try {
-            const data = JSON.parse(impersonationData);
-            targetUserId = data.target_user_id;
-          } catch (error) {
-            // Silent error
-          }
-        }
+        // L'utilisateur effectif est déjà géré par le contexte Auth
+        const targetUserId = user.id;
+        console.log('📄 Récupération templates pour userId:', targetUserId);
 
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
@@ -54,7 +45,9 @@ export const usePDFTemplates = () => {
           setTemplates(result.templates);
           setTotalCount(result.totalCount);
           setTotalPages(result.totalPages);
+          console.log('📄 Templates chargés:', result.templates.length);
         } catch (supabaseError) {
+          console.warn('📄 Erreur Supabase, fallback localStorage:', supabaseError);
           clearTimeout(loadingTimeout);
           // Fallback vers localStorage si Supabase n'est pas disponible
           const saved = localStorage.getItem('pdfTemplates');
@@ -83,6 +76,7 @@ export const usePDFTemplates = () => {
         }
       }
     } catch (error) {
+      console.error('📄 Erreur générale fetchTemplates:', error);
       clearTimeout(loadingTimeout);
       setTemplates([]);
       setTotalCount(0);

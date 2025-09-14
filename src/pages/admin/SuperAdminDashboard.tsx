@@ -380,7 +380,8 @@ export const SuperAdminDashboard: React.FC = () => {
       toast.success(`Impersonation activée: ${targetUser.email}`);
       
       console.log('🎭 Redirection vers dashboard...');
-      window.location.href = '/dashboard';
+      // Recharger la page pour que le contexte Auth détecte l'impersonation
+      window.location.reload();
     }
   };
 

@@ -9,7 +9,7 @@ import { FormInput, LogOut, LayoutDashboard, Moon, Sun, FileText, HardDrive, Cro
 import { useDarkMode } from '../../hooks/useDarkMode';
 
 export const Navbar: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isImpersonating, impersonationData, stopImpersonation } = useAuth();
   const { isSubscribed, subscriptionStatus } = useSubscription();
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -19,17 +19,6 @@ export const Navbar: React.FC = () => {
   // Vérifier si l'utilisateur est super admin (seulement si pas en mode démo)
   const isSuperAdmin = !isDemoMode && user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
   
-  // Vérifier l'impersonation seulement si pas en mode démo
-  const impersonationData = !isDemoMode ? localStorage.getItem('admin_impersonation') : null;
-  const isImpersonating = !isDemoMode && !!impersonationData;
-  
-  const stopImpersonation = () => {
-    if (!isDemoMode) {
-      localStorage.removeItem('admin_impersonation');
-      window.location.reload();
-    }
-  };
-
   const handleSignOut = async () => {
     try {
       // Si on est en mode démo, juste terminer la démo
@@ -70,15 +59,20 @@ export const Navbar: React.FC = () => {
                   </div>
                 )}
                 {/* Bannière d'impersonation */}
-                {!isDemoMode && user && isImpersonating && (
-                  <Button
+                {!isDemoMode && isImpersonating && impersonationData && (
+                  <div className="flex items-center space-x-2 bg-red-100 dark:bg-red-900/30 px-3 py-1 rounded-full">
+                    <span className="text-xs font-medium text-red-800 dark:text-red-300">
+                      Impersonation: {impersonationData.target_email}
+                    </span>
+                    <Button
                     size="sm"
                     variant="ghost"
                     onClick={stopImpersonation}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800 px-2 py-1 text-xs"
                   >
-                    Arrêter l'impersonation
+                      Arrêter
                   </Button>
+                  </div>
                 )}
                 <Link to="/dashboard">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">

@@ -3,13 +3,25 @@ import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useDemo } from './DemoContext';
 
+interface ImpersonationData {
+  admin_user_id: string;
+  admin_email: string;
+  target_user_id: string;
+  target_email: string;
+  timestamp: number;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isImpersonating: boolean;
+  impersonationData: ImpersonationData | null;
+  originalUser: User | null;
   signUp: (email: string, password: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
+  stopImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,10 +38,91 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [impersonationData, setImpersonationData] = useState<ImpersonationData | null>(null);
+  const [originalUser, setOriginalUser] = useState<User | null>(null);
   const { isDemoMode, demoUser } = useDemo();
 
+  // Gérer l'impersonation et le mode démo
+  const getEffectiveUser = (): User | null => {
+    // Priorité 1: Mode démo
+    if (isDemoMode && demoUser) {
+      return {
+        id: demoUser.id,
+        email: demoUser.email,
+        created_at: new Date(demoUser.createdAt).toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        role: 'authenticated',
+      } as User;
+    }
+    
+    // Priorité 2: Mode impersonation
+    if (isImpersonating && impersonationData) {
+      return {
+        id: impersonationData.target_user_id,
+        email: impersonationData.target_email,
+        created_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        role: 'authenticated',
+      } as User;
+    }
+    
+    // Priorité 3: Utilisateur normal
+    return user;
+  };
+
+  // Vérifier l'impersonation au chargement
+  useEffect(() => {
+    const checkImpersonation = () => {
+      try {
+        const impersonationDataStr = localStorage.getItem('admin_impersonation');
+        if (impersonationDataStr) {
+          const data: ImpersonationData = JSON.parse(impersonationDataStr);
+          
+          // Vérifier que les données sont valides et récentes (max 24h)
+          const maxAge = 24 * 60 * 60 * 1000; // 24 heures
+          if (Date.now() - data.timestamp > maxAge) {
+            console.log('🎭 Impersonation expirée, nettoyage');
+            localStorage.removeItem('admin_impersonation');
+            return;
+          }
+          
+          console.log('🎭 Impersonation active détectée:', data.target_email);
+          setImpersonationData(data);
+          setIsImpersonating(true);
+          
+          // Sauvegarder l'utilisateur original si pas déjà fait
+          if (user && !originalUser) {
+            setOriginalUser(user);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur parsing impersonation data:', error);
+        localStorage.removeItem('admin_impersonation');
+      }
+    };
+
+    checkImpersonation();
+  }, [user]);
+
+  const stopImpersonation = useCallback(() => {
+    console.log('🎭 Arrêt de l\'impersonation');
+    localStorage.removeItem('admin_impersonation');
+    setIsImpersonating(false);
+    setImpersonationData(null);
+    setOriginalUser(null);
+    
+    // Recharger la page pour réinitialiser complètement l'état
+    window.location.reload();
+  }, []);
+
   // Si on est en mode démo, simuler un utilisateur
-  const effectiveUser = isDemoMode && demoUser ? {
+  const effectiveUser = getEffectiveUser();
+
     id: demoUser.id,
     email: demoUser.email,
     created_at: new Date(demoUser.createdAt).toISOString(),
@@ -40,8 +133,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } as User : user;
 
   const signOut = useCallback(async () => {
+    // Si on est en impersonation, juste arrêter l'impersonation
+    if (isImpersonating) {
+      stopImpersonation();
+      return;
+    }
+    
     await supabase.auth.signOut();
-  }, []);
+  }, [isImpersonating, stopImpersonation]);
 
   useEffect(() => {
     // Get initial session
@@ -100,9 +199,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user: effectiveUser,
     session,
     loading,
+    isImpersonating,
+    impersonationData,
+    originalUser,
     signUp,
     signIn,
     signOut,
+    stopImpersonation,
   };
 
   return (
