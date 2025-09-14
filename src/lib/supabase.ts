@@ -3,51 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Vérification plus stricte des variables d'environnement
-const isSupabaseConfigured = supabaseUrl && 
-                            supabaseKey && 
-                            !supabaseUrl.includes('placeholder') && 
-                            !supabaseKey.includes('placeholder') &&
-                            supabaseUrl.startsWith('https://') &&
-                            supabaseKey.length > 50;
-
-if (!isSupabaseConfigured) {
+if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
 }
 
-// Pool de connexions pour optimiser les performances
-let connectionPool: any = null;
-
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
-  if (!isSupabaseConfigured) {
+  // Vérifier si Supabase est configuré avant de faire des requêtes
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+    console.warn('Supabase non configuré, requête ignorée');
     throw new Error('Supabase non configuré');
   }
 
-  // S'assurer que l'API key est toujours présente
-  const headers = {
-    'apikey': supabaseKey,
-    'Authorization': `Bearer ${supabaseKey}`,
-    ...options?.headers,
-  };
-
-  // S'assurer que le Content-Type est correct pour les requêtes POST/PUT/PATCH
-  if (options?.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase())) {
-    if (!headers['Content-Type'] && !headers['content-type']) {
-      headers['Content-Type'] = 'application/json';
-    }
-  }
-  // Ajouter des headers d'optimisation
-  const optimizedOptions = {
-    ...options,
-    headers: {
-      ...headers,
-      'Cache-Control': 'max-age=60', // Cache 1 minute
-      'Connection': 'keep-alive',
-    }
-  };
-
-  const response = await fetch(url, optimizedOptions);
+  const response = await fetch(url, options);
   
   // Check for session expiration
   if (response.status === 403) {
@@ -55,6 +26,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       const body = await response.clone().json();
       if (body.code === 'session_not_found') {
         // Session expired, sign out the user
+        console.log('Session expired, signing out user');
         supabase.auth.signOut();
       }
     } catch (error) {
@@ -65,44 +37,11 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   return response;
 };
 
-export const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
+export const supabase = createClient(supabaseUrl, supabaseKey, {
   global: {
     fetch: customFetch,
   },
-  db: {
-    schema: 'public',
-  },
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false, // Optimisation pour éviter les vérifications inutiles
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 2, // Limiter les événements temps réel
-    },
-  },
-}) : {
-  // Client mock pour mode non configuré
-  auth: {
-    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-    signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
-    signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
-    signOut: () => Promise.resolve({ error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-  },
-  from: () => ({
-    select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }) }) }),
-    insert: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
-    update: () => ({ eq: () => Promise.resolve({ error: { message: 'Supabase non configuré' } }) }),
-    delete: () => ({ eq: () => Promise.resolve({ error: { message: 'Supabase non configuré' } }) }),
-  }),
-  rpc: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré' } }),
-} as any;
-
-// Export de la configuration pour vérifications
-export const isSupabaseReady = isSupabaseConfigured;
+});
 
 // Export createClient for admin operations
 export { createClient };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseReady } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useMaintenanceMode = () => {
@@ -12,31 +12,31 @@ export const useMaintenanceMode = () => {
 
   const checkMaintenanceMode = async () => {
     try {
-      if (!isSupabaseReady) {
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('Supabase non configuré, mode maintenance désactivé par défaut');
         setIsMaintenanceMode(false);
         setLoading(false);
         return;
       }
 
-      // Timeout court pour éviter les blocages
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 2000)
-      );
-
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('system_settings')
         .select('value')
         .eq('key', 'maintenance_mode')
         .single();
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
       if (error) {
+        console.warn('Erreur vérification maintenance mode:', error);
         setIsMaintenanceMode(false);
       } else {
         setIsMaintenanceMode(data.value === 'true');
       }
     } catch (error) {
+      console.warn('Erreur maintenance mode:', error);
       setIsMaintenanceMode(false);
     } finally {
       setLoading(false);
@@ -46,10 +46,6 @@ export const useMaintenanceMode = () => {
   const toggleMaintenanceMode = async () => {
     if (!isSuperAdmin) {
       throw new Error('Seuls les super admins peuvent modifier le mode maintenance');
-    }
-
-    if (!isSupabaseReady) {
-      throw new Error('Supabase non configuré');
     }
 
     try {
@@ -70,6 +66,7 @@ export const useMaintenanceMode = () => {
       setIsMaintenanceMode(newValue);
       return true;
     } catch (error) {
+      console.error('Erreur toggle maintenance:', error);
       throw error;
     }
   };

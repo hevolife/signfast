@@ -1,11 +1,9 @@
-import { supabase, isSupabaseReady } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { PDFTemplate } from '../types/pdf';
 
 export class PDFTemplateService {
   // CRÉER UN TEMPLATE PDF DANS SUPABASE
   static async createTemplate(template: Omit<PDFTemplate, 'id' | 'created_at' | 'updated_at'>, userId: string): Promise<string | null> {
-    if (!isSupabaseReady) return null;
-
     try {
       const { data, error } = await supabase
         .from('pdf_templates')
@@ -34,8 +32,6 @@ export class PDFTemplateService {
 
   // RÉCUPÉRER UN TEMPLATE PAR ID (ACCÈS PUBLIC)
   static async getTemplate(templateId: string): Promise<PDFTemplate | null> {
-    if (!isSupabaseReady) return null;
-
     try {
       const { data, error } = await supabase
         .from('pdf_templates')
@@ -80,51 +76,62 @@ export class PDFTemplateService {
     totalCount: number;
     totalPages: number;
   }> {
-    if (!isSupabaseReady) {
-      return { templates: [], totalCount: 0, totalPages: 0 };
-    }
-
     try {
-      // Timeout pour éviter les blocages
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 4000)
-      );
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        return { templates: [], totalCount: 0, totalPages: 0 };
+      }
 
-      // Requêtes parallèles optimisées
+      // Timeout pour éviter les blocages
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout Supabase')), 3000);
+      });
+
+      // Compter le total d'abord
       const countPromise = supabase
         .from('pdf_templates')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'estimated', head: true })
         .eq('user_id', userId);
 
-      const offset = (page - 1) * limit;
+      const { count, error: countError } = await Promise.race([countPromise, timeoutPromise]);
 
-      const queryPromise = supabase
-        .from('pdf_templates')
-        .select('id, name, description, pdf_content, fields, linked_form_id, pages, created_at, updated_at, user_id')
-        .eq('user_id', userId)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      const [countResult, dataResult] = await Promise.race([
-        Promise.all([countPromise, queryPromise]),
-        timeoutPromise
-      ]);
-
-      const [{ count, error: countError }, { data, error: dataError }] = countResult;
-
-      if (countError || dataError) {
+      if (countError) {
         return { templates: [], totalCount: 0, totalPages: 0 };
       }
 
       const totalCount = count || 0;
       const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+
+      // Récupérer les templates avec pagination
+      const queryPromise = supabase
+        .from('pdf_templates')
+        .select('*')
+        .eq('user_id', userId)
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (error) {
+        return { templates: [], totalCount: 0, totalPages: 0 };
+      }
 
       const templates = data.map(item => ({
         id: item.id,
         name: item.name,
         description: item.description,
         originalPdfUrl: item.pdf_content,
-        fields: this.normalizeFields(item.fields || []),
+        fields: (item.fields || []).map((field: any) => ({
+          ...field,
+          xRatio: typeof field.xRatio === 'number' ? field.xRatio : 0,
+          yRatio: typeof field.yRatio === 'number' ? field.yRatio : 0,
+          widthRatio: typeof field.widthRatio === 'number' ? field.widthRatio : 0.1,
+          heightRatio: typeof field.heightRatio === 'number' ? field.heightRatio : 0.05,
+        })),
         linkedFormId: item.linked_form_id,
         pages: item.pages,
         created_at: item.created_at,
@@ -142,21 +149,8 @@ export class PDFTemplateService {
     }
   }
 
-  // Normaliser les champs pour éviter les erreurs
-  private static normalizeFields(fields: any[]): any[] {
-    return fields.map((field: any) => ({
-      ...field,
-      xRatio: typeof field.xRatio === 'number' ? field.xRatio : 0,
-      yRatio: typeof field.yRatio === 'number' ? field.yRatio : 0,
-      widthRatio: typeof field.widthRatio === 'number' ? field.widthRatio : 0.1,
-      heightRatio: typeof field.heightRatio === 'number' ? field.heightRatio : 0.05,
-    }));
-  }
-
   // METTRE À JOUR UN TEMPLATE
   static async updateTemplate(templateId: string, updates: Partial<PDFTemplate>): Promise<boolean> {
-    if (!isSupabaseReady) return false;
-
     try {
       const { error } = await supabase
         .from('pdf_templates')
@@ -182,8 +176,6 @@ export class PDFTemplateService {
 
   // SUPPRIMER UN TEMPLATE
   static async deleteTemplate(templateId: string): Promise<boolean> {
-    if (!isSupabaseReady) return false;
-
     try {
       const { error } = await supabase
         .from('pdf_templates')
@@ -202,8 +194,6 @@ export class PDFTemplateService {
 
   // LIER UN TEMPLATE À UN FORMULAIRE
   static async linkTemplateToForm(templateId: string, formId: string | null): Promise<boolean> {
-    if (!isSupabaseReady) return false;
-
     try {
       // Vérifier que le template existe
       const { data: templateExists, error: checkError } = await supabase
@@ -268,33 +258,3 @@ export class PDFTemplateService {
     }
   }
 }
-
-export const createPDFTemplate = async (templateData: Omit<PDFTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<PDFTemplate> => {
-  if (!isSupabaseReady()) {
-    throw new Error('Supabase non configuré');
-  }
-
-  // Ensure user_id is set from current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Utilisateur non authentifié');
-  }
-
-  const dataToInsert = {
-    ...templateData,
-    user_id: user.id // Force the user_id to current authenticated user
-  };
-
-  const { data, error } = await supabase
-    .from('pdf_templates')
-    .insert(dataToInsert)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('❌ Erreur création template:', error.message);
-    throw new Error(`Erreur lors de la création du template: ${error.message}`);
-  }
-
-  return data;
-};

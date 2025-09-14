@@ -33,49 +33,84 @@ export const PDFManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'template'>('date');
   const product = stripeConfig.products[0];
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const itemsPerPage = 10;
+
+  // Debug function to check PDF data
+  const debugPDFData = async () => {
+    console.log('🔍 === DEBUG PDF STORAGE ===');
+    
+    try {
+      // 1. Vérifier l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('🔍 Utilisateur auth:', user?.id, user?.email);
+      
+      // 2. Vérifier l'impersonation
+      const impersonationData = localStorage.getItem('admin_impersonation');
+      if (impersonationData) {
+        const data = JSON.parse(impersonationData);
+        console.log('🔍 Impersonation active:', data.target_user_id, data.target_email);
+      } else {
+        console.log('🔍 Pas d\'impersonation');
+      }
+      
+      // 3. Lister TOUS les PDFs dans la table
+      const { data: allPdfs, error: allError } = await supabase
+        .from('pdf_storage')
+        .select('file_name, user_id, form_title, created_at')
+        .order('created_at', { ascending: false });
+      
+      console.log('🔍 TOUS les PDFs dans la table:', allPdfs?.length || 0);
+      allPdfs?.forEach((pdf, index) => {
+        console.log(`🔍 PDF ${index + 1}:`, {
+          fileName: pdf.file_name,
+          userId: pdf.user_id,
+          formTitle: pdf.form_title,
+          createdAt: pdf.created_at
+        });
+      });
+      
+      // 4. Vérifier les PDFs pour l'utilisateur cible
+      const targetUserId = impersonationData ? JSON.parse(impersonationData).target_user_id : user?.id;
+      console.log('🔍 Target user ID:', targetUserId);
+      
+      if (targetUserId) {
+        const { data: userPdfs, error: userError } = await supabase
+          .from('pdf_storage')
+          .select('*')
+          .eq('user_id', targetUserId);
+        
+        console.log('🔍 PDFs pour target user:', userPdfs?.length || 0);
+        userPdfs?.forEach((pdf, index) => {
+          console.log(`🔍 User PDF ${index + 1}:`, {
+            fileName: pdf.file_name,
+            formTitle: pdf.form_title,
+            templateName: pdf.template_name,
+            createdAt: pdf.created_at
+          });
+        });
+      }
+      
+    } catch (error) {
+      console.error('🔍 Erreur debug:', error);
+    }
+  };
 
   useEffect(() => {
-    loadPDFs(1);
+    debugPDFData();
+    loadPDFs();
   }, []);
 
-  const loadPDFs = async (page: number = 1) => {
+  const loadPDFs = async () => {
     setLoading(true);
     try {
-      const result = await PDFService.listPDFs(page, itemsPerPage);
-      setPdfs(result.pdfs);
-      setTotalCount(result.totalCount);
-      setTotalPages(result.totalPages);
-      setCurrentPage(page);
+      const pdfList = await PDFService.listPDFs();
+      setPdfs(pdfList);
     } catch (error) {
+      console.error('💾 Erreur chargement PDFs:', error);
       toast.error('Erreur lors du chargement des PDFs');
       setPdfs([]);
-      setTotalCount(0);
-      setTotalPages(0);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handlePageChange = (page: number) => {
-    loadPDFs(page);
-  };
-
-  const loadPDFFormData = async (pdf: SavedPDF) => {
-    if (Object.keys(pdf.formData).length === 0) {
-      const formData = await PDFService.getPDFFormData(pdf.fileName);
-      // Mettre à jour le PDF avec ses données
-      setPdfs(prev => prev.map(p => 
-        p.fileName === pdf.fileName 
-          ? { ...p, formData }
-          : p
-      ));
-      return formData;
-    }
-    return pdf.formData;
   };
 
   const handleDownload = async (pdf: SavedPDF) => {
@@ -83,9 +118,6 @@ export const PDFManager: React.FC = () => {
       toast.loading('📄 Génération et téléchargement du PDF en cours...', {
         duration: 10000, // 10 secondes max
       });
-      
-      // Charger les données du formulaire si nécessaire
-      await loadPDFFormData(pdf);
       
       const success = await PDFService.generateAndDownloadPDF(pdf.fileName);
       
@@ -97,48 +129,51 @@ export const PDFManager: React.FC = () => {
         toast.error('❌ Erreur lors de la génération du PDF. Vérifiez que toutes les données sont disponibles.');
       }
     } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
       toast.dismiss();
       toast.error('❌ Erreur lors de la génération du PDF');
     }
   };
 
   const handleDelete = async (pdf: SavedPDF) => {
+    // Vérifier si on peut supprimer (toujours autorisé pour libérer de l'espace)
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le PDF "${pdf.fileName}" ?`)) {
       try {
+        console.log('🗑️ Début suppression PDF:', pdf.fileName);
         const success = await PDFService.deletePDF(pdf.fileName);
         if (success) {
-          // Si on supprime le dernier PDF d'une page, retourner à la page précédente
-          if (pdfs.length === 1 && currentPage > 1) {
-            handlePageChange(currentPage - 1);
-          } else {
-            // Sinon, recharger la page courante
-            loadPDFs(currentPage);
-          }
+          setPdfs(prev => prev.filter(p => p.fileName !== pdf.fileName));
           refreshLimits(); // Rafraîchir les limites après suppression
           toast.success('✅ PDF et données supprimés avec succès');
+          console.log('✅ PDF supprimé avec succès:', pdf.fileName);
         } else {
           toast.error('❌ Erreur lors de la suppression du PDF');
+          console.error('❌ Échec suppression PDF:', pdf.fileName);
         }
       } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
         toast.error('❌ Erreur lors de la suppression du PDF');
       }
     }
   };
 
   const clearAllPDFs = () => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer tous les ${totalCount} PDFs sauvegardés ?\n\nCette action est irréversible.`)) {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer tous les ${pdfs.length} PDFs sauvegardés ?\n\nCette action est irréversible.`)) {
+      const pdfCount = pdfs.length;
+      console.log('🗑️ Début suppression massive:', pdfCount, 'PDFs');
       
       PDFService.clearAllPDFs()
         .then(() => {
-          // Retourner à la première page après suppression massive
-          setCurrentPage(1);
-          loadPDFs(1);
+          setPdfs([]);
           refreshLimits(); // Rafraîchir les limites après suppression
-          toast.success(`✅ Tous les PDFs et données supprimés avec succès`);
+          toast.success(`✅ ${pdfCount} PDFs et données supprimés avec succès`);
+          console.log('✅ Suppression massive réussie:', pdfCount, 'PDFs');
         })
         .catch((error) => {
+          console.error('❌ Erreur suppression massive:', error);
           toast.error('❌ Erreur lors de la suppression massive');
-          loadPDFs(currentPage);
+          // Recharger la liste pour voir l'état réel
+          loadPDFs();
         });
     }
   };
@@ -197,27 +232,24 @@ export const PDFManager: React.FC = () => {
     return null;
   };
 
-  // Filtrage et tri côté client pour les PDFs de la page courante
-  const filteredAndSortedPDFs = React.useMemo(() => {
-    return pdfs
-      .filter(pdf => 
-        pdf.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pdf.templateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pdf.formTitle.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => {
-        switch (sortBy) {
-          case 'date':
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          case 'name':
-            return a.fileName.localeCompare(b.fileName);
-          case 'template':
-            return a.formTitle.localeCompare(b.formTitle);
-          default:
-            return 0;
-        }
-      });
-  }, [pdfs, searchTerm, sortBy]);
+  const filteredAndSortedPDFs = pdfs
+    .filter(pdf => 
+      pdf.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pdf.templateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pdf.formTitle.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'name':
+          return a.fileName.localeCompare(b.fileName);
+        case 'template':
+          return a.formTitle.localeCompare(b.formTitle);
+        default:
+          return 0;
+      }
+    });
 
   if (loading) {
     return (
@@ -248,11 +280,6 @@ export const PDFManager: React.FC = () => {
                 ? `Stockage PDF illimité avec ${product.name} (synchronisés sur tous vos appareils)`
                 : 'Gérez vos PDFs générés (synchronisés sur tous vos appareils)'
               }
-              {totalCount > 0 && (
-                <span className="block text-sm text-gray-500 mt-1">
-                  {totalCount} PDF{totalCount > 1 ? 's' : ''} au total • Page {currentPage} sur {totalPages}
-                </span>
-              )}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
@@ -264,7 +291,7 @@ export const PDFManager: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => loadPDFs(currentPage)}
+                onClick={() => loadPDFs()}
                 className="flex items-center space-x-1 bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 sm:bg-transparent sm:text-gray-600 sm:hover:bg-gray-100 dark:sm:text-gray-400 dark:sm:hover:bg-gray-800"
                 title="Actualiser la liste"
               >
@@ -346,6 +373,14 @@ export const PDFManager: React.FC = () => {
               // Un PDF est verrouillé seulement si l'utilisateur n'est pas abonné ET que l'index dépasse la limite
               const isLocked = !isSubscribed && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
               
+              console.log('🔒 Vérification verrouillage PDF:', {
+                index,
+                isSubscribed,
+                maxLimit: savedPdfsLimits.max,
+                isLocked,
+                pdfName: pdf.fileName
+              });
+              
               return (
               <Card key={pdf.fileName} hover className={`group relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg ${isLocked ? 'opacity-75 border-2 border-yellow-400' : ''}`}>
                 {isLocked && (
@@ -375,13 +410,10 @@ export const PDFManager: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">
-                          {pdf.formData && Object.keys(pdf.formData).length > 0 
-                            ? (getDisplayName(pdf.formData) || `Document ${pdf.formTitle}`)
-                            : `Document ${pdf.formTitle}`
-                          }
+                          {getDisplayName(pdf.formData) || `Document ${pdf.formTitle}`}
                         </h3>
                         <p className="text-sm text-green-700 dark:text-green-400 line-clamp-2">
-                          Formulaire: {pdf.formTitle}
+                          {getDisplayName(pdf.formData) ? `Formulaire: ${pdf.formTitle}` : `Template: ${pdf.templateName}`}
                         </p>
                       </div>
                     </div>
@@ -397,8 +429,8 @@ export const PDFManager: React.FC = () => {
                     </span>
                   </div>
                   
-                  {/* Afficher les données détectées si disponibles */}
-                  {pdf.formData && Object.keys(pdf.formData).length > 0 && getDisplayName(pdf.formData) && (
+                  {/* Afficher les données détectées pour debug */}
+                  {getDisplayName(pdf.formData) && (
                     <div className="text-xs text-green-600 dark:text-green-400 truncate mb-4">
                       👤 Identité détectée: {getDisplayName(pdf.formData)}
                     </div>
@@ -439,70 +471,6 @@ export const PDFManager: React.FC = () => {
               );
             })}
           </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Card className="mt-6">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} PDFs
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="flex items-center space-x-1"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Précédent</span>
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {/* Afficher les numéros de page */}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? "primary" : "ghost"}
-                          size="sm"
-                          onClick={() => handlePageChange(pageNum)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center space-x-1"
-                  >
-                    <span className="hidden sm:inline">Suivant</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         )}
         
         <LimitReachedModal

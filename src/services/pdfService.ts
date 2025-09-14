@@ -1,27 +1,8 @@
-import { supabase, isSupabaseReady } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { stripeConfig } from '../stripe-config';
 import { PDFGenerator } from '../utils/pdfGenerator';
 
-// Cache pour les PDFs
-const pdfCache = new Map<string, { data: any[]; timestamp: number; totalCount: number }>();
-const CACHE_DURATION = 3 * 60 * 1000; // 3 minutes pour les PDFs (plus court car données plus volatiles)
-
 export class PDFService {
-  // Nettoyer le cache expiré
-  private static cleanExpiredCache() {
-    const now = Date.now();
-    for (const [key, value] of pdfCache.entries()) {
-      if (now - value.timestamp > CACHE_DURATION) {
-        pdfCache.delete(key);
-      }
-    }
-  }
-
-  // Invalider le cache
-  static invalidateCache() {
-    pdfCache.clear();
-  }
-
   // SAUVEGARDER LES MÉTADONNÉES PDF POUR GÉNÉRATION ULTÉRIEURE
   static async savePDFMetadataForLaterGeneration(
     fileName: string,
@@ -129,24 +110,21 @@ export class PDFService {
       };
 
       // Sauvegarder dans Supabase avec timeout réduit
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout sauvegarde')), 2000)
-      );
-
       const { error } = await Promise.race([
         supabase.from('pdf_storage').insert([pdfData]),
-        timeoutPromise
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout sauvegarde métadonnées PDF')), 3000)
+        )
       ]);
 
       if (error) {
         throw new Error(`Erreur sauvegarde métadonnées: ${error.message}`);
       }
 
-      // Invalider le cache après insertion
-      this.invalidateCache();
-      
+      console.log('✅ Métadonnées PDF sauvegardées:', fileName);
       return true;
     } catch (error) {
+      console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
       throw error;
     }
   }
@@ -154,17 +132,10 @@ export class PDFService {
   // COMPTER LES PDFS POUR UN UTILISATEUR SPÉCIFIQUE
   static async countPDFsForUser(userId: string): Promise<number> {
     try {
-      // Timeout court pour le comptage
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 1000)
-      );
-
-      const countPromise = supabase
+      const { count, error } = await supabase
         .from('pdf_storage')
-        .select('id', { count: 'estimated', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', userId);
-
-      const { count, error } = await Promise.race([countPromise, timeoutPromise]);
 
       if (error) {
         return 0;
@@ -461,8 +432,6 @@ export class PDFService {
 
   // COMPTER LES PDFS (optimisé pour éviter les timeouts)
   static async countPDFs(): Promise<number> {
-    if (!isSupabaseReady) return 0;
-
     try {
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -513,11 +482,9 @@ export class PDFService {
     totalCount: number;
     totalPages: number;
   }> {
-    if (!isSupabaseReady) {
-      return { pdfs: [], totalCount: 0, totalPages: 0 };
-    }
-
     try {
+      console.log('💾 === DÉBUT listPDFs ===');
+      
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -538,47 +505,35 @@ export class PDFService {
         }
       }
       
-      // Vérifier le cache
-      const cacheKey = `pdfs-${targetUserId}-${page}-${limit}`;
-      this.cleanExpiredCache();
-      
-      const cached = pdfCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        const totalPages = Math.ceil(cached.totalCount / limit);
-        return {
-          pdfs: cached.data,
-          totalCount: cached.totalCount,
-          totalPages
-        };
-      }
-
-      // Requêtes parallèles optimisées
-      const countPromise = supabase
+      // Compter le total d'abord
+      const { count: totalCount, error: countError } = await supabase
         .from('pdf_storage')
         .select('id', { count: 'estimated', head: true })
         .eq('user_id', targetUserId);
 
+      if (countError) {
+        console.error('❌ Erreur comptage PDFs:', countError);
+        return { pdfs: [], totalCount: 0, totalPages: 0 };
+      }
+
+      const total = totalCount || 0;
+      const totalPages = Math.ceil(total / limit);
       const offset = (page - 1) * limit;
 
-      const dataPromise = supabase
+      console.log('💾 Pagination:', { page, limit, offset, total, totalPages });
+
+      // Récupérer les PDFs avec pagination
+      const { data, error } = await supabase
         .from('pdf_storage')
-        .select('file_name, response_id, template_name, form_title, file_size, created_at')
+        .select('file_name, response_id, template_name, form_title, form_data, file_size, created_at')
         .eq('user_id', targetUserId)
         .range(offset, offset + limit - 1)
         .order('created_at', { ascending: false });
 
-      // Timeout global
-
-      const [countResult, dataResult] = await Promise.all([countPromise, dataPromise]);
-
-      const [{ count, error: countError }, { data, error: dataError }] = countResult;
-
-      if (countError || dataError) {
+      if (error) {
+        console.error('❌ Erreur récupération PDFs:', error);
         return { pdfs: [], totalCount: 0, totalPages: 0 };
       }
-
-      const totalCount = count || 0;
-      const totalPages = Math.ceil(totalCount / limit);
 
       const pdfs = (data || []).map(item => ({
         fileName: item.file_name,
@@ -587,53 +542,32 @@ export class PDFService {
         formTitle: item.form_title,
         createdAt: item.created_at,
         size: item.file_size || 0,
-        formData: {}, // Charger à la demande pour économiser la mémoire
+        formData: item.form_data || {},
       }));
 
-      // Mettre en cache
-      pdfCache.set(cacheKey, {
-        data: pdfs,
-        totalCount,
-        timestamp: Date.now()
-      });
+      console.log('💾 PDFs récupérés:', pdfs.length, 'sur', total);
 
       return {
         pdfs,
-        totalCount,
+        totalCount: total,
         totalPages
       };
     } catch (error) {
+      console.error('❌ Erreur générale listPDFs:', error);
       return { pdfs: [], totalCount: 0, totalPages: 0 };
-    }
-  }
-
-  // CHARGER LES DONNÉES D'UN PDF SPÉCIFIQUE (à la demande)
-  static async getPDFFormData(fileName: string): Promise<Record<string, any>> {
-    if (!isSupabaseReady) return {};
-
-    try {
-      const { data, error } = await supabase
-        .from('pdf_storage')
-        .select('form_data')
-        .eq('file_name', fileName)
-        .single();
-
-      if (error) return {};
-      return data.form_data || {};
-    } catch (error) {
-      return {};
     }
   }
 
   // SUPPRIMER UN PDF
   static async deletePDF(fileName: string): Promise<boolean> {
-    if (!isSupabaseReady) return false;
-
     try {
+      console.log('🗑️ Suppression PDF:', fileName);
+      
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
+        console.error('❌ Utilisateur non authentifié pour suppression');
         return false;
       }
 
@@ -645,18 +579,23 @@ export class PDFService {
         try {
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
+          console.log('🎭 Mode impersonation: suppression pour', data.target_email);
         } catch (error) {
           // Silent error
         }
       }
 
-      // Requête optimisée pour récupérer seulement le response_id
-      const { data: pdfData } = await supabase
+      // Récupérer les métadonnées du PDF avant suppression pour identifier la réponse liée
+      const { data: pdfData, error: fetchError } = await supabase
         .from('pdf_storage')
         .select('response_id')
         .eq('file_name', fileName)
         .eq('user_id', targetUserId)
-        .maybeSingle();
+        .single();
+
+      if (fetchError) {
+        console.warn('⚠️ Impossible de récupérer les métadonnées PDF:', fetchError);
+      }
 
       // Supprimer l'enregistrement de la base de données
       const { error } = await supabase
@@ -666,22 +605,30 @@ export class PDFService {
         .eq('user_id', targetUserId);
 
       if (error) {
+        console.error('❌ Erreur suppression base de données:', error);
         return false;
       }
 
       // Supprimer automatiquement la réponse liée si elle existe
       if (pdfData?.response_id) {
-        await supabase
+        console.log('🗑️ Suppression automatique de la réponse liée:', pdfData.response_id);
+        
+        const { error: responseError } = await supabase
           .from('responses')
           .delete()
           .eq('id', pdfData.response_id);
-      }
 
-      // Invalider le cache
-      this.invalidateCache();
-      
+        if (responseError) {
+          console.warn('⚠️ Erreur suppression réponse liée:', responseError);
+          // Ne pas faire échouer la suppression du PDF pour autant
+        } else {
+          console.log('✅ Réponse liée supprimée avec succès');
+        }
+      }
+      console.log('✅ PDF supprimé de la base de données:', fileName);
       return true;
     } catch (error) {
+      console.error('❌ Erreur générale suppression PDF:', error);
       return false;
     }
   }
@@ -729,16 +676,15 @@ export class PDFService {
 
   // NETTOYER TOUS LES PDFS
   static async clearAllPDFs(): Promise<void> {
-    if (!isSupabaseReady) {
-      throw new Error('Supabase non configuré');
-    }
-
     try {
+      console.log('🗑️ Suppression de tous les PDFs...');
+      
       // Récupérer l'utilisateur cible (avec gestion impersonation)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        throw new Error('Utilisateur non authentifié');
+        console.error('❌ Utilisateur non authentifié pour suppression massive');
+        return;
       }
 
       let targetUserId = user.id;
@@ -749,17 +695,30 @@ export class PDFService {
         try {
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
+          console.log('🎭 Mode impersonation: suppression massive pour', data.target_email);
         } catch (error) {
           // Silent error
         }
       }
 
-      // Requête optimisée pour récupérer seulement les response_id
-      const { data: pdfDataList } = await supabase
+      // Récupérer tous les response_id avant suppression
+      const { data: pdfDataList, error: fetchError } = await supabase
         .from('pdf_storage')
         .select('response_id')
         .eq('user_id', targetUserId)
         .not('response_id', 'is', null);
+
+      if (fetchError) {
+        console.warn('⚠️ Impossible de récupérer les métadonnées PDFs:', fetchError);
+      }
+
+      // Compter les PDFs avant suppression
+      const { count: pdfCount } = await supabase
+        .from('pdf_storage')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', targetUserId);
+
+      console.log('🗑️ Nombre de PDFs à supprimer:', pdfCount || 0);
 
       // Supprimer tous les PDFs de l'utilisateur
       const { error } = await supabase
@@ -768,6 +727,7 @@ export class PDFService {
         .eq('user_id', targetUserId);
 
       if (error) {
+        console.error('❌ Erreur suppression massive base de données:', error);
         throw new Error(`Erreur lors de la suppression: ${error.message}`);
       }
 
@@ -776,17 +736,24 @@ export class PDFService {
         const responseIds = pdfDataList.map(pdf => pdf.response_id).filter(Boolean);
         
         if (responseIds.length > 0) {
-          await supabase
+          console.log('🗑️ Suppression automatique des réponses liées:', responseIds.length, 'réponses');
+          
+          const { error: responsesError } = await supabase
             .from('responses')
             .delete()
             .in('id', responseIds);
+
+          if (responsesError) {
+            console.warn('⚠️ Erreur suppression réponses liées:', responsesError);
+            // Ne pas faire échouer la suppression des PDFs pour autant
+          } else {
+            console.log('✅ Réponses liées supprimées avec succès:', responseIds.length);
+          }
         }
       }
-
-      // Invalider le cache
-      this.invalidateCache();
-      
+      console.log('✅ Tous les PDFs supprimés de la base de données:', pdfCount || 0, 'enregistrements');
     } catch (error) {
+      console.error('❌ Erreur générale suppression massive:', error);
       throw error;
     }
   }

@@ -145,18 +145,17 @@ export const useAffiliate = () => {
       // Générer un code d'affiliation unique
       const affiliateCode = `AF${user.id.slice(0, 8).toUpperCase()}${Date.now().toString().slice(-4)}`;
       
-      // S'assurer que les headers sont corrects
       const { data, error } = await supabase
         .from('affiliate_programs')
-        .insert({
+        .insert([{
           user_id: user.id,
-          affiliate_code: generateAffiliateCode(),
+          affiliate_code: affiliateCode,
           commission_rate: 5.00,
           total_referrals: 0,
           total_earnings: 0.00,
           monthly_earnings: 0.00,
-          is_active: true
-        })
+          is_active: true,
+        }])
         .select()
         .single();
 
