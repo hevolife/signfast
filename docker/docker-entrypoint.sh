@@ -16,6 +16,10 @@ window.ENV = {
 console.log('🔧 Variables d\'environnement injectées:', window.ENV);
 EOF
 
+# Définir les permissions correctes pour le fichier config.js
+chown nginx:nginx /usr/share/nginx/html/config.js
+chmod 644 /usr/share/nginx/html/config.js
+
 echo "✅ Variables d'environnement injectées dans /usr/share/nginx/html/config.js"
 echo "🔧 === FIN INJECTION VARIABLES ==="
 
