@@ -32,12 +32,25 @@ export const Navbar: React.FC = () => {
         return;
       }
       
+      // Afficher un toast de confirmation
+      toast.loading('Déconnexion en cours...', { duration: 2000 });
+      
       await signOut();
-      // La redirection est gérée dans signOut()
+      
+      // Attendre un peu puis forcer la redirection si nécessaire
+      setTimeout(() => {
+        if (window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+      }, 1000);
+      
     } catch (error) {
       console.error('Erreur déconnexion navbar:', error);
-      // Fallback: redirection manuelle
-      navigate('/');
+      // Fallback: nettoyage manuel et redirection forcée
+      localStorage.clear();
+      sessionStorage.clear();
+      toast.error('Déconnexion forcée');
+      window.location.href = '/';
     }
   };
 

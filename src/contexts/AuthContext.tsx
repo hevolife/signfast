@@ -130,7 +130,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    await supabase.auth.signOut();
+    try {
+      // Nettoyer le localStorage avant la déconnexion
+      localStorage.removeItem('sb-auth-token');
+      localStorage.removeItem('currentUserForms');
+      sessionStorage.clear();
+      
+      // Déconnexion Supabase
+      await supabase.auth.signOut();
+      
+      // Forcer la mise à jour de l'état
+      setUser(null);
+      setSession(null);
+      
+      // Redirection forcée
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erreur déconnexion:', error);
+      // Forcer la déconnexion même en cas d'erreur
+      localStorage.removeItem('sb-auth-token');
+      sessionStorage.clear();
+      setUser(null);
+      setSession(null);
+      window.location.href = '/';
+    }
   }, [isImpersonating, stopImpersonation]);
 
   useEffect(() => {
