@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDemo } from '../contexts/DemoContext';
 import { useSubscription } from './useSubscription';
 import { useForms } from './useForms';
 import { usePDFTemplates } from './usePDFTemplates';
 import { PDFService } from '../services/pdfService';
+import { SupabaseAuthError } from '../lib/supabase';
 import { stripeConfig } from '../stripe-config';
 
 interface LimitData {
@@ -22,6 +24,7 @@ export const useLimits = () => {
   const { templates } = usePDFTemplates();
   const [savedPdfsCount, setSavedPdfsCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
@@ -31,6 +34,13 @@ export const useLimits = () => {
       const count = await PDFService.countPDFs();
       setSavedPdfsCount(count);
     } catch (error) {
+      // Vérifier si c'est une erreur d'authentification
+      if (error instanceof SupabaseAuthError) {
+        console.warn('📊 Session invalide, redirection vers login');
+        navigate('/login');
+        return;
+      }
+      
       console.error('Erreur refresh limits:', error);
       setSavedPdfsCount(0);
     } finally {
