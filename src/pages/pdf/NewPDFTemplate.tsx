@@ -96,7 +96,6 @@ export const NewPDFTemplate: React.FC = () => {
         return uniqueVariables;
       }
     } catch (error) {
-      // En cas d'erreur, utiliser les variables par défaut
     }
     
     // Variables par défaut en cas d'erreur
@@ -183,8 +182,9 @@ export const NewPDFTemplate: React.FC = () => {
     
     if (formId) {
       toast.success('Formulaire sélectionné ! Il sera lié lors de la sauvegarde.');
-      };
-  }
+    } else {
+    }
+  };
 
   const handleTemplateNameChange = (name: string) => {
     setTemplateName(name);
