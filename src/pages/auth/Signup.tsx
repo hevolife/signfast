@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { FormInput, Eye, EyeOff, UserPlus, ArrowRight, Gift, Crown, Sparkles, CheckCircle } from 'lucide-react';
+import { FormInput, Eye, EyeOff, UserPlus, ArrowRight, Gift, Crown, Sparkles, CheckCircle, Lock as LockIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Signup: React.FC = () => {
@@ -218,7 +218,7 @@ export const Signup: React.FC = () => {
               {password && (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
                   <div className="flex items-center space-x-2 mb-2">
-                    <Lock className="h-4 w-4 text-blue-600" />
+                    <LockIcon className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
                       Force du mot de passe
                     </span>
