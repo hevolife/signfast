@@ -427,6 +427,8 @@ export const PDFManager: React.FC = () => {
 
   const handleViewResponse = async (response: FormResponse) => {
 
+  };
+
   const generateAndDownloadPDF = async (response: FormResponsePDF) => {
     if (!response) return;
 
