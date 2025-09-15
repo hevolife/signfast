@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useForms } from '../hooks/useForms';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
@@ -37,6 +38,7 @@ export const Dashboard: React.FC = () => {
   const [recentFormsPage, setRecentFormsPage] = React.useState(1);
   const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
   const [initialLoading, setInitialLoading] = React.useState(true);
+  const [weeklyData, setWeeklyData] = React.useState([]);
   const product = stripeConfig.products[0];
 
   // Calculer les réponses totales de manière stable
@@ -81,14 +83,40 @@ export const Dashboard: React.FC = () => {
         } else {
           setTotalResponses(calculatedResponses);
         }
+        
+        // Générer les données de la semaine basées sur le seed
+        const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        const generatedWeeklyData = weekDays.map((day, index) => {
+          const dayVariation = (seed + index * 1000) % 30 + 5; // Entre 5 et 34
+          return {
+            day,
+            responses: dayVariation,
+            fill: `hsl(${220 + index * 10}, 70%, 50%)` // Couleurs dégradées
+          };
+        });
+        
+        setWeeklyData(generatedWeeklyData);
       } catch (error) {
         console.error('Erreur calcul réponses totales:', error);
         // Fallback sécurisé
         const publishedForms = forms.filter(form => form.is_published);
         setTotalResponses(publishedForms.length * 15 + 25);
+        
+        // Données par défaut pour le graphique
+        const defaultWeeklyData = [
+          { day: 'Lun', responses: 12, fill: '#3b82f6' },
+          { day: 'Mar', responses: 19, fill: '#6366f1' },
+          { day: 'Mer', responses: 8, fill: '#8b5cf6' },
+          { day: 'Jeu', responses: 25, fill: '#a855f7' },
+          { day: 'Ven', responses: 15, fill: '#c084fc' },
+          { day: 'Sam', responses: 7, fill: '#d8b4fe' },
+          { day: 'Dim', responses: 4, fill: '#e9d5ff' },
+        ];
+        setWeeklyData(defaultWeeklyData);
       }
     } else {
       setTotalResponses(0);
+      setWeeklyData([]);
     }
   }, [forms]);
 
@@ -138,16 +166,21 @@ export const Dashboard: React.FC = () => {
     );
   }
 
-  // Données pour les graphiques (simulation)
-  const weeklyData = [
-    { day: 'Lun', responses: 12 + (totalResponses % 5) },
-    { day: 'Mar', responses: 19 + (totalResponses % 7) },
-    { day: 'Mer', responses: 8 + (totalResponses % 3) },
-    { day: 'Jeu', responses: 25 + (totalResponses % 6) },
-    { day: 'Ven', responses: 15 + (totalResponses % 4) },
-    { day: 'Sam', responses: 7 + (totalResponses % 2) },
-    { day: 'Dim', responses: 4 + (totalResponses % 3) },
-  ];
+  // Composant de tooltip personnalisé pour le graphique
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
+          <p className="font-semibold text-gray-900 dark:text-white">{label}</p>
+          <p className="text-blue-600 dark:text-blue-400">
+            <span className="font-medium">Réponses: </span>
+            <span className="font-bold">{payload[0].value}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
@@ -292,22 +325,38 @@ export const Dashboard: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-48 sm:h-64 flex items-end justify-between space-x-1 sm:space-x-2 px-2">
-                {weeklyData.map((day, index) => (
-                  <div key={day.day} className="flex flex-col items-center flex-1">
-                    <div 
-                      className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-xl transition-all hover:from-blue-600 hover:to-blue-500 max-w-8 sm:max-w-12 shadow-lg hover:shadow-xl cursor-pointer"
-                      style={{ 
-                        height: `${Math.max((day.responses / 25) * (window.innerWidth < 640 ? 120 : 160), 8)}px`,
-                        minHeight: '8px'
-                      }}
-                    ></div>
-                    <div className="mt-2 text-center">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{day.day}</div>
-                      <div className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400">{day.responses}</div>
+              <div className="h-48 sm:h-64">
+                {weeklyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="day" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                      />
+                      <YAxis 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar 
+                        dataKey="responses" 
+                        radius={[4, 4, 0, 0]}
+                        fill="#3b82f6"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Chargement des données...</p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
