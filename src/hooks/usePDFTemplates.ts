@@ -35,7 +35,14 @@ export const usePDFTemplates = () => {
           setTotalPages(result.totalPages);
           console.log('📄 Templates chargés:', result.templates.length);
         } catch (supabaseError) {
-          console.warn('📄 Erreur Supabase, fallback localStorage:', supabaseError);
+          // Vérifier si c'est une erreur de réseau
+          if (supabaseError instanceof TypeError && supabaseError.message === 'Failed to fetch') {
+            console.warn('📄 Erreur réseau détectée:', supabaseError.message);
+            // Vous pouvez ajouter une notification toast ici si nécessaire
+          } else {
+            console.warn('📄 Erreur Supabase, fallback localStorage:', supabaseError);
+          }
+          
           // Fallback vers localStorage si Supabase n'est pas disponible
           const saved = localStorage.getItem('pdfTemplates');
           if (saved) {
