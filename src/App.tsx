@@ -30,6 +30,7 @@ import { SuccessPage } from './pages/SuccessPage';
 import { Settings } from './pages/Settings';
 import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
 import { DemoTimer } from './components/demo/DemoTimer';
+import { WelcomeModal } from './components/onboarding/WelcomeModal';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -80,6 +81,8 @@ const AppContent: React.FC = () => {
       <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isPublicForm ? '' : 'pb-16 md:pb-0'}`}>
         {/* Timer de démo affiché sur toutes les pages */}
         <DemoTimer />
+        {/* Message d'accueil pour nouveaux utilisateurs */}
+        <WelcomeModal />
         {!isPublicForm && <Navbar />}
         <main>
           <Routes>
