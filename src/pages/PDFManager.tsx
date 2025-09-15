@@ -1204,10 +1204,38 @@ export const PDFManager: React.FC = () => {
                       ) : (
                         <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                           <p className="text-gray-900 dark:text-white font-medium whitespace-pre-wrap break-words">
-                            {String(value)}
-                          </p>
-                        </div>
-                      )}
+                         // Créer un Set pour éviter les doublons d'images/signatures
+                         const processedImages = new Set();
+                         const processedSignatures = new Set();
+                         
+                         return Object.entries(selectedResponseForDetails.data || {})
+                           .filter(([key, value]) => {
+                             // Filtrer les valeurs vides
+                             if (value === undefined || value === null || value === '') {
+                               return false;
+                             }
+                             
+                             // Pour les images/signatures, éviter les doublons
+                             if (typeof value === 'string' && value.startsWith('data:image')) {
+                               // Créer un hash simple basé sur les premiers caractères
+                               const imageHash = value.substring(0, 100);
+                               
+                               if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
+                                 if (processedSignatures.has(imageHash)) {
+                                   return false; // Skip ce doublon de signature
+                                 }
+                                 processedSignatures.add(imageHash);
+                               } else {
+                                 if (processedImages.has(imageHash)) {
+                                   return false; // Skip ce doublon d'image
+                                 }
+                                 processedImages.add(imageHash);
+                               }
+                             }
+                             
+                             return true;
+                           })
+                           .map(([key, value], index) => (
                     </div>
                   ))}
                 </div>
