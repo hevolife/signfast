@@ -1,4 +1,5 @@
 import React from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
@@ -34,6 +35,52 @@ import { Support } from './pages/Support';
 import { DemoTimer } from './components/demo/DemoTimer';
 import { WelcomeModal } from './components/onboarding/WelcomeModal';
 import { SupportNotificationToast } from './components/notifications/SupportNotificationToast';
+
+// Composant d'erreur de fallback
+const ErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () => void }> = ({ 
+  error, 
+  resetErrorBoundary 
+}) => {
+  console.error('🚨 Erreur capturée par ErrorBoundary:', error);
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="text-2xl">🚨</span>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          Oups ! Une erreur s'est produite
+        </h1>
+        <p className="text-gray-600 mb-6">
+          SignFast a rencontré un problème technique. Nous nous excusons pour la gêne occasionnée.
+        </p>
+        <div className="space-y-3">
+          <button
+            onClick={resetErrorBoundary}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg"
+          >
+            🔄 Réessayer
+          </button>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl transition-all duration-300"
+          >
+            🏠 Retour à l'accueil
+          </button>
+        </div>
+        <details className="mt-6 text-left">
+          <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+            Détails techniques
+          </summary>
+          <pre className="mt-2 text-xs bg-gray-100 p-3 rounded overflow-auto max-h-32">
+            {error.message}
+          </pre>
+        </details>
+      </div>
+    </div>
+  );
+};
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -229,17 +276,35 @@ const AppContent: React.FC = () => {
     </DndProvider>
   );
 };
+
 function App() {
   return (
-    <DemoProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </NotificationProvider>
-      </AuthProvider>
-    </DemoProvider>
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onError={(error, errorInfo) => {
+        console.error('🚨 ErrorBoundary a capturé une erreur:', error, errorInfo);
+      }}
+      onReset={() => {
+        // Nettoyer le localStorage en cas d'erreur
+        try {
+          localStorage.removeItem('signfast_demo');
+          sessionStorage.clear();
+        } catch (e) {
+          console.warn('Impossible de nettoyer le storage:', e);
+        }
+        window.location.reload();
+      }}
+    >
+      <DemoProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </NotificationProvider>
+        </AuthProvider>
+      </DemoProvider>
+    </ErrorBoundary>
   );
 }
 

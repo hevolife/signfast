@@ -2,13 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useForms } from '../hooks/useForms';
+import { useFormResponses } from '../hooks/useForms';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { usePDFTemplates } from '../hooks/usePDFTemplates';
+import { supabase } from '../lib/supabase';
 import { SubscriptionBanner } from '../components/subscription/SubscriptionBanner';
 import { DemoTimer } from '../components/demo/DemoTimer';
 import { DemoWarningBanner } from '../components/demo/DemoWarningBanner';
 import { useDemo } from '../contexts/DemoContext';
+import { useAuth } from '../contexts/AuthContext';
 import { stripeConfig } from '../stripe-config';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -30,95 +33,152 @@ import {
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const { isDemoMode } = useDemo();
   const { forms, totalCount: totalForms, loading: formsLoading, fetchPage } = useForms();
   const { templates, loading: templatesLoading } = usePDFTemplates();
   const { isSubscribed, hasSecretCode, secretCodeType } = useSubscription();
   const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();
+  const [realWeeklyData, setRealWeeklyData] = React.useState([]);
   const [totalResponses, setTotalResponses] = React.useState(0);
+  const [loadingActivity, setLoadingActivity] = React.useState(true);
   const [recentFormsPage, setRecentFormsPage] = React.useState(1);
   const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
   const [initialLoading, setInitialLoading] = React.useState(true);
-  const [weeklyData, setWeeklyData] = React.useState([]);
   const product = stripeConfig.products[0];
 
-  // Calculer les réponses totales de manière stable
+  // Charger les données d'activité réelles
   React.useEffect(() => {
-    if (forms.length > 0) {
-      try {
-        // Utiliser l'ID du premier formulaire comme seed pour la génération stable
-        const firstFormId = forms[0]?.id;
-        if (!firstFormId) {
-          setTotalResponses(0);
-          return;
-        }
-        
-        // Extraire les derniers 8 caractères et convertir en nombre
-        const seedString = firstFormId.slice(-8);
-        const seed = parseInt(seedString, 16);
-        
-        // Vérifier que le seed est valide
-        if (isNaN(seed)) {
-          console.warn('Seed invalide, utilisation valeur par défaut');
-          const fallbackSeed = 12345;
-          const publishedForms = forms.filter(form => form.is_published);
-          const baseResponses = publishedForms.length * 15;
-          const variation = (fallbackSeed % 50) + 20;
-          setTotalResponses(baseResponses + variation);
-          return;
-        }
-        
-        // Calculer un nombre stable basé sur les formulaires publiés
-        const publishedForms = forms.filter(form => form.is_published);
-        const baseResponses = publishedForms.length * 15; // 15 réponses par formulaire publié
-        
-        // Ajouter une variation stable basée sur le seed
-        const variation = (seed % 50) + 20; // Entre 20 et 69
-        
-        const calculatedResponses = baseResponses + variation;
-        
-        // Vérifier que le résultat final est valide
-        if (isNaN(calculatedResponses)) {
-          console.warn('Résultat de calcul invalide, utilisation valeur par défaut');
-          setTotalResponses(publishedForms.length * 15 + 25);
-        } else {
-          setTotalResponses(calculatedResponses);
-        }
-        
-        // Générer les données de la semaine basées sur le seed
-        const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-        const generatedWeeklyData = weekDays.map((day, index) => {
-          const dayVariation = (seed + index * 1000) % 30 + 5; // Entre 5 et 34
-          return {
-            day,
-            responses: dayVariation,
-            fill: `hsl(${220 + index * 10}, 70%, 50%)` // Couleurs dégradées
-          };
-        });
-        
-        setWeeklyData(generatedWeeklyData);
-      } catch (error) {
-        console.error('Erreur calcul réponses totales:', error);
-        // Fallback sécurisé
-        const publishedForms = forms.filter(form => form.is_published);
-        setTotalResponses(publishedForms.length * 15 + 25);
-        
-        // Données par défaut pour le graphique
-        const defaultWeeklyData = [
-          { day: 'Lun', responses: 12, fill: '#3b82f6' },
-          { day: 'Mar', responses: 19, fill: '#6366f1' },
-          { day: 'Mer', responses: 8, fill: '#8b5cf6' },
-          { day: 'Jeu', responses: 25, fill: '#a855f7' },
-          { day: 'Ven', responses: 15, fill: '#c084fc' },
-          { day: 'Sam', responses: 7, fill: '#d8b4fe' },
-          { day: 'Dim', responses: 4, fill: '#e9d5ff' },
-        ];
-        setWeeklyData(defaultWeeklyData);
-      }
+    if (user && !isDemoMode) {
+      loadRealActivityData();
+    } else if (isDemoMode) {
+      loadDemoActivityData();
     } else {
-      setTotalResponses(0);
-      setWeeklyData([]);
+      setLoadingActivity(false);
     }
-  }, [forms]);
+  }, [user, isDemoMode, forms]);
+
+  const loadRealActivityData = async () => {
+    try {
+      setLoadingActivity(true);
+      console.log('📊 Chargement données d\'activité réelles...');
+      
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.warn('📊 Supabase non configuré, données par défaut');
+        loadDemoActivityData();
+        return;
+      }
+
+      // Calculer les dates de la semaine (lundi à dimanche)
+      const today = new Date();
+      const currentDay = today.getDay(); // 0 = dimanche, 1 = lundi, etc.
+      const mondayOffset = currentDay === 0 ? -6 : -(currentDay - 1); // Calculer l'offset pour lundi
+      
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + mondayOffset);
+      monday.setHours(0, 0, 0, 0);
+      
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      
+      console.log('📊 Période d\'analyse:', {
+        monday: monday.toLocaleDateString('fr-FR'),
+        sunday: sunday.toLocaleDateString('fr-FR')
+      });
+
+      // Récupérer les IDs des formulaires de l'utilisateur
+      const userFormIds = forms.map(form => form.id);
+      
+      if (userFormIds.length === 0) {
+        console.log('📊 Aucun formulaire, données vides');
+        setRealWeeklyData([]);
+        setTotalResponses(0);
+        setLoadingActivity(false);
+        return;
+      }
+
+      // Récupérer les réponses de la semaine
+      const { data: weeklyResponses, error: weeklyError } = await supabase
+        .from('responses')
+        .select('created_at')
+        .in('form_id', userFormIds)
+        .gte('created_at', monday.toISOString())
+        .lte('created_at', sunday.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (weeklyError) {
+        console.error('📊 Erreur récupération réponses hebdomadaires:', weeklyError);
+        loadDemoActivityData();
+        return;
+      }
+
+      // Récupérer le total des réponses
+      const { count: totalCount, error: totalError } = await supabase
+        .from('responses')
+        .select('id', { count: 'exact', head: true })
+        .in('form_id', userFormIds);
+
+      if (totalError) {
+        console.warn('📊 Erreur comptage total:', totalError);
+        setTotalResponses(0);
+      } else {
+        setTotalResponses(totalCount || 0);
+      }
+
+      // Grouper les réponses par jour de la semaine
+      const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      const dailyCounts = new Array(7).fill(0);
+      
+      (weeklyResponses || []).forEach(response => {
+        const responseDate = new Date(response.created_at);
+        const dayOfWeek = responseDate.getDay(); // 0 = dimanche, 1 = lundi, etc.
+        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convertir pour que lundi = 0
+        dailyCounts[adjustedDay]++;
+      });
+
+      // Formater pour Recharts
+      const chartData = weekDays.map((day, index) => ({
+        day,
+        responses: dailyCounts[index],
+        fill: `hsl(${220 + index * 15}, 70%, ${50 + index * 5}%)` // Couleurs dégradées
+      }));
+
+      console.log('📊 Données d\'activité calculées:', chartData);
+      setRealWeeklyData(chartData);
+      
+    } catch (error) {
+      console.error('📊 Erreur chargement activité réelle:', error);
+      loadDemoActivityData();
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const loadDemoActivityData = () => {
+    console.log('📊 Chargement données démo/fallback');
+    
+    // Données de démonstration ou fallback
+    const publishedForms = forms.filter(form => form.is_published);
+    const baseResponses = publishedForms.length * 15;
+    const variation = Math.floor(Math.random() * 50) + 20;
+    setTotalResponses(baseResponses + variation);
+    
+    // Données de la semaine simulées
+    const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const demoWeeklyData = weekDays.map((day, index) => ({
+      day,
+      responses: Math.floor(Math.random() * 25) + 5, // Entre 5 et 29
+      fill: `hsl(${220 + index * 15}, 70%, ${50 + index * 5}%)`
+    }));
+    
+    setRealWeeklyData(demoWeeklyData);
+    setLoadingActivity(false);
+  };
 
   // Charger une page spécifique des formulaires récents
   const loadRecentFormsPage = async (page: number) => {
@@ -316,7 +376,7 @@ export const Dashboard: React.FC = () => {
                     Activité de la semaine
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Évolution des réponses quotidiennes
+                    {isDemoMode ? 'Données de démonstration' : 'Réponses reçues cette semaine'}
                   </p>
                 </div>
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
@@ -326,9 +386,16 @@ export const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="h-48 sm:h-64">
-                {weeklyData.length > 0 ? (
+                {loadingActivity ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Chargement des données d'activité...</p>
+                    </div>
+                  </div>
+                ) : realWeeklyData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={weeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={realWeeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis 
                         dataKey="day" 
@@ -352,8 +419,9 @@ export const Dashboard: React.FC = () => {
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Chargement des données...</p>
+                      <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Aucune donnée d'activité</p>
+                      <p className="text-xs text-gray-500 mt-1">Les données apparaîtront quand vous recevrez des réponses</p>
                     </div>
                   </div>
                 )}
