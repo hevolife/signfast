@@ -37,6 +37,7 @@ import { stripeConfig } from '../stripe-config';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useNotifications } from '../contexts/NotificationContext';
 import { SupportNotificationBadge } from '../components/notifications/SupportNotificationBadge';
+import { SubAccountManager } from '../components/subaccounts/SubAccountManager';
 import toast from 'react-hot-toast';
 
 export const Settings: React.FC = () => {
@@ -60,7 +61,7 @@ export const Settings: React.FC = () => {
   } = useSubscription();
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'affiliate' | 'subscription' | 'admin'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subaccounts' | 'affiliate' | 'subscription'>('profile');
   const [showSecretCodeModal, setShowSecretCodeModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -495,6 +496,21 @@ export const Settings: React.FC = () => {
                 </div>
               </button>
               <button
+                onClick={() => setActiveTab('subaccounts')}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${
+                  activeTab === 'subaccounts'
+                    ? 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white border-teal-400 shadow-lg'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-teal-500 hover:to-cyan-600 hover:text-white hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 rounded-lg">
+                    <span className="text-sm">👥</span>
+                  </div>
+                  <span>Sous-comptes</span>
+                </div>
+              </button>
+              <button
                 onClick={() => setActiveTab('subscription')}
                 className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
@@ -840,6 +856,10 @@ export const Settings: React.FC = () => {
 
         {activeTab === 'affiliate' && (
           <AffiliatePanel />
+        )}
+
+        {activeTab === 'subaccounts' && (
+          <SubAccountManager />
         )}
 
         {activeTab === 'subscription' && (

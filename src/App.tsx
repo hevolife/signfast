@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DemoProvider } from './contexts/DemoContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { SubAccountProvider } from './contexts/SubAccountContext';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 import { MaintenanceMode } from './components/MaintenanceMode';
 import { Navbar } from './components/layout/Navbar';
@@ -32,6 +33,8 @@ import { SuccessPage } from './pages/SuccessPage';
 import { Settings } from './pages/Settings';
 import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
 import { Support } from './pages/Support';
+import { SubAccountLogin } from './pages/subaccounts/SubAccountLogin';
+import { SubAccountDashboard } from './pages/subaccounts/SubAccountDashboard';
 import { DemoTimer } from './components/demo/DemoTimer';
 import { WelcomeModal } from './components/onboarding/WelcomeModal';
 import { SupportNotificationToast } from './components/notifications/SupportNotificationToast';
@@ -261,6 +264,8 @@ const AppContent: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="/sub-account/login" element={<SubAccountLogin />} />
+            <Route path="/sub-account/dashboard" element={<SubAccountDashboard />} />
           </Routes>
         </main>
         <Toaster
@@ -296,11 +301,13 @@ function App() {
     >
       <DemoProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <Router>
-              <AppContent />
-            </Router>
-          </NotificationProvider>
+          <SubAccountProvider>
+            <NotificationProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </NotificationProvider>
+          </SubAccountProvider>
         </AuthProvider>
       </DemoProvider>
     </ErrorBoundary>
