@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDateFR } from '../utils/dateFormatter';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubscription } from '../hooks/useSubscription';
 import { useLimits } from '../hooks/useLimits';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { SecretCodeModal } from '../components/subscription/SecretCodeModal';
 import { AffiliatePanel } from '../components/affiliate/AffiliatePanel';
@@ -502,6 +502,18 @@ export const Settings: React.FC = () => {
                   <span>Abonnement</span>
                 </div>
               </button>
+              <Link to="/support">
+                <button
+                  className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-100 hover:to-indigo-200 hover:text-blue-700 hover:shadow-lg"
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1 rounded-lg">
+                      <span className="text-sm">💬</span>
+                    </div>
+                    <span>Support</span>
+                  </div>
+                </button>
+              </Link>
               <button
                 onClick={toggleDarkMode}
                 className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-gray-100 hover:to-slate-200 hover:text-gray-700 hover:shadow-lg"
