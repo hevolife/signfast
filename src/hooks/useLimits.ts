@@ -17,7 +17,7 @@ interface LimitData {
 export const useLimits = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
-  const { isSubscribed, loading: subscriptionLoading } = useSubscription();
+  const { isSubscribed, hasSecretCode, loading: subscriptionLoading } = useSubscription();
   const { forms } = useForms();
   const { templates } = usePDFTemplates();
   const [responsesCount, setResponsesCount] = useState(0);
