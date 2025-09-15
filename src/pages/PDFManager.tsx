@@ -868,27 +868,30 @@ export const PDFManager: React.FC = () => {
             ))}
           </div>
         ) : responses.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-            <CardContent className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-3xl mb-6 shadow-xl">
-                <FileText className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                {searchTerm || selectedFormFilter !== 'all' ? 'Aucune réponse trouvée' : 'Aucune réponse disponible'}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                {searchTerm || selectedFormFilter !== 'all'
-                  ? 'Essayez de modifier vos filtres de recherche'
-                  : 'Les réponses de vos formulaires apparaîtront ici pour génération PDF'
-                }
-              </p>
-              {forms.length === 0 && (
-                <div className="mt-6">
-                  <Link to="/forms/new">
-                    <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold px-6 py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5">
-                      Créer mon premier formulaire
-                    </Button>
-                  </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Skeleton cards pour un chargement fluide */}
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="animate-pulse bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/2"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-full"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-2/3"></div>
+                    <div className="flex gap-2 mt-4">
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex-1"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
                 </div>
               )}
             </CardContent>
