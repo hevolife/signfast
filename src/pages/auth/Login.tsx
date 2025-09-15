@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { FormInput, Mail, Eye, EyeOff, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { FormInput, Mail, Eye, EyeOff, Lock as LockIcon, ArrowRight, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Login: React.FC = () => {
@@ -110,7 +110,7 @@ export const Login: React.FC = () => {
           <CardHeader>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl mb-6 shadow-lg">
-                <Lock className="h-8 w-8 text-blue-600" />
+                <LockIcon className="h-8 w-8 text-blue-600" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 {showResetForm ? 'Réinitialiser' : 'Connexion'}
