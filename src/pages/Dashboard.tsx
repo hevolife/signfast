@@ -162,19 +162,39 @@ export const Dashboard: React.FC = () => {
   const loadDemoActivityData = () => {
     console.log('📊 Chargement données démo/fallback');
     
-    // Données de démonstration ou fallback
+    // Données de démonstration stables basées sur l'ID utilisateur
     const publishedForms = forms.filter(form => form.is_published);
+    
+    // Générer une valeur stable basée sur l'ID utilisateur ou un seed fixe
+    let seed = 42; // Valeur par défaut
+    if (user?.id) {
+      // Créer un seed basé sur l'ID utilisateur pour des données cohérentes
+      seed = user.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    }
+    
+    // Fonction de génération pseudo-aléatoire stable
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+    
     const baseResponses = publishedForms.length * 15;
-    const variation = Math.floor(Math.random() * 50) + 20;
-    setTotalResponses(baseResponses + variation);
+    const stableVariation = Math.floor(seededRandom(seed) * 50) + 20;
+    setTotalResponses(baseResponses + stableVariation);
     
     // Données de la semaine simulées
     const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    const demoWeeklyData = weekDays.map((day, index) => ({
-      day,
-      responses: Math.floor(Math.random() * 25) + 5, // Entre 5 et 29
-      fill: `hsl(${220 + index * 15}, 70%, ${50 + index * 5}%)`
-    }));
+    const demoWeeklyData = weekDays.map((day, index) => {
+      // Générer des valeurs stables pour chaque jour
+      const daySeed = seed + index * 7;
+      const responses = Math.floor(seededRandom(daySeed) * 25) + 5; // Entre 5 et 29
+      
+      return {
+        day,
+        responses,
+        fill: `hsl(${220 + index * 15}, 70%, ${50 + index * 5}%)`
+      };
+    });
     
     setRealWeeklyData(demoWeeklyData);
     setLoadingActivity(false);
