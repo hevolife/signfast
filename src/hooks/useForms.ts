@@ -83,6 +83,11 @@ export const useForms = () => {
         localStorage.setItem('currentUserForms', JSON.stringify(data || []));
         sessionStorage.setItem('currentUserForms', JSON.stringify(data || []));
         
+        // Déclencher un événement pour notifier les autres composants
+        window.dispatchEvent(new CustomEvent('formsLoaded', { 
+          detail: { forms: data || [], userId: targetUserId }
+        }));
+        
         if (typeof window !== 'undefined') {
           // Silent error
         }

@@ -50,7 +50,9 @@ export const PDFManager: React.FC = () => {
   const product = stripeConfig.products[0];
 
   useEffect(() => {
-    loadFormResponses();
+    if (user && forms.length > 0) {
+      loadFormResponses();
+    }
     
     // Actualisation automatique toutes les 30 secondes
     const autoRefreshInterval = setInterval(() => {
@@ -61,7 +63,42 @@ export const PDFManager: React.FC = () => {
     }, 30000);
     
     return () => clearInterval(autoRefreshInterval);
-  }, [user, currentPage]);
+  }, [user, currentPage, forms]);
+
+  // Charger les réponses quand les formulaires sont disponibles
+  useEffect(() => {
+    if (user && forms.length > 0 && responses.length === 0 && !loading) {
+      console.log('📋 Chargement initial des réponses car formulaires disponibles');
+      loadFormResponses();
+    }
+  }, [forms, user]);
+
+  // Charger immédiatement si l'utilisateur change
+  useEffect(() => {
+    if (user) {
+      console.log('📋 Utilisateur détecté, chargement des réponses');
+      // Petit délai pour laisser le temps aux formulaires de se charger
+      setTimeout(() => {
+        loadFormResponses();
+      }, 500);
+    }
+  }, [user]);
+
+  // Écouter l'événement de chargement des formulaires
+  useEffect(() => {
+    const handleFormsLoaded = (event: CustomEvent) => {
+      console.log('📋 Événement formsLoaded reçu:', event.detail);
+      if (user && event.detail.userId === user.id) {
+        console.log('📋 Formulaires chargés pour cet utilisateur, chargement des réponses');
+        setTimeout(() => {
+          loadFormResponses();
+        }, 100);
+      }
+    };
+
+    window.addEventListener('formsLoaded', handleFormsLoaded as EventListener);
+    return () => window.removeEventListener('formsLoaded', handleFormsLoaded as EventListener);
+  }, [user]);
 
   // Écoute en temps réel des nouvelles réponses
   useEffect(() => {
@@ -138,6 +175,7 @@ export const PDFManager: React.FC = () => {
 
   const loadFormResponses = async (silent: boolean = false) => {
     if (!user) {
+      console.log('📋 Pas d\'utilisateur, arrêt du chargement');
       setResponses([]);
       setTotalCount(0);
       setLoading(false);
@@ -151,6 +189,8 @@ export const PDFManager: React.FC = () => {
     try {
       if (!silent) {
         console.log('📋 Chargement des réponses pour génération PDF...');
+        console.log('📋 Utilisateur:', user.email);
+        console.log('📋 Nombre de formulaires:', forms.length);
       }
       
       // Vérifier si Supabase est configuré
@@ -174,10 +214,10 @@ export const PDFManager: React.FC = () => {
       
       if (userFormIds.length === 0) {
         if (!silent) {
-          console.log('📋 Aucun formulaire trouvé pour cet utilisateur');
+          console.log('📋 Aucun formulaire trouvé pour cet utilisateur, attente...');
         }
-        setResponses([]);
-        setTotalCount(0);
+        // Ne pas vider les réponses si on n'a pas encore les formulaires
+        // Juste arrêter le loading
         if (!silent) {
           setLoading(false);
         }
