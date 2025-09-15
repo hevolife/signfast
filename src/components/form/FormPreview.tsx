@@ -135,7 +135,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                       type="radio"
                       name={field.id}
                       value={option}
-                      checked={formData[normalizeLabel(field.label)] === option}
+                      checked={formData[field.id] === option}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       className="text-blue-600"
                     />
@@ -257,7 +257,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
               </label>
               <SignatureCanvas
                 onSignatureChange={(signature) => handleInputChange(field.id, signature)}
-                value={formData[field.id]}
+                value={formData[normalizeLabel(field.label)]}
                 required={field.required}
               />
             </div>
