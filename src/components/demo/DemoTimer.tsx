@@ -2,10 +2,10 @@ import React from 'react';
 import { useDemo } from '../../contexts/DemoContext';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Clock, X, Sparkles, Zap, Minimize2, Maximize2 } from 'lucide-react';
+import { Clock, Sparkles, Zap, Minimize2, Maximize2 } from 'lucide-react';
 
 export const DemoTimer: React.FC = () => {
-  const { isDemoMode, timeRemaining, endDemo } = useDemo();
+  const { isDemoMode, timeRemaining } = useDemo();
   const [isMinimized, setIsMinimized] = React.useState(false);
 
   if (!isDemoMode) return null;
@@ -84,15 +84,6 @@ export const DemoTimer: React.FC = () => {
                 title={isMinimized ? "Agrandir le timer" : "Réduire le timer"}
               >
                 {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={endDemo}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-full w-8 h-8 p-0 shadow-lg hover:shadow-xl transition-all duration-300"
-                title="Quitter la démo"
-              >
-                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
