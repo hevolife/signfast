@@ -31,6 +31,13 @@ export const useSubAccounts = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
+        // Si la table n'existe pas encore, on ignore l'erreur silencieusement
+        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+          console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
+          setSubAccounts([]);
+          setTotalCount(0);
+          return;
+        }
         console.error('Erreur récupération sous-comptes:', error);
         setSubAccounts([]);
         setTotalCount(0);

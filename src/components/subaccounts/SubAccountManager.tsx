@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSubAccounts } from '../../hooks/useSubAccounts';
+import { Plus, Edit2, Trash2, Key, Copy, Users, Shield, Eye, EyeOff, Info } from 'lucide-react';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -32,6 +32,38 @@ export const SubAccountManager: React.FC = () => {
   const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set());
   
   // Formulaire de création
+  // Si la table n'existe pas encore, afficher un message d'information
+  if (!loading && subAccounts.length === 0 && totalCount === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              Gestion des sous-comptes
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Créez et gérez des comptes d'accès limité pour votre équipe
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-start">
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Fonctionnalité en cours de configuration
+              </h4>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Le système de sous-comptes est en cours d'installation. Cette fonctionnalité sera disponible prochainement.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const [newUsername, setNewUsername] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newPassword, setNewPassword] = useState('');
