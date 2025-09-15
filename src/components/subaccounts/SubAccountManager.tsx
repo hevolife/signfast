@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Key, Copy, Users, Shield, Eye, EyeOff, Info } from 'lucide-react';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
