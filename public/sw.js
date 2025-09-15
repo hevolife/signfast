@@ -1,4 +1,4 @@
-const CACHE_NAME = 'signfast-v2';
+const CACHE_NAME = 'signfast-v3';
 const urlsToCache = [
   '/',
   '/dashboard',
