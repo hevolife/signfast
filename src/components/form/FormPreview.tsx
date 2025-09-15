@@ -62,7 +62,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
       id: field.id,
       required: field.required,
       placeholder: field.placeholder,
-      value: formData[field.id] || '',
+      // Utiliser la clé normalisée pour récupérer la valeur
+      value: formData[normalizeLabel(field.label)] || formData[field.id] || '',
     };
 
     switch (field.type) {
