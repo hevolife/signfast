@@ -9,12 +9,13 @@ import { FormField } from '../../types/form';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-import { ExternalLink, Eye, Settings, Share2, FileText, Sparkles, Edit as EditIcon } from 'lucide-react';
+import { ExternalLink, Eye, Settings, Share2, FileText, Sparkles, Edit as EditIcon, QrCode } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PDFTemplate } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useSubscription } from '../../hooks/useSubscription';
 import { stripeConfig } from '../../stripe-config';
+import { QRCodeGenerator } from '../../components/form/QRCodeGenerator';
 
 export const EditForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +27,7 @@ export const EditForm: React.FC = () => {
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('builder');
+  const [showQRCode, setShowQRCode] = useState(false);
 
   useEffect(() => {
     if (forms.length > 0 && id) {
@@ -216,6 +218,17 @@ export const EditForm: React.FC = () => {
                   >
                     <Eye className="h-5 w-5 mr-2" />
                     <span>Aperçu</span>
+                  </Button>
+                )}
+                {form.is_published && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowQRCode(true)}
+                    className="bg-purple-500/80 backdrop-blur-sm text-white border border-purple-400/30 hover:bg-purple-600/80 font-bold px-6 py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
+                    disabled={!isSubscribed && forms.findIndex(f => f.id === id) >= stripeConfig.freeLimits.maxForms}
+                  >
+                    <QrCode className="h-5 w-5 mr-2" />
+                    <span>QR Code</span>
                   </Button>
                 )}
                 <Button
@@ -465,6 +478,14 @@ export const EditForm: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* QR Code Modal */}
+        <QRCodeGenerator
+          formId={id!}
+          formTitle={form.title}
+          isOpen={showQRCode}
+          onClose={() => setShowQRCode(false)}
+        />
       </div>
     </div>
   );

@@ -13,6 +13,8 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Plus, Eye, BarChart3, Edit, Trash2, ExternalLink, Lock, Crown, Sparkles, FileText as FileTextIcon } from 'lucide-react';
 import { ArrowLeft, ArrowRight, Activity } from 'lucide-react';
+import { QrCode } from 'lucide-react';
+import { QRCodeGenerator } from '../components/form/QRCodeGenerator';
 import toast from 'react-hot-toast';
 
 export const MyForms: React.FC = () => {
@@ -24,6 +26,8 @@ export const MyForms: React.FC = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
   const product = stripeConfig.products[0];
+  const [showQRCode, setShowQRCode] = React.useState(false);
+  const [selectedFormForQR, setSelectedFormForQR] = React.useState<{ id: string; title: string } | null>(null);
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -70,6 +74,10 @@ export const MyForms: React.FC = () => {
     // Navigation handled by Link component
   };
 
+  const handleShowQRCode = (formId: string, formTitle: string) => {
+    setSelectedFormForQR({ id: formId, title: formTitle });
+    setShowQRCode(true);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
@@ -303,6 +311,20 @@ export const MyForms: React.FC = () => {
                       </Button>
                     )}
                     
+                    {form.is_published && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleShowQRCode(form.id, form.title)}
+                        className="flex items-center justify-center space-x-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
+                        title="Générer QR code"
+                        disabled={isLocked}
+                      >
+                        <QrCode className="h-4 w-4" />
+                        <span className="hidden sm:inline">QR</span>
+                      </Button>
+                    )}
+                    
                     <Button
                       variant="ghost"
                       size="sm"
@@ -392,6 +414,19 @@ export const MyForms: React.FC = () => {
           currentCount={formsLimits.current}
           maxCount={formsLimits.max}
         />
+        
+        {/* QR Code Modal */}
+        {selectedFormForQR && (
+          <QRCodeGenerator
+            formId={selectedFormForQR.id}
+            formTitle={selectedFormForQR.title}
+            isOpen={showQRCode}
+            onClose={() => {
+              setShowQRCode(false);
+              setSelectedFormForQR(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
