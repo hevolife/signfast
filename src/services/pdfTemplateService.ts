@@ -37,7 +37,7 @@ export class PDFTemplateService {
     try {
       console.log('📄 Récupération template public:', templateId);
       
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('pdf_templates')
         .select('*')
         .eq('id', templateId)
