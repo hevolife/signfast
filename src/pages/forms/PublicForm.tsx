@@ -449,18 +449,8 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
-      // Sauvegarder les métadonnées pour génération PDF à la demande
-      if (form.settings?.generatePdf && form.settings?.savePdfToServer) {
-        try {
-          console.log('💾 Début sauvegarde métadonnées PDF avec template...');
-          await savePDFMetadataForLaterGeneration(responseData, pdfSubmissionData);
-          console.log('✅ Métadonnées PDF sauvegardées avec succès');
-        } catch (error) {
-          console.error('❌ Erreur sauvegarde métadonnées PDF:', error);
-          toast.error('Erreur lors de la sauvegarde PDF. Le formulaire a été envoyé mais le PDF ne pourra pas être généré.');
-          // Ne pas bloquer la soumission du formulaire
-        }
-      }
+      console.log('✅ Réponse sauvegardée avec succès');
+      console.log('📄 Les PDFs seront générés à la demande depuis la page Stockage');
 
       setSubmitted(true);
       toast.success('Formulaire envoyé avec succès !');
@@ -474,133 +464,6 @@ export const PublicForm: React.FC = () => {
       toast.error('Erreur lors de l\'envoi');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const savePDFMetadataForLaterGeneration = async (response: any, submissionData: Record<string, any>) => {
-    try {
-      // Préparer les métadonnées
-      const timestamp = Date.now();
-      const fileName = `${form.title.replace(/[^a-z0-9]/gi, '_')}_${timestamp}.pdf`;
-      
-      // Récupérer l'ID du propriétaire du formulaire pour la sauvegarde PDF
-      const formOwnerId = form.user_id;
-      
-      if (!formOwnerId) {
-        console.error('Erreur: propriétaire du formulaire non identifié');
-        return;
-      }
-      
-      const metadata = {
-        responseId: response.id,
-        templateName: 'PDF Simple',
-        formTitle: form.title,
-        formData: submissionData,
-        userId: formOwnerId,
-        templateId: null,
-        templateFields: null,
-        templatePdfContent: null,
-      };
-
-      // Vérifier si un template PDF est configuré
-      if (form.settings?.pdfTemplateId) {
-        try {
-          console.log('📄 Récupération template pour formulaire public:', form.settings.pdfTemplateId);
-          
-          // Essayer plusieurs méthodes pour récupérer le template
-          let template = null;
-          
-          // Méthode 1: Service PDFTemplateService
-          try {
-            template = await PDFTemplateService.getTemplate(form.settings.pdfTemplateId);
-            console.log('📄 Template récupéré via service:', !!template);
-          } catch (serviceError) {
-            console.warn('⚠️ Erreur service PDFTemplateService:', serviceError);
-          }
-          
-          // Méthode 2: Accès direct Supabase si service échoue
-          if (!template) {
-            try {
-              console.log('📄 Tentative accès direct Supabase...');
-              const { data: templateData, error: templateError } = await supabase
-                .from('pdf_templates')
-                .select('*')
-                .eq('id', form.settings.pdfTemplateId)
-                .or('is_public.eq.true,linked_form_id.eq.' + form.id)
-                .single();
-              
-              if (!templateError && templateData) {
-                template = {
-                  id: templateData.id,
-                  name: templateData.name,
-                  description: templateData.description,
-                  originalPdfUrl: templateData.pdf_content,
-                  fields: templateData.fields || [],
-                  linkedFormId: templateData.linked_form_id,
-                  pages: templateData.pages,
-                  created_at: templateData.created_at,
-                  updated_at: templateData.updated_at,
-                  user_id: templateData.user_id,
-                };
-                console.log('📄 Template récupéré via Supabase direct');
-              } else {
-                console.warn('⚠️ Template non trouvé dans Supabase:', templateError);
-              }
-            } catch (supabaseError) {
-              console.warn('⚠️ Erreur accès Supabase direct:', supabaseError);
-            }
-          }
-          
-          if (template) {
-            console.log('📄 Template trouvé:', template.name, 'avec', template.fields.length, 'champs');
-            console.log('📄 Template PDF content disponible:', !!template.originalPdfUrl);
-            console.log('📄 Template fields:', template.fields.map(f => f.variable).join(', '));
-            
-            metadata.templateName = template.name;
-            metadata.templateId = template.id;
-            metadata.templateFields = template.fields;
-            metadata.templatePdfContent = template.originalPdfUrl;
-            
-            // Vérifier que toutes les données nécessaires sont présentes
-            if (!template.originalPdfUrl) {
-              console.warn('⚠️ Template PDF content manquant, utilisation PDF simple');
-              metadata.templateName = 'PDF Simple (template sans contenu)';
-              metadata.templateId = null;
-              metadata.templateFields = null;
-              metadata.templatePdfContent = null;
-            }
-            else if (!template.fields || template.fields.length === 0) {
-              console.warn('⚠️ Template sans champs configurés');
-            }
-          } else {
-            console.warn('⚠️ Template non trouvé pour ID:', form.settings.pdfTemplateId);
-            metadata.templateName = 'PDF Simple (template non trouvé)';
-            // Ne pas faire échouer la soumission, utiliser PDF simple
-            console.log('📄 Utilisation PDF simple à la place du template manquant');
-          }
-        } catch (templateError) {
-          console.warn('⚠️ Erreur récupération template:', templateError);
-          metadata.templateName = 'PDF Simple';
-          // Ne pas faire échouer la soumission
-          console.log('📄 Fallback vers PDF simple suite à erreur template');
-        }
-      } else {
-        console.log('📄 Aucun template PDF configuré, utilisation PDF simple');
-      }
-
-      // Sauvegarder les métadonnées pour génération ultérieure
-      const saveSuccess = await PDFService.savePDFMetadataForLaterGeneration(fileName, metadata);
-      
-      if (saveSuccess) {
-        console.log('✅ Métadonnées PDF sauvegardées:', metadata.templateName);
-      } else {
-        console.warn('⚠️ Erreur sauvegarde métadonnées PDF');
-      }
-      
-    } catch (error) {
-      console.error('Erreur savePDFMetadataForLaterGeneration:', error);
-      // Ne pas faire échouer la soumission du formulaire
-      console.log('📄 Soumission du formulaire maintenue malgré l\'erreur PDF');
     }
   };
 

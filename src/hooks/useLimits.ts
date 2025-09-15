@@ -20,7 +20,7 @@ export const useLimits = () => {
   const { isSubscribed, loading: subscriptionLoading } = useSubscription();
   const { forms } = useForms();
   const { templates } = usePDFTemplates();
-  const [savedPdfsCount, setSavedPdfsCount] = useState(0);
+  const [responsesCount, setResponsesCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Vérifier si l'utilisateur est super admin
@@ -28,11 +28,11 @@ export const useLimits = () => {
 
   const refreshLimits = async () => {
     try {
-      const count = await PDFService.countPDFs();
-      setSavedPdfsCount(count);
+      const count = await PDFService.countResponsesForUser(user?.id || '');
+      setResponsesCount(count);
     } catch (error) {
       console.error('Erreur refresh limits:', error);
-      setSavedPdfsCount(0);
+      setResponsesCount(0);
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export const useLimits = () => {
   };
 
   const getSavedPdfsLimits = (): LimitData => {
-    const current = savedPdfsCount;
+    const current = responsesCount;
     // Optimiste par défaut pour éviter le blocage
     const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxSavedPdfs : Infinity;
     return {
