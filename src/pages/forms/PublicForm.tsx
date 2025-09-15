@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { normalizeFormData, optimizeFormData, validateNormalizedData } from '../../utils/dataNormalizer';
+import { normalizeLabel } from '../../utils/dataNormalizer';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -334,6 +335,19 @@ export const PublicForm: React.FC = () => {
       const { normalizedData, fieldMappings, conflicts } = normalizeFormData(
         formData, 
         form.fields || []
+      // Vérifier que tous les champs obligatoires sont présents dans les données normalisées
+      const requiredFields = form.fields?.filter(f => f.required).map(f => f.label) || [];
+      const { isValid: isNormalizedValid, missingFields: normalizedMissingFields } = validateNormalizedData(
+        normalizedData,
+        requiredFields
+      );
+      
+      if (!isNormalizedValid) {
+        console.error('❌ Champs obligatoires manquants après normalisation:', normalizedMissingFields);
+        setErrors(normalizedMissingFields.map(field => `Le champ "${field}" est obligatoire`));
+        return;
+      }
+      
       );
       
       // Afficher les conflits détectés
@@ -731,14 +745,18 @@ export const PublicForm: React.FC = () => {
     });
 
     return fieldsToShow.map(conditionalField => (
-      <div key={conditionalField.id} className="ml-6 border-l-2 border-blue-200 pl-4 mt-4">
-        {renderField(conditionalField)}
-      </div>
-    ));
-  };
-
-  const renderField = (field: FormField) => {
-    const baseProps = {
+    // Valider en utilisant les clés normalisées
+    form.fields?.forEach(field => {
+      if (field.required) {
+        // Chercher la valeur avec la clé normalisée
+        const normalizedKey = normalizeLabel(field.label);
+        const value = formData[field.id] || formData[normalizedKey] || formData[field.label];
+        
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          missingFields.push(field.label);
+        }
+      }
+    });
       id: field.id,
       required: field.required,
       placeholder: field.placeholder,
