@@ -166,6 +166,15 @@ export const useSupport = () => {
 
   const markTicketAsRead = async (ticketId: string): Promise<void> => {
     try {
+      if (!user) {
+        console.warn('🔔 Pas d\'utilisateur pour markTicketAsRead');
+        return;
+      }
+
+      console.log('🔔 === DÉBUT MARQUAGE COMME LU ===');
+      console.log('🔔 Ticket ID:', ticketId);
+      console.log('🔔 User ID:', user.id);
+
       // Marquer le ticket comme lu en mettant à jour updated_at
       const { error } = await supabase
         .from('support_tickets')
@@ -174,12 +183,33 @@ export const useSupport = () => {
         .eq('user_id', user?.id);
       
       if (error) {
-        console.error('Erreur markTicketAsRead:', error);
+        console.error('🔔 ❌ Erreur markTicketAsRead:', error);
+        console.error('🔔 Détails erreur:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
       } else {
-        console.log('✅ Ticket marqué comme lu:', ticketId);
+        console.log('🔔 ✅ Ticket marqué comme lu dans la DB:', ticketId);
+        
+        // Vérifier que la mise à jour a bien eu lieu
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('support_tickets')
+          .select('updated_at')
+          .eq('id', ticketId)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (verifyError) {
+          console.error('🔔 ❌ Erreur vérification mise à jour:', verifyError);
+        } else {
+          console.log('🔔 ✅ Vérification réussie, updated_at:', verifyData.updated_at);
+        }
       }
+      
+      console.log('🔔 === FIN MARQUAGE COMME LU ===');
     } catch (error) {
-      console.error('Erreur markTicketAsRead:', error);
+      console.error('🔔 ❌ Erreur générale markTicketAsRead:', error);
     }
   };
 

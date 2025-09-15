@@ -29,11 +29,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     try {
+      console.log('🔔 === VÉRIFICATION MESSAGES NON LUS ===');
+      console.log('🔔 User ID:', user.id);
+      
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.log('🔔 Supabase non configuré');
         setUnreadSupportMessages(0);
         return;
       }
@@ -53,24 +57,33 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .eq('user_id', user.id);
 
       if (error) {
-        console.warn('Erreur récupération notifications support:', error);
+        console.warn('🔔 ❌ Erreur récupération notifications support:', error);
         setUnreadSupportMessages(0);
         return;
       }
+
+      console.log('🔔 Tickets récupérés:', tickets?.length || 0);
 
       // Compter les messages admin non lus
       let totalUnread = 0;
       
       (tickets || []).forEach(ticket => {
+        console.log('🔔 Analyse ticket:', ticket.id, 'updated_at:', ticket.updated_at);
+        
         const adminMessages = ticket.support_messages?.filter(msg => 
           msg.is_admin_reply && 
           new Date(msg.created_at) > new Date(ticket.updated_at)
         ) || [];
         
+        console.log('🔔 Messages admin non lus pour ce ticket:', adminMessages.length);
         totalUnread += adminMessages.length;
       });
 
+      console.log('🔔 Total messages non lus calculé:', totalUnread);
+      console.log('🔔 Ancien count:', unreadSupportMessages);
       setUnreadSupportMessages(totalUnread);
+      console.log('🔔 Nouveau count:', totalUnread);
+      console.log('🔔 === FIN VÉRIFICATION ===');
     } catch (error) {
       console.error('Erreur vérification notifications:', error);
       setUnreadSupportMessages(0);
