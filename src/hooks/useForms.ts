@@ -262,6 +262,14 @@ export const useForms = () => {
 
   return {
     forms,
+    totalCount,
+    loading,
+    createForm,
+    updateForm,
+    deleteForm,
+    refetch: fetchForms,
+    fetchPage: fetchForms,
+  };
 };
 
 export const useFormResponses = (formId: string) => {
