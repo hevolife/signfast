@@ -467,7 +467,13 @@ export const SupportAdminPanel: React.FC = () => {
                       <span className="ml-2 text-gray-600 dark:text-gray-400">Chargement...</span>
                     </div>
                   ) : (
-                    ticketMessages.map((message: any) => (
+                    ticketMessages.length === 0 ? (
+                      <div className="text-center py-8">
+                        <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-600 dark:text-gray-400">Aucun message dans cette conversation</p>
+                      </div>
+                    ) : (
+                      ticketMessages.map((message: any) => (
                     <div
                       key={message.id}
                       className={`flex ${message.is_admin_reply ? 'justify-end' : 'justify-start'}`}
@@ -495,10 +501,11 @@ export const SupportAdminPanel: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    ))
+                      ))
+                    )
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
+                <div ref={messagesEndRef} />
 
                 {/* Formulaire de réponse admin */}
                 {selectedTicketData.status !== 'closed' && (
