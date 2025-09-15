@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 export const SupportPanel: React.FC = () => {
   const { tickets, loading, createTicket, sendMessage, getTicketMessages, markTicketAsRead } = useSupport();
   const { refreshNotifications } = useNotifications();
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
@@ -34,6 +35,18 @@ export const SupportPanel: React.FC = () => {
   const [newTicketMessage, setNewTicketMessage] = useState('');
   const [newTicketPriority, setNewTicketPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [creatingTicket, setCreatingTicket] = useState(false);
+
+  // Fonction pour scroller vers le bas
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Scroller vers le bas quand les messages changent
+  React.useEffect(() => {
+    if (ticketMessages.length > 0) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [ticketMessages]);
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +89,8 @@ export const SupportPanel: React.FC = () => {
     try {
       const messages = await getTicketMessages(ticketId);
       setTicketMessages(messages);
+      // Scroller vers le bas après chargement des messages
+      setTimeout(scrollToBottom, 200);
       refreshNotifications(); // Actualiser les notifications après lecture
       
       // Marquer comme lu
@@ -107,6 +122,8 @@ export const SupportPanel: React.FC = () => {
         // Recharger les messages
         const messages = await getTicketMessages(selectedTicket);
         setTicketMessages(messages);
+        // Scroller vers le bas après envoi
+        setTimeout(scrollToBottom, 100);
         toast.success('Message envoyé !');
       } else {
         toast.error('Erreur lors de l\'envoi');
@@ -304,7 +321,10 @@ export const SupportPanel: React.FC = () => {
               
               {/* Messages */}
               <CardContent className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96">
+                <div 
+                  ref={messagesEndRef}
+                  className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96"
+                >
                   {loadingMessages ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -341,6 +361,7 @@ export const SupportPanel: React.FC = () => {
                       </div>
                     ))
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Formulaire d'envoi de message */}
