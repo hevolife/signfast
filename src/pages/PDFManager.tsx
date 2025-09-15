@@ -33,7 +33,7 @@ interface PDFStorageItem {
   template_name: string;
   form_title: string;
   form_data: Record<string, any>;
-  pdf_content: string;
+  pdf_content?: string;
   file_size: number;
   user_name: string;
   created_at: string;
@@ -88,7 +88,7 @@ export const PDFManager: React.FC = () => {
           .eq('user_id', user.id),
         supabase
           .from('pdf_storage')
-          .select('*')
+          .select('id, file_name, response_id, template_name, form_title, form_data, file_size, user_name, created_at, updated_at')
           .eq('user_id', user.id)
           .range(offset, offset + itemsPerPage - 1)
           .order('created_at', { ascending: false })
@@ -148,16 +148,30 @@ export const PDFManager: React.FC = () => {
 
   const handleDownloadPdf = async (pdf: PDFStorageItem) => {
     try {
-      if (!pdf.pdf_content) {
-        toast.error('Contenu PDF non disponible');
-        return;
+      let pdfContent = pdf.pdf_content;
+      
+      // Si le contenu PDF n'est pas déjà chargé, le récupérer
+      if (!pdfContent) {
+        const { data, error } = await supabase
+          .from('pdf_storage')
+          .select('pdf_content')
+          .eq('id', pdf.id)
+          .eq('user_id', user?.id)
+          .single();
+          
+        if (error || !data?.pdf_content) {
+          toast.error('Erreur lors du chargement du PDF');
+          return;
+        }
+        
+        pdfContent = data.pdf_content;
       }
 
       // Convertir le contenu base64 en blob
       let pdfData: Uint8Array;
       
-      if (pdf.pdf_content.startsWith('data:application/pdf;base64,')) {
-        const base64Data = pdf.pdf_content.split(',')[1];
+      if (pdfContent.startsWith('data:application/pdf;base64,')) {
+        const base64Data = pdfContent.split(',')[1];
         const binaryString = atob(base64Data);
         pdfData = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
