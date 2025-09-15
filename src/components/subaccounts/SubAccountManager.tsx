@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from '../ui/Card';
 import { 
   Users, 
   Plus, 
-  Edit, 
+  Edit2,
   Trash2, 
   Key, 
   Eye, 
@@ -21,7 +21,8 @@ import {
   CheckCircle,
   XCircle,
   Copy,
-  RefreshCw
+  RefreshCw,
+  Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
