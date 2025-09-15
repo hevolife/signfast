@@ -213,31 +213,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # Nginx pour servir l'application et faire du reverse proxy
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./dist:/usr/share/nginx/html:ro
-      - nginx_logs:/var/log/nginx
-    depends_on:
-      - signfast-app
-      - kong
-    networks:
-      - signfast-network
-    restart: unless-stopped
-
 volumes:
   postgres_data:
     driver: local
   storage_data:
     driver: local
   redis_data:
-    driver: local
-  nginx_logs:
     driver: local
 
 networks:
