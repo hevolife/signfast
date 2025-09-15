@@ -66,17 +66,6 @@ export const useLimits = () => {
     const hasPremiumAccess = isSubscribed || hasSecretCode || isDemoMode || isSuperAdmin;
     const max = hasPremiumAccess ? Infinity : stripeConfig.freeLimits.maxForms;
     
-    console.log('📊 Calcul limites formulaires:', {
-      current,
-      max,
-      isSubscribed,
-      hasSecretCode,
-      isDemoMode,
-      isSuperAdmin,
-      hasPremiumAccess,
-      subscriptionLoading
-    });
-    
     return {
       current,
       max,
@@ -99,17 +88,6 @@ export const useLimits = () => {
     // Vérifier l'accès premium (abonnement Stripe OU code secret)
     const hasPremiumAccess = isSubscribed || hasSecretCode || isDemoMode || isSuperAdmin;
     const max = hasPremiumAccess ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
-    
-    console.log('📊 Calcul limites templates:', {
-      current,
-      max,
-      isSubscribed,
-      hasSecretCode,
-      isDemoMode,
-      isSuperAdmin,
-      hasPremiumAccess,
-      subscriptionLoading
-    });
     
     return {
       current,
@@ -134,17 +112,6 @@ export const useLimits = () => {
     // Vérifier l'accès premium (abonnement Stripe OU code secret)
     const hasPremiumAccess = isSubscribed || hasSecretCode || isDemoMode || isSuperAdmin;
     const max = hasPremiumAccess ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
-    
-    console.log('📊 Calcul limites PDFs:', {
-      current,
-      max,
-      isSubscribed,
-      hasSecretCode,
-      isDemoMode,
-      isSuperAdmin,
-      hasPremiumAccess,
-      subscriptionLoading
-    });
     
     return {
       current,
