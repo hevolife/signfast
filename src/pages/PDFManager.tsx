@@ -226,14 +226,36 @@ export const PDFManager: React.FC = () => {
       console.log('📄 Form ID:', response.form_id);
       console.log('📄 Template ID:', response.pdf_template_id);
       console.log('📄 User name:', response.user_name);
+      console.log('📄 Response data keys:', Object.keys(response.response_data));
+      console.log('📄 Images/signatures dans les données:', Object.keys(response.response_data).filter(key => 
+        typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
+      ));
+
+      // Récupérer les données complètes de la réponse (avec images/signatures)
+      const { data: fullResponse, error: responseError } = await supabase
+        .from('responses')
+        .select('data')
+        .eq('id', response.id)
+        .single();
+
+      if (responseError) {
+        console.error('❌ Erreur récupération données complètes:', responseError);
+        throw new Error('Impossible de récupérer les données complètes de la réponse');
+      }
+
+      const fullResponseData = fullResponse.data;
+      console.log('📄 Données complètes récupérées:', Object.keys(fullResponseData));
+      console.log('📄 Images/signatures complètes:', Object.keys(fullResponseData).filter(key => 
+        typeof fullResponseData[key] === 'string' && fullResponseData[key].startsWith('data:image')
+      ));
 
       // Vérifier si un template PDF est configuré
       if (response.pdf_template_id) {
         console.log('📄 Génération avec template personnalisé');
-        await generatePDFWithTemplate(response);
+        await generatePDFWithTemplate({ ...response, response_data: fullResponseData });
       } else {
         console.log('📄 Génération PDF simple');
-        await generateSimplePDF(response);
+        await generateSimplePDF({ ...response, response_data: fullResponseData });
       }
 
       toast.dismiss();

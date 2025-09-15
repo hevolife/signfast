@@ -158,6 +158,41 @@ export class PDFGenerator {
         }
       }
       
+      // 3. Recherche par correspondance partielle pour les signatures
+      if (!signatureValue) {
+        const partialMatchKey = Object.keys(data).find(key => {
+          const keyLower = key.toLowerCase();
+          const varLower = variableName.toLowerCase();
+          return (keyLower.includes(varLower) || varLower.includes(keyLower)) &&
+                 typeof data[key] === 'string' && data[key].startsWith('data:image');
+        });
+        
+        if (partialMatchKey) {
+          signatureValue = data[partialMatchKey];
+          console.log('✍️ ✅ Signature trouvée via correspondance partielle:', partialMatchKey);
+          return signatureValue;
+        }
+      }
+      
+      // 4. Recherche générique pour les signatures si la variable contient "signature"
+      if (!signatureValue && variableName.toLowerCase().includes('signature')) {
+        console.log('✍️ Variable signature générique détectée, recherche par mots-clés');
+        const signatureKeys = Object.keys(data).filter(key => {
+          const keyLower = key.toLowerCase();
+          return (keyLower.includes('signature') || 
+                  keyLower.includes('sign') ||
+                  keyLower.includes('signer')) &&
+                 typeof data[key] === 'string' && 
+                 data[key].startsWith('data:image');
+        });
+        
+        if (signatureKeys.length > 0) {
+          signatureValue = data[signatureKeys[0]];
+          console.log('✍️ ✅ Signature trouvée via mots-clés:', signatureKeys[0]);
+          return signatureValue;
+        }
+      }
+      
       // 3. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
       console.log('✍️ ❌ Aucune signature trouvée pour variable:', variableName);
       console.log('✍️ Variables disponibles:', Object.keys(data));
@@ -197,15 +232,13 @@ export class PDFGenerator {
         const partialMatchKey = Object.keys(data).find(key => {
           const keyLower = key.toLowerCase();
           const varLower = variableName.toLowerCase();
-          return keyLower.includes(varLower) || varLower.includes(keyLower);
+          return (keyLower.includes(varLower) || varLower.includes(keyLower)) &&
+                 typeof data[key] === 'string' && data[key].startsWith('data:image');
         });
         
         if (partialMatchKey) {
-          const val = data[partialMatchKey];
-          if (typeof val === 'string' && val.startsWith('data:image')) {
-            imageValue = val;
-            console.log('🖼️ Trouvé via correspondance partielle:', partialMatchKey);
-          }
+          imageValue = data[partialMatchKey];
+          console.log('🖼️ Trouvé via correspondance partielle:', partialMatchKey);
         }
       }
       
@@ -403,14 +436,23 @@ export class PDFGenerator {
     height: number
   ) {
     try {
+      console.log('✍️ === DÉBUT DRAW SIGNATURE ===');
+      console.log('✍️ Données signature reçues:', signatureData ? signatureData.substring(0, 50) + '...' : 'null');
+      console.log('✍️ Position:', { x, y, width, height });
+      
       if (!signatureData || !signatureData.startsWith('data:image')) {
+        console.log('✍️ ❌ Données de signature invalides');
         throw new Error('Données de signature invalides');
       }
 
       const [header, base64Data] = signatureData.split(',');
       if (!base64Data || base64Data.length === 0) {
+        console.log('✍️ ❌ Données base64 vides');
         throw new Error('Données base64 vides');
       }
+      
+      console.log('✍️ Header:', header);
+      console.log('✍️ Taille base64:', base64Data.length);
       
       // Conversion base64 vers bytes
       let imageBytes: Uint8Array;
@@ -420,7 +462,9 @@ export class PDFGenerator {
         for (let i = 0; i < binaryString.length; i++) {
           imageBytes[i] = binaryString.charCodeAt(i);
         }
+        console.log('✍️ ✅ Conversion base64 réussie, taille:', imageBytes.length, 'bytes');
       } catch (conversionError) {
+        console.error('✍️ ❌ Erreur conversion base64:', conversionError);
         throw new Error(`Conversion base64 échouée: ${conversionError.message}`);
       }
       
@@ -428,11 +472,15 @@ export class PDFGenerator {
       let image;
       try {
         if (header.includes('png')) {
+          console.log('✍️ Embedding PNG...');
           image = await pdfDoc.embedPng(imageBytes);
         } else {
+          console.log('✍️ Embedding JPEG...');
           image = await pdfDoc.embedJpg(imageBytes);
         }
+        console.log('✍️ ✅ Image embedded avec succès:', { width: image.width, height: image.height });
       } catch (embedError) {
+        console.error('✍️ ❌ Erreur embedding:', embedError);
         throw new Error(`Embedding image échoué: ${embedError.message}`);
       }
       
@@ -455,6 +503,13 @@ export class PDFGenerator {
       const offsetX = (width - drawWidth) / 2;
       const offsetY = (height - drawHeight) / 2;
       
+      console.log('✍️ Dimensions finales:', {
+        original: { width: image.width, height: image.height },
+        field: { width, height },
+        draw: { width: drawWidth, height: drawHeight },
+        offset: { x: offsetX, y: offsetY }
+      });
+      
       // Dessiner la signature
       page.drawImage(image, {
         x: x + offsetX,
@@ -463,7 +518,11 @@ export class PDFGenerator {
         height: drawHeight,
       });
       
+      console.log('✍️ ✅ Signature dessinée avec succès');
+      console.log('✍️ === FIN DRAW SIGNATURE ===');
+      
     } catch (error) {
+      console.error('✍️ ❌ Erreur complète drawSignature:', error);
       // Placeholder d'erreur
       page.drawRectangle({
         x,

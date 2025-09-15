@@ -263,7 +263,7 @@ export const PublicForm: React.FC = () => {
     
     try {
       // Préparer les données pour la base (sans les gros fichiers)
-      const dbSubmissionData = { ...formData };
+      const dbSubmissionData = {};
       // Préparer les données complètes pour le PDF (avec les images compressées)
       console.log('🖼️ Début compression des images...');
       const pdfSubmissionData = await compressImageData(formData);
@@ -290,31 +290,24 @@ export const PublicForm: React.FC = () => {
             field.label.toLowerCase(), // Minuscules
           ];
           
-          // Pour les signatures, ajouter des clés spéciales
-          if (field.type === 'signature') {
-            // Ne pas ajouter de clés génériques pour les signatures
-            // Chaque signature doit avoir sa propre variable unique
-          }
-          
-          // Pour les images, ajouter des clés spéciales
-          if (field.type === 'file' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            keys.push('image', 'Image', 'IMAGE', 'photo', 'Photo', 'PHOTO');
-          }
-          
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            // Sauvegarder UNIQUEMENT avec les clés spécifiques au champ
+            console.log('✍️ Sauvegarde signature pour champ:', field.label, 'taille:', Math.round(fieldValue.length / 1024), 'KB');
+            // Ajouter des clés spécifiques pour les signatures
+            keys.push('signature', 'Signature', 'SIGNATURE');
             keys.forEach(key => {
               pdfSubmissionData[key] = fieldValue;
-              dbSubmissionData[key] = `[SIGNATURE_${field.id}]`;
+              dbSubmissionData[key] = fieldValue; // Garder les signatures complètes
             });
           }
           // Images normales
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
             console.log('🖼️ Traitement image pour champ:', field.label, 'taille:', Math.round(fieldValue.length / 1024), 'KB');
+            // Ajouter des clés spécifiques pour les images
+            keys.push('image', 'Image', 'IMAGE', 'photo', 'Photo', 'PHOTO');
             keys.forEach(key => {
               pdfSubmissionData[key] = fieldValue;
-              dbSubmissionData[key] = `[IMAGE_${field.id}]`;
+              dbSubmissionData[key] = fieldValue; // Garder les images complètes
             });
           } 
           // Données normales
@@ -348,14 +341,20 @@ export const PublicForm: React.FC = () => {
                   }
                   
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                    console.log('✍️ Sauvegarde signature conditionnelle pour champ:', conditionalField.label);
+                    // Ajouter des clés spécifiques pour les signatures conditionnelles
+                    conditionalKeys.push('signature', 'Signature', 'SIGNATURE');
                     conditionalKeys.forEach(key => {
                       pdfSubmissionData[key] = conditionalValue;
-                      dbSubmissionData[key] = `[SIGNATURE_${conditionalField.id}]`;
+                      dbSubmissionData[key] = conditionalValue; // Garder les signatures complètes
                     });
                   } else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
+                    console.log('🖼️ Sauvegarde image conditionnelle pour champ:', conditionalField.label);
+                    // Ajouter des clés spécifiques pour les images conditionnelles
+                    conditionalKeys.push('image', 'Image', 'IMAGE', 'photo', 'Photo', 'PHOTO');
                     conditionalKeys.forEach(key => {
                       pdfSubmissionData[key] = conditionalValue;
-                      dbSubmissionData[key] = `[IMAGE_${conditionalField.id}]`;
+                      dbSubmissionData[key] = conditionalValue; // Garder les images complètes
                     });
                   } else {
                     conditionalKeys.forEach(key => {
@@ -434,6 +433,12 @@ export const PublicForm: React.FC = () => {
       });
 
       // Sauvegarder dans la base avec les données allégées
+      console.log('💾 Sauvegarde dans la base avec données complètes...');
+      console.log('💾 Clés sauvegardées:', Object.keys(dbSubmissionData));
+      console.log('💾 Images/signatures sauvegardées:', Object.keys(dbSubmissionData).filter(key => 
+        typeof dbSubmissionData[key] === 'string' && dbSubmissionData[key].startsWith('data:image')
+      ));
+      
       const { data: responseData, error } = await supabase
         .from('responses')
         .insert([{
@@ -449,7 +454,7 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
-      console.log('✅ Réponse sauvegardée avec succès');
+      console.log('✅ Réponse sauvegardée avec succès, ID:', responseData.id);
       console.log('📄 Les PDFs seront générés à la demande depuis la page Stockage');
 
       setSubmitted(true);
