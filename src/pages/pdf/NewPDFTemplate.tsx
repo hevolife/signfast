@@ -93,7 +93,10 @@ export const NewPDFTemplate: React.FC = () => {
         // Ajouter des variables système
         uniqueVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
         
-          }
+        return uniqueVariables;
+      }
+    } catch (error) {
+      // En cas d'erreur, utiliser les variables par défaut
     }
     
     // Variables par défaut en cas d'erreur

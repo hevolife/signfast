@@ -93,9 +93,10 @@ export const EditPDFTemplate: React.FC = () => {
         const uniqueVariables = [...new Set(formVariables)];
         
         // Ajouter des variables système
-        uniqueVariables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
-      } else {
-          }
+        return uniqueVariables;
+      }
+    } catch (error) {
+      // En cas d'erreur, utiliser les variables par défaut
     }
     
     // Variables par défaut en cas d'erreur
