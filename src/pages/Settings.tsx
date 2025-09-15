@@ -380,17 +380,17 @@ export const Settings: React.FC = () => {
   const getTabColorClasses = (tabName: string, isActive: boolean) => {
     const colorMap = {
       profile: isActive 
-        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 border-blue-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white hover:shadow-md',
       security: isActive 
-        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border-green-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white border-green-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-500 hover:to-emerald-600 hover:text-white hover:shadow-md',
       affiliate: isActive 
-        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 border-purple-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white border-purple-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-500 hover:to-purple-600 hover:text-white hover:shadow-md',
       subscription: isActive 
-        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white hover:shadow-md',
     };
     return colorMap[tabName] || colorMap.profile;
   };
@@ -463,7 +463,7 @@ export const Settings: React.FC = () => {
                 className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                  <div className="p-1 rounded-lg">
                     <span className="text-sm">{getTabEmoji('profile')}</span>
                   </div>
                   <span>Profil</span>
@@ -474,7 +474,7 @@ export const Settings: React.FC = () => {
                 className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                  <div className="p-1 rounded-lg">
                     <span className="text-sm">{getTabEmoji('security')}</span>
                   </div>
                   <span>Sécurité</span>
@@ -485,7 +485,7 @@ export const Settings: React.FC = () => {
                 className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                  <div className="p-1 rounded-lg">
                     <span className="text-sm">{getTabEmoji('affiliate')}</span>
                   </div>
                   <span>Affiliation</span>
@@ -496,7 +496,7 @@ export const Settings: React.FC = () => {
                 className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                  <div className="p-1 rounded-lg">
                     <span className="text-sm">{getTabEmoji('subscription')}</span>
                   </div>
                   <span>Abonnement</span>
@@ -508,7 +508,7 @@ export const Settings: React.FC = () => {
                 title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                  <div className="p-1 rounded-lg">
                     <span className="text-sm">{isDarkMode ? '☀️' : '🌙'}</span>
                   </div>
                   <span>{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
