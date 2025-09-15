@@ -508,9 +508,11 @@ export const SupportAdminPanel: React.FC = () => {
                     )
                   )}
                 </div>
-
-                {/* Formulaire de réponse admin */}
-                {selectedTicketData.status !== 'closed' && (
+              </CardContent>
+              
+              {/* Formulaire de réponse admin - en dehors de CardContent pour prendre toute la largeur */}
+              {selectedTicketData.status !== 'closed' && (
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4">
                   <form onSubmit={handleSendReply} className="flex space-x-2">
                     <Input
                       value={newReply}
@@ -531,8 +533,8 @@ export const SupportAdminPanel: React.FC = () => {
                       )}
                     </Button>
                   </form>
-                )}
-              </CardContent>
+                </div>
+              )}
             </Card>
           ) : (
             <Card className="h-[600px] flex items-center justify-center">
