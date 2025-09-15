@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { normalizeFormData, optimizeFormData, validateNormalizedData } from '../../utils/dataNormalizer';
-import { normalizeLabel } from '../../utils/dataNormalizer';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -336,19 +335,6 @@ export const PublicForm: React.FC = () => {
         formData, 
         form.fields || []
       );
-      
-      // Vérifier que tous les champs obligatoires sont présents dans les données normalisées
-      const requiredFields = form.fields?.filter(f => f.required).map(f => f.label) || [];
-      const { isValid: isNormalizedValid, missingFields: normalizedMissingFields } = validateNormalizedData(
-        normalizedData,
-        requiredFields
-      );
-      
-      if (!isNormalizedValid) {
-        console.error('❌ Champs obligatoires manquants après normalisation:', normalizedMissingFields);
-        setErrors(normalizedMissingFields.map(field => `Le champ "${field}" est obligatoire`));
-        return;
-      }
       
       // Afficher les conflits détectés
       if (conflicts.length > 0) {
