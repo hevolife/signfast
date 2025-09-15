@@ -39,12 +39,14 @@ import {
   Zap,
   Database,
   Server,
-  Globe
+  Globe,
+  MessageCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMaintenanceMode } from '../../hooks/useMaintenanceMode';
 import { AffiliateAdminPanel } from '../../components/admin/AffiliateAdminPanel';
 import { DemoManagementPanel } from '../../components/admin/DemoManagementPanel';
+import { SupportAdminPanel } from '../../components/support/SupportAdminPanel';
 
 interface AdminUser {
   id: string;
@@ -93,7 +95,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [secretCodes, setSecretCodes] = useState<SecretCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'codes' | 'affiliates' | 'demo'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'codes' | 'affiliates' | 'demo' | 'support'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [newCodeType, setNewCodeType] = useState<'monthly' | 'lifetime'>('monthly');
   const [newCodeDescription, setNewCodeDescription] = useState('');
@@ -515,6 +517,13 @@ export const SuperAdminDashboard: React.FC = () => {
       color: 'pink',
       description: 'Configuration démo'
     },
+    { 
+      id: 'support', 
+      label: 'Support', 
+      icon: MessageCircle,
+      color: 'indigo',
+      description: 'Gestion du support'
+    },
   ];
 
   const getTabColorClasses = (color: string, isActive: boolean) => {
@@ -534,6 +543,9 @@ export const SuperAdminDashboard: React.FC = () => {
       pink: isActive 
         ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
         : 'text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-700',
+      indigo: isActive 
+        ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+        : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-700',
     };
     return colorMap[color] || colorMap.blue;
   };
@@ -1343,6 +1355,10 @@ export const SuperAdminDashboard: React.FC = () => {
 
         {activeTab === 'demo' && (
           <DemoManagementPanel />
+        )}
+
+        {activeTab === 'support' && (
+          <SupportAdminPanel />
         )}
       </div>
     </div>

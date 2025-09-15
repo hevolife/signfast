@@ -5,7 +5,7 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { useDemo } from '../../contexts/DemoContext';
 import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
-import { FormInput, LogOut, LayoutDashboard, FileText, HardDrive, Crown, Settings, Shield, Menu, X, Sparkles } from 'lucide-react';
+import { FormInput, LogOut, LayoutDashboard, FileText, HardDrive, Crown, Settings, Shield, Menu, X, Sparkles, MessageCircle } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
 
 export const Navbar: React.FC = () => {
