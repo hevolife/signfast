@@ -25,7 +25,7 @@ export const SupportNotificationToast: React.FC = () => {
           <div
             className={`${
               t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer hover:shadow-xl transition-all duration-300`}
+            } max-w-md w-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer hover:shadow-xl transition-all duration-300 mt-20`}
             onClick={() => {
               toast.dismiss(t.id);
               window.location.href = '/support';
@@ -68,7 +68,7 @@ export const SupportNotificationToast: React.FC = () => {
           </div>
         ), {
           duration: 8000,
-          position: 'top-right',
+          position: 'top-center',
         });
       }
     }
