@@ -30,18 +30,16 @@ export const useSubAccounts = () => {
         .eq('main_account_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
+      if (error || !data) {
+        // Table doesn't exist or other error - disable feature gracefully
         setSubAccounts([]);
         setTotalCount(0);
-        setLoading(false);
-        return;
       } else {
         setSubAccounts(data || []);
         setTotalCount(data?.length || 0);
       }
     } catch (error: any) {
-      console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
+      // Any error (including table not found) - disable feature gracefully
       setSubAccounts([]);
       setTotalCount(0);
     } finally {
