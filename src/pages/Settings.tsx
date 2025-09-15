@@ -4,7 +4,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubscription } from '../hooks/useSubscription';
 import { useLimits } from '../hooks/useLimits';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, X } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { SecretCodeModal } from '../components/subscription/SecretCodeModal';
 import { AffiliatePanel } from '../components/affiliate/AffiliatePanel';
