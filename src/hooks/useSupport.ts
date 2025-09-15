@@ -292,7 +292,38 @@ export const useSupportAdmin = () => {
         setAllTickets([]);
         setTotalCount(0);
       } else {
-        setAllTickets(data || []);
+        // Calculer le nombre de messages non lus pour chaque ticket (côté admin)
+        const ticketsWithUnreadCount = (data || []).map(ticket => ({
+          ...ticket,
+          unread_count: (() => {
+            // Pour les admins, compter les messages utilisateur non lus
+            // Récupérer le temps de lecture local pour ce ticket (côté admin)
+            const readTickets = JSON.parse(localStorage.getItem('admin_read_support_tickets') || '{}');
+            const localReadTime = readTickets[ticket.id];
+            
+            // Utiliser le temps le plus récent entre la DB et le local
+            const effectiveReadTime = localReadTime && new Date(localReadTime) > new Date(ticket.updated_at || ticket.created_at)
+              ? localReadTime 
+              : ticket.updated_at || ticket.created_at;
+            
+            // Compter les messages utilisateur (non admin) postérieurs au temps de lecture
+            const unreadCount = ticket.support_messages?.filter(msg => 
+              !msg.is_admin_reply && 
+              new Date(msg.created_at) > new Date(effectiveReadTime)
+            ).length || 0;
+            
+            console.log(`🔔 Admin - Ticket ${ticket.id} unread count:`, {
+              dbTime: ticket.updated_at,
+              localTime: localReadTime,
+              effectiveTime: effectiveReadTime,
+              unreadCount
+            });
+            
+            return unreadCount;
+          })()
+        }));
+        
+        setAllTickets(ticketsWithUnreadCount);
         setTotalCount(data?.length || 0);
       }
     } catch (error) {
@@ -304,6 +335,59 @@ export const useSupportAdmin = () => {
     }
   };
 
+  const markAdminTicketAsRead = async (ticketId: string): Promise<void> => {
+    try {
+      if (!user) {
+        console.warn('🔔 Admin - Pas d\'utilisateur pour markAdminTicketAsRead');
+        return;
+      }
+
+      console.log('🔔 Admin === DÉBUT MARQUAGE COMME LU ===');
+      console.log('🔔 Admin Ticket ID:', ticketId);
+      console.log('🔔 Admin User ID:', user.id);
+
+      // Marquer le ticket comme lu en mettant à jour updated_at avec un timestamp futur
+      // pour s'assurer que tous les messages utilisateur existants sont considérés comme lus
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ updated_at: new Date(Date.now() + 1000).toISOString() }) // +1 seconde dans le futur
+        .eq('id', ticketId);
+      
+      if (error) {
+        console.error('🔔 Admin ❌ Erreur markAdminTicketAsRead:', error);
+        console.error('🔔 Admin Détails erreur:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+      } else {
+        console.log('🔔 Admin ✅ Ticket marqué comme lu dans la DB:', ticketId);
+        
+        // Sauvegarder localement que ce ticket a été lu (côté admin)
+        const readTickets = JSON.parse(localStorage.getItem('admin_read_support_tickets') || '{}');
+        readTickets[ticketId] = new Date().toISOString();
+        localStorage.setItem('admin_read_support_tickets', JSON.stringify(readTickets));
+        console.log('🔔 Admin ✅ Ticket sauvegardé comme lu localement');
+        
+        // Vérifier que la mise à jour a bien eu lieu
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('support_tickets')
+          .select('updated_at')
+          .eq('id', ticketId)
+          .single();
+        
+        if (verifyError) {
+          console.error('🔔 Admin ❌ Erreur vérification mise à jour:', verifyError);
+        } else {
+          console.log('🔔 Admin ✅ Vérification réussie, updated_at:', verifyData.updated_at);
+        }
+      }
+      
+      console.log('🔔 Admin === FIN MARQUAGE COMME LU ===');
+    } catch (error) {
+      console.error('🔔 Admin ❌ Erreur générale markAdminTicketAsRead:', error);
+    }
+  };
   const updateTicketStatus = async (ticketId: string, status: SupportTicket['status']): Promise<boolean> => {
     if (!isSuperAdmin) return false;
 
@@ -367,6 +451,7 @@ export const useSupportAdmin = () => {
     totalCount,
     loading,
     isSuperAdmin,
+    markAdminTicketAsRead,
     updateTicketStatus,
     sendAdminReply,
     refetch: fetchAllTickets,

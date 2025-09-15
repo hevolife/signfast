@@ -21,7 +21,7 @@ import {
 import toast from 'react-hot-toast';
 
 export const SupportAdminPanel: React.FC = () => {
-  const { allTickets, loading, isSuperAdmin, updateTicketStatus, sendAdminReply, refetch } = useSupportAdmin();
+  const { allTickets, loading, isSuperAdmin, markAdminTicketAsRead, updateTicketStatus, sendAdminReply, refetch } = useSupportAdmin();
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [newReply, setNewReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
@@ -44,6 +44,29 @@ export const SupportAdminPanel: React.FC = () => {
     );
   }
 
+  const handleSelectTicket = async (ticketId: string) => {
+    setSelectedTicket(ticketId);
+    
+    try {
+      console.log('🔔 Admin === SÉLECTION TICKET ===');
+      console.log('🔔 Admin Ticket sélectionné:', ticketId);
+      
+      console.log('🔔 Admin Marquage du ticket comme lu...');
+      await markAdminTicketAsRead(ticketId);
+      console.log('🔔 Admin Ticket marqué comme lu');
+      
+      // Actualiser la liste des tickets pour refléter les changements
+      setTimeout(() => {
+        console.log('🔔 Admin Actualisation de la liste...');
+        refetch();
+        console.log('🔔 Admin Liste actualisée');
+      }, 1000);
+      
+      console.log('🔔 Admin === FIN SÉLECTION TICKET ===');
+    } catch (error) {
+      console.error('🔔 Admin Erreur sélection ticket:', error);
+    }
+  };
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -301,7 +324,7 @@ export const SupportAdminPanel: React.FC = () => {
                   {filteredTickets.map((ticket) => (
                     <div
                       key={ticket.id}
-                      onClick={() => setSelectedTicket(ticket.id)}
+                      onClick={() => handleSelectTicket(ticket.id)}
                       className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
                         selectedTicket === ticket.id
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -320,6 +343,11 @@ export const SupportAdminPanel: React.FC = () => {
                             {getUserDisplayName(ticket)}
                           </p>
                         </div>
+                        {ticket.unread_count && ticket.unread_count > 0 && (
+                          <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {ticket.unread_count}
+                          </span>
+                        )}
                         <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ml-2 ${getPriorityColor(ticket.priority)}`}>
                           {ticket.priority}
                         </span>
@@ -329,7 +357,7 @@ export const SupportAdminPanel: React.FC = () => {
                           {formatDateTimeFR(ticket.created_at)}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {ticket.support_messages?.length || 0} messages
+                          {ticket.support_messages?.length || 0} message{(ticket.support_messages?.length || 0) > 1 ? 's' : ''}
                         </span>
                       </div>
                     </div>
