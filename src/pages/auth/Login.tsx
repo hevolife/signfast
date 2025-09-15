@@ -34,7 +34,7 @@ export const Login: React.FC = () => {
           toast.error(error.message);
         }
       } else {
-        toast.success('Connexion réussie !');
+        toast.success('Connexion réussie !', { duration: 2000 });
         // Rediriger vers la page demandée ou le dashboard
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });

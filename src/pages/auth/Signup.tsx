@@ -78,20 +78,20 @@ export const Signup: React.FC = () => {
             const result = await response.json();
             
             if (result.success) {
-              toast.success(`🎉 Inscription réussie ! Vous avez été parrainé avec ${result.commission_rate}% de commission pour votre parrain.`);
+              toast.success(`🎉 Inscription réussie ! Vous avez été parrainé avec ${result.commission_rate}% de commission pour votre parrain.`, { duration: 2000 });
             } else {
               console.warn('⚠️ Erreur tracking affiliation:', result.error);
-              toast.success('Compte créé avec succès !');
+              toast.success('Compte créé avec succès !', { duration: 2000 });
             }
           } catch (affiliateError) {
             console.error('❌ Erreur tracking affiliation:', affiliateError);
-            toast.success('Compte créé avec succès !');
+            toast.success('Compte créé avec succès !', { duration: 2000 });
           }
         } else {
-          toast.success('Compte créé avec succès !');
+          toast.success('Compte créé avec succès !', { duration: 2000 });
         }
         
-        toast.success('🎉 Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription et accéder à SignFast.');
+        toast.success('🎉 Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription et accéder à SignFast.', { duration: 2000 });
         // Rediriger vers la page demandée ou le dashboard
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
