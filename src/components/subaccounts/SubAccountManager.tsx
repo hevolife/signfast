@@ -33,6 +33,22 @@ export const SubAccountManager: React.FC = () => {
   const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set());
   
   // Formulaire de création
+  const [newUsername, setNewUsername] = useState('');
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  // Formulaire d'édition
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editPermissions, setEditPermissions] = useState({ pdf_access: true, download_only: true });
+  const [updating, setUpdating] = useState(false);
+
+  // Reset mot de passe
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+  const [resettingPassword, setResettingPassword] = useState<string | null>(null);
+  
   // Si la table n'existe pas encore, afficher un message d'information
   if (!loading && subAccounts.length === 0 && totalCount === 0) {
     return (
@@ -64,22 +80,6 @@ export const SubAccountManager: React.FC = () => {
       </div>
     );
   }
-
-  const [newUsername, setNewUsername] = useState('');
-  const [newDisplayName, setNewDisplayName] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [creating, setCreating] = useState(false);
-
-  // Formulaire d'édition
-  const [editDisplayName, setEditDisplayName] = useState('');
-  const [editPermissions, setEditPermissions] = useState({ pdf_access: true, download_only: true });
-  const [updating, setUpdating] = useState(false);
-
-  // Reset mot de passe
-  const [resetPassword, setResetPassword] = useState('');
-  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
-  const [resettingPassword, setResettingPassword] = useState<string | null>(null);
 
   const handleCreateSubAccount = async (e: React.FormEvent) => {
     e.preventDefault();
