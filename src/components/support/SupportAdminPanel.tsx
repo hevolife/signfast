@@ -460,7 +460,10 @@ export const SupportAdminPanel: React.FC = () => {
               
               {/* Messages */}
               <CardContent className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96">
+                <div 
+                  ref={messagesEndRef}
+                  className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96"
+                >
                   {loadingMessages ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -505,7 +508,6 @@ export const SupportAdminPanel: React.FC = () => {
                     )
                   )}
                 </div>
-                <div ref={messagesEndRef} />
 
                 {/* Formulaire de réponse admin */}
                 {selectedTicketData.status !== 'closed' && (
