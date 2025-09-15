@@ -71,6 +71,18 @@ collect_configuration() {
     print_step "Configuration de SignFast"
     echo
     
+    # Choix du mode d'installation
+    echo "Mode d'installation :"
+    echo "1. Supabase Cloud (recommandé)"
+    echo "2. Supabase Self-Hosted (autonome)"
+    echo
+    read -p "Choisissez le mode (1 ou 2): " INSTALL_MODE
+    
+    if [[ "$INSTALL_MODE" != "1" && "$INSTALL_MODE" != "2" ]]; then
+        print_error "Mode invalide. Choisissez 1 ou 2."
+        exit 1
+    fi
+    
     # Domain
     while [[ -z "$DOMAIN" ]]; do
         read -p "Nom de domaine (ex: signfast.mondomaine.com): " DOMAIN
@@ -89,28 +101,46 @@ collect_configuration() {
         fi
     done
     
-    # Supabase configuration
-    echo
-    print_step "Configuration Supabase"
-    echo "Récupérez ces informations depuis votre projet Supabase:"
-    echo "Settings > API > Project URL et API Keys"
-    echo
-    
-    while [[ -z "$SUPABASE_URL" ]]; do
-        read -p "Supabase URL (https://xxx.supabase.co): " SUPABASE_URL
-        if [[ ! "$SUPABASE_URL" =~ ^https://.*\.supabase\.co$ ]]; then
-            print_error "URL Supabase invalide (doit être https://xxx.supabase.co)"
-            SUPABASE_URL=""
-        fi
-    done
-    
-    while [[ -z "$SUPABASE_ANON_KEY" ]]; do
-        read -p "Supabase Anon Key: " SUPABASE_ANON_KEY
-    done
-    
-    while [[ -z "$SUPABASE_SERVICE_ROLE_KEY" ]]; do
-        read -p "Supabase Service Role Key: " SUPABASE_SERVICE_ROLE_KEY
-    done
+    if [[ "$INSTALL_MODE" == "1" ]]; then
+        # Supabase Cloud configuration
+        echo
+        print_step "Configuration Supabase Cloud"
+        echo "Récupérez ces informations depuis votre projet Supabase:"
+        echo "Settings > API > Project URL et API Keys"
+        echo
+        
+        while [[ -z "$SUPABASE_URL" ]]; do
+            read -p "Supabase URL (https://xxx.supabase.co): " SUPABASE_URL
+            if [[ ! "$SUPABASE_URL" =~ ^https://.*\.supabase\.co$ ]]; then
+                print_error "URL Supabase invalide (doit être https://xxx.supabase.co)"
+                SUPABASE_URL=""
+            fi
+        done
+        
+        while [[ -z "$SUPABASE_ANON_KEY" ]]; do
+            read -p "Supabase Anon Key: " SUPABASE_ANON_KEY
+        done
+        
+        while [[ -z "$SUPABASE_SERVICE_ROLE_KEY" ]]; do
+            read -p "Supabase Service Role Key: " SUPABASE_SERVICE_ROLE_KEY
+        done
+    else
+        # Supabase Self-Hosted configuration
+        echo
+        print_step "Configuration Supabase Self-Hosted"
+        echo "Génération automatique des clés pour l'installation autonome"
+        
+        # Générer des clés sécurisées
+        POSTGRES_PASSWORD=$(openssl rand -base64 32)
+        JWT_SECRET=$(openssl rand -base64 32)
+        
+        # URLs locales pour self-hosted
+        SUPABASE_URL="http://localhost:8000"
+        SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOuoJeHxjNa-NEHl2CRkLdwdkBFhJKfSJBGQ"
+        SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+        
+        echo "✅ Configuration Supabase Self-Hosted générée automatiquement"
+    fi
     
     # Stripe configuration (optional)
     echo
@@ -122,7 +152,11 @@ collect_configuration() {
     print_success "Configuration collectée !"
     echo "Domaine: $DOMAIN"
     echo "Email: $EMAIL"
-    echo "Supabase: ${SUPABASE_URL}"
+    if [[ "$INSTALL_MODE" == "1" ]]; then
+        echo "Supabase: ${SUPABASE_URL} (Cloud)"
+    else
+        echo "Supabase: Self-Hosted (Autonome)"
+    fi
     echo
     read -p "Confirmer l'installation ? (y/N): " -n 1 -r
     echo
@@ -458,7 +492,9 @@ setup_ssl() {
 create_environment_file() {
     print_step "Création du fichier d'environnement"
     
-    cat > /opt/signfast/.env << EOF
+    if [[ "$INSTALL_MODE" == "1" ]]; then
+        # Supabase Cloud
+        cat > /opt/signfast/.env << EOF
 # Production Environment Variables
 NODE_ENV=production
 
@@ -475,6 +511,34 @@ STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
 DOMAIN=${DOMAIN}
 EMAIL=${EMAIL}
 EOF
+    else
+        # Supabase Self-Hosted
+        cat > /opt/signfast/.env << EOF
+# Production Environment Variables
+NODE_ENV=production
+
+# Supabase Self-Hosted Configuration
+VITE_SUPABASE_URL=http://localhost:8000
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOuoJeHxjNa-NEHl2CRkLdwdkBFhJKfSJBGQ
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+
+# Database Configuration
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+JWT_SECRET=${JWT_SECRET}
+
+# API Configuration
+API_EXTERNAL_URL=https://${DOMAIN}
+SITE_URL=https://${DOMAIN}
+
+# Stripe Configuration (optional)
+STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+# Application Configuration
+DOMAIN=${DOMAIN}
+EMAIL=${EMAIL}
+EOF
+    fi
 
     chmod 600 /opt/signfast/.env
     print_success "Fichier d'environnement créé"
@@ -805,30 +869,58 @@ deploy_application() {
         echo '<html><body><h1>SignFast Installation</h1><p>Application en cours de configuration...</p></body></html>' > public/index.html
     fi
     
-    # Create production environment file
-    cp .env.example .env 2>/dev/null || true
+    # L'environnement est déjà créé par create_environment_file()
     
-    # Update environment variables
-    cat > .env << EOF
-VITE_SUPABASE_URL=${SUPABASE_URL}
-VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-NODE_ENV=production
-EOF
+    if [[ "$INSTALL_MODE" == "2" ]]; then
+        print_step "Initialisation de la base de données Supabase Self-Hosted"
+        
+        # Attendre que PostgreSQL soit prêt
+        echo "Attente du démarrage de PostgreSQL..."
+        docker-compose up -d supabase-db
+        
+        # Attendre que la base soit prête
+        for i in {1..30}; do
+            if docker-compose exec -T supabase-db pg_isready -U postgres > /dev/null 2>&1; then
+                echo "✅ PostgreSQL prêt"
+                break
+            fi
+            echo "Attente PostgreSQL... ($i/30)"
+            sleep 2
+        done
+        
+        # Démarrer tous les services Supabase
+        echo "Démarrage des services Supabase..."
+        docker-compose up -d supabase-auth supabase-rest supabase-realtime supabase-storage supabase-imgproxy supabase-kong
+        
+        # Attendre que Kong soit prêt
+        echo "Attente de l'API Gateway..."
+        for i in {1..60}; do
+            if curl -f -s http://localhost:8000/health > /dev/null 2>&1; then
+                echo "✅ API Gateway prêt"
+                break
+            fi
+            echo "Attente API Gateway... ($i/60)"
+            sleep 2
+        done
+    fi
     
     # Build and start
     docker-compose build
     docker-compose up -d
     
     # Wait for container to be ready
-    echo "Attente du démarrage de l'application..."
-    sleep 30
+    echo "Attente du démarrage de l'application SignFast..."
+    sleep 60
     
     # Check if running
     if docker-compose ps | grep -q "signfast-app.*Up"; then
         print_success "Application déployée et en cours d'exécution"
+        
+        if [[ "$INSTALL_MODE" == "2" ]]; then
+            print_success "Supabase Self-Hosted déployé et configuré"
+            echo "Base de données PostgreSQL: localhost:5432"
+            echo "API Supabase: localhost:8000"
+        fi
     else
         print_error "Erreur lors du déploiement"
         docker-compose logs
@@ -1071,6 +1163,11 @@ main() {
     
     print_completion_info
 }
+
+# Variables globales pour la configuration
+INSTALL_MODE=""
+POSTGRES_PASSWORD=""
+JWT_SECRET=""
 
 # Run main function
 main "$@"

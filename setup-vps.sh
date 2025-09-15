@@ -61,12 +61,24 @@ cp docker-entrypoint.sh $DEPLOY_DIR/
 cp install.sh $DEPLOY_DIR/
 cp install-guide.md $DEPLOY_DIR/
 
+# Copy Supabase self-hosted files
+mkdir -p $DEPLOY_DIR/supabase
+cp -r supabase/migrations $DEPLOY_DIR/supabase/
+cp supabase/kong.yml $DEPLOY_DIR/supabase/ 2>/dev/null || echo "# Kong configuration will be created during installation" > $DEPLOY_DIR/supabase/kong.yml
+
 # Create environment template
 cat > $DEPLOY_DIR/.env.example << 'EOF'
+# Mode d'installation (sera configuré automatiquement)
+INSTALL_MODE=1
+
 # Supabase Configuration
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Supabase Self-Hosted (généré automatiquement si mode 2)
+POSTGRES_PASSWORD=auto-generated
+JWT_SECRET=auto-generated
 
 # Stripe Configuration (Optional)
 STRIPE_SECRET_KEY=sk_live_your-stripe-key
@@ -150,16 +162,22 @@ cat > deploy-instructions.txt << EOF
    ./install.sh
 
 4. SUIVRE LES INSTRUCTIONS
+   - Choisir le mode (Cloud ou Self-Hosted)
    - Entrer le nom de domaine
    - Entrer l'email pour SSL
-   - Configurer Supabase
+   - Configurer Supabase (selon le mode)
    - Configurer Stripe (optionnel)
 
 5. VÉRIFIER L'INSTALLATION
    signfast status
+   signfast health
    
 6. ACCÉDER AU SITE
    https://votre-domaine.com
+
+🔧 Modes d'installation :
+   Mode 1: Supabase Cloud (nécessite un projet Supabase)
+   Mode 2: Supabase Self-Hosted (installation complète autonome)
 
 📁 Fichiers créés :
    - signfast-vps-deploy.tar.gz (package complet)
@@ -170,6 +188,8 @@ cat > deploy-instructions.txt << EOF
    - signfast logs     (voir les logs)
    - signfast backup   (sauvegarder)
    - signfast update   (mettre à jour)
+   - signfast health   (vérification complète)
+   - signfast quick    (statut rapide)
 
 📖 Documentation complète : install-guide.md
 EOF

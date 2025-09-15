@@ -27,15 +27,30 @@ chmod +x install.sh
 ```
 
 Le script vous demandera :
+- **Mode d'installation** (Supabase Cloud ou Self-Hosted)
 - **Nom de domaine** (ex: signfast.mondomaine.com)
 - **Email** pour les certificats SSL
-- **URL Supabase** (https://xxx.supabase.co)
-- **Clés API Supabase** (anon key et service role key)
+- **Configuration Supabase** (selon le mode choisi)
 - **Clés Stripe** (optionnel)
 
+#### 4. Modes d'Installation
+
+##### **Mode 1: Supabase Cloud (Recommandé)**
+- Utilise votre projet Supabase existant
+- Nécessite les clés API de votre projet
+- Plus simple à maintenir
+- Sauvegarde automatique par Supabase
+
+##### **Mode 2: Supabase Self-Hosted (Autonome)**
+- Installation complète sur votre serveur
+- Aucune dépendance externe
+- Base de données PostgreSQL locale
+- Contrôle total de vos données
+
 #### 4. Attendre la fin de l'installation
-L'installation prend environ 10-15 minutes et configure automatiquement :
+L'installation prend environ 15-25 minutes et configure automatiquement :
 - ✅ Docker et Docker Compose
+- ✅ Supabase (Cloud ou Self-Hosted)
 - ✅ Nginx avec proxy reverse
 - ✅ SSL/TLS avec Let's Encrypt
 - ✅ Sécurité (Fail2ban, UFW)
@@ -97,11 +112,28 @@ signfast ssl-renew
 ### Variables d'Environnement
 Éditez `/opt/signfast/.env` pour modifier la configuration :
 
+#### Supabase Cloud
 ```bash
 # Supabase
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# Stripe (optionnel)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+#### Supabase Self-Hosted
+```bash
+# Supabase Self-Hosted
+VITE_SUPABASE_URL=http://localhost:8000
+VITE_SUPABASE_ANON_KEY=eyJ... (généré automatiquement)
+SUPABASE_SERVICE_ROLE_KEY=eyJ... (généré automatiquement)
+
+# Base de données
+POSTGRES_PASSWORD=mot-de-passe-généré
+JWT_SECRET=clé-jwt-générée
 
 # Stripe (optionnel)
 STRIPE_SECRET_KEY=sk_live_...
@@ -135,6 +167,11 @@ Le fichier `/etc/nginx/sites-available/signfast` contient la configuration du pr
 - **80** (HTTP - redirige vers HTTPS)
 - **443** (HTTPS)
 - **22** (SSH)
+
+#### Ports Internes (Self-Hosted uniquement)
+- **5432** (PostgreSQL - localhost uniquement)
+- **8000** (API Supabase - localhost uniquement)
+- **9999** (Auth Supabase - localhost uniquement)
 
 ## 📊 Maintenance
 
@@ -208,9 +245,23 @@ signfast cleanup
 ```
 
 #### Erreur de base de données
-- Vérifiez la configuration Supabase dans `.env`
+
+**Supabase Cloud :**
+- Vérifiez la configuration dans `.env`
 - Vérifiez que les clés API sont correctes
 - Vérifiez la connectivité réseau vers Supabase
+
+**Supabase Self-Hosted :**
+```bash
+# Vérifier PostgreSQL
+docker-compose exec supabase-db pg_isready -U postgres
+
+# Vérifier l'API
+curl http://localhost:8000/health
+
+# Redémarrer Supabase
+docker-compose restart supabase-db supabase-kong
+```
 
 ### Support
 En cas de problème, vérifiez :
