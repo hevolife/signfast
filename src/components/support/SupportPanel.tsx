@@ -108,7 +108,7 @@ export const SupportPanel: React.FC = () => {
         console.log('🔔 Actualisation des notifications...');
         refreshNotifications();
         console.log('🔔 Notifications actualisées');
-      }, 1000); // Délai augmenté à 1 seconde
+      }, 1500); // Délai augmenté à 1.5 secondes
       
       console.log('🔔 === FIN SÉLECTION TICKET ===');
     } catch (error) {

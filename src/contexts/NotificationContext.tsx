@@ -67,12 +67,24 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Compter les messages admin non lus
       let totalUnread = 0;
       
+      // Récupérer les tickets lus localement
+      const readTickets = JSON.parse(localStorage.getItem('read_support_tickets') || '{}');
+      console.log('🔔 Tickets lus localement:', Object.keys(readTickets).length);
+      
       (tickets || []).forEach(ticket => {
         console.log('🔔 Analyse ticket:', ticket.id, 'updated_at:', ticket.updated_at);
         
+        // Vérifier si le ticket a été lu localement
+        const localReadTime = readTickets[ticket.id];
+        const effectiveReadTime = localReadTime && new Date(localReadTime) > new Date(ticket.updated_at) 
+          ? localReadTime 
+          : ticket.updated_at;
+        
+        console.log('🔔 Temps de lecture effectif:', effectiveReadTime, '(local:', localReadTime, ', DB:', ticket.updated_at, ')');
+        
         const adminMessages = ticket.support_messages?.filter(msg => 
           msg.is_admin_reply && 
-          new Date(msg.created_at) > new Date(ticket.updated_at)
+          new Date(msg.created_at) > new Date(effectiveReadTime)
         ) || [];
         
         console.log('🔔 Messages admin non lus pour ce ticket:', adminMessages.length);

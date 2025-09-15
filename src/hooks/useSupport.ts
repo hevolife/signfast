@@ -175,10 +175,11 @@ export const useSupport = () => {
       console.log('🔔 Ticket ID:', ticketId);
       console.log('🔔 User ID:', user.id);
 
-      // Marquer le ticket comme lu en mettant à jour updated_at
+      // Marquer le ticket comme lu en mettant à jour updated_at avec un timestamp futur
+      // pour s'assurer que tous les messages admin existants sont considérés comme lus
       const { error } = await supabase
         .from('support_tickets')
-        .update({ updated_at: new Date().toISOString() })
+        .update({ updated_at: new Date(Date.now() + 1000).toISOString() }) // +1 seconde dans le futur
         .eq('id', ticketId)
         .eq('user_id', user?.id);
       
@@ -191,6 +192,12 @@ export const useSupport = () => {
         });
       } else {
         console.log('🔔 ✅ Ticket marqué comme lu dans la DB:', ticketId);
+        
+        // Sauvegarder localement que ce ticket a été lu
+        const readTickets = JSON.parse(localStorage.getItem('read_support_tickets') || '{}');
+        readTickets[ticketId] = new Date().toISOString();
+        localStorage.setItem('read_support_tickets', JSON.stringify(readTickets));
+        console.log('🔔 ✅ Ticket sauvegardé comme lu localement');
         
         // Vérifier que la mise à jour a bien eu lieu
         const { data: verifyData, error: verifyError } = await supabase
