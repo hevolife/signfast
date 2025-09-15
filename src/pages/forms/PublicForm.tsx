@@ -732,38 +732,28 @@ export const PublicForm: React.FC = () => {
                         };
                         reader.readAsDataURL(file);
                       });
-                        }
-                        
-                        // Compression de l'image
-                        toast.loading('🖼️ Compression de l\'image...');
-                        ImageCompressor.compressImage(file, {
-                          maxWidth: 1920,
-                          maxHeight: 1080,
-                          quality: 0.75,
-                          maxSizeKB: 512,
-                          format: 'jpeg',
-                          preserveTransparency: false
-                        }).then(compressedImage => {
-                          toast.dismiss();
-                          toast.success('✅ Image compressée et prête');
-                          handleInputChange(field.id, compressedImage);
-                        }).catch(error => {
-                          toast.dismiss();
-                          toast.error('Erreur lors de la compression');
-                        });
-                      }).catch(() => {
-                        // Fallback : lecture basique
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const base64 = event.target?.result as string;
-                          handleInputChange(field.id, base64);
-                        };
-                        reader.readAsDataURL(file);
-                      });
                     } else {
-                      // Pour les autres fichiers, stocker le nom
-                      handleInputChange(field.id, file.name);
+                      // Compression de l'image
+                      toast.loading('🖼️ Compression de l\'image...');
+                      ImageCompressor.compressImage(file, {
+                        maxWidth: 1920,
+                        maxHeight: 1080,
+                        quality: 0.75,
+                        maxSizeKB: 512,
+                        format: 'jpeg',
+                        preserveTransparency: false
+                      }).then(compressedImage => {
+                        toast.dismiss();
+                        toast.success('✅ Image compressée et prête');
+                        handleInputChange(field.id, compressedImage);
+                      }).catch(error => {
+                        toast.dismiss();
+                        toast.error('Erreur lors de la compression');
+                      });
                     }
+                  } else {
+                    // Pour les autres fichiers, stocker le nom
+                    handleInputChange(field.id, file.name);
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
