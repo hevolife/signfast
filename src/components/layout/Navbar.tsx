@@ -49,20 +49,20 @@ export const Navbar: React.FC = () => {
   const getNavItemColorClasses = (color: string, isActive: boolean) => {
     const colorMap = {
       blue: isActive 
-        ? 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 border-blue-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:text-blue-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-400 hover:to-blue-500 hover:text-white hover:shadow-md',
       green: isActive 
-        ? 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border-green-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-100 hover:text-green-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white border-green-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-400 hover:to-emerald-500 hover:text-white hover:shadow-md',
       purple: isActive 
-        ? 'bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 border-purple-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white border-purple-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-400 hover:to-purple-500 hover:text-white hover:shadow-md',
       orange: isActive 
-        ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-700 border-orange-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 hover:text-orange-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-orange-400 hover:to-orange-500 hover:text-white hover:shadow-md',
       indigo: isActive 
-        ? 'bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-700 border-indigo-300 shadow-lg'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-indigo-100 hover:text-indigo-600 hover:shadow-md',
+        ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-indigo-400 shadow-lg'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-indigo-400 hover:to-indigo-500 hover:text-white hover:shadow-md',
     };
     return colorMap[color] || colorMap.blue;
   };
@@ -93,7 +93,7 @@ export const Navbar: React.FC = () => {
                       <Link key={item.path} to={item.path}>
                         <button className={`py-2 px-3 rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getNavItemColorClasses(item.color, isActive)}`}>
                           <div className="flex items-center space-x-2">
-                            <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                            <div className="p-1 rounded-lg">
                               <span className="text-sm">{item.emoji}</span>
                             </div>
                             <span className="hidden xl:inline">{item.label}</span>
@@ -251,7 +251,7 @@ export const Navbar: React.FC = () => {
                     <Link key={item.path} to={item.path} onClick={() => setMobileMenuOpen(false)}>
                       <div className={`p-4 rounded-xl transition-all active:scale-95 hover:scale-105 ${getNavItemColorClasses(item.color, isActive)}`}>
                         <div className="flex flex-col items-center space-y-2">
-                          <div className="p-2 bg-white/70 rounded-xl shadow-md">
+                          <div className="p-2 rounded-xl">
                             <span className="text-lg">{item.emoji}</span>
                           </div>
                           <span className="text-sm font-semibold text-center">{item.label}</span>
@@ -268,7 +268,7 @@ export const Navbar: React.FC = () => {
                   <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
                     <div className="p-4 rounded-xl bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 border border-red-200 dark:border-red-800 shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-white/70 rounded-xl shadow-md">
+                        <div className="p-2 rounded-xl">
                           <Shield className="h-5 w-5 text-red-600" />
                         </div>
                         <div>
@@ -286,7 +286,7 @@ export const Navbar: React.FC = () => {
                   className="w-full p-4 rounded-xl bg-gradient-to-r from-gray-100 to-slate-100 dark:from-gray-800 dark:to-slate-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white/70 dark:bg-gray-700/70 rounded-xl shadow-md">
+                    <div className="p-2 rounded-xl">
                       <span className="text-lg">{isDarkMode ? '☀️' : '🌙'}</span>
                     </div>
                     <div className="text-left">
