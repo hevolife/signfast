@@ -22,6 +22,17 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       });
     }
     
+    // Handle create_sub_account RPC requests
+    if (urlString.includes('rpc/create_sub_account')) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Sub-account functionality not configured'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const response = await fetch(url, options);
     
     // Handle 500 errors gracefully
