@@ -32,7 +32,6 @@ export const MobileBottomNav: React.FC = () => {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', emoji: '📊' },
     { path: '/forms', icon: FileText, label: 'Formulaires', emoji: '📝' },
     { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', emoji: '💾' },
-    { path: '/support', icon: MessageCircle, label: 'Support', emoji: '💬' },
     { path: '/settings', icon: Settings, label: 'Paramètres', emoji: '⚙️' },
   ];
 
@@ -49,16 +48,7 @@ export const MobileBottomNav: React.FC = () => {
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}>
                 <div className="relative mb-1">
-                  {item.path === '/support' ? (
-                    <SupportNotificationBadge showIcon={false} />
-                  ) : (
-                    <span className="text-lg">{item.emoji}</span>
-                  )}
-                  {item.path === '/support' && unreadSupportMessages > 0 && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
-                      {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
-                    </div>
-                  )}
+                  <span className="text-lg">{item.emoji}</span>
                 </div>
                 <span className="text-xs font-medium truncate w-full text-center">
                   {item.label}

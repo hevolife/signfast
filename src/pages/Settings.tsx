@@ -510,10 +510,11 @@ export const Settings: React.FC = () => {
                   className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 hover:text-white hover:shadow-md"
                 >
                   <div className="flex items-center space-x-2">
-                    <div className="p-1 rounded-lg">
+                    <div className="p-1 rounded-lg relative">
                       <SupportNotificationBadge showIcon={false} />
+                      <span className="text-lg">💬</span>
                       {unreadSupportMessages > 0 && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
                           {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
                         </div>
                       )}
