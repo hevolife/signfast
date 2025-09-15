@@ -38,7 +38,9 @@ export const SupportPanel: React.FC = () => {
 
   // Fonction pour scroller vers le bas
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
+    }
   };
 
   // Scroller vers le bas quand les messages changent
@@ -361,7 +363,6 @@ export const SupportPanel: React.FC = () => {
                       </div>
                     ))
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Formulaire d'envoi de message */}
