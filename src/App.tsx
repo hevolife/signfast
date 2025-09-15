@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
@@ -33,6 +33,7 @@ import { DemoTimer } from './components/demo/DemoTimer';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isMaintenanceMode, loading: maintenanceLoading } = useMaintenanceMode();
   const isPublicForm = location.pathname.startsWith('/form/');
@@ -49,6 +50,19 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Gérer la redirection PWA vers login
+  React.useEffect(() => {
+    // Vérifier si on est dans une PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.navigator.standalone === true ||
+                  document.referrer.includes('android-app://');
+    
+    // Si on est dans une PWA et que l'utilisateur n'est pas connecté
+    if (isPWA && !user && !isPublicForm && location.pathname !== '/login' && location.pathname !== '/signup') {
+      console.log('📱 PWA détectée, redirection vers login');
+      navigate('/login', { replace: true });
+    }
+  }, [user, location.pathname, isPublicForm, navigate]);
   // Backend DnD adaptatif
   const dndBackend = isMobile ? TouchBackend : HTML5Backend;
   const dndOptions = isMobile ? { enableMouseEvents: true } : {};
