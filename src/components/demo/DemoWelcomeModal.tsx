@@ -59,8 +59,9 @@ export const DemoWelcomeModal: React.FC = () => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-500">
-      <Card className="max-w-2xl w-full bg-white/95 backdrop-blur-sm border-0 shadow-2xl animate-in slide-in-from-bottom-8 duration-700">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-500 overflow-y-auto">
+      <div className="w-full max-w-lg mx-auto my-8">
+        <Card className="w-full bg-white/95 backdrop-blur-sm border-0 shadow-2xl animate-in slide-in-from-bottom-8 duration-700">
         <CardHeader className="relative overflow-hidden">
           {/* Background gradient animé */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-pulse"></div>
@@ -70,21 +71,21 @@ export const DemoWelcomeModal: React.FC = () => {
           <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-xl animate-bounce"></div>
           <div className="absolute bottom-4 left-4 w-16 h-16 bg-yellow-400/20 rounded-full blur-lg animate-pulse delay-1000"></div>
           
-          <div className="relative text-center py-8">
+          <div className="relative text-center py-6">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl mb-6 shadow-xl animate-in zoom-in duration-1000 delay-300">
               <Sparkles className="h-10 w-10 text-white animate-pulse" />
             </div>
             
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 animate-in slide-in-from-top duration-700 delay-500">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 animate-in slide-in-from-top duration-700 delay-500">
               🎉 Bienvenue dans SignFast !
             </h1>
             
-            <p className="text-lg text-white/90 mb-6 animate-in slide-in-from-top duration-700 delay-700">
+            <p className="text-base text-white/90 mb-4 animate-in slide-in-from-top duration-700 delay-700">
               {demoSettings.welcomeMessage || 'Bienvenue dans la démo SignFast ! Testez toutes les fonctionnalités pendant 30 minutes.'}
             </p>
             
             {/* Timer de démo */}
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 text-white/90 text-sm font-medium animate-in zoom-in duration-700 delay-1000">
+            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-white/90 text-sm font-medium animate-in zoom-in duration-700 delay-1000">
               <Clock className="h-4 w-4 animate-pulse" />
               <span>{demoSettings.durationMinutes || 30} minutes d'accès complet</span>
             </div>
@@ -101,20 +102,20 @@ export const DemoWelcomeModal: React.FC = () => {
           </Button>
         </CardHeader>
         
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="p-4 sm:p-6 space-y-6">
           {/* Fonctionnalités avec animation */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 animate-in slide-in-from-left duration-500 delay-1200">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 animate-in slide-in-from-left duration-500 delay-1200">
                 🚀 Fonctionnalités débloquées
               </h3>
             </div>
             
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {features.map((feature, index) => (
                 <div
                   key={index}
-                  className={`flex items-center space-x-4 p-4 rounded-xl transition-all duration-500 ${
+                  className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-500 ${
                     showFeatures && index <= currentFeatureIndex
                       ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 shadow-lg animate-in slide-in-from-left'
                       : 'bg-gray-50 dark:bg-gray-800 opacity-50'
@@ -124,19 +125,19 @@ export const DemoWelcomeModal: React.FC = () => {
                     animationDuration: '600ms'
                   }}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
                     showFeatures && index <= currentFeatureIndex
                       ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg animate-pulse'
                       : 'bg-gray-300 dark:bg-gray-600'
                   }`}>
                     {showFeatures && index <= currentFeatureIndex ? (
-                      <CheckCircle className="h-5 w-5 text-white" />
+                      <CheckCircle className="h-4 w-4 text-white" />
                     ) : (
-                      <div className="w-3 h-3 bg-white rounded-full"></div>
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <div className="flex-1">
-                    <span className={`font-medium transition-colors duration-300 ${
+                    <span className={`text-sm font-medium transition-colors duration-300 ${
                       showFeatures && index <= currentFeatureIndex
                         ? 'text-green-900 dark:text-green-300'
                         : 'text-gray-600 dark:text-gray-400'
@@ -146,7 +147,7 @@ export const DemoWelcomeModal: React.FC = () => {
                   </div>
                   {showFeatures && index === currentFeatureIndex && (
                     <div className="animate-in zoom-in duration-300">
-                      <Zap className="h-5 w-5 text-yellow-500 animate-pulse" />
+                      <Zap className="h-4 w-4 text-yellow-500 animate-pulse" />
                     </div>
                   )}
                 </div>
@@ -155,12 +156,12 @@ export const DemoWelcomeModal: React.FC = () => {
           </div>
 
           {/* Conseils et astuces */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800 shadow-inner animate-in slide-in-from-bottom duration-700 delay-2000">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-inner animate-in slide-in-from-bottom duration-700 delay-2000">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
                 <Gift className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-lg font-bold text-blue-900 dark:text-blue-300">
+              <h4 className="text-base font-bold text-blue-900 dark:text-blue-300">
                 💡 Conseils pour votre démo
               </h4>
             </div>
@@ -185,10 +186,10 @@ export const DemoWelcomeModal: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 animate-in slide-in-from-bottom duration-700 delay-2500">
+          <div className="flex flex-col sm:flex-row gap-3 animate-in slide-in-from-bottom duration-700 delay-2500">
             <Button
               onClick={handleStartDemo}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group"
             >
               <div className="flex items-center justify-center space-x-3">
                 <Zap className="h-5 w-5 group-hover:animate-pulse" />
@@ -200,7 +201,7 @@ export const DemoWelcomeModal: React.FC = () => {
             <Button
               variant="ghost"
               onClick={handleEndDemo}
-              className="sm:w-auto bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-4 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="sm:w-auto bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Quitter la démo
             </Button>
@@ -214,6 +215,7 @@ export const DemoWelcomeModal: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
