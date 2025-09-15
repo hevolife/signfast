@@ -139,11 +139,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then(({ data: { session }, error }) => {
         if (error) {
           console.warn('⚠️ Auth session error:', error.message);
-          if (error.message.includes('Invalid Refresh Token') || error.message.includes('Failed to fetch')) {
-            // Clear corrupted authentication state
-            setSession(null);
-            setUser(null);
-          }
+          // Ne pas déconnecter automatiquement en cas d'erreur de token
+          // Laisser l'utilisateur connecté sur cet appareil
+          console.log('🔄 Erreur de session, mais maintien de la connexion locale');
         } else {
           setSession(session);
           setUser(session?.user ?? null);
@@ -152,8 +150,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
       .catch((error) => {
         console.warn('⚠️ Auth session fetch failed:', error);
-        setSession(null);
-        setUser(null);
+        // Ne pas effacer la session en cas d'erreur réseau
+        console.log('🔄 Erreur réseau, maintien de l\'état actuel');
         setLoading(false);
       });
 
@@ -161,6 +159,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         console.log('🔐 Auth state change:', event, !!session);
+        
+        // Gérer les événements de session
+        if (event === 'SIGNED_OUT') {
+          console.log('🔐 Déconnexion détectée');
+          setSession(null);
+          setUser(null);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('🔐 Token rafraîchi avec succès');
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else if (event === 'SIGNED_IN') {
+          console.log('🔐 Connexion détectée');
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else {
+          // Pour les autres événements, mettre à jour normalement
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);

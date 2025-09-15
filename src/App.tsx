@@ -63,8 +63,14 @@ const AppContent: React.FC = () => {
     
     // Si on est dans une PWA et que l'utilisateur n'est pas connecté
     if (isPWA && !user && !isPublicForm && location.pathname !== '/login' && location.pathname !== '/signup') {
-      console.log('📱 PWA détectée, redirection vers login');
-      navigate('/login', { replace: true });
+      // Vérifier d'abord s'il y a une session locale sauvegardée
+      const savedSession = localStorage.getItem('sb-auth-token');
+      if (!savedSession) {
+        console.log('📱 PWA détectée, redirection vers login');
+        navigate('/login', { replace: true });
+      } else {
+        console.log('📱 PWA détectée mais session locale trouvée, tentative de restauration');
+      }
     }
   }, [user, location.pathname, isPublicForm, navigate]);
   // Backend DnD adaptatif

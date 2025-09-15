@@ -17,9 +17,20 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       try {
         const body = await response.clone().json();
         if (body.code === 'session_not_found') {
-          // Session expired, sign out the user
-          console.log('Session expired, signing out user');
-          supabase.auth.signOut();
+          // Session expired, try to refresh token instead of signing out
+          console.log('🔄 Session expirée, tentative de rafraîchissement...');
+          try {
+            const { data, error } = await supabase.auth.refreshSession();
+            if (error) {
+              console.log('❌ Impossible de rafraîchir, déconnexion nécessaire');
+              supabase.auth.signOut();
+            } else {
+              console.log('✅ Token rafraîchi avec succès');
+            }
+          } catch (refreshError) {
+            console.log('❌ Erreur rafraîchissement, déconnexion');
+            supabase.auth.signOut();
+          }
         }
       } catch (error) {
         // If we can't parse the response body, ignore
@@ -71,6 +82,14 @@ export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co', 
   supabaseKey || 'placeholder-key', 
   {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      storage: window.localStorage,
+      storageKey: 'sb-auth-token',
+    },
     global: {
       fetch: safeFetch,
     },

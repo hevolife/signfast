@@ -25,7 +25,7 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { data, error } = await signIn(email, password);
       
       if (error) {
         if (error.message.includes('Email not confirmed')) {
@@ -34,6 +34,12 @@ export const Login: React.FC = () => {
           toast.error(error.message);
         }
       } else {
+        // Forcer la persistance de la session sur cet appareil
+        if (data.session) {
+          console.log('🔐 Session établie sur cet appareil');
+          localStorage.setItem('sb-auth-token', JSON.stringify(data.session));
+        }
+        
         toast.success('Connexion réussie !', { duration: 2000 });
         // Rediriger vers la page demandée ou le dashboard
         const from = location.state?.from?.pathname || '/dashboard';

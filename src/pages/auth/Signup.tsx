@@ -58,6 +58,12 @@ export const Signup: React.FC = () => {
           toast.error(error.message);
         }
       } else {
+        // Forcer la persistance de la session sur cet appareil
+        if (data.session) {
+          console.log('🔐 Session établie sur cet appareil après inscription');
+          localStorage.setItem('sb-auth-token', JSON.stringify(data.session));
+        }
+        
         // Si inscription réussie et code d'affiliation présent, tracker le parrainage
         if (data.user && affiliateCode) {
           try {
