@@ -23,10 +23,27 @@ import toast from 'react-hot-toast';
 export const SupportAdminPanel: React.FC = () => {
   const { allTickets, loading, isSuperAdmin, markAdminTicketAsRead, updateTicketStatus, sendAdminReply, refetch } = useSupportAdmin();
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+  const [ticketMessages, setTicketMessages] = useState<any[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [newReply, setNewReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Fonction pour scroller vers le bas
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
+    }
+  };
+
+  // Scroller vers le bas quand les messages changent
+  React.useEffect(() => {
+    if (ticketMessages.length > 0) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [ticketMessages]);
 
   if (!isSuperAdmin) {
     return (
@@ -46,10 +63,28 @@ export const SupportAdminPanel: React.FC = () => {
 
   const handleSelectTicket = async (ticketId: string) => {
     setSelectedTicket(ticketId);
+    setLoadingMessages(true);
     
     try {
       console.log('🔔 Admin === SÉLECTION TICKET ===');
       console.log('🔔 Admin Ticket sélectionné:', ticketId);
+      
+      // Charger les messages du ticket
+      const { data: messages, error: messagesError } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+
+      if (messagesError) {
+        console.error('🔔 Admin Erreur chargement messages:', messagesError);
+        setTicketMessages([]);
+      } else {
+        setTicketMessages(messages || []);
+        console.log('🔔 Admin Messages chargés:', messages?.length || 0);
+        // Scroller vers le bas après chargement des messages
+        setTimeout(scrollToBottom, 200);
+      }
       
       console.log('🔔 Admin Marquage du ticket comme lu...');
       await markAdminTicketAsRead(ticketId);
@@ -65,6 +100,9 @@ export const SupportAdminPanel: React.FC = () => {
       console.log('🔔 Admin === FIN SÉLECTION TICKET ===');
     } catch (error) {
       console.error('🔔 Admin Erreur sélection ticket:', error);
+      setTicketMessages([]);
+    } finally {
+      setLoadingMessages(false);
     }
   };
   const handleSendReply = async (e: React.FormEvent) => {
@@ -79,6 +117,16 @@ export const SupportAdminPanel: React.FC = () => {
 
       if (success) {
         setNewReply('');
+        // Recharger les messages après envoi
+        const { data: messages } = await supabase
+          .from('support_messages')
+          .select('*')
+          .eq('ticket_id', selectedTicket)
+          .order('created_at', { ascending: true });
+        
+        setTicketMessages(messages || []);
+        // Scroller vers le bas après envoi
+        setTimeout(scrollToBottom, 100);
         toast.success('Réponse envoyée !');
       } else {
         toast.error('Erreur lors de l\'envoi');
@@ -412,7 +460,13 @@ export const SupportAdminPanel: React.FC = () => {
               {/* Messages */}
               <CardContent className="flex-1 flex flex-col">
                 <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96">
-                  {selectedTicketData.support_messages?.map((message: any) => (
+                  {loadingMessages ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600 dark:text-gray-400">Chargement...</span>
+                    </div>
+                  ) : (
+                    ticketMessages.map((message: any) => (
                     <div
                       key={message.id}
                       className={`flex ${message.is_admin_reply ? 'justify-end' : 'justify-start'}`}
@@ -440,7 +494,9 @@ export const SupportAdminPanel: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Formulaire de réponse admin */}

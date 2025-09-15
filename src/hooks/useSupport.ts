@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { SupportTicket, SupportMessage, CreateTicketData, SendMessageData } from '../types/support';
 
 export const useSupport = () => {
@@ -438,7 +439,6 @@ export const useSupportAdmin = () => {
         .eq('id', ticketId)
         .eq('status', 'open');
 
-      await fetchAllTickets(); // Rafraîchir la liste
       return true;
     } catch (error) {
       console.error('Erreur générale sendAdminReply:', error);
