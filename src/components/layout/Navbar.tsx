@@ -108,15 +108,6 @@ export const Navbar: React.FC = () => {
                                   {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
                                 </div>
                               )}
-                                <SupportNotificationBadge showIcon={false} />
-                              ) : (
-                                <span className="text-sm">{item.emoji}</span>
-                              )}
-                              {item.path === '/support' && unreadSupportMessages > 0 && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
-                                  {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
-                                </div>
-                              )}
                             </div>
                             <span className="hidden xl:inline">{item.label}</span>
                           </div>
