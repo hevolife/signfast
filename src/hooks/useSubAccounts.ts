@@ -31,15 +31,17 @@ export const useSubAccounts = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // Si la table n'existe pas encore, on ignore l'erreur silencieusement
-        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('sub_accounts')) {
+        // Check if the error is due to missing table
+        if (error.code === 'PGRST205' || 
+            error.message?.includes('Could not find the table') || 
+            error.message?.includes('sub_accounts')) {
           console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
           setSubAccounts([]);
           setTotalCount(0);
+          setLoading(false);
           return;
         }
         console.error('Erreur récupération sous-comptes:', error);
-        // Pour les autres erreurs, on définit quand même des valeurs par défaut
         setSubAccounts([]);
         setTotalCount(0);
       } else {
@@ -49,25 +51,18 @@ export const useSubAccounts = () => {
     } catch (error: any) {
       console.error('Error fetching sub accounts:', error);
       
-      // Check if the error is due to missing table - check both message and details
+      // Check if the error is due to missing table
       const errorMessage = error?.message || '';
-      const errorDetails = error?.details || '';
-      const errorBody = typeof error === 'string' ? error : JSON.stringify(error);
       
-      if (errorMessage.includes('PGRST205') || 
-          errorMessage.includes('sub_accounts') ||
-          errorDetails.includes('sub_accounts') ||
-          errorBody.includes('PGRST205') ||
-          errorBody.includes('sub_accounts')) {
-        setTableExists(false);
+      if (errorMessage.includes('PGRST205') || errorMessage.includes('sub_accounts')) {
+        console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
         setSubAccounts([]);
-        setError(null);
+        setTotalCount(0);
       } else {
-        setError(error.message || 'Failed to fetch sub accounts');
+        console.error('Erreur générale fetchSubAccounts:', error);
         setSubAccounts([]);
-        setTableExists(true);
+        setTotalCount(0);
       }
-      setLoading(false);
     } finally {
       setLoading(false);
     }
