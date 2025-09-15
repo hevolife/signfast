@@ -768,12 +768,60 @@ export const FormResults: React.FC = () => {
                       <div className="text-gray-900 dark:text-white font-medium">
                         {typeof value === 'string' && value.startsWith('data:image') ? (
                           <div>
-                            <img
-                              src={value}
-                              alt={field.label}
-                              className="max-w-xs max-h-32 object-contain border-2 border-gray-200 rounded-xl shadow-lg"
-                            />
-                            <p className="text-xs text-gray-500 mt-2 font-medium">Image uploadée</p>
+                            {field.type === 'signature' ? (
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                                    <span className="text-white text-xs">✍️</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
+                                    Signature électronique
+                                  </span>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-inner">
+                                  <img
+                                    src={value}
+                                    alt="Signature électronique"
+                                    className="max-w-full max-h-32 object-contain mx-auto"
+                                    style={{ imageRendering: 'crisp-edges' }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-3">
+                                  <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">
+                                    ✅ Signature valide et légale
+                                  </span>
+                                  <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                    {Math.round(value.length / 1024)} KB
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-lg">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+                                    <span className="text-white text-xs">📷</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-green-900 dark:text-green-300">
+                                    Image uploadée
+                                  </span>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-inner">
+                                  <img
+                                    src={value}
+                                    alt={field.label}
+                                    className="max-w-full max-h-48 object-contain mx-auto rounded-lg shadow-md"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-3">
+                                  <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                                    📁 Fichier image
+                                  </span>
+                                  <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                    {Math.round(value.length / 1024)} KB
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : Array.isArray(value) ? (
                           <div className="flex flex-wrap gap-1">
