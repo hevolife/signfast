@@ -265,11 +265,6 @@ export const useSubscription = () => {
           (stripeSubscription.status === 'active' || 
            stripeSubscription.status === 'trialing');
         
-        // Déterminer si l'utilisateur a un accès premium
-        const hasStripeAccess = stripeSubscription && 
-          (stripeSubscription.status === 'active' || 
-           stripeSubscription.status === 'trialing');
-        
         console.log('💳 === RÉSUMÉ ABONNEMENT ===');
         console.log('💳 User cible:', targetUserId);
         console.log('💳 Accès Stripe:', hasStripeAccess, stripeSubscription?.status);
