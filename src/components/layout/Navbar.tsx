@@ -265,6 +265,15 @@ export const Navbar: React.FC = () => {
                         <div className="flex flex-col items-center space-y-2">
                           <div className="p-2 rounded-xl">
                             <span className="text-lg">{item.emoji}</span>
+                          </div>
+                          <span className="font-bold text-sm">{item.label}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
               {/* Actions spéciales mobile */}
               <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50 space-y-3">
                 {!isDemoMode && user && isSuperAdmin && (
@@ -300,16 +309,16 @@ export const Navbar: React.FC = () => {
                 </button>
 
                 {/* Déconnexion mobile */}
-              <Button
-                variant="ghost"
-                onClick={handleSignOut}
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
                   className="w-full p-4 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 font-bold shadow-xl hover:shadow-2xl transition-all duration-300 active:scale-95"
-              >
+                >
                   <div className="flex items-center justify-center space-x-3">
                     <LogOut className="h-5 w-5" />
                     <span>{isDemoMode ? 'Quitter la démo' : 'Se déconnecter'}</span>
                   </div>
-              </Button>
+                </Button>
               </div>
             </div>
           </div>
