@@ -127,25 +127,6 @@ export const Dashboard: React.FC = () => {
                 Vue d'ensemble de votre activité et gestion complète de vos documents
               </p>
               
-              {/* Stats rapides dans le header */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{forms.length}</div>
-                  <div className="text-xs text-white/80">Formulaires</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{templates.length}</div>
-                  <div className="text-xs text-white/80">Templates</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{savedPdfsLimits.current}</div>
-                  <div className="text-xs text-white/80">PDFs</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{displayedResponses}</div>
-                  <div className="text-xs text-white/80">Réponses</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
