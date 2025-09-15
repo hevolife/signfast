@@ -12,7 +12,7 @@ import { stripeConfig } from '../stripe-config';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { FileText, Download, Trash2, Search, Calendar, HardDrive, RefreshCw, Lock, Crown, ArrowLeft, ArrowRight, Sparkles, Activity, Eye, User } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Calendar, HardDrive, RefreshCw, Lock, Crown, ArrowLeft, ArrowRight, Sparkles, Activity, Eye, User, Wifi, WifiOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface FormResponsePDF {
@@ -44,13 +44,99 @@ export const PDFManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'form' | 'user'>('date');
   const [selectedFormFilter, setSelectedFormFilter] = useState<string>('all');
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  const [newResponsesCount, setNewResponsesCount] = useState(0);
   const product = stripeConfig.products[0];
 
   useEffect(() => {
     loadFormResponses();
+    
+    // Actualisation automatique toutes les 30 secondes
+    const autoRefreshInterval = setInterval(() => {
+      if (isRealTimeEnabled) {
+        console.log('🔄 Actualisation automatique des réponses...');
+        loadFormResponses(true); // true = actualisation silencieuse
+      }
+    }, 30000);
+    
+    return () => clearInterval(autoRefreshInterval);
   }, [user, currentPage]);
 
-  const loadFormResponses = async () => {
+  // Écoute en temps réel des nouvelles réponses
+  useEffect(() => {
+    if (!user || !isRealTimeEnabled) return;
+
+    console.log('🔔 Activation écoute temps réel pour les réponses...');
+    
+    // Récupérer les IDs des formulaires de l'utilisateur pour filtrer
+    const userFormIds = forms.map(form => form.id);
+    
+    if (userFormIds.length === 0) {
+      console.log('🔔 Aucun formulaire, pas d\'écoute temps réel');
+      return;
+    }
+
+    const channel = supabase
+      .channel('pdf_storage_responses')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'responses',
+          filter: `form_id=in.(${userFormIds.join(',')})`
+        },
+        (payload) => {
+          console.log('🔔 Nouvelle réponse détectée:', payload.new);
+          setNewResponsesCount(prev => prev + 1);
+          setLastUpdateTime(new Date());
+          
+          // Actualiser automatiquement après 2 secondes
+          setTimeout(() => {
+            console.log('🔄 Actualisation automatique après nouvelle réponse');
+            loadFormResponses(true);
+            setNewResponsesCount(0);
+          }, 2000);
+          
+          toast.success('📄 Nouvelle réponse reçue ! Actualisation...', {
+            duration: 3000,
+            icon: '🆕'
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'responses',
+          filter: `form_id=in.(${userFormIds.join(',')})`
+        },
+        (payload) => {
+          console.log('🔔 Réponse supprimée détectée:', payload.old);
+          setLastUpdateTime(new Date());
+          
+          // Actualiser automatiquement après 1 seconde
+          setTimeout(() => {
+            console.log('🔄 Actualisation automatique après suppression');
+            loadFormResponses(true);
+          }, 1000);
+          
+          toast.info('📄 Réponse supprimée, actualisation...', {
+            duration: 2000
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔔 Désactivation écoute temps réel');
+      supabase.removeChannel(channel);
+    };
+  }, [user, forms, isRealTimeEnabled]);
+
+  const loadFormResponses = async (silent: boolean = false) => {
     if (!user) {
       setResponses([]);
       setTotalCount(0);
@@ -58,20 +144,28 @@ export const PDFManager: React.FC = () => {
       return;
     }
 
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
     
     try {
-      console.log('📋 Chargement des réponses pour génération PDF...');
+      if (!silent) {
+        console.log('📋 Chargement des réponses pour génération PDF...');
+      }
       
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('📋 Supabase non configuré');
+        if (!silent) {
+          console.warn('📋 Supabase non configuré');
+        }
         setResponses([]);
         setTotalCount(0);
-        setLoading(false);
+        if (!silent) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -79,14 +173,20 @@ export const PDFManager: React.FC = () => {
       const userFormIds = forms.map(form => form.id);
       
       if (userFormIds.length === 0) {
-        console.log('📋 Aucun formulaire trouvé pour cet utilisateur');
+        if (!silent) {
+          console.log('📋 Aucun formulaire trouvé pour cet utilisateur');
+        }
         setResponses([]);
         setTotalCount(0);
-        setLoading(false);
+        if (!silent) {
+          setLoading(false);
+        }
         return;
       }
 
-      console.log('📋 Formulaires de l\'utilisateur:', userFormIds.length);
+      if (!silent) {
+        console.log('📋 Formulaires de l\'utilisateur:', userFormIds.length);
+      }
 
       // Compter le total des réponses
       const { count, error: countError } = await supabase
@@ -95,7 +195,9 @@ export const PDFManager: React.FC = () => {
         .in('form_id', userFormIds);
 
       if (countError) {
-        console.error('❌ Erreur comptage réponses:', countError);
+        if (!silent) {
+          console.error('❌ Erreur comptage réponses:', countError);
+        }
         setTotalCount(0);
       } else {
         setTotalCount(count || 0);
@@ -111,12 +213,18 @@ export const PDFManager: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Erreur récupération réponses:', error);
+        if (!silent) {
+          console.error('❌ Erreur récupération réponses:', error);
+        }
         setResponses([]);
         return;
       }
 
-      console.log('📋 Réponses récupérées:', responsesData?.length || 0);
+      if (!silent) {
+        console.log('📋 Réponses récupérées:', responsesData?.length || 0);
+      } else {
+        console.log('🔄 Actualisation silencieuse:', responsesData?.length || 0, 'réponses');
+      }
 
       // Enrichir les réponses avec les informations des formulaires
       const enrichedResponses: FormResponsePDF[] = (responsesData || []).map(response => {
@@ -202,14 +310,23 @@ export const PDFManager: React.FC = () => {
       });
 
       setResponses(enrichedResponses);
-      console.log('✅ Réponses enrichies:', enrichedResponses.length);
+      if (!silent) {
+        console.log('✅ Réponses enrichies:', enrichedResponses.length);
+      }
+      
+      // Mettre à jour le timestamp de dernière actualisation
+      setLastUpdateTime(new Date());
       
     } catch (error) {
-      console.error('❌ Erreur générale loadFormResponses:', error);
+      if (!silent) {
+        console.error('❌ Erreur générale loadFormResponses:', error);
+      }
       setResponses([]);
       setTotalCount(0);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -544,6 +661,23 @@ export const PDFManager: React.FC = () => {
                   <span>{totalCount} réponse{totalCount > 1 ? 's' : ''} disponible{totalCount > 1 ? 's' : ''}</span>
                 </div>
                 
+                {/* Indicateur temps réel */}
+                <div className={`inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 text-white/90 text-xs font-medium ${
+                  isRealTimeEnabled ? 'animate-pulse' : ''
+                }`}>
+                  {isRealTimeEnabled ? (
+                    <Wifi className="h-3 w-3 text-green-400" />
+                  ) : (
+                    <WifiOff className="h-3 w-3 text-red-400" />
+                  )}
+                  <span>{isRealTimeEnabled ? 'Temps réel actif' : 'Temps réel désactivé'}</span>
+                  {newResponsesCount > 0 && (
+                    <span className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                      {newResponsesCount}
+                    </span>
+                  )}
+                </div>
+                
                 <div className="flex items-center space-x-3">
                   <Button
                     variant="ghost"
@@ -557,6 +691,26 @@ export const PDFManager: React.FC = () => {
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     <span className="hidden sm:inline ml-2">Actualiser</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsRealTimeEnabled(!isRealTimeEnabled)}
+                    className={`font-semibold shadow-lg hover:shadow-xl transition-all duration-300 ${
+                      isRealTimeEnabled 
+                        ? 'bg-green-500/80 backdrop-blur-sm text-white border border-green-400/30 hover:bg-green-600/80'
+                        : 'bg-red-500/80 backdrop-blur-sm text-white border border-red-400/30 hover:bg-red-600/80'
+                    }`}
+                    title={isRealTimeEnabled ? 'Désactiver le temps réel' : 'Activer le temps réel'}
+                  >
+                    {isRealTimeEnabled ? (
+                      <Wifi className="h-4 w-4" />
+                    ) : (
+                      <WifiOff className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline ml-2">
+                      {isRealTimeEnabled ? 'Temps réel ON' : 'Temps réel OFF'}
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -572,6 +726,27 @@ export const PDFManager: React.FC = () => {
         {/* Filtres et recherche */}
         <Card className="mb-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
           <CardContent className="p-6">
+            {/* Indicateur de dernière mise à jour */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                <Activity className="h-4 w-4" />
+                <span>Dernière mise à jour: {lastUpdateTime.toLocaleTimeString('fr-FR')}</span>
+                {newResponsesCount > 0 && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    +{newResponsesCount} nouvelle{newResponsesCount > 1 ? 's' : ''} réponse{newResponsesCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  isRealTimeEnabled ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                }`}></div>
+                <span className="text-xs text-gray-500 font-medium">
+                  {isRealTimeEnabled ? 'Synchronisation active' : 'Mode manuel'}
+                </span>
+              </div>
+            </div>
+            
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -736,6 +911,19 @@ export const PDFManager: React.FC = () => {
                     <div className="text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center space-x-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-xl font-medium">
                       <span>📋</span>
                       <span>{Object.keys(response.response_data).length} champs remplis</span>
+                      {Object.keys(response.response_data).filter(key => 
+                        typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
+                      ).length > 0 && (
+                        <span className="text-green-600 dark:text-green-400">
+                          • {Object.keys(response.response_data).filter(key => 
+                            typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
+                          ).length} image{Object.keys(response.response_data).filter(key => 
+                            typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
+                          ).length > 1 ? 's' : ''}/signature{Object.keys(response.response_data).filter(key => 
+                            typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
+                          ).length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-2 flex-wrap">
@@ -784,6 +972,39 @@ export const PDFManager: React.FC = () => {
               );
             })}
           </div>
+        )}
+
+        {/* Notification de nouvelles réponses */}
+        {newResponsesCount > 0 && (
+          <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 animate-pulse">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-blue-600 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                      {newResponsesCount} nouvelle{newResponsesCount > 1 ? 's' : ''} réponse{newResponsesCount > 1 ? 's' : ''} !
+                    </h3>
+                    <p className="text-xs text-blue-700 dark:text-blue-400">
+                      Actualisation automatique en cours...
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    loadFormResponses();
+                    setNewResponsesCount(0);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Actualiser maintenant
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Pagination */}
