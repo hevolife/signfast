@@ -114,15 +114,14 @@ export const useSubscription = () => {
       try {
         console.log('💳 Récupération abonnements Stripe...');
         
-        // Récupérer l'abonnement Stripe pour l'utilisateur cible via la table stripe_customers
-        const [countResult, dataResult] = await Promise.race([
-          Promise.all([
-          supabase.from('stripe_customers')
+        // Récupérer le customer Stripe pour l'utilisateur cible
+        const customerQuery = supabase.from('stripe_customers')
           .select('customer_id')
           .eq('user_id', targetUserId)
-          .maybeSingle(),
-          Promise.resolve({ data: null, error: null }) // Fallback
-          ]),
+          .maybeSingle();
+
+        const { data: customerData, error: customerError } = await Promise.race([
+          customerQuery,
           timeoutPromise
         ]);
 
@@ -132,12 +131,14 @@ export const useSubscription = () => {
           console.log('💳 Customer trouvé:', customerData.customer_id);
           
           // Récupérer l'abonnement avec le customer_id
-          const { data: stripeData, error: stripeError } = await Promise.race([
-            supabase
+          const subscriptionQuery = supabase
             .from('stripe_subscriptions')
             .select('*')
             .eq('customer_id', customerData.customer_id)
-            .maybeSingle(),
+            .maybeSingle();
+
+          const { data: stripeData, error: stripeError } = await Promise.race([
+            subscriptionQuery,
             timeoutPromise
           ]);
 
