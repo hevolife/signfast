@@ -141,7 +141,7 @@ export class PDFGenerator {
       }
       
       // 2. Recherche STRICTEMENT par variable exacte
-      let signatureValue = data[variableName];
+     signatureValue = data[variableName];
       
       if (signatureValue && typeof signatureValue === 'string' && signatureValue.startsWith('data:image')) {
         console.log(`🔍 ✅ Signature trouvée par clé exacte: "${variableName}"`);
@@ -214,7 +214,7 @@ export class PDFGenerator {
       }
       
       // 2. Recherche EXACTE par variable (priorité absolue)
-      let imageValue = data[variableName];
+     imageValue = data[variableName];
       
       if (imageValue && typeof imageValue === 'string' && imageValue.startsWith('data:image')) {
         console.log(`🔍 ✅ Image trouvée par clé exacte: "${variableName}"`);

@@ -672,7 +672,6 @@ export const PublicForm: React.FC = () => {
           
         }
       } else if (maskChar === 'a') {
-            optimizedData, // Utiliser les données normalisées pour la génération PDF
         if (/[a-zA-Z]/.test(inputChar)) {
           masked += inputChar.toLowerCase();
           valueIndex++;
