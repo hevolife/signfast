@@ -29,6 +29,7 @@ import { Subscription } from './pages/Subscription';
 import { SuccessPage } from './pages/SuccessPage';
 import { Settings } from './pages/Settings';
 import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
+import { Support } from './pages/Support';
 import { DemoTimer } from './components/demo/DemoTimer';
 import { WelcomeModal } from './components/onboarding/WelcomeModal';
 
@@ -191,6 +192,14 @@ const AppContent: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <SuperAdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/support"
+              element={
+                <ProtectedRoute>
+                  <Support />
                 </ProtectedRoute>
               }
             />
