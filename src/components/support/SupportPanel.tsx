@@ -93,10 +93,14 @@ export const SupportPanel: React.FC = () => {
       setTicketMessages(messages);
       // Scroller vers le bas après chargement des messages
       setTimeout(scrollToBottom, 200);
-      refreshNotifications(); // Actualiser les notifications après lecture
       
       // Marquer comme lu
       await markTicketAsRead(ticketId);
+      
+      // Actualiser les notifications après avoir marqué comme lu
+      setTimeout(() => {
+        refreshNotifications();
+      }, 500);
     } catch (error) {
       console.error('Erreur chargement messages:', error);
       setTicketMessages([]);

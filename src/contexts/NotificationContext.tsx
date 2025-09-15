@@ -78,7 +78,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const markSupportAsRead = () => {
+    console.log('🔔 Marquage support comme lu, ancien count:', unreadSupportMessages);
     setUnreadSupportMessages(0);
+    console.log('🔔 Support marqué comme lu, nouveau count: 0');
   };
 
   // Vérifier les notifications au chargement et périodiquement

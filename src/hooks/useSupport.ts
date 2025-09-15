@@ -167,11 +167,17 @@ export const useSupport = () => {
   const markTicketAsRead = async (ticketId: string): Promise<void> => {
     try {
       // Marquer le ticket comme lu en mettant à jour updated_at
-      await supabase
+      const { error } = await supabase
         .from('support_tickets')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', ticketId)
         .eq('user_id', user?.id);
+      
+      if (error) {
+        console.error('Erreur markTicketAsRead:', error);
+      } else {
+        console.log('✅ Ticket marqué comme lu:', ticketId);
+      }
     } catch (error) {
       console.error('Erreur markTicketAsRead:', error);
     }
