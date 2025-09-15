@@ -698,33 +698,28 @@ export const SuperAdminDashboard: React.FC = () => {
                         <div>
                           <div className="font-semibold text-gray-900 dark:text-white">
                             {currentTab.label}
-                    <div className="text-center">
+                          </div>
                           <div className="text-sm text-gray-500">
                             {currentTab.description}
                           </div>
-                      <select
+                        </div>
                       </>
                     ) : null;
-                        className="w-full max-w-xs mx-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                  })()}
                 </div>
                 {showMobileMenu ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </button>
 
               {/* Menu déroulant mobile */}
               {showMobileMenu && (
-                    <div className="text-center">
-                      <Input
+                <div className="border-t border-gray-200 dark:border-gray-700">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => {
                         setActiveTab(tab.id as any);
-                        className="max-w-xs mx-auto"
-                      />
-                    </div>
                         setShowMobileMenu(false);
-                    <div className="text-center">
-                      <Input
+                      }}
                       className={`w-full flex items-center space-x-3 p-4 transition-colors ${
                         activeTab === tab.id
                           ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-500'
@@ -732,15 +727,11 @@ export const SuperAdminDashboard: React.FC = () => {
                       }`}
                     >
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        className="max-w-xs mx-auto"
-                      />
-                    </div>
                         activeTab === tab.id 
-                    <div className="text-center">
-                      <Button
+                          ? getTabColorClasses(tab.color, true)
                           : 'bg-gray-100 dark:bg-gray-700'
                       }`}>
-                        className="max-w-xs w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300"
+                        <tab.icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center space-x-2">
@@ -1253,7 +1244,6 @@ export const SuperAdminDashboard: React.FC = () => {
                       <Plus className="h-5 w-5 mr-2" />
                       Créer
                     </Button>
-                    </div>
                   </div>
                 </div>
               </CardContent>
