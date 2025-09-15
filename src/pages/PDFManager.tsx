@@ -50,6 +50,9 @@ export const PDFManager: React.FC = () => {
   const [newResponsesCount, setNewResponsesCount] = useState(0);
   const [selectedResponseForDetails, setSelectedResponseForDetails] = useState<FormResponsePDF | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [loadingResponseData, setLoadingResponseData] = useState(false);
+  const [loadingPdfCards, setLoadingPdfCards] = useState(true);
+  const [loadedResponsesCount, setLoadedResponsesCount] = useState(0);
   const product = stripeConfig.products[0];
 
   useEffect(() => {
@@ -372,6 +375,57 @@ export const PDFManager: React.FC = () => {
       }
     }
   };
+
+  const loadResponses = async (page: number = 1, limit: number = 10) => {
+    setLoadingPdfCards(true);
+    setLoadedResponsesCount(0);
+    
+    try {
+      console.log('📄 Chargement réponses page:', page);
+      
+      setResponses(responsesData || []);
+      setTotalCount(count || 0);
+      
+      // Charger les données complètes pour chaque réponse
+      if (responsesData && responsesData.length > 0) {
+        console.log('📄 Chargement des données complètes pour', responsesData.length, 'réponses...');
+        
+        // Charger toutes les données en parallèle
+        const loadPromises = responsesData.map(async (response, index) => {
+          try {
+            const fullData = await fetchSingleResponseData(response.id);
+            setLoadedResponsesCount(prev => prev + 1);
+            return { ...response, data: fullData || {} };
+          } catch (error) {
+            console.error('Erreur chargement données réponse:', response.id, error);
+            setLoadedResponsesCount(prev => prev + 1);
+            return { ...response, data: {} };
+          }
+        });
+        
+        const responsesWithData = await Promise.all(loadPromises);
+        setResponses(responsesWithData);
+        console.log('✅ Toutes les données des réponses chargées');
+      }
+      
+    } catch (error) {
+      console.error('Erreur chargement réponses:', error);
+      setResponses([]);
+      setTotalCount(0);
+    } finally {
+      setLoadingPdfCards(false);
+    }
+  };
+
+  // Arrêter le chargement quand toutes les cartes sont chargées
+  useEffect(() => {
+    if (loadedResponsesCount > 0 && loadedResponsesCount === responses.length) {
+      console.log('✅ Toutes les cartes PDF chargées, arrêt du loading');
+      setLoadingPdfCards(false);
+    }
+  }, [loadedResponsesCount, responses.length]);
+
+  const handleViewResponse = async (response: FormResponse) => {
 
   const generateAndDownloadPDF = async (response: FormResponsePDF) => {
     if (!response) return;
