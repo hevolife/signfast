@@ -152,7 +152,7 @@ export const TutorialTrigger: React.FC = () => {
 
       {/* Notification de reprise du tutoriel */}
       {showResumeNotification && (
-        <div className="fixed top-24 right-4 z-30 animate-in slide-in-from-right duration-500">
+        <div className="fixed bottom-20 right-4 z-30 animate-in slide-in-from-bottom duration-500">
           <Card className="max-w-sm bg-gradient-to-r from-indigo-500 to-purple-600 border-0 shadow-2xl">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
