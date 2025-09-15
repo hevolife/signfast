@@ -32,13 +32,14 @@ export const useSubAccounts = () => {
 
       if (error) {
         // Si la table n'existe pas encore, on ignore l'erreur silencieusement
-        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('sub_accounts')) {
           console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
           setSubAccounts([]);
           setTotalCount(0);
           return;
         }
         console.error('Erreur récupération sous-comptes:', error);
+        // Pour les autres erreurs, on définit quand même des valeurs par défaut
         setSubAccounts([]);
         setTotalCount(0);
       } else {
@@ -47,6 +48,7 @@ export const useSubAccounts = () => {
       }
     } catch (error) {
       console.error('Erreur générale fetchSubAccounts:', error);
+      // En cas d'erreur générale, on définit des valeurs par défaut
       setSubAccounts([]);
       setTotalCount(0);
     } finally {
