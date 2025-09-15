@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { Clock, Sparkles, Zap, Minimize2, Maximize2 } from 'lucide-react';
 
 export const DemoTimer: React.FC = () => {
-  const { isDemoMode, timeRemaining } = useDemo();
+  const { isDemoMode, timeRemaining, endDemo } = useDemo();
   const [isMinimized, setIsMinimized] = React.useState(false);
 
   if (!isDemoMode) return null;
