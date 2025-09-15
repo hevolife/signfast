@@ -337,11 +337,19 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
   };
 
   const generateSampleData = (): Record<string, any> => {
+    // Créer un Set pour éviter les doublons de variables
+    const uniqueVariables = new Set<string>();
     const sampleData: Record<string, any> = {};
     
-    // Générer des données d'exemple pour chaque variable
+    // Nettoyer et déduplicquer les variables
     actualFormVariables.forEach(variable => {
       const varName = variable.replace(/^\$\{|\}$/g, '').toLowerCase();
+      
+      // Éviter les doublons
+      if (uniqueVariables.has(varName)) {
+        return;
+      }
+      uniqueVariables.add(varName);
       
       if (varName.includes('nom')) {
         sampleData[varName] = 'Dupont';
@@ -364,10 +372,10 @@ export const PDFTemplateEditor: React.FC<PDFTemplateEditorProps> = ({
       } else if (varName.includes('salaire') || varName.includes('prix') || varName.includes('montant')) {
         sampleData[varName] = '2500€';
       } else if (varName.includes('signature')) {
-        // Générer une signature d'exemple simple
+        // Signature d'exemple optimisée (plus petite)
         sampleData[varName] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
       } else {
-        // Valeur par défaut
+        // Valeur par défaut optimisée
         sampleData[varName] = `Exemple ${varName}`;
       }
     });

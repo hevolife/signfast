@@ -120,10 +120,11 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
   const getFormVariables = () => {
     if (!form.fields) return [];
     
-    console.log('📋 Génération variables pour formulaire:', form.title);
-    console.log('📋 Champs disponibles:', form.fields.map(f => f.label));
+    // Utiliser un Set pour éviter les doublons
+    const uniqueVariables = new Set<string>();
     
-    const variables = form.fields.map(field => {
+    // Traiter les champs principaux
+    form.fields.forEach(field => {
       // Normaliser le nom du champ pour créer une variable
       const variableName = field.label
         .toLowerCase()
@@ -133,13 +134,38 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
         .replace(/_+/g, '_') // Éviter les _ multiples
         .replace(/^_|_$/g, ''); // Enlever les _ en début/fin
       
-      return `\${${variableName}}`;
+      const variable = `\${${variableName}}`;
+      uniqueVariables.add(variable);
+      
+      // Traiter les champs conditionnels
+      if (field.conditionalFields) {
+        Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+          if (Array.isArray(conditionalFieldsArray)) {
+            conditionalFieldsArray.forEach((conditionalField: any) => {
+              const conditionalVariableName = conditionalField.label
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+              
+              const conditionalVariable = `\${${conditionalVariableName}}`;
+              uniqueVariables.add(conditionalVariable);
+            });
+          }
+        });
+      }
     });
     
-    // Ajouter des variables système
-    variables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
+    // Ajouter des variables système uniques
+    uniqueVariables.add('${date_creation}');
+    uniqueVariables.add('${heure_creation}');
+    uniqueVariables.add('${numero_reponse}');
     
-    console.log('📋 Variables générées:', variables);
+    // Convertir le Set en Array et trier
+    const variables = Array.from(uniqueVariables).sort();
+    
     return variables;
   };
 
