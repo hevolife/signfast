@@ -234,6 +234,7 @@ export const useFormResponses = (formId: string) => {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const { isDemoMode } = useDemo();
+  const [availableFields, setAvailableFields] = useState<string[]>([]);
 
   // If in demo mode, return empty data without making Supabase requests
   if (isDemoMode) {
@@ -242,10 +243,41 @@ export const useFormResponses = (formId: string) => {
       totalCount: 0,
       loading: false,
       fetchSingleResponseData: async () => null,
+      fetchSpecificFields: async () => null,
+      getAvailableFields: async () => [],
       refetch: async () => {},
       fetchPage: async () => {},
     };
   }
+
+  // Fonction pour découvrir les champs disponibles dans les données JSONB
+  const discoverAvailableFields = async () => {
+    try {
+      // Récupérer un échantillon de réponses pour analyser la structure des données
+      const { data: sampleResponses, error } = await supabase
+        .from('responses')
+        .select('data')
+        .eq('form_id', formId)
+        .limit(5);
+
+      if (error) throw error;
+
+      const fieldsSet = new Set<string>();
+      
+      (sampleResponses || []).forEach(response => {
+        if (response.data && typeof response.data === 'object') {
+          Object.keys(response.data).forEach(key => fieldsSet.add(key));
+        }
+      });
+
+      const fields = Array.from(fieldsSet).sort();
+      setAvailableFields(fields);
+      return fields;
+    } catch (error) {
+      console.error('Error discovering fields:', error);
+      return [];
+    }
+  };
 
   const fetchResponses = async (page: number = 1, limit: number = 10) => {
     const offset = (page - 1) * limit;
@@ -274,6 +306,11 @@ export const useFormResponses = (formId: string) => {
         ...response,
         data: {}
       })));
+
+      // Découvrir les champs disponibles si pas encore fait
+      if (availableFields.length === 0) {
+        await discoverAvailableFields();
+      }
     } catch (error) {
       // Silent error
     } finally {
@@ -304,6 +341,91 @@ export const useFormResponses = (formId: string) => {
       return null;
     }
   };
+
+  // Nouvelle fonction pour récupérer des champs spécifiques
+  const fetchSpecificFields = async (responseId: string, fields: string[]) => {
+    try {
+      if (fields.length === 0) {
+        return null;
+      }
+
+      // Construire la requête select avec les champs JSONB spécifiques
+      const selectFields = fields.map(field => `data->>'${field}' as ${field}`).join(', ');
+      
+      const { data, error } = await supabase
+        .from('responses')
+        .select(selectFields)
+        .eq('id', responseId)
+        .single();
+
+      if (error) throw error;
+      
+      console.log('📊 Champs spécifiques récupérés:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching specific fields:', error);
+      return null;
+    }
+  };
+
+  // Fonction pour récupérer plusieurs réponses avec des champs spécifiques
+  const fetchResponsesWithFields = async (fields: string[], page: number = 1, limit: number = 10) => {
+    const offset = (page - 1) * limit;
+    
+    try {
+      if (fields.length === 0) {
+        // Fallback vers la méthode normale si aucun champ spécifié
+        return await fetchResponses(page, limit);
+      }
+
+      // Construire la requête select avec les champs JSONB spécifiques
+      const selectFields = [
+        'id', 
+        'form_id', 
+        'created_at', 
+        'ip_address', 
+        'user_agent',
+        ...fields.map(field => `data->>'${field}' as ${field}`)
+      ].join(', ');
+      
+      const { data, error } = await supabase
+        .from('responses')
+        .select(selectFields)
+        .eq('form_id', formId)
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transformer les données pour correspondre au format attendu
+      const transformedResponses = (data || []).map(response => {
+        const { id, form_id, created_at, ip_address, user_agent, ...fieldData } = response;
+        return {
+          id,
+          form_id,
+          created_at,
+          ip_address,
+          user_agent,
+          data: fieldData
+        };
+      });
+      
+      setResponses(transformedResponses);
+      console.log('📊 Réponses avec champs spécifiques récupérées:', transformedResponses.length);
+      
+    } catch (error) {
+      console.error('Error fetching responses with specific fields:', error);
+    }
+  };
+
+  // Fonction pour récupérer les champs disponibles
+  const getAvailableFields = async () => {
+    if (availableFields.length === 0) {
+      return await discoverAvailableFields();
+    }
+    return availableFields;
+  };
+
   useEffect(() => {
     if (formId) {
       fetchResponses();
@@ -314,7 +436,11 @@ export const useFormResponses = (formId: string) => {
     responses,
     totalCount,
     loading,
+    availableFields,
     fetchSingleResponseData,
+    fetchSpecificFields,
+    fetchResponsesWithFields,
+    getAvailableFields,
     refetch: fetchResponses,
     fetchPage: fetchResponses,
   };
