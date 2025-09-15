@@ -31,38 +31,19 @@ export const useSubAccounts = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // Check if the error is due to missing table
-        if (error.code === 'PGRST205' || 
-            error.message?.includes('Could not find the table') || 
-            error.message?.includes('sub_accounts')) {
-          console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
-          setSubAccounts([]);
-          setTotalCount(0);
-          setLoading(false);
-          return;
-        }
-        console.error('Erreur récupération sous-comptes:', error);
+        console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
         setSubAccounts([]);
         setTotalCount(0);
+        setLoading(false);
+        return;
       } else {
         setSubAccounts(data || []);
         setTotalCount(data?.length || 0);
       }
     } catch (error: any) {
-      console.error('Error fetching sub accounts:', error);
-      
-      // Check if the error is due to missing table
-      const errorMessage = error?.message || '';
-      
-      if (errorMessage.includes('PGRST205') || errorMessage.includes('sub_accounts')) {
-        console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
-        setSubAccounts([]);
-        setTotalCount(0);
-      } else {
-        console.error('Erreur générale fetchSubAccounts:', error);
-        setSubAccounts([]);
-        setTotalCount(0);
-      }
+      console.log('Table sub_accounts pas encore créée - fonctionnalité désactivée temporairement');
+      setSubAccounts([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
