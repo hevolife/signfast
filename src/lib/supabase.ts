@@ -8,13 +8,39 @@ export class SupabaseAuthError extends Error {
   }
 }
 
-// Use runtime environment variables from window.ENV if available, fallback to build-time variables
-const supabaseUrl = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_URL) 
-  ? window.ENV.VITE_SUPABASE_URL 
-  : import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_ANON_KEY) 
-  ? window.ENV.VITE_SUPABASE_ANON_KEY 
-  : import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Fonction pour obtenir les variables d'environnement avec priorité
+const getSupabaseConfig = () => {
+  // Priorité 1: Variables d'environnement runtime (Docker)
+  if (typeof window !== 'undefined' && window.ENV) {
+    console.log('🔧 Utilisation variables runtime Docker');
+    return {
+      url: window.ENV.VITE_SUPABASE_URL,
+      key: window.ENV.VITE_SUPABASE_ANON_KEY
+    };
+  }
+  
+  // Priorité 2: Variables d'environnement build-time (développement)
+  console.log('🔧 Utilisation variables build-time');
+  return {
+    url: import.meta.env.VITE_SUPABASE_URL,
+    key: import.meta.env.VITE_SUPABASE_ANON_KEY
+  };
+};
+
+const config = getSupabaseConfig();
+const supabaseUrl = config.url;
+const supabaseKey = config.key;
+
+console.log('🔧 Configuration Supabase:', {
+  url: supabaseUrl,
+  hasKey: !!supabaseKey,
+  keyPrefix: supabaseKey?.substring(0, 20) + '...',
+  isConfigured: !!(supabaseUrl && supabaseKey && 
+    supabaseUrl !== 'your-project-url' && 
+    supabaseKey !== 'your-anon-key' && 
+    !supabaseUrl.includes('placeholder') && 
+    !supabaseKey.includes('placeholder'))
+});
 
 if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supabaseKey === 'your-anon-key' || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
