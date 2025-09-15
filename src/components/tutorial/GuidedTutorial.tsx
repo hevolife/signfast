@@ -382,9 +382,9 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
 
             {/* Contenu principal */}
             <CardContent className="p-4 sm:p-6 lg:p-8">
-              <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+              <div className="grid lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
                 {/* Contenu de l'étape */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-3">
                   <div className="prose max-w-none">
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base lg:text-lg">
                       {currentStepData.content}
@@ -470,7 +470,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                 </div>
 
                 {/* Navigation et mini-carte des étapes */}
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-2">
                   <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-3 sm:p-4 shadow-lg">
                     <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 text-center">
                       Progression du tutoriel
@@ -481,7 +481,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                         <button
                           key={step.id}
                           onClick={() => handleStepClick(index)}
-                          className={`w-full text-left p-2 sm:p-3 rounded-lg transition-all duration-300 ${
+                          className={`w-full text-left p-3 sm:p-4 rounded-lg transition-all duration-300 ${
                             index === currentStep
                               ? `bg-gradient-to-r ${step.color} text-white shadow-lg transform scale-105`
                               : completedSteps.has(index)
@@ -489,7 +489,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                               : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                           }`}
                         >
-                          <div className="flex items-center space-x-2 sm:space-x-3">
+                          <div className="flex items-start space-x-3 sm:space-x-4">
                             <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                               index === currentStep
                                 ? 'bg-white/20'
@@ -505,11 +505,11 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                                 </span>
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs sm:text-sm font-semibold truncate">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm sm:text-base font-semibold leading-tight">
                                 {step.title.replace(/[🎉🎊]/g, '').trim()}
                               </div>
-                              <div className="text-xs opacity-75 truncate hidden sm:block">
+                              <div className="text-xs sm:text-sm opacity-75 leading-tight mt-1">
                                 {step.description}
                               </div>
                             </div>
@@ -519,13 +519,26 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                     </div>
 
                     {/* Statistiques de progression */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 shadow-inner">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-inner">
                       <div className="text-center">
-                        <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                        <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                           {completedSteps.size}/{tutorialSteps.length}
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                           Étapes terminées
+                        </div>
+                        
+                        {/* Barre de progression visuelle */}
+                        <div className="mt-3">
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 shadow-inner">
+                            <div 
+                              className="h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                              style={{ width: `${(completedSteps.size / tutorialSteps.length) * 100}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 font-medium">
+                            {Math.round((completedSteps.size / tutorialSteps.length) * 100)}% complété
+                          </div>
                         </div>
                       </div>
                     </div>
