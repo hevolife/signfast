@@ -60,7 +60,7 @@ export const DemoWelcomeModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-500 overflow-y-auto">
-      <div className="w-full max-w-lg mx-auto my-8">
+      <div className="w-full max-w-md mx-auto my-4">
         <Card className="w-full bg-white/95 backdrop-blur-sm border-0 shadow-2xl animate-in slide-in-from-bottom-8 duration-700">
         <CardHeader className="relative overflow-hidden">
           {/* Background gradient animé */}
@@ -71,21 +71,21 @@ export const DemoWelcomeModal: React.FC = () => {
           <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-xl animate-bounce"></div>
           <div className="absolute bottom-4 left-4 w-16 h-16 bg-yellow-400/20 rounded-full blur-lg animate-pulse delay-1000"></div>
           
-          <div className="relative text-center py-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl mb-6 shadow-xl animate-in zoom-in duration-1000 delay-300">
-              <Sparkles className="h-10 w-10 text-white animate-pulse" />
+          <div className="relative text-center py-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-3xl mb-4 shadow-xl animate-in zoom-in duration-1000 delay-300">
+              <Sparkles className="h-8 w-8 text-white animate-pulse" />
             </div>
             
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 animate-in slide-in-from-top duration-700 delay-500">
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 animate-in slide-in-from-top duration-700 delay-500">
               🎉 Bienvenue dans SignFast !
             </h1>
             
-            <p className="text-base text-white/90 mb-4 animate-in slide-in-from-top duration-700 delay-700">
+            <p className="text-sm text-white/90 mb-3 animate-in slide-in-from-top duration-700 delay-700">
               {demoSettings.welcomeMessage || 'Bienvenue dans la démo SignFast ! Testez toutes les fonctionnalités pendant 30 minutes.'}
             </p>
             
             {/* Timer de démo */}
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-white/90 text-sm font-medium animate-in zoom-in duration-700 delay-1000">
+            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 text-white/90 text-xs font-medium animate-in zoom-in duration-700 delay-1000">
               <Clock className="h-4 w-4 animate-pulse" />
               <span>{demoSettings.durationMinutes || 30} minutes d'accès complet</span>
             </div>
@@ -102,20 +102,20 @@ export const DemoWelcomeModal: React.FC = () => {
           </Button>
         </CardHeader>
         
-        <CardContent className="p-4 sm:p-6 space-y-6">
+        <CardContent className="p-3 sm:p-4 space-y-4">
           {/* Fonctionnalités avec animation */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 animate-in slide-in-from-left duration-500 delay-1200">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-3 animate-in slide-in-from-left duration-500 delay-1200">
                 🚀 Fonctionnalités débloquées
               </h3>
             </div>
             
-            <div className="grid gap-3">
+            <div className="grid gap-2">
               {features.map((feature, index) => (
                 <div
                   key={index}
-                  className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-500 ${
+                  className={`flex items-center space-x-2 p-2 rounded-lg transition-all duration-500 ${
                     showFeatures && index <= currentFeatureIndex
                       ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 shadow-lg animate-in slide-in-from-left'
                       : 'bg-gray-50 dark:bg-gray-800 opacity-50'
@@ -125,13 +125,13 @@ export const DemoWelcomeModal: React.FC = () => {
                     animationDuration: '600ms'
                   }}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
                     showFeatures && index <= currentFeatureIndex
                       ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg animate-pulse'
                       : 'bg-gray-300 dark:bg-gray-600'
                   }`}>
                     {showFeatures && index <= currentFeatureIndex ? (
-                      <CheckCircle className="h-4 w-4 text-white" />
+                      <CheckCircle className="h-3 w-3 text-white" />
                     ) : (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
@@ -147,7 +147,7 @@ export const DemoWelcomeModal: React.FC = () => {
                   </div>
                   {showFeatures && index === currentFeatureIndex && (
                     <div className="animate-in zoom-in duration-300">
-                      <Zap className="h-4 w-4 text-yellow-500 animate-pulse" />
+                      <Zap className="h-3 w-3 text-yellow-500 animate-pulse" />
                     </div>
                   )}
                 </div>
@@ -156,16 +156,16 @@ export const DemoWelcomeModal: React.FC = () => {
           </div>
 
           {/* Conseils et astuces */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-inner animate-in slide-in-from-bottom duration-700 delay-2000">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 shadow-inner animate-in slide-in-from-bottom duration-700 delay-2000">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
                 <Gift className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-base font-bold text-blue-900 dark:text-blue-300">
+              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300">
                 💡 Conseils pour votre démo
               </h4>
             </div>
-            <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+            <div className="space-y-1 text-xs text-blue-800 dark:text-blue-200">
               <div className="flex items-start space-x-2">
                 <span className="text-blue-600 mt-0.5">📝</span>
                 <span>Créez un formulaire avec signature électronique</span>
@@ -186,12 +186,12 @@ export const DemoWelcomeModal: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 animate-in slide-in-from-bottom duration-700 delay-2500">
+          <div className="flex flex-col sm:flex-row gap-2 animate-in slide-in-from-bottom duration-700 delay-2500">
             <Button
               onClick={handleStartDemo}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-2 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group"
             >
-              <div className="flex items-center justify-center space-x-3">
+              <div className="flex items-center justify-center space-x-2">
                 <Zap className="h-5 w-5 group-hover:animate-pulse" />
                 <span>Commencer la démo</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -201,14 +201,14 @@ export const DemoWelcomeModal: React.FC = () => {
             <Button
               variant="ghost"
               onClick={handleEndDemo}
-              className="sm:w-auto bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="sm:w-auto bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-2 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Quitter la démo
             </Button>
           </div>
 
           {/* Note en bas */}
-          <div className="text-center animate-in fade-in duration-1000 delay-3000">
+          <div className="text-center animate-in fade-in duration-1000 delay-3000 pt-2">
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
               ✨ Toutes les données de démo seront supprimées à la fin de la session
             </p>
