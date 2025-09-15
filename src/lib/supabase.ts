@@ -62,16 +62,8 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     return await customFetch(url, options);
   } catch (error) {
     console.warn('⚠️ Network error, returning empty response:', error);
-    // Return a proper error response instead of throwing
-    return new Response(JSON.stringify({ 
-      data: null, 
-      error: null,
-      count: 0
-    }), {
-      status: 200,
-      statusText: 'OK',
-      headers: { 'Content-Type': 'application/json' }
-    });
+    // Re-throw network errors to let Supabase handle them properly
+    throw error;
   }
 };
 
