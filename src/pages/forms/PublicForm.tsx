@@ -335,6 +335,8 @@ export const PublicForm: React.FC = () => {
       const { normalizedData, fieldMappings, conflicts } = normalizeFormData(
         formData, 
         form.fields || []
+      );
+      
       // Vérifier que tous les champs obligatoires sont présents dans les données normalisées
       const requiredFields = form.fields?.filter(f => f.required).map(f => f.label) || [];
       const { isValid: isNormalizedValid, missingFields: normalizedMissingFields } = validateNormalizedData(
@@ -347,8 +349,6 @@ export const PublicForm: React.FC = () => {
         setErrors(normalizedMissingFields.map(field => `Le champ "${field}" est obligatoire`));
         return;
       }
-      
-      );
       
       // Afficher les conflits détectés
       if (conflicts.length > 0) {
@@ -619,7 +619,7 @@ export const PublicForm: React.FC = () => {
             }])
             .select()
             .single();
-            data: optimizedData, // Utiliser les données normalisées et optimisées
+          
           responseData = lightResult.data;
           error = lightResult.error;
         } else {
@@ -634,7 +634,7 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
-      console.log('✅ Réponse sauvegardée avec données normalisées:', response.id);
+      console.log('✅ Réponse sauvegardée avec données normalisées:', responseData.id);
       
 
       setSubmitted(true);
@@ -682,8 +682,6 @@ export const PublicForm: React.FC = () => {
           valueIndex++;
         } else {
           break;
-          console.log('📄 Génération PDF avec données normalisées...');
-          
         }
       } else if (maskChar === 'a') {
         if (/[a-zA-Z]/.test(inputChar)) {
@@ -694,7 +692,6 @@ export const PublicForm: React.FC = () => {
         }
       } else if (maskChar === '*') {
         // Caractère alphanumérique
-          console.log('✅ PDF généré avec succès:', fileName);
         if (/[a-zA-Z0-9]/.test(inputChar)) {
           masked += inputChar;
           valueIndex++;
@@ -745,18 +742,14 @@ export const PublicForm: React.FC = () => {
     });
 
     return fieldsToShow.map(conditionalField => (
-    // Valider en utilisant les clés normalisées
-    form.fields?.forEach(field => {
-      if (field.required) {
-        // Chercher la valeur avec la clé normalisée
-        const normalizedKey = normalizeLabel(field.label);
-        const value = formData[field.id] || formData[normalizedKey] || formData[field.label];
-        
-        if (!value || (typeof value === 'string' && value.trim() === '')) {
-          missingFields.push(field.label);
-        }
-      }
-    });
+      <div key={conditionalField.id} className="ml-6 mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 border-blue-500">
+        {renderField(conditionalField)}
+      </div>
+    ));
+  };
+
+  const renderField = (field: FormField) => {
+    const baseProps = {
       id: field.id,
       required: field.required,
       placeholder: field.placeholder,
@@ -1001,8 +994,6 @@ export const PublicForm: React.FC = () => {
                 </p>
               </div>
             </div>
-      
-      console.log('📝 === FIN SOUMISSION ===');
           </div>
         );
       
