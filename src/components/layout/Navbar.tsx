@@ -7,6 +7,8 @@ import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
 import { FormInput, LogOut, LayoutDashboard, FileText, HardDrive, Crown, Settings, Shield, Menu, X, Sparkles, MessageCircle } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { SupportNotificationBadge } from '../notifications/SupportNotificationBadge';
 
 export const Navbar: React.FC = () => {
   const { user, signOut, isImpersonating, impersonationData, stopImpersonation } = useAuth();
@@ -14,6 +16,7 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isDemoMode, endDemo } = useDemo();
+  const { unreadSupportMessages } = useNotifications();
   const product = stripeConfig.products[0];
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   
@@ -43,6 +46,7 @@ export const Navbar: React.FC = () => {
     { path: '/forms', icon: FileText, label: 'Formulaires', color: 'green', emoji: '📝' },
     { path: '/pdf/templates', icon: FileText, label: 'Templates', color: 'purple', emoji: '📄' },
     { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', color: 'orange', emoji: '💾' },
+    { path: '/support', icon: MessageCircle, label: 'Support', color: 'indigo', emoji: '💬' },
     { path: '/settings', icon: Settings, label: 'Paramètres', color: 'indigo', emoji: '⚙️' },
   ] : [];
 
@@ -94,7 +98,25 @@ export const Navbar: React.FC = () => {
                         <button className={`py-2 px-3 rounded-xl font-semibold text-sm transition-all active:scale-95 hover:scale-105 ${getNavItemColorClasses(item.color, isActive)}`}>
                           <div className="flex items-center space-x-2">
                             <div className="p-1 rounded-lg">
-                              <span className="text-sm">{item.emoji}</span>
+                              {item.path === '/support' ? (
+                                <SupportNotificationBadge showIcon={false} />
+                              ) : (
+                                <span className="text-lg">{item.emoji}</span>
+                              )}
+                              {item.path === '/support' && unreadSupportMessages > 0 && (
+                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                                  {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
+                                </div>
+                              )}
+                                <SupportNotificationBadge showIcon={false} />
+                              ) : (
+                                <span className="text-sm">{item.emoji}</span>
+                              )}
+                              {item.path === '/support' && unreadSupportMessages > 0 && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                                  {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
+                                </div>
+                              )}
                             </div>
                             <span className="hidden xl:inline">{item.label}</span>
                           </div>

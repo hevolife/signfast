@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDemo } from '../../contexts/DemoContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { SupportNotificationBadge } from '../notifications/SupportNotificationBadge';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -13,6 +15,7 @@ import {
 export const MobileBottomNav: React.FC = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
+  const { unreadSupportMessages } = useNotifications();
   const location = useLocation();
 
   // Ne pas afficher sur les formulaires publics
@@ -45,7 +48,18 @@ export const MobileBottomNav: React.FC = () => {
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}>
-                <span className="text-lg mb-1">{item.emoji}</span>
+                <div className="relative mb-1">
+                  {item.path === '/support' ? (
+                    <SupportNotificationBadge showIcon={false} />
+                  ) : (
+                    <span className="text-lg">{item.emoji}</span>
+                  )}
+                  {item.path === '/support' && unreadSupportMessages > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                      {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
+                    </div>
+                  )}
+                </div>
                 <span className="text-xs font-medium truncate w-full text-center">
                   {item.label}
                 </span>

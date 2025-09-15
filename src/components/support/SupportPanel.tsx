@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSupport } from '../../hooks/useSupport';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -20,6 +21,7 @@ import toast from 'react-hot-toast';
 
 export const SupportPanel: React.FC = () => {
   const { tickets, loading, createTicket, sendMessage, getTicketMessages, markTicketAsRead } = useSupport();
+  const { refreshNotifications } = useNotifications();
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
@@ -52,6 +54,7 @@ export const SupportPanel: React.FC = () => {
 
       if (ticket) {
         toast.success('Ticket créé avec succès !');
+        refreshNotifications(); // Actualiser les notifications
         setShowNewTicketForm(false);
         setNewTicketSubject('');
         setNewTicketMessage('');
@@ -73,6 +76,7 @@ export const SupportPanel: React.FC = () => {
     try {
       const messages = await getTicketMessages(ticketId);
       setTicketMessages(messages);
+      refreshNotifications(); // Actualiser les notifications après lecture
       
       // Marquer comme lu
       await markTicketAsRead(ticketId);
@@ -99,6 +103,7 @@ export const SupportPanel: React.FC = () => {
 
       if (success) {
         setNewMessage('');
+        refreshNotifications(); // Actualiser les notifications
         // Recharger les messages
         const messages = await getTicketMessages(selectedTicket);
         setTicketMessages(messages);

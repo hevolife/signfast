@@ -7,6 +7,7 @@ import { TouchBackend } from 'react-dnd-touch-backend';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DemoProvider } from './contexts/DemoContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 import { MaintenanceMode } from './components/MaintenanceMode';
 import { Navbar } from './components/layout/Navbar';
@@ -32,6 +33,7 @@ import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
 import { Support } from './pages/Support';
 import { DemoTimer } from './components/demo/DemoTimer';
 import { WelcomeModal } from './components/onboarding/WelcomeModal';
+import { SupportNotificationToast } from './components/notifications/SupportNotificationToast';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -84,6 +86,8 @@ const AppContent: React.FC = () => {
         <DemoTimer />
         {/* Message d'accueil pour nouveaux utilisateurs */}
         <WelcomeModal />
+        {/* Notifications support globales */}
+        <SupportNotificationToast />
         {!isPublicForm && <Navbar />}
         <main>
           <Routes>
@@ -223,9 +227,11 @@ function App() {
   return (
     <DemoProvider>
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </DemoProvider>
   );

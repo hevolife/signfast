@@ -1,11 +1,18 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { SupportPanel } from '../components/support/SupportPanel';
 import { Card, CardContent } from '../components/ui/Card';
 import { MessageCircle, Sparkles } from 'lucide-react';
 
 export const Support: React.FC = () => {
   const { user } = useAuth();
+  const { markSupportAsRead } = useNotifications();
+
+  // Marquer les messages comme lus quand on arrive sur la page
+  React.useEffect(() => {
+    markSupportAsRead();
+  }, [markSupportAsRead]);
 
   if (!user) {
     return (

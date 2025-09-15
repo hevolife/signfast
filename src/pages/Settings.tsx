@@ -35,12 +35,15 @@ import {
 } from 'lucide-react';
 import { stripeConfig } from '../stripe-config';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { useNotifications } from '../contexts/NotificationContext';
+import { SupportNotificationBadge } from '../components/notifications/SupportNotificationBadge';
 import toast from 'react-hot-toast';
 
 export const Settings: React.FC = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, updateProfile, uploadLogo } = useUserProfile();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { unreadSupportMessages } = useNotifications();
   
   // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
@@ -508,7 +511,12 @@ export const Settings: React.FC = () => {
                 >
                   <div className="flex items-center space-x-2">
                     <div className="p-1 rounded-lg">
-                      <span className="text-sm">💬</span>
+                      <SupportNotificationBadge showIcon={false} />
+                      {unreadSupportMessages > 0 && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                          {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
+                        </div>
+                      )}
                     </div>
                     <span>Support</span>
                   </div>
