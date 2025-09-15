@@ -133,7 +133,8 @@ export const PDFManager: React.FC = () => {
     .filter(pdf => 
       pdf.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pdf.templateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pdf.formTitle.toLowerCase().includes(searchTerm.toLowerCase())
+      pdf.formTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pdf.userName.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortBy) {
@@ -226,7 +227,7 @@ export const PDFManager: React.FC = () => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input
-                    placeholder="Rechercher par nom de fichier ou template..."
+                    placeholder="Rechercher par nom, fichier ou template..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-green-500 rounded-xl font-medium"
