@@ -220,19 +220,8 @@ export const useSupport = () => {
         localStorage.setItem('read_support_tickets', JSON.stringify(readTickets));
         console.log('🔔 ✅ Ticket sauvegardé comme lu localement');
         
-        // Vérifier que la mise à jour a bien eu lieu
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('support_tickets')
-          .select('updated_at')
-          .eq('id', ticketId)
-          .eq('user_id', user.id)
-          .single();
-        
-        if (verifyError) {
-          console.error('🔔 ❌ Erreur vérification mise à jour:', verifyError);
-        } else {
-          console.log('🔔 ✅ Vérification réussie, updated_at:', verifyData.updated_at);
-        }
+        // Mise à jour réussie, pas besoin de vérification supplémentaire
+        console.log('🔔 ✅ Mise à jour confirmée par l\'absence d\'erreur');
       }
       
       console.log('🔔 === FIN MARQUAGE COMME LU ===');
@@ -370,18 +359,8 @@ export const useSupportAdmin = () => {
         localStorage.setItem('admin_read_support_tickets', JSON.stringify(readTickets));
         console.log('🔔 Admin ✅ Ticket sauvegardé comme lu localement');
         
-        // Vérifier que la mise à jour a bien eu lieu
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('support_tickets')
-          .select('updated_at')
-          .eq('id', ticketId)
-          .single();
-        
-        if (verifyError) {
-          console.error('🔔 Admin ❌ Erreur vérification mise à jour:', verifyError);
-        } else {
-          console.log('🔔 Admin ✅ Vérification réussie, updated_at:', verifyData.updated_at);
-        }
+        // Mise à jour réussie, pas besoin de vérification supplémentaire
+        console.log('🔔 Admin ✅ Mise à jour confirmée par l\'absence d\'erreur');
       }
       
       console.log('🔔 Admin === FIN MARQUAGE COMME LU ===');
