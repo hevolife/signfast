@@ -170,7 +170,12 @@ export const Signup: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="votre@email.com"
-                  className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all"
+                  className="bg-white border-gray-300 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all touch-manipulation"
+                  style={{ 
+                    WebkitAppearance: 'none',
+                    fontSize: '16px',
+                    minHeight: '44px'
+                  }}
                 />
                 
                 <div className="relative">
@@ -182,12 +187,18 @@ export const Signup: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all pr-12"
+                    className="bg-white border-gray-300 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all pr-12 touch-manipulation"
+                    style={{ 
+                      WebkitAppearance: 'none',
+                      fontSize: '16px',
+                      minHeight: '44px'
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors touch-manipulation"
+                    style={{ minWidth: '44px', minHeight: '44px' }}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -202,12 +213,18 @@ export const Signup: React.FC = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all pr-12"
+                    className="bg-white border-gray-300 focus:border-purple-500 rounded-xl font-medium shadow-lg transition-all pr-12 touch-manipulation"
+                    style={{ 
+                      WebkitAppearance: 'none',
+                      fontSize: '16px',
+                      minHeight: '44px'
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors touch-manipulation"
+                    style={{ minWidth: '44px', minHeight: '44px' }}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

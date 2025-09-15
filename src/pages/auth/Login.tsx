@@ -135,7 +135,12 @@ export const Login: React.FC = () => {
                     onChange={(e) => setResetEmail(e.target.value)}
                     required
                     placeholder="votre@email.com"
-                    className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all"
+                    className="bg-white border-gray-300 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all touch-manipulation"
+                    style={{ 
+                      WebkitAppearance: 'none',
+                      fontSize: '16px',
+                      minHeight: '44px'
+                    }}
                   />
                 </div>
 
@@ -221,14 +226,25 @@ export const Login: React.FC = () => {
                       <span>Se connecter</span>
                       <ArrowRight className="h-4 w-4" />
                     </div>
-                  )}
+                  className="bg-white border-gray-300 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all touch-manipulation"
+                  style={{ 
+                    WebkitAppearance: 'none',
+                    fontSize: '16px',
+                    minHeight: '44px'
+                  }}
                 </Button>
-                
+                    className="bg-white border-gray-300 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all pr-12 touch-manipulation"
+                    style={{ 
+                      WebkitAppearance: 'none',
+                      fontSize: '16px',
+                      minHeight: '44px'
+                    }}
                 <div className="text-center">
                   <button
                     type="button"
                     onClick={() => {
-                      setShowResetForm(true);
+                    className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors touch-manipulation"
+                    style={{ minWidth: '44px', minHeight: '44px' }}
                       setResetEmail(email); // Pré-remplir avec l'email saisi
                     }}
                     className="text-sm text-blue-600 hover:text-blue-700 hover:underline font-medium transition-colors"
