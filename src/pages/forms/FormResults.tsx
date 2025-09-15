@@ -381,73 +381,73 @@ export const FormResults: React.FC = () => {
 
         {/* Cartes de statistiques */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <Card className="group bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <Card className="group bg-gradient-to-br from-blue-500 to-indigo-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
+                  <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
                     Réponses totales
                   </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-100">
+                  <p className="text-2xl sm:text-3xl font-bold text-white">
                     {totalResponses}
                   </p>
                 </div>
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
-                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="group bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <Card className="group bg-gradient-to-br from-green-500 to-emerald-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 mb-1">
+                  <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
                     Aujourd'hui
                   </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-green-900 dark:text-green-100">
+                  <p className="text-2xl sm:text-3xl font-bold text-white">
                     {todayResponses}
                   </p>
                 </div>
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
-                  <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="group bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <Card className="group bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 mb-1">
+                  <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
                     Cette semaine
                   </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-purple-900 dark:text-purple-100">
+                  <p className="text-2xl sm:text-3xl font-bold text-white">
                     {thisWeekResponses}
                   </p>
                 </div>
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
-                  <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="group bg-gradient-to-br from-orange-50  to-red-100 dark:from-orange-900/30 dark:to-red-900/40 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <Card className="group bg-gradient-to-br from-orange-500 to-red-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-300 mb-1">
+                  <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
                     Moyenne/jour
                   </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-orange-900 dark:text-orange-100">
+                  <p className="text-2xl sm:text-3xl font-bold text-white">
                     {avgResponsesPerDay}
                   </p>
                 </div>
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
-                  <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
             </CardContent>
