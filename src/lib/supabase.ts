@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use runtime environment variables from window.ENV if available, fallback to build-time variables
+const supabaseUrl = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_URL) 
+  ? window.ENV.VITE_SUPABASE_URL 
+  : import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_ANON_KEY) 
+  ? window.ENV.VITE_SUPABASE_ANON_KEY 
+  : import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supabaseKey === 'your-anon-key' || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
   console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
