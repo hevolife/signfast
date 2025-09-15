@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FormField } from '../types/form';
+import { DemoWelcomeModal } from '../components/demo/DemoWelcomeModal';
 
 interface DemoUser {
   id: string;
@@ -663,6 +664,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <DemoContext.Provider value={value}>
       {children}
+      <DemoWelcomeModal />
     </DemoContext.Provider>
   );
 };
