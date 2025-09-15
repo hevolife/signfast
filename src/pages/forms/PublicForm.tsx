@@ -214,6 +214,8 @@ export const PublicForm: React.FC = () => {
     const { ImageCompressor } = await import('../../utils/imageCompression');
     const compressedData = { ...data };
     
+    console.log('🖼️ Début compression des images...');
+    
     for (const [key, value] of Object.entries(data)) {
       if (typeof value === 'string' && value.startsWith('data:image')) {
         try {
@@ -221,12 +223,12 @@ export const PublicForm: React.FC = () => {
           const originalSize = Math.round(value.length / 1024);
           console.log(`🖼️ Taille originale: ${originalSize}KB`);
           
-          // Compression avec paramètres optimisés
+          // Compression agressive pour éviter les erreurs 500
           const compressed = await ImageCompressor.compressImage(value, {
-            maxWidth: 1920,
-            maxHeight: 1080,
-            quality: 0.7,
-            maxSizeKB: 512, // Limite à 512KB par image
+            maxWidth: 800, // Réduction drastique
+            maxHeight: 600,
+            quality: 0.5, // Qualité réduite
+            maxSizeKB: 100, // Limite très stricte à 100KB
             format: 'jpeg',
             preserveTransparency: false
           });
@@ -234,16 +236,87 @@ export const PublicForm: React.FC = () => {
           const compressedSize = Math.round(compressed.length / 1024);
           console.log(`🖼️ Taille compressée: ${compressedSize}KB (${Math.round((1 - compressed.length / value.length) * 100)}% de réduction)`);
           
+          // Vérification finale de la taille
+          if (compressedSize > 150) {
+            console.warn(`⚠️ Image encore trop lourde (${compressedSize}KB), compression supplémentaire...`);
+            
+            // Compression d'urgence si encore trop lourd
+            const emergencyCompressed = await ImageCompressor.compressImage(compressed, {
+              maxWidth: 400,
+              maxHeight: 300,
+              quality: 0.3,
+              maxSizeKB: 50,
+              format: 'jpeg',
+              preserveTransparency: false
+            });
+            
+            const finalSize = Math.round(emergencyCompressed.length / 1024);
+            console.log(`🖼️ Compression d'urgence: ${finalSize}KB`);
+            compressedData[key] = emergencyCompressed;
+          } else {
+            compressedData[key] = compressed;
+          }
+          
           compressedData[key] = compressed;
         } catch (error) {
           console.warn(`⚠️ Erreur compression image ${key}:`, error);
-          // Garder l'original en cas d'erreur
-          compressedData[key] = value;
+          // En cas d'erreur, essayer une compression basique
+          try {
+            const basicCompressed = await this.basicImageCompression(value);
+            compressedData[key] = basicCompressed;
+          } catch (basicError) {
+            console.error(`❌ Compression basique échouée pour ${key}:`, basicError);
+            // Supprimer l'image plutôt que de causer une erreur 500
+            compressedData[key] = '[Image trop lourde - supprimée]';
+          }
         }
       }
     }
     
+    console.log('🖼️ Compression terminée');
+    
     return compressedData;
+  };
+
+  // Compression basique de secours
+  const basicImageCompression = async (imageDataUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('Canvas non disponible'));
+            return;
+          }
+          
+          // Dimensions très réduites pour compression maximale
+          const maxSize = 300;
+          const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+          
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          
+          // Fond blanc
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Dessiner l'image redimensionnée
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Compression JPEG maximale
+          const compressed = canvas.toDataURL('image/jpeg', 0.2);
+          resolve(compressed);
+        };
+        
+        img.onerror = () => reject(new Error('Impossible de charger l\'image'));
+        img.src = imageDataUrl;
+      } catch (error) {
+        reject(error);
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -254,9 +327,30 @@ export const PublicForm: React.FC = () => {
     
     try {
       // Préparer les données pour la base (sans les gros fichiers)
-      const dbSubmissionData = {};
+      const dbSubmissionData: Record<string, any> = {};
       // Préparer les données complètes pour le PDF (avec les images compressées)
       const pdfSubmissionData = await compressImageData(formData);
+      
+      // Calculer la taille totale des données
+      const totalDataSize = JSON.stringify(pdfSubmissionData).length;
+      console.log('📊 Taille totale des données:', Math.round(totalDataSize / 1024), 'KB');
+      
+      // Si les données sont encore trop lourdes, les alléger davantage
+      if (totalDataSize > 500 * 1024) { // > 500KB
+        console.warn('⚠️ Données encore trop lourdes, allègement supplémentaire...');
+        
+        // Supprimer les images les plus lourdes et les remplacer par des références
+        for (const [key, value] of Object.entries(pdfSubmissionData)) {
+          if (typeof value === 'string' && value.startsWith('data:image')) {
+            const imageSize = value.length / 1024;
+            if (imageSize > 50) { // > 50KB
+              console.log(`🗑️ Suppression image lourde ${key}: ${Math.round(imageSize)}KB`);
+              pdfSubmissionData[key] = `[Image ${Math.round(imageSize)}KB - Trop lourde pour envoi]`;
+              dbSubmissionData[key] = `[Image ${Math.round(imageSize)}KB - Trop lourde pour envoi]`;
+            }
+          }
+        }
+      }
       
       // Traitement spécial pour les signatures
       // Créer un mapping direct par libellé de champ pour simplifier
@@ -416,17 +510,70 @@ export const PublicForm: React.FC = () => {
       });
 
       // Sauvegarder dans la base avec les données allégées
-      const { data: responseData, error } = await supabase
-        .from('responses')
-        .insert([{
-          form_id: id,
-          data: dbSubmissionData,
-        }])
-        .select()
-        .single();
+      let responseData;
+      let error;
+      
+      try {
+        console.log('💾 Tentative sauvegarde données...');
+        const result = await supabase
+          .from('responses')
+          .insert([{
+            form_id: id,
+            data: dbSubmissionData,
+          }])
+          .select()
+          .single();
+        
+        responseData = result.data;
+        error = result.error;
+      } catch (insertError: any) {
+        console.error('❌ Erreur insertion:', insertError);
+        
+        // Si erreur de taille, essayer avec des données encore plus allégées
+        if (insertError.message?.includes('413') || insertError.message?.includes('too large') || insertError.message?.includes('payload')) {
+          console.warn('⚠️ Données trop lourdes, allègement d\'urgence...');
+          
+          const lightData: Record<string, any> = {};
+          
+          // Garder seulement les données textuelles essentielles
+          for (const [key, value] of Object.entries(dbSubmissionData)) {
+            if (typeof value === 'string') {
+              if (value.startsWith('data:image')) {
+                lightData[key] = '[Image supprimée - trop lourde]';
+              } else if (value.length > 1000) {
+                lightData[key] = value.substring(0, 1000) + '... [tronqué]';
+              } else {
+                lightData[key] = value;
+              }
+            } else if (Array.isArray(value)) {
+              lightData[key] = value;
+            } else if (typeof value === 'number' || typeof value === 'boolean') {
+              lightData[key] = value;
+            } else {
+              lightData[key] = String(value).substring(0, 500);
+            }
+          }
+          
+          console.log('💾 Nouvelle tentative avec données allégées...');
+          const lightResult = await supabase
+            .from('responses')
+            .insert([{
+              form_id: id,
+              data: lightData,
+            }])
+            .select()
+            .single();
+          
+          responseData = lightResult.data;
+          error = lightResult.error;
+        } else {
+          error = insertError;
+        }
+      }
 
       if (error) {
-        toast.error('Erreur lors de l\'envoi du formulaire');
+        console.error('❌ Erreur finale sauvegarde:', error);
+        toast.error('Erreur lors de l\'envoi du formulaire. Vos images sont peut-être trop lourdes.');
         return;
       }
 
