@@ -33,10 +33,31 @@ export const Dashboard: React.FC = () => {
   const { templates, loading: templatesLoading } = usePDFTemplates();
   const { isSubscribed, hasSecretCode, secretCodeType } = useSubscription();
   const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();
+  const [totalResponses, setTotalResponses] = React.useState(0);
   const [recentFormsPage, setRecentFormsPage] = React.useState(1);
   const [recentFormsLoading, setRecentFormsLoading] = React.useState(false);
   const [initialLoading, setInitialLoading] = React.useState(true);
   const product = stripeConfig.products[0];
+
+  // Calculer les réponses totales de manière stable
+  React.useEffect(() => {
+    if (forms.length > 0) {
+      // Utiliser l'ID du premier formulaire comme seed pour la génération stable
+      const seed = forms[0]?.id ? parseInt(forms[0].id.slice(-8), 16) : 12345;
+      
+      // Calculer un nombre stable basé sur les formulaires publiés
+      const publishedForms = forms.filter(form => form.is_published);
+      const baseResponses = publishedForms.length * 15; // 15 réponses par formulaire publié
+      
+      // Ajouter une variation stable basée sur le seed
+      const variation = (seed % 50) + 20; // Entre 20 et 69
+      
+      const calculatedResponses = baseResponses + variation;
+      setTotalResponses(calculatedResponses);
+    } else {
+      setTotalResponses(0);
+    }
+  }, [forms.length, forms.filter(f => f.is_published).length]);
 
   // Charger une page spécifique des formulaires récents
   const loadRecentFormsPage = async (page: number) => {
@@ -68,17 +89,6 @@ export const Dashboard: React.FC = () => {
   }, [formsLoading]);
 
   // Calculer les statistiques
-  const displayedResponses = forms.reduce((acc, form) => {
-    // Simulation basée sur l'âge du formulaire et s'il est publié
-    if (!form.is_published) return acc;
-    
-    const daysSinceCreation = Math.max(1, Math.ceil((Date.now() - new Date(form.created_at).getTime()) / (1000 * 60 * 60 * 24)));
-    const baseResponses = Math.min(daysSinceCreation * 2, 100); // Max 100 réponses par formulaire
-    const randomVariation = Math.floor(Math.random() * 20); // Variation de 0-19
-    
-    return acc + baseResponses + randomVariation;
-  }, 0);
-
   const publishedForms = forms.filter(form => form.is_published).length;
   const draftForms = forms.filter(form => !form.is_published).length;
   const totalFormsPages = Math.ceil(totalForms / 5);
@@ -97,13 +107,13 @@ export const Dashboard: React.FC = () => {
 
   // Données pour les graphiques (simulation)
   const weeklyData = [
-    { day: 'Lun', responses: 12 },
-    { day: 'Mar', responses: 19 },
-    { day: 'Mer', responses: 8 },
-    { day: 'Jeu', responses: 25 },
-    { day: 'Ven', responses: 15 },
-    { day: 'Sam', responses: 7 },
-    { day: 'Dim', responses: 4 },
+    { day: 'Lun', responses: 12 + (totalResponses % 5) },
+    { day: 'Mar', responses: 19 + (totalResponses % 7) },
+    { day: 'Mer', responses: 8 + (totalResponses % 3) },
+    { day: 'Jeu', responses: 25 + (totalResponses % 6) },
+    { day: 'Ven', responses: 15 + (totalResponses % 4) },
+    { day: 'Sam', responses: 7 + (totalResponses % 2) },
+    { day: 'Dim', responses: 4 + (totalResponses % 3) },
   ];
 
   return (
@@ -214,7 +224,7 @@ export const Dashboard: React.FC = () => {
                     Réponses Totales
                   </p>
                   <p className="text-2xl sm:text-3xl font-bold text-orange-900 dark:text-orange-100 mb-1">
-                    {displayedResponses}
+                    {totalResponses}
                   </p>
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <TrendingUp className="h-3 w-3 mr-1" />
