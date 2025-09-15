@@ -292,7 +292,7 @@ export const WelcomeModal: React.FC = () => {
                 setIsVisible(false);
                 // Déclencher le tutoriel après fermeture du modal
                 setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('show-tutorial'));
+                  window.dispatchEvent(new CustomEvent('show-tutorial-after-welcome'));
                 }, 500);
               }}
               variant="ghost"

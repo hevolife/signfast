@@ -47,6 +47,7 @@ interface GuidedTutorialProps {
   onClose: () => void;
   onComplete: () => void;
   autoStart?: boolean;
+  onNavigateAway?: () => void;
 }
 
 export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
@@ -54,6 +55,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
   onClose,
   onComplete,
   autoStart = false,
+  onNavigateAway,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -260,7 +262,6 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
     
     toast.success('🎉 Tutoriel terminé ! Vous êtes prêt à utiliser SignFast.');
     onComplete();
-    onClose();
   };
 
   const handleSkip = () => {
@@ -276,8 +277,9 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
       switch (step.action.type) {
         case 'navigate':
           if (step.action.target) {
+            // Notifier qu'on navigue ailleurs
+            onNavigateAway?.();
             navigate(step.action.target);
-            onClose();
           }
           break;
         case 'demo':
