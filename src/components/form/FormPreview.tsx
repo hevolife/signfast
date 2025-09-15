@@ -197,14 +197,25 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  // Pour les images, convertir en base64
+                  // Pour les images, traitement optimisé
                   if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      const base64 = event.target?.result as string;
-                      handleInputChange(field.id, base64);
-                    };
-                    reader.readAsDataURL(file);
+                    // Utiliser le traitement optimisé pour formulaires publics
+                    import('../../utils/imageCompression').then(({ ImageCompressor }) => {
+                      ImageCompressor.processPublicFormImage(file)
+                        .then(processedImage => {
+                          handleInputChange(field.id, processedImage);
+                        })
+                        .catch(error => {
+                          console.error('Erreur traitement image preview:', error);
+                          // Fallback
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const base64 = event.target?.result as string;
+                            handleInputChange(field.id, base64);
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                    });
                   } else {
                     // Pour les autres fichiers, stocker le nom
                     handleInputChange(field.id, file.name);
@@ -218,8 +229,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                 <img
                   src={formData[field.id]}
                   alt="Aperçu"
-                  className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
+                  className="max-w-xs max-h-32 object-contain border border-gray-300 rounded shadow-lg"
                 />
+                <p className="text-xs text-green-600 mt-1">
+                  ✅ Image optimisée (1920x1080 JPEG) • {Math.round(formData[field.id].length / 1024)} KB
+                </p>
               </div>
             )}
           </div>

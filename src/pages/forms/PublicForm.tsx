@@ -698,14 +698,40 @@ export const PublicForm: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    // Pour les images, valider et compresser
+                    // Pour les images, traitement optimisé avec redimensionnement
                     if (file.type.startsWith('image/')) {
-                      // Validation de l'image
+                      // Validation et traitement avec redimensionnement automatique
                       import('../../utils/imageCompression').then(({ ImageCompressor }) => {
                         const validation = ImageCompressor.validateImage(file);
                         if (!validation.valid) {
                           toast.error(validation.error || 'Image invalide');
                           return;
+                        }
+                        
+                        toast.loading('🖼️ Traitement de l\'image (redimensionnement 1920x1080 + conversion JPEG)...');
+                        
+                        // Utiliser la nouvelle fonction de traitement pour formulaires publics
+                        ImageCompressor.processPublicFormImage(file)
+                          .then(processedImage => {
+                            toast.dismiss();
+                            toast.success('✅ Image optimisée et prête (1920x1080 JPEG)');
+                            handleInputChange(field.id, processedImage);
+                          })
+                          .catch(error => {
+                            toast.dismiss();
+                            console.error('Erreur traitement image:', error);
+                            toast.error('Erreur lors du traitement de l\'image');
+                          });
+                      }).catch(() => {
+                        // Fallback : lecture basique sans optimisation
+                        toast.error('Module de compression non disponible');
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const base64 = event.target?.result as string;
+                          handleInputChange(field.id, base64);
+                        };
+                        reader.readAsDataURL(file);
+                      });
                         }
                         
                         // Compression de l'image
@@ -745,12 +771,15 @@ export const PublicForm: React.FC = () => {
               {/* Aperçu de l'image si c'est une image */}
               {formData[field.id] && typeof formData[field.id] === 'string' && formData[field.id].startsWith('data:image') && (
                 <div className="mt-2">
-                  <p className="text-xs text-green-600 mb-1">✅ Image chargée et prête pour le PDF</p>
+                  <p className="text-xs text-green-600 mb-1">✅ Image optimisée (1920x1080 JPEG) et prête pour le PDF</p>
                   <img
                     src={formData[field.id]}
                     alt="Aperçu"
-                    className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
+                    className="max-w-xs max-h-32 object-contain border border-gray-300 rounded shadow-lg"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Taille finale: {Math.round(formData[field.id].length / 1024)} KB
+                  </p>
                 </div>
               )}
             </div>

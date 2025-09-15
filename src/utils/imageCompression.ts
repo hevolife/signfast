@@ -5,6 +5,121 @@
 
 export class ImageCompressor {
   /**
+   * Traite une image uploadée dans un formulaire public
+   * Force le redimensionnement à 1920x1080 et la conversion en JPEG
+   */
+  static async processPublicFormImage(file: File): Promise<string> {
+    try {
+      console.log('🖼️ Traitement image formulaire public:', file.name, Math.round(file.size / 1024), 'KB');
+      
+      // Validation de base
+      const validation = this.validateImage(file);
+      if (!validation.valid) {
+        throw new Error(validation.error || 'Image invalide');
+      }
+      
+      // Charger l'image
+      const img = await this.loadImageFromFile(file);
+      
+      // Créer le canvas avec les dimensions fixes
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Canvas context non disponible');
+      }
+      
+      // Dimensions fixes pour formulaires publics
+      canvas.width = 1920;
+      canvas.height = 1080;
+      
+      // Configuration pour qualité optimale
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Fond blanc pour JPEG
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 1920, 1080);
+      
+      // Calculer le redimensionnement en gardant les proportions
+      const { x, y, width, height } = this.calculateFitDimensions(
+        img.naturalWidth,
+        img.naturalHeight,
+        1920,
+        1080
+      );
+      
+      // Dessiner l'image redimensionnée
+      ctx.drawImage(img, x, y, width, height);
+      
+      // Convertir en JPEG avec qualité optimisée
+      const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      
+      const finalSize = Math.round(jpegDataUrl.length / 1024);
+      console.log('✅ Image traitée:', {
+        originalSize: Math.round(file.size / 1024) + 'KB',
+        finalSize: finalSize + 'KB',
+        dimensions: '1920x1080',
+        format: 'JPEG'
+      });
+      
+      return jpegDataUrl;
+    } catch (error) {
+      console.error('❌ Erreur traitement image:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Charge une image depuis un File
+   */
+  private static loadImageFromFile(file: File): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Impossible de charger l\'image'));
+        img.src = e.target?.result as string;
+      };
+      
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'));
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  /**
+   * Calcule les dimensions pour ajuster l'image dans un rectangle en gardant les proportions
+   */
+  private static calculateFitDimensions(
+    imgWidth: number,
+    imgHeight: number,
+    containerWidth: number,
+    containerHeight: number
+  ): { x: number; y: number; width: number; height: number } {
+    const imgAspectRatio = imgWidth / imgHeight;
+    const containerAspectRatio = containerWidth / containerHeight;
+    
+    let width, height, x, y;
+    
+    if (imgAspectRatio > containerAspectRatio) {
+      // Image plus large que le container
+      width = containerWidth;
+      height = containerWidth / imgAspectRatio;
+      x = 0;
+      y = (containerHeight - height) / 2;
+    } else {
+      // Image plus haute que le container
+      width = containerHeight * imgAspectRatio;
+      height = containerHeight;
+      x = (containerWidth - width) / 2;
+      y = 0;
+    }
+    
+    return { x, y, width, height };
+  }
+  /**
    * Compresse une image en respectant les contraintes de taille et qualité
    */
   static async compressImage(
