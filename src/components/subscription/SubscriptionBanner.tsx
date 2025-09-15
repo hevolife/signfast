@@ -8,10 +8,11 @@ import { Crown, AlertTriangle, Zap } from 'lucide-react';
 import { stripeConfig } from '../../stripe-config';
 
 export const SubscriptionBanner: React.FC = () => {
-  const { isSubscribed, loading: subscriptionLoading } = useSubscription();
+  const { isSubscribed, hasSecretCode, loading: subscriptionLoading } = useSubscription();
   const { forms, pdfTemplates, savedPdfs, loading: limitsLoading } = useLimits();
 
-  if (subscriptionLoading || limitsLoading || isSubscribed) {
+  // Ne pas afficher si abonné (Stripe OU code secret) ou en cours de chargement
+  if (subscriptionLoading || limitsLoading || isSubscribed || hasSecretCode) {
     return null;
   }
 

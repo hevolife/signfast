@@ -39,46 +39,118 @@ export const useLimits = () => {
   };
 
   useEffect(() => {
-    // Chargement immédiat sans attendre l'abonnement
-    setLoading(false);
-    // Puis chargement en arrière-plan
-    setTimeout(() => {
-      refreshLimits();
-    }, 100);
-  }, [user]);
+    // Attendre que l'abonnement soit vérifié avant de calculer les limites
+    if (!subscriptionLoading) {
+      setLoading(false);
+      // Puis chargement en arrière-plan
+      setTimeout(() => {
+        refreshLimits();
+      }, 100);
+    }
+  }, [user, subscriptionLoading, isSubscribed, hasSecretCode]);
 
   // Calculer les limites selon l'abonnement
   const getFormsLimits = (): LimitData => {
     const current = forms.length;
-    // Optimiste par défaut pour éviter le blocage
-    const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxForms : Infinity;
+    
+    // Si on est en cours de chargement de l'abonnement, être optimiste
+    if (subscriptionLoading) {
+      return {
+        current,
+        max: Infinity,
+        canCreate: true,
+      };
+    }
+    
+    // Vérifier l'accès premium (abonnement Stripe OU code secret)
+    const hasPremiumAccess = isSubscribed || hasSecretCode || isDemoMode || isSuperAdmin;
+    const max = hasPremiumAccess ? Infinity : stripeConfig.freeLimits.maxForms;
+    
+    console.log('📊 Calcul limites formulaires:', {
+      current,
+      max,
+      isSubscribed,
+      hasSecretCode,
+      isDemoMode,
+      isSuperAdmin,
+      hasPremiumAccess,
+      subscriptionLoading
+    });
+    
     return {
       current,
       max,
-      canCreate: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canCreate: hasPremiumAccess || current < max,
     };
   };
 
   const getPdfTemplatesLimits = (): LimitData => {
     const current = templates.length;
-    // Optimiste par défaut pour éviter le blocage
-    const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxPdfTemplates : Infinity;
+    
+    // Si on est en cours de chargement de l'abonnement, être optimiste
+    if (subscriptionLoading) {
+      return {
+        current,
+        max: Infinity,
+        canCreate: true,
+      };
+    }
+    
+    // Vérifier l'accès premium (abonnement Stripe OU code secret)
+    const hasPremiumAccess = isSubscribed || hasSecretCode || isDemoMode || isSuperAdmin;
+    const max = hasPremiumAccess ? Infinity : stripeConfig.freeLimits.maxPdfTemplates;
+    
+    console.log('📊 Calcul limites templates:', {
+      current,
+      max,
+      isSubscribed,
+      hasSecretCode,
+      isDemoMode,
+      isSuperAdmin,
+      hasPremiumAccess,
+      subscriptionLoading
+    });
+    
     return {
       current,
       max,
-      canCreate: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canCreate: hasPremiumAccess || current < max,
     };
   };
 
   const getSavedPdfsLimits = (): LimitData => {
     const current = responsesCount;
-    // Optimiste par défaut pour éviter le blocage
-    const max = (!subscriptionLoading && !isSubscribed && !isDemoMode && !isSuperAdmin) ? stripeConfig.freeLimits.maxSavedPdfs : Infinity;
+    
+    // Si on est en cours de chargement de l'abonnement, être optimiste
+    if (subscriptionLoading) {
+      return {
+        current,
+        max: Infinity,
+        canCreate: true,
+        canSave: true,
+      };
+    }
+    
+    // Vérifier l'accès premium (abonnement Stripe OU code secret)
+    const hasPremiumAccess = isSubscribed || hasSecretCode || isDemoMode || isSuperAdmin;
+    const max = hasPremiumAccess ? Infinity : stripeConfig.freeLimits.maxSavedPdfs;
+    
+    console.log('📊 Calcul limites PDFs:', {
+      current,
+      max,
+      isSubscribed,
+      hasSecretCode,
+      isDemoMode,
+      isSuperAdmin,
+      hasPremiumAccess,
+      subscriptionLoading
+    });
+    
     return {
       current,
       max,
-      canCreate: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
-      canSave: subscriptionLoading || isSubscribed || isDemoMode || isSuperAdmin || current < max,
+      canCreate: hasPremiumAccess || current < max,
+      canSave: hasPremiumAccess || current < max,
     };
   };
 

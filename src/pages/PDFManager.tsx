@@ -37,7 +37,7 @@ export const PDFManager: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, hasSecretCode } = useSubscription();
   const { savedPdfs: savedPdfsLimits, refreshLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -889,7 +889,7 @@ export const PDFManager: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredAndSortedResponses.map((response, index) => {
-              const isLocked = !isSubscribed && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
+              const isLocked = !isSubscribed && !hasSecretCode && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
               const isGenerating = generatingPdf === response.id;
               
               return (

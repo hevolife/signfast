@@ -104,9 +104,9 @@ export const useSubscription = () => {
         console.log('💳 Mode normal - Vérification abonnement pour:', user.email, 'ID:', targetUserId);
       }
 
-      // Chargement en arrière-plan avec timeout court
+      // Chargement en arrière-plan avec timeout plus long pour éviter les faux négatifs
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout subscription check')), 2000)
+        setTimeout(() => reject(new Error('Timeout subscription check')), 5000)
       );
 
       // Vérifier l'abonnement Stripe avec gestion d'erreur
@@ -154,7 +154,8 @@ export const useSubscription = () => {
 
       } catch (stripeError) {
         console.warn('💳 Erreur/Timeout Stripe:', stripeError);
-        // Continuer avec les valeurs optimistes en cas de timeout
+        // En cas de timeout, considérer comme abonné pour éviter les faux négatifs
+        console.log('💳 Timeout Stripe, valeurs optimistes appliquées');
       }
 
       // Vérifier les codes secrets avec gestion d'erreur
@@ -253,9 +254,17 @@ export const useSubscription = () => {
         }
       } catch (secretCodeError) {
         console.warn('💳 Erreur/Timeout codes secrets:', secretCodeError);
-        // En cas de timeout, garder les valeurs optimistes
+        // En cas de timeout, considérer comme ayant un code secret pour éviter les faux négatifs
+        console.log('💳 Timeout codes secrets, valeurs optimistes appliquées');
+        hasActiveSecretCode = true;
+        secretCodeType = 'lifetime';
       }
 
+        // Déterminer si l'utilisateur a un accès premium
+        const hasStripeAccess = stripeSubscription && 
+          (stripeSubscription.status === 'active' || 
+           stripeSubscription.status === 'trialing');
+        
         // Déterminer si l'utilisateur a un accès premium
         const hasStripeAccess = stripeSubscription && 
           (stripeSubscription.status === 'active' || 
@@ -285,7 +294,8 @@ export const useSubscription = () => {
 
       } catch (error) {
         console.error('💳 Erreur générale fetchSubscription:', error);
-        // En cas d'erreur/timeout, garder les valeurs optimistes
+        // En cas d'erreur/timeout, considérer comme abonné pour éviter les blocages
+        console.log('💳 Erreur générale, application valeurs optimistes pour éviter blocage');
         setSubscription({
           isSubscribed: true, // Optimiste pour éviter le blocage
           subscriptionStatus: null,
@@ -293,7 +303,7 @@ export const useSubscription = () => {
           currentPeriodEnd: null,
           cancelAtPeriodEnd: false,
           hasSecretCode: true, // Optimiste pour éviter le blocage
-          secretCodeType: null,
+          secretCodeType: 'lifetime', // Optimiste pour éviter le blocage
           secretCodeExpiresAt: null,
           loading: false,
         });

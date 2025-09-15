@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 
 export const PDFTemplates: React.FC = () => {
   const { templates, totalCount, totalPages, loading, fetchPage } = usePDFTemplates();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, hasSecretCode } = useSubscription();
   const { pdfTemplates: templatesLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,7 +186,7 @@ export const PDFTemplates: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {templates.map((template, index) => {
-              const isLocked = !isSubscribed && index >= templatesLimits.max;
+              const isLocked = !isSubscribed && !hasSecretCode && index >= templatesLimits.max && templatesLimits.max !== Infinity;
               
               return (
               <Card key={template.id} className={`group relative bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ${isLocked ? 'opacity-75' : ''}`}>

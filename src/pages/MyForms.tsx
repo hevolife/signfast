@@ -19,7 +19,7 @@ import toast from 'react-hot-toast';
 
 export const MyForms: React.FC = () => {
   const { forms, totalCount, loading, deleteForm, fetchPage } = useForms();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, hasSecretCode } = useSubscription();
   const { forms: formsLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = React.useState(false);
   const { isDemoMode } = useDemo();
@@ -215,7 +215,7 @@ export const MyForms: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {forms.map((form, index) => {
-              const isLocked = !isSubscribed && index >= formsLimits.max;
+              const isLocked = !isSubscribed && !hasSecretCode && index >= formsLimits.max && formsLimits.max !== Infinity;
               
               return (
               <Card key={form.id} className={`group relative bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ${isLocked ? 'opacity-75' : ''}`}>
