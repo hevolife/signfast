@@ -16,7 +16,6 @@ export const usePDFTemplates = () => {
 
   // Si on est en mode démo, utiliser les données de démo
   if (isDemoMode) {
-    console.log('📄 Mode démo actif, utilisation hook démo');
     return demoTemplatesHook;
   }
 
@@ -25,7 +24,6 @@ export const usePDFTemplates = () => {
       if (user) {
         // L'utilisateur effectif est déjà géré par le contexte Auth
         const targetUserId = user.id;
-        console.log('📄 Récupération templates pour userId:', targetUserId);
 
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
@@ -33,14 +31,11 @@ export const usePDFTemplates = () => {
           setTemplates(result.templates);
           setTotalCount(result.totalCount);
           setTotalPages(result.totalPages);
-          console.log('📄 Templates chargés:', result.templates.length);
         } catch (supabaseError) {
           // Vérifier si c'est une erreur de réseau
           if (supabaseError instanceof TypeError && supabaseError.message === 'Failed to fetch') {
-            console.warn('📄 Erreur réseau détectée:', supabaseError.message);
             // Vous pouvez ajouter une notification toast ici si nécessaire
           } else {
-            console.warn('📄 Erreur Supabase, fallback localStorage:', supabaseError);
           }
           
           // Fallback vers localStorage si Supabase n'est pas disponible
@@ -69,7 +64,6 @@ export const usePDFTemplates = () => {
         }
       }
     } catch (error) {
-      console.error('📄 Erreur générale fetchTemplates:', error);
       setTemplates([]);
       setTotalCount(0);
       setTotalPages(0);

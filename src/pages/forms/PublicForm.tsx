@@ -55,8 +55,6 @@ export const PublicForm: React.FC = () => {
   const fetchForm = async () => {
     setLoading(true);
     try {
-      console.log('📄 Début chargement formulaire public:', id);
-      
       const { data, error } = await supabase
         .from('forms')
         .select('*')
@@ -65,13 +63,11 @@ export const PublicForm: React.FC = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching form:', error);
         setForm(null);
         setFormLoaded(true);
         return;
       }
 
-      console.log('✅ Formulaire chargé:', data.title);
       setForm(data);
       setFormLoaded(true);
       
@@ -79,7 +75,6 @@ export const PublicForm: React.FC = () => {
       if (data.user_id) {
         // Charger le profil en arrière-plan sans bloquer l'affichage
         fetchFormOwnerProfile(data.user_id).catch(error => {
-          console.warn('Erreur chargement profil propriétaire:', error);
           // Créer un profil vide pour éviter le loading infini
           setFormOwnerProfile({
             id: '',
@@ -110,7 +105,6 @@ export const PublicForm: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Erreur générale chargement formulaire:', error);
       setForm(null);
       setFormLoaded(true);
     } finally {
@@ -125,7 +119,6 @@ export const PublicForm: React.FC = () => {
      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
      
      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.log('📄 Supabase non configuré, profil par défaut');
        setFormOwnerProfile({
          id: '',
          user_id: userId,
@@ -180,8 +173,6 @@ export const PublicForm: React.FC = () => {
         return;
       }
 
-      console.log('📄 Chargement profil propriétaire:', userId);
-      
       setFormOwnerProfile(data);
     } catch (error) {
       // Créer un profil vide en cas d'erreur
@@ -265,9 +256,7 @@ export const PublicForm: React.FC = () => {
       // Préparer les données pour la base (sans les gros fichiers)
       const dbSubmissionData = {};
       // Préparer les données complètes pour le PDF (avec les images compressées)
-      console.log('🖼️ Début compression des images...');
       const pdfSubmissionData = await compressImageData(formData);
-      console.log('🖼️ Compression terminée');
       
       // Traitement spécial pour les signatures
       // Créer un mapping direct par libellé de champ pour simplifier
@@ -292,7 +281,6 @@ export const PublicForm: React.FC = () => {
           
           // Pour les signatures, sauvegarder avec plusieurs formats
           if (field.type === 'signature' && typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log('✍️ Sauvegarde signature pour champ:', field.label, 'taille:', Math.round(fieldValue.length / 1024), 'KB');
             // Ajouter des clés spécifiques pour les signatures
             keys.push('signature', 'Signature', 'SIGNATURE');
             keys.forEach(key => {
@@ -302,7 +290,6 @@ export const PublicForm: React.FC = () => {
           }
           // Images normales
           else if (typeof fieldValue === 'string' && fieldValue.startsWith('data:image')) {
-            console.log('🖼️ Traitement image pour champ:', field.label, 'taille:', Math.round(fieldValue.length / 1024), 'KB');
             // Ajouter des clés spécifiques pour les images
             keys.push('image', 'Image', 'IMAGE', 'photo', 'Photo', 'PHOTO');
             keys.forEach(key => {
@@ -341,7 +328,6 @@ export const PublicForm: React.FC = () => {
                   }
                   
                   if (conditionalField.type === 'signature' && typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
-                    console.log('✍️ Sauvegarde signature conditionnelle pour champ:', conditionalField.label);
                     // Ajouter des clés spécifiques pour les signatures conditionnelles
                     conditionalKeys.push('signature', 'Signature', 'SIGNATURE');
                     conditionalKeys.forEach(key => {
@@ -349,7 +335,6 @@ export const PublicForm: React.FC = () => {
                       dbSubmissionData[key] = conditionalValue; // Garder les signatures complètes
                     });
                   } else if (typeof conditionalValue === 'string' && conditionalValue.startsWith('data:image')) {
-                    console.log('🖼️ Sauvegarde image conditionnelle pour champ:', conditionalField.label);
                     // Ajouter des clés spécifiques pour les images conditionnelles
                     conditionalKeys.push('image', 'Image', 'IMAGE', 'photo', 'Photo', 'PHOTO');
                     conditionalKeys.forEach(key => {
@@ -395,7 +380,6 @@ export const PublicForm: React.FC = () => {
           keys.forEach(key => {
             if (pdfSubmissionData[key] === rawValue) {
               pdfSubmissionData[key] = maskedValue;
-              console.log(`🎭 Masque appliqué pour ${key}: "${rawValue}" → "${maskedValue}"`);
             }
           });
         }
@@ -422,7 +406,6 @@ export const PublicForm: React.FC = () => {
                   conditionalKeys.forEach(key => {
                     if (pdfSubmissionData[key] === rawValue) {
                       pdfSubmissionData[key] = maskedValue;
-                      console.log(`🎭 Masque conditionnel appliqué pour ${key}: "${rawValue}" → "${maskedValue}"`);
                     }
                   });
                 }
@@ -433,12 +416,6 @@ export const PublicForm: React.FC = () => {
       });
 
       // Sauvegarder dans la base avec les données allégées
-      console.log('💾 Sauvegarde dans la base avec données complètes...');
-      console.log('💾 Clés sauvegardées:', Object.keys(dbSubmissionData));
-      console.log('💾 Images/signatures sauvegardées:', Object.keys(dbSubmissionData).filter(key => 
-        typeof dbSubmissionData[key] === 'string' && dbSubmissionData[key].startsWith('data:image')
-      ));
-      
       const { data: responseData, error } = await supabase
         .from('responses')
         .insert([{
@@ -449,13 +426,10 @@ export const PublicForm: React.FC = () => {
         .single();
 
       if (error) {
-        console.error('Error:', error);
         toast.error('Erreur lors de l\'envoi du formulaire');
         return;
       }
 
-      console.log('✅ Réponse sauvegardée avec succès, ID:', responseData.id);
-      console.log('📄 Les PDFs seront générés à la demande depuis la page Stockage');
 
       setSubmitted(true);
       toast.success('Formulaire envoyé avec succès !');
@@ -746,15 +720,9 @@ export const PublicForm: React.FC = () => {
                         }).then(compressedImage => {
                           toast.dismiss();
                           toast.success('✅ Image compressée et prête');
-                          console.log('🖼️ Image compressée pour champ:', field.label, {
-                            originalSize: Math.round(file.size / 1024) + 'KB',
-                            compressedSize: Math.round(compressedImage.length / 1024) + 'KB',
-                            format: compressedImage.substring(5, 15)
-                          });
                           handleInputChange(field.id, compressedImage);
                         }).catch(error => {
                           toast.dismiss();
-                          console.error('Erreur compression:', error);
                           toast.error('Erreur lors de la compression');
                         });
                       }).catch(() => {
@@ -762,7 +730,6 @@ export const PublicForm: React.FC = () => {
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           const base64 = event.target?.result as string;
-                          console.log('🖼️ Image chargée sans compression pour champ:', field.label);
                           handleInputChange(field.id, base64);
                         };
                         reader.readAsDataURL(file);
@@ -783,8 +750,6 @@ export const PublicForm: React.FC = () => {
                     src={formData[field.id]}
                     alt="Aperçu"
                     className="max-w-xs max-h-32 object-contain border border-gray-300 rounded"
-                    onLoad={() => console.log('🖼️ Aperçu image affiché')}
-                    onError={() => console.error('❌ Erreur affichage aperçu image')}
                   />
                 </div>
               )}

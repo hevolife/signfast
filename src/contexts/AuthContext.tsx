@@ -138,10 +138,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          console.warn('⚠️ Auth session error:', error.message);
           // Ne pas déconnecter automatiquement en cas d'erreur de token
           // Laisser l'utilisateur connecté sur cet appareil
-          console.log('🔄 Erreur de session, mais maintien de la connexion locale');
         } else {
           setSession(session);
           setUser(session?.user ?? null);
@@ -149,28 +147,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       })
       .catch((error) => {
-        console.warn('⚠️ Auth session fetch failed:', error);
         // Ne pas effacer la session en cas d'erreur réseau
-        console.log('🔄 Erreur réseau, maintien de l\'état actuel');
         setLoading(false);
       });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-        console.log('🔐 Auth state change:', event, !!session);
-        
         // Gérer les événements de session
         if (event === 'SIGNED_OUT') {
-          console.log('🔐 Déconnexion détectée');
           setSession(null);
           setUser(null);
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log('🔐 Token rafraîchi avec succès');
           setSession(session);
           setUser(session?.user ?? null);
         } else if (event === 'SIGNED_IN') {
-          console.log('🔐 Connexion détectée');
           setSession(session);
           setUser(session?.user ?? null);
         } else {

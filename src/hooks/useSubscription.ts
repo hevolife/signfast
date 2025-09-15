@@ -50,11 +50,8 @@ export const useSubscription = () => {
 
   const fetchSubscription = async () => {
     try {
-      console.log('💳 Début fetchSubscription');
-      
       // En mode démo, simuler un abonnement à vie
       if (isDemoMode) {
-        console.log('💳 Mode démo détecté, simulation abonnement');
         setSubscription({
           isSubscribed: true,
           subscriptionStatus: 'active',
@@ -74,7 +71,6 @@ export const useSubscription = () => {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.warn('💳 Supabase non configuré, abonnement par défaut');
         setSubscription({
           isSubscribed: true, // Optimiste par défaut
           subscriptionStatus: null,
@@ -96,12 +92,9 @@ export const useSubscription = () => {
         try {
           const data = JSON.parse(impersonationData);
           targetUserId = data.target_user_id;
-          console.log('💳 🎭 IMPERSONATION ACTIVE - Vérification abonnement pour:', data.target_email, 'ID:', targetUserId);
         } catch (error) {
-          console.warn('💳 Erreur parsing impersonation data:', error);
         }
       } else {
-        console.log('💳 Mode normal - Vérification abonnement pour:', user.email, 'ID:', targetUserId);
       }
 
       // Chargement en arrière-plan avec timeout plus long pour éviter les faux négatifs
@@ -112,8 +105,6 @@ export const useSubscription = () => {
       // Vérifier l'abonnement Stripe avec gestion d'erreur
       let stripeSubscription = null;
       try {
-        console.log('💳 Récupération abonnements Stripe...');
-        
         // Récupérer le customer Stripe pour l'utilisateur cible
         const customerQuery = supabase.from('stripe_customers')
           .select('customer_id')
@@ -126,10 +117,7 @@ export const useSubscription = () => {
         ]);
 
         if (customerError) {
-          console.warn('💳 Erreur récupération customer:', customerError);
         } else if (customerData) {
-          console.log('💳 Customer trouvé:', customerData.customer_id);
-          
           // Récupérer l'abonnement avec le customer_id
           const subscriptionQuery = supabase
             .from('stripe_subscriptions')
@@ -143,19 +131,14 @@ export const useSubscription = () => {
           ]);
 
           if (stripeError) {
-            console.warn('💳 Erreur récupération abonnement Stripe:', stripeError);
           } else {
             stripeSubscription = stripeData;
-            console.log('💳 Abonnement Stripe trouvé:', !!stripeSubscription, stripeSubscription?.status);
           }
         } else {
-          console.log('💳 Aucun customer Stripe trouvé pour cet utilisateur');
         }
 
       } catch (stripeError) {
-        console.warn('💳 Erreur/Timeout Stripe:', stripeError);
         // En cas de timeout, considérer comme abonné pour éviter les faux négatifs
-        console.log('💳 Timeout Stripe, valeurs optimistes appliquées');
       }
 
       // Vérifier les codes secrets avec gestion d'erreur
@@ -164,8 +147,6 @@ export const useSubscription = () => {
       let secretCodeExpiresAt = null;
       
       try {
-        console.log('💳 Vérification codes secrets pour userId:', targetUserId);
-        
         // Récupérer les codes secrets actifs de l'utilisateur cible avec une requête plus simple
         const { data: userSecretCodes, error: secretCodesError } = await Promise.race([
           supabase
@@ -177,10 +158,7 @@ export const useSubscription = () => {
         ]);
 
         if (secretCodesError) {
-          console.warn('💳 Erreur récupération codes secrets:', secretCodesError);
         } else {
-          console.log('💳 Codes secrets récupérés:', userSecretCodes?.length || 0);
-          
           if (userSecretCodes && userSecretCodes.length > 0) {
             // Récupérer les détails des codes secrets séparément
             const codeIds = userSecretCodes.map(c => c.code_id);
@@ -195,10 +173,7 @@ export const useSubscription = () => {
             ]);
             
             if (detailsError) {
-              console.warn('💳 Erreur récupération détails codes:', detailsError);
             } else {
-              console.log('💳 Détails codes secrets:', secretCodesDetails?.length || 0);
-              
               // Mapper les codes avec leurs détails
               const codesWithDetails = userSecretCodes.map(userCode => {
                 const codeDetails = secretCodesDetails?.find(detail => detail.id === userCode.code_id);
@@ -208,54 +183,38 @@ export const useSubscription = () => {
                 };
               }).filter(code => code.secret_codes?.is_active);
               
-              console.log('💳 Codes actifs trouvés:', codesWithDetails.length);
-            
               // Vérifier chaque code actif
               for (const codeData of codesWithDetails) {
                 const secretCode = codeData.secret_codes;
                 
                 if (!secretCode) {
-                  console.log('💳 Code secret manquant, skip');
                   continue;
                 }
                 
                 const codeType = secretCode.type;
                 const userExpiresAt = codeData.expires_at;
                 
-                console.log('💳 Vérification code:', { 
-                  codeId: secretCode.id, 
-                  codeType, 
-                  userExpiresAt,
-                  isActive: secretCode.is_active 
-                });
-                
                 if (codeType === 'lifetime') {
                   hasActiveSecretCode = true;
                   secretCodeType = codeType;
                   secretCodeExpiresAt = null;
-                  console.log('💳 ✅ Code à vie actif trouvé');
                   break;
                 } else if (codeType === 'monthly') {
                   if (!userExpiresAt || new Date(userExpiresAt) > new Date()) {
                     hasActiveSecretCode = true;
                     secretCodeType = codeType;
                     secretCodeExpiresAt = userExpiresAt;
-                    console.log('💳 ✅ Code mensuel actif trouvé, expire le:', userExpiresAt);
                     break;
                   } else {
-                    console.log('💳 ❌ Code mensuel expiré:', userExpiresAt);
                   }
                 }
               }
             }
           } else {
-            console.log('💳 Aucun code secret trouvé pour cet utilisateur');
           }
         }
       } catch (secretCodeError) {
-        console.warn('💳 Erreur/Timeout codes secrets:', secretCodeError);
         // En cas de timeout, considérer comme ayant un code secret pour éviter les faux négatifs
-        console.log('💳 Timeout codes secrets, valeurs optimistes appliquées');
         hasActiveSecretCode = true;
         secretCodeType = 'lifetime';
       }
@@ -265,12 +224,7 @@ export const useSubscription = () => {
           (stripeSubscription.status === 'active' || 
            stripeSubscription.status === 'trialing');
         
-        console.log('💳 === RÉSUMÉ ABONNEMENT ===');
-        console.log('💳 User cible:', targetUserId);
-        console.log('💳 Accès Stripe:', hasStripeAccess, stripeSubscription?.status);
-        console.log('💳 Code secret actif:', hasActiveSecretCode, secretCodeType);
         const isSubscribed = hasStripeAccess || hasActiveSecretCode;
-        console.log('💳 ABONNÉ FINAL:', isSubscribed);
 
         const finalState = {
           isSubscribed,
@@ -285,12 +239,9 @@ export const useSubscription = () => {
         };
         
         setSubscription(finalState);
-        console.log('💳 === ÉTAT FINAL ABONNEMENT ===', finalState);
 
       } catch (error) {
-        console.error('💳 Erreur générale fetchSubscription:', error);
         // En cas d'erreur/timeout, considérer comme abonné pour éviter les blocages
-        console.log('💳 Erreur générale, application valeurs optimistes pour éviter blocage');
         setSubscription({
           isSubscribed: true, // Optimiste pour éviter le blocage
           subscriptionStatus: null,

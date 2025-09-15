@@ -31,13 +31,11 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
   useEffect(() => {
     const updatePosition = () => {
       if (!pdfViewerRef.current) {
-        console.log('⚠️ PDFViewer ref non disponible');
         return;
       }
 
       const canvasDimensions = pdfViewerRef.current.getCanvasDimensions(currentPage);
       if (!canvasDimensions) {
-        console.log('⚠️ Dimensions canvas non disponibles pour page', currentPage);
         return;
       }
 
@@ -46,11 +44,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const width = (field.widthRatio || 0.1) * canvasDimensions.width;
       const height = (field.heightRatio || 0.05) * canvasDimensions.height;
 
-      console.log(`📐 Position recalculée pour ${field.variable || field.type}:`, {
-        ratios: { x: field.xRatio, y: field.yRatio, w: field.widthRatio, h: field.heightRatio },
-        canvas: canvasDimensions,
-        position: { x, y, width, height }
-      });
 
       setPosition({ x, y, width, height });
     };
@@ -93,12 +86,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     const offsetX = mouseCanvasX - position.x;
     const offsetY = mouseCanvasY - position.y;
     
-    console.log('🎯 Début drag:', {
-      mouseCanvas: { x: mouseCanvasX, y: mouseCanvasY },
-      currentPos: position,
-      offset: { x: offsetX, y: offsetY }
-    });
-    
     const handleMouseMove = (e: MouseEvent) => {
       if (!canvas || !pdfViewerRef.current) return;
       
@@ -125,8 +112,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
       const newXRatio = constrainedX / canvasDimensions.width;
       const newYRatio = constrainedY / canvasDimensions.height;
       
-      console.log('🎯 Nouveaux ratios calculés:', { x: newXRatio, y: newYRatio });
-      
       // Mettre à jour immédiatement la position locale pour un feedback visuel fluide
       setPosition(prev => ({
         ...prev,
@@ -143,7 +128,6 @@ export const PDFFieldOverlay: React.FC<PDFFieldOverlayProps> = ({
     };
 
     const handleMouseUp = () => {
-      console.log('🎯 Fin drag');
       setIsDragging(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);

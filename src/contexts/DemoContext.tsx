@@ -157,8 +157,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Vérifier si une démo est en cours au chargement
   useEffect(() => {
-    console.log('🎭 Initialisation DemoProvider');
-    
     // Charger les paramètres de démo depuis localStorage
     loadDemoSettings();
 
@@ -169,32 +167,22 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const now = Date.now();
         
         if (demoData.expiresAt > now) {
-          console.log('🎭 Démo active trouvée, restauration...');
           setIsDemoMode(true);
           setDemoUser(demoData.user);
           setDemoForms(demoData.forms || []);
           setDemoTemplates(demoData.templates || []);
           setTimeRemaining(Math.floor((demoData.expiresAt - now) / 1000));
           setIsInitialized(true);
-          console.log('🎭 Démo restaurée:', {
-            user: demoData.user?.email,
-            forms: demoData.forms?.length || 0,
-            templates: demoData.templates?.length || 0,
-            timeRemaining: Math.floor((demoData.expiresAt - now) / 1000)
-          });
         } else {
           // Démo expirée, nettoyer
-          console.log('🎭 Démo expirée, nettoyage');
           localStorage.removeItem('signfast_demo');
           setIsInitialized(true);
         }
       } catch (error) {
-        console.error('🎭 Erreur parsing démo sauvegardée:', error);
         localStorage.removeItem('signfast_demo');
         setIsInitialized(true);
       }
     } else {
-      console.log('🎭 Aucune démo sauvegardée');
       setIsInitialized(true);
     }
   }, []);
@@ -202,7 +190,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Charger les templates et formulaires après initialisation
   useEffect(() => {
     if (isInitialized && isDemoMode && demoUser) {
-      console.log('🎭 Chargement des données admin après initialisation');
       loadDemoTemplatesAndForms();
     }
   }, [isInitialized, isDemoMode, demoUser]);
@@ -212,15 +199,12 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         setDemoSettings(settings);
-        console.log('🎭 Paramètres de démo chargés:', settings);
       }
     } catch (error) {
-      console.error('Erreur chargement paramètres démo:', error);
     }
   };
 
   const refreshDemoSettings = () => {
-    console.log('🎭 Refresh des paramètres de démo');
     loadDemoSettings();
     
     if (isDemoMode && demoUser) {
@@ -229,7 +213,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Forcer la mise à jour des composants qui utilisent les données de démo
     if (isDemoMode) {
-      console.log('🎭 Actualisation forcée des données de démo');
       // Déclencher un re-render en modifiant légèrement le state
       setTimeRemaining(prev => prev);
     }
@@ -253,8 +236,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isDemoMode, timeRemaining]);
 
   const startDemo = () => {
-    console.log('🎭 === DÉMARRAGE DÉMO ===');
-    
     // Charger les paramètres de démo actuels
     loadDemoSettings();
     const currentSettings = JSON.parse(localStorage.getItem('demo_admin_settings') || '{}');
@@ -286,7 +267,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updated_at: new Date().toISOString(),
         is_published: true,
       }));
-      console.log('🎭 Utilisation formulaires admin:', initialDemoForms.length);
     }
     
     if (adminTemplates.length > 0) {
@@ -296,12 +276,10 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }));
-      console.log('🎭 Utilisation templates admin:', initialDemoTemplates.length);
     }
     
     // Fallback vers les données par défaut si aucune config admin
     if (initialDemoForms.length === 0) {
-      console.log('🎭 Utilisation formulaire par défaut');
       const demoFormFields: FormField[] = [
         {
           id: uuidv4(),
@@ -367,7 +345,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     if (initialDemoTemplates.length === 0) {
-      console.log('🎭 Utilisation templates par défaut');
       initialDemoTemplates = [
         {
           id: uuidv4(),
@@ -479,14 +456,9 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDemoTemplates(initialDemoTemplates);
     setTimeRemaining(durationMinutes * 60);
     setIsInitialized(true);
-    
-    console.log('🎭 Démo démarrée avec durée:', durationMinutes, 'minutes');
-    console.log('🎭 Formulaires chargés:', initialDemoForms.length);
-    console.log('🎭 Templates chargés:', initialDemoTemplates.length);
   };
 
   const endDemo = () => {
-    console.log('🎭 === FIN DÉMO ===');
     localStorage.removeItem('signfast_demo');
     setIsDemoMode(false);
     setDemoUser(null);
@@ -552,7 +524,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     demoData.forms = updatedForms;
     localStorage.setItem('signfast_demo', JSON.stringify(demoData));
     
-    console.log('🎭 Formulaire de démo mis à jour:', id);
 
     return true;
   };
@@ -568,7 +539,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     demoData.forms = updatedForms;
     localStorage.setItem('signfast_demo', JSON.stringify(demoData));
     
-    console.log('🎭 Formulaire de démo supprimé:', id);
 
     return true;
   };
@@ -603,7 +573,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     demoData.templates = updatedTemplates;
     localStorage.setItem('signfast_demo', JSON.stringify(demoData));
     
-    console.log('🎭 Template de démo créé:', newTemplate.name);
 
     return newTemplate;
   };
@@ -622,7 +591,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     demoData.templates = updatedTemplates;
     localStorage.setItem('signfast_demo', JSON.stringify(demoData));
     
-    console.log('🎭 Template de démo mis à jour:', id);
 
     return true;
   };
@@ -638,7 +606,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     demoData.templates = updatedTemplates;
     localStorage.setItem('signfast_demo', JSON.stringify(demoData));
     
-    console.log('🎭 Template de démo supprimé:', id);
 
     return true;
   };

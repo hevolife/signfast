@@ -52,16 +52,9 @@ export const EditForm: React.FC = () => {
       return;
     }
 
-    console.log('🔧 === DÉBUT SAUVEGARDE FORMULAIRE ===');
-    console.log('🔧 Form ID:', id);
-    console.log('🔧 Nombre de champs:', fields.length);
-    console.log('🔧 User depuis useAuth:', user?.id, user?.email);
-    
     setSaving(true);
     try {
-      console.log('🔧 Appel updateForm...');
       const success = await updateForm(id, { fields });
-      console.log('🔧 Résultat updateForm:', success);
       
       if (success) {
         toast.success('Formulaire sauvegardé avec succès !');
@@ -74,9 +67,7 @@ export const EditForm: React.FC = () => {
         if (impersonationData) {
           try {
             const data = JSON.parse(impersonationData);
-            console.log('🎭 Sauvegarde formulaires pour utilisateur cible:', data.target_email);
           } catch (error) {
-            console.error('Erreur parsing impersonation data:', error);
           }
         }
         
@@ -88,22 +79,12 @@ export const EditForm: React.FC = () => {
           (window as any).currentUserForms = currentUserForms;
         }
         
-        console.log('💾 Formulaires sauvegardés pour templates PDF:', currentUserForms.length);
-        console.log('💾 Formulaire mis à jour:', {
-          id,
-          title: form.title,
-          fieldsCount: fields.length,
-          fieldLabels: fields.map(f => f.label)
-        });
       } else {
-        console.error('🔧 updateForm a retourné false');
         toast.error('Erreur lors de la sauvegarde');
       }
     } catch (error) {
-      console.error('🔧 Exception dans handleSaveForm:', error);
       toast.error('Erreur lors de la sauvegarde');
     } finally {
-      console.log('🔧 === FIN SAUVEGARDE FORMULAIRE ===');
       setSaving(false);
     }
   };

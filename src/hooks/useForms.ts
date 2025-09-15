@@ -39,11 +39,6 @@ export const useForms = () => {
 
     // L'utilisateur effectif est déjà géré par le contexte Auth
     const targetUserId = user.id;
-    console.log('📝 Récupération formulaires pour userId:', targetUserId);
-    
-    if (isImpersonating && impersonationData) {
-      console.log('🎭 Mode impersonation actif pour:', impersonationData.target_email);
-    }
 
     try {
       // Requêtes parallèles pour optimiser les performances
@@ -95,7 +90,6 @@ export const useForms = () => {
         // Silent error
       }
     } catch (error) {
-      console.warn('Impossible de récupérer les formulaires:', error instanceof Error ? error.message : 'Erreur inconnue');
       setForms([]);
       setTotalCount(0);
     } finally {
@@ -113,16 +107,10 @@ export const useForms = () => {
 
   const createForm = async (formData: Partial<Form>) => {
     if (!user) {
-      console.error('❌ Pas d\'utilisateur pour createForm');
       return null;
     }
 
     const targetUserId = user.id;
-    console.log('📝 Création formulaire pour userId:', targetUserId);
-    
-    if (isImpersonating && impersonationData) {
-      console.log('🎭 Mode impersonation: création pour', impersonationData.target_email);
-    }
 
     try {
       const { data, error } = await supabase
@@ -145,32 +133,12 @@ export const useForms = () => {
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
     if (!user) {
-      console.error('❌ Pas d\'utilisateur pour updateForm');
       return false;
     }
 
     try {
-      console.log('📝 === DÉBUT UPDATE FORM ===');
-      console.log('📝 Form ID:', id);
-      console.log('📝 User ID:', user?.id);
-      console.log('📝 User email:', user?.email);
-      console.log('📝 IsImpersonating:', isImpersonating);
-      console.log('📝 Updates keys:', Object.keys(updates));
-    
       const targetUserId = user.id;
-      console.log('📝 Target User ID:', targetUserId);
-    
-      if (isImpersonating && impersonationData) {
-        console.log('🎭 IMPERSONATION ACTIVE');
-        console.log('🎭 Admin:', impersonationData.admin_email);
-        console.log('🎭 Target:', impersonationData.target_email);
-        console.log('🎭 Target ID:', impersonationData.target_user_id);
-        console.log('🎭 ATTENTION: targetUserId reste:', targetUserId, 'mais devrait être:', impersonationData.target_user_id);
-      }
 
-      console.log('📝 APPEL SUPABASE UPDATE...');
-      console.log('📝 Query params:', { id, targetUserId, updates });
-      
       const { error } = await supabase
         .from('forms')
         .update(updates)
@@ -178,22 +146,13 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (error) {
-        console.error('📝 ERREUR SUPABASE:', error);
-        console.error('📝 Message:', error.message);
-        console.error('📝 Code:', error.code);
-        console.error('📝 Details:', error.details);
-        console.error('📝 Hint:', error.hint);
-        
         // Check if it's a network error
         if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
-          console.error('📝 ERREUR RÉSEAU DÉTECTÉE');
           throw new Error('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
         }
         
         throw error;
       }
-      
-      console.log('📝 SUCCÈS - Formulaire mis à jour');
       
       // Vérifier que la mise à jour a bien eu lieu
       const { data: verifyData, error: verifyError } = await supabase
@@ -204,13 +163,8 @@ export const useForms = () => {
         .single();
       
       if (verifyError) {
-        console.error('📝 ERREUR VÉRIFICATION:', verifyError);
-        console.error('📝 Le formulaire n\'existe peut-être pas pour cet utilisateur');
         return false;
       }
-      
-      console.log('📝 VÉRIFICATION RÉUSSIE - Formulaire trouvé:', verifyData.title);
-      console.log('📝 Nombre de champs après update:', verifyData.fields?.length || 0);
       
       // Mettre à jour le formulaire dans la liste locale immédiatement
       setForms(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
@@ -220,12 +174,8 @@ export const useForms = () => {
         fetchForms(1, 10);
       }, 100);
       
-      console.log('📝 Liste rechargée');
       return true;
     } catch (error) {
-      console.error('📝 ERREUR GÉNÉRALE:', error);
-      console.error('📝 Message:', error instanceof Error ? error.message : String(error));
-      
       // Re-throw with a user-friendly message
       if (error instanceof Error && error.message.includes('Failed to fetch')) {
         throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet et réessayez.');
@@ -237,20 +187,12 @@ export const useForms = () => {
 
   const deleteForm = async (id: string) => {
     if (!user) {
-      console.error('❌ Pas d\'utilisateur pour deleteForm');
       return false;
     }
 
     const targetUserId = user.id;
-    console.log('📝 Suppression formulaire pour userId:', targetUserId);
-    
-    if (isImpersonating && impersonationData) {
-      console.log('🎭 Mode impersonation: suppression pour', impersonationData.target_email);
-    }
 
     try {
-      console.log('📝 Tentative suppression avec:', { id, targetUserId });
-      
       const { error } = await supabase
         .from('forms')
         .delete()
@@ -258,23 +200,12 @@ export const useForms = () => {
         .eq('user_id', targetUserId);
 
       if (error) {
-        console.error('❌ Erreur Supabase deleteForm:', error);
-        console.error('❌ Détails erreur:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
         throw error;
       }
       
-      console.log('✅ Formulaire supprimé avec succès');
       await fetchForms(1, 10); // Recharger la liste
       return true;
     } catch (error) {
-      console.error('❌ Erreur générale deleteForm:', error);
-      console.error('❌ Type d\'erreur:', typeof error);
-      console.error('❌ Message d\'erreur:', error instanceof Error ? error.message : String(error));
       return false;
     }
   };

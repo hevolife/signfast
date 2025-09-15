@@ -49,10 +49,8 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     getCanvasDimensions: (pageNumber: number) => {
       const canvas = canvasRefs.current.get(pageNumber);
       if (!canvas) {
-        console.warn(`❌ Canvas non trouvé pour page ${pageNumber}`);
         return null;
       }
-      console.log(`📐 Canvas page ${pageNumber} dimensions:`, { width: canvas.width, height: canvas.height });
       return { width: canvas.width, height: canvas.height };
     },
     getCanvasElement: (pageNumber: number) => {
@@ -78,7 +76,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     try {
       setLoading(true);
       setError(null);
-      console.log('📄 Chargement PDF...');
       
       const workerUrl = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
       const pdfjsLib = await import('pdfjs-dist');
@@ -107,7 +104,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       }
 
       const pdf = await pdfjsLib.getDocument(pdfData).promise;
-      console.log(`📄 PDF chargé: ${pdf.numPages} pages`);
       
       setPdfDoc(pdf);
       setNumPages(pdf.numPages);
@@ -119,7 +115,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1 });
         dimensions.push({ width: viewport.width, height: viewport.height });
-        console.log(`📐 Page ${i} dimensions PDF: ${viewport.width} × ${viewport.height} points`);
       }
       setPdfDimensions(dimensions);
       
@@ -132,7 +127,6 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       
       setLoading(false);
     } catch (error) {
-      console.error('Erreur chargement PDF:', error);
       setError('Erreur lors du chargement du PDF');
       setLoading(false);
     }
@@ -146,20 +140,16 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     if (existingTask) {
       try {
         existingTask.cancel();
-        console.log(`🚫 Tâche de rendu annulée pour page ${currentPage}`);
       } catch (error) {
         // Ignorer les erreurs d'annulation
       }
       renderTasksRef.current.delete(currentPage);
     }
     
-    console.log(`📄 Rendu de la page ${currentPage} à l'échelle ${scale}`);
-    
     try {
       // Créer ou récupérer le canvas pour la page courante
       let canvas = canvasRefs.current.get(currentPage);
       if (!canvas) {
-        console.log(`📄 Création nouveau canvas pour page ${currentPage}`);
         canvas = document.createElement('canvas');
         canvasRefs.current.set(currentPage, canvas);
         
@@ -194,28 +184,18 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       
       await renderTask.promise;
       renderTasksRef.current.delete(currentPage);
-      console.log(`📄 Page ${currentPage} rendue (${canvas.width}×${canvas.height})`);
     } catch (error) {
       if (error.name !== 'RenderingCancelledException') {
-        console.error('Erreur rendu:', error);
       }
       renderTasksRef.current.delete(currentPage);
     }
   };
 
   const handleCanvasClick = (pageNumber: number) => (event: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log('🖱️ === CLIC CANVAS DÉTAILLÉ ===');
-    console.log('🖱️ Page cliquée (closure):', pageNumber);
-    console.log('🖱️ Page courante (state):', currentPage);
-    console.log('🖱️ Canvas dataset page:', event.currentTarget.dataset.page);
-    console.log('🖱️ onPageClick disponible:', !!onPageClick);
-    
     if (!onPageClick) return;
 
     const canvas = event.currentTarget;
     const actualPageFromDataset = parseInt(canvas.dataset.page || '1');
-    console.log('🖱️ Page réelle du canvas:', actualPageFromDataset);
-    console.log('🖱️ Page de la closure:', pageNumber);
 
     // Calculer les coordonnées
     const rect = canvas.getBoundingClientRect();
@@ -231,13 +211,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     const adjustedX = canvasX * scaleX;
     const adjustedY = canvasY * scaleY;
     
-    console.log(`🖱️ COORDONNÉES CALCULÉES:`);
-    console.log(`🖱️   Clic écran: (${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
-    console.log(`🖱️   Clic canvas: (${adjustedX.toFixed(1)}, ${adjustedY.toFixed(1)})`);
-    console.log(`🖱️   Page utilisée: ${actualPageFromDataset}`);
-    
     // UTILISER LA PAGE DU DATASET (plus fiable)
-    console.log(`🖱️ APPEL onPageClick avec page: ${actualPageFromDataset}`);
     onPageClick(adjustedX, adjustedY, actualPageFromDataset);
   };
 
