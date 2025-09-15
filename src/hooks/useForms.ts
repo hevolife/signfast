@@ -6,20 +6,21 @@ import { useDemo } from '../contexts/DemoContext';
 import { useDemoForms } from './useDemoForms';
 
 export const useForms = () => {
-  const [forms, setForms] = useState<Form[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const { user, isImpersonating, impersonationData } = useAuth();
   const { isDemoMode } = useDemo();
   const demoFormsHook = useDemoForms();
-
-  // Si on est en mode démo, utiliser les données de démo
-  if (isDemoMode) {
-    console.log('📝 Mode démo actif, utilisation hook démo');
-    return demoFormsHook;
-  }
+  
+  const [forms, setForms] = useState<Form[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const fetchForms = async (page: number = 1, limit: number = 10) => {
+    // Si on est en mode démo, déléguer au hook démo
+    if (isDemoMode) {
+      console.log('📝 Mode démo actif, utilisation hook démo');
+      return;
+    }
+
     if (!user) {
       setLoading(false);
       return;
@@ -113,6 +114,10 @@ export const useForms = () => {
   }, [user, isDemoMode]);
 
   const createForm = async (formData: Partial<Form>) => {
+    if (isDemoMode) {
+      return demoFormsHook.createForm(formData);
+    }
+
     if (!user) {
       return null;
     }
@@ -139,6 +144,10 @@ export const useForms = () => {
   };
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
+    if (isDemoMode) {
+      return demoFormsHook.updateForm(id, updates);
+    }
+
     if (!user) {
       return false;
     }
@@ -193,6 +202,10 @@ export const useForms = () => {
   };
 
   const deleteForm = async (id: string) => {
+    if (isDemoMode) {
+      return demoFormsHook.deleteForm(id);
+    }
+
     if (!user) {
       return false;
     }
@@ -217,41 +230,53 @@ export const useForms = () => {
     }
   };
 
-  return {
-    forms,
-    totalCount,
-    loading,
-    createForm,
-    updateForm,
-    deleteForm,
-    refetch: fetchForms,
-    fetchPage: fetchForms,
-  };
-};
+  useEffect(() => {
+    if (isDemoMode) {
+      // En mode démo, utiliser les données du hook démo
+      setForms(demoFormsHook.forms);
+      setTotalCount(demoFormsHook.totalCount);
+      setLoading(demoFormsHook.loading);
+      return;
+    }
 
-export const useFormResponses = (formId: string) => {
-  const [responses, setResponses] = useState<FormResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-  const { isDemoMode } = useDemo();
-  const [availableFields, setAvailableFields] = useState<string[]>([]);
+    if (user) {
+      fetchForms(1, 10);
+    } else {
+      setLoading(false);
+    }
+  }, [user, isDemoMode, demoFormsHook.forms, demoFormsHook.totalCount, demoFormsHook.loading]);
 
-  // If in demo mode, return empty data without making Supabase requests
+  // Si on est en mode démo, retourner les données du hook démo
   if (isDemoMode) {
     return {
-      responses: [],
-      totalCount: 0,
-      loading: false,
-      fetchSingleResponseData: async () => null,
-      fetchSpecificFields: async () => null,
-      getAvailableFields: async () => [],
-      refetch: async () => {},
-      fetchPage: async () => {},
+      forms: demoFormsHook.forms,
+      totalCount: demoFormsHook.totalCount,
+      loading: demoFormsHook.loading,
+      createForm,
+      updateForm,
+      deleteForm,
+      refetch: demoFormsHook.refetch,
+      fetchPage: demoFormsHook.fetchPage,
     };
   }
 
+  return {
+    forms,
+};
+
+export const useFormResponses = (formId: string) => {
+  const { isDemoMode } = useDemo();
+  const [responses, setResponses] = useState<FormResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [availableFields, setAvailableFields] = useState<string[]>([]);
+
   // Fonction pour découvrir les champs disponibles dans les données JSONB
   const discoverAvailableFields = async () => {
+    if (isDemoMode) {
+      return [];
+    }
+
     try {
       // Récupérer un échantillon de réponses pour analyser la structure des données
       const { data: sampleResponses, error } = await supabase
@@ -280,6 +305,13 @@ export const useFormResponses = (formId: string) => {
   };
 
   const fetchResponses = async (page: number = 1, limit: number = 10) => {
+    if (isDemoMode) {
+      setResponses([]);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
+
     const offset = (page - 1) * limit;
     
     try {
@@ -319,6 +351,10 @@ export const useFormResponses = (formId: string) => {
   };
 
   const fetchSingleResponseData = async (responseId: string) => {
+    if (isDemoMode) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('responses')
@@ -344,6 +380,10 @@ export const useFormResponses = (formId: string) => {
 
   // Nouvelle fonction pour récupérer des champs spécifiques
   const fetchSpecificFields = async (responseId: string, fields: string[]) => {
+    if (isDemoMode) {
+      return null;
+    }
+
     try {
       if (fields.length === 0) {
         return null;
@@ -370,6 +410,13 @@ export const useFormResponses = (formId: string) => {
 
   // Fonction pour récupérer plusieurs réponses avec des champs spécifiques
   const fetchResponsesWithFields = async (fields: string[], page: number = 1, limit: number = 10) => {
+    if (isDemoMode) {
+      setResponses([]);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
+
     const offset = (page - 1) * limit;
     
     try {
@@ -420,6 +467,10 @@ export const useFormResponses = (formId: string) => {
 
   // Fonction pour récupérer les champs disponibles
   const getAvailableFields = async () => {
+    if (isDemoMode) {
+      return [];
+    }
+
     if (availableFields.length === 0) {
       return await discoverAvailableFields();
     }
@@ -427,10 +478,14 @@ export const useFormResponses = (formId: string) => {
   };
 
   useEffect(() => {
-    if (formId) {
+    if (formId && !isDemoMode) {
       fetchResponses();
+    } else if (isDemoMode) {
+      setResponses([]);
+      setTotalCount(0);
+      setLoading(false);
     }
-  }, [formId]);
+  }, [formId, isDemoMode]);
 
   return {
     responses,
