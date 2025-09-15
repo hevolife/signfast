@@ -22,7 +22,7 @@ import {
 import toast from 'react-hot-toast';
 
 export const SupportAdminPanel: React.FC = () => {
-  const { allTickets, loading, isSuperAdmin, markAdminTicketAsRead, updateTicketStatus, sendAdminReply, refetch } = useSupportAdmin();
+  const { allTickets, loading, isSuperAdmin, markAdminTicketAsRead, updateTicketStatus, sendAdminReply, refetch, setAllTickets } = useSupportAdmin();
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
