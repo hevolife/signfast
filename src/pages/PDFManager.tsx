@@ -1128,118 +1128,121 @@ export const PDFManager: React.FC = () => {
                   </h4>
                   
                   {(() => {
-                    // Créer un Set pour éviter les doublons d'images/signatures
-                    const processedImages = new Set();
-                    const processedSignatures = new Set();
-                    
-                    return Object.entries(selectedResponseForDetails.response_data || {})
-                      .filter(([key, value]) => {
-                        // Filtrer les valeurs vides
-                        if (value === undefined || value === null || value === '') {
-                          return false;
-                        }
-                        
-                        // Pour les images/signatures, éviter les doublons
-                        if (typeof value === 'string' && value.startsWith('data:image')) {
-                          // Créer un hash simple basé sur les premiers caractères
-                          const imageHash = value.substring(0, 100);
-                          
-                          if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign')) {
-                            if (processedSignatures.has(imageHash)) {
-                              return false; // Skip ce doublon de signature
-                            }
-                            processedSignatures.add(imageHash);
-                          } else {
-                            if (processedImages.has(imageHash)) {
-                              return false; // Skip ce doublon d'image
-                            }
-                            processedImages.add(imageHash);
-                          }
-                        }
-                        
-                        return true;
-                      })
-                      .map(([key, value], index) => (
-                        <div key={key} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm shadow-lg">
-                          <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center space-x-2">
-                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                            <span>{key}</span>
+                    const processedImages = new Set<string>();
+                    const processedSignatures = new Set<string>();
+                    const processedFields = new Set<string>();
+                    const renderedItems: JSX.Element[] = [];
+
+                    Object.entries(selectedResponseForDetails.response_data).forEach(([key, value]) => {
+                      if (value === undefined || value === null || value === '') return;
+
+                      // Traitement des signatures
+                      if (typeof value === 'string' && value.startsWith('data:image') && 
+                          (key.toLowerCase().includes('signature') || key.toLowerCase().includes('sign'))) {
+                        const imageHash = value.substring(0, 100);
+                        if (processedSignatures.has(imageHash)) return;
+                        processedSignatures.add(imageHash);
+
+                        renderedItems.push(
+                          <div key={`signature-${key}`} className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                                <span className="text-white text-xs">✍️</span>
+                              </div>
+                              <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
+                                Signature électronique
+                              </span>
+                            </div>
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-inner">
+                              <img
+                                src={value}
+                                alt="Signature électronique"
+                                className="max-w-full max-h-32 object-contain mx-auto"
+                                style={{ imageRendering: 'crisp-edges' }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">
+                                ✅ Signature valide et légale
+                              </span>
+                              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                {Math.round(value.length / 1024)} KB
+                              </span>
+                            </div>
                           </div>
-                          
-                          {typeof value === 'string' && value.startsWith('data:image') ? (
-                            <div>
-                              {key.toLowerCase().includes('signature') ? (
-                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
-                                  <div className="flex items-center space-x-2 mb-3">
-                                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
-                                      <span className="text-white text-xs">✍️</span>
-                                    </div>
-                                    <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
-                                      Signature électronique
-                                    </span>
-                                  </div>
-                                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-inner">
-                                    <img
-                                      src={value}
-                                      alt="Signature électronique"
-                                      className="max-w-full max-h-32 object-contain mx-auto"
-                                      style={{ imageRendering: 'crisp-edges' }}
-                                    />
-                                  </div>
-                                  <div className="flex items-center justify-between mt-3">
-                                    <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">
-                                      ✅ Signature valide et légale
-                                    </span>
-                                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
-                                      {Math.round(value.length / 1024)} KB
-                                    </span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-lg">
-                                  <div className="flex items-center space-x-2 mb-3">
-                                    <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
-                                      <span className="text-white text-xs">📷</span>
-                                    </div>
-                                    <span className="text-sm font-bold text-green-900 dark:text-green-300">
-                                      Image uploadée
-                                    </span>
-                                  </div>
-                                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-inner">
-                                    <img
-                                      src={value}
-                                      alt={key}
-                                      className="max-w-full max-h-48 object-contain mx-auto rounded-lg shadow-md"
-                                    />
-                                  </div>
-                                  <div className="flex items-center justify-between mt-3">
-                                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-                                      📁 Fichier image
-                                    </span>
-                                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
-                                      {Math.round(value.length / 1024)} KB
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
+                        );
+                        return;
+                      }
+
+                      // Traitement des images (non-signatures)
+                      if (typeof value === 'string' && value.startsWith('data:image')) {
+                        const imageHash = value.substring(0, 100);
+                        if (processedImages.has(imageHash)) return;
+                        processedImages.add(imageHash);
+
+                        renderedItems.push(
+                          <div key={`image-${key}`} className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-lg">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+                                <span className="text-white text-xs">📷</span>
+                              </div>
+                              <span className="text-sm font-bold text-green-900 dark:text-green-300">
+                                Image uploadée
+                              </span>
                             </div>
-                          ) : Array.isArray(value) ? (
-                            <div className="flex flex-wrap gap-2">
-                              {value.map((item, idx) => (
-                                <span key={idx} className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-2 rounded-full text-sm font-semibold shadow-sm dark:from-blue-900 dark:to-indigo-900 dark:text-blue-300">
-                                  {item}
-                                </span>
-                              ))}
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-inner">
+                              <img
+                                src={value}
+                                alt={key}
+                                className="max-w-full max-h-48 object-contain mx-auto rounded-lg shadow-md"
+                              />
                             </div>
-                          ) : (
-                            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                              <p className="text-gray-900 dark:text-white font-medium whitespace-pre-wrap break-words">
-                                {String(value)}
-                              </p>
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                                📁 Fichier image
+                              </span>
+                              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                {Math.round(value.length / 1024)} KB
+                              </span>
                             </div>
-                          )}
+                          </div>
+                        );
+                        return;
+                      }
+
+                      // Traitement des autres champs (texte, email, etc.)
+                      // Normaliser la clé pour éviter les doublons
+                      const normalizedKey = key.toLowerCase().trim();
+                      const valueString = Array.isArray(value) ? value.join(', ') : String(value);
+                      
+                      // Créer un hash unique basé sur la clé normalisée et la valeur
+                      const fieldHash = `${normalizedKey}-${valueString}`;
+                      if (processedFields.has(fieldHash)) return;
+                      processedFields.add(fieldHash);
+
+                      renderedItems.push(
+                        <div key={`field-${key}`} className="border-b border-gray-200/50 dark:border-gray-700/50 pb-4">
+                          <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            {key}
+                          </div>
+                          <div className="text-gray-900 dark:text-white font-medium">
+                            {Array.isArray(value) ? (
+                              <div className="flex flex-wrap gap-1">
+                                {value.map((item, idx) => (
+                                  <span key={idx} className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm dark:from-blue-900 dark:to-indigo-900 dark:text-blue-300">
+                                    {item}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap font-semibold">{valueString}</p>
+                            )}
+                          </div>
                         </div>
-                      ));
+                      );
+                    });
+
+                    return renderedItems;
                   })()}
                 </div>
               </CardContent>
