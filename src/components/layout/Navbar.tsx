@@ -33,17 +33,11 @@ export const Navbar: React.FC = () => {
       }
       
       await signOut();
-      
-      // Redirection forcée après déconnexion
-      setTimeout(() => {
-        navigate('/', { replace: true });
-        window.location.reload();
-      }, 100);
+      // La redirection est gérée dans signOut()
     } catch (error) {
       console.error('Erreur déconnexion navbar:', error);
       // Fallback: redirection manuelle
       navigate('/');
-      window.location.reload();
     }
   };
 

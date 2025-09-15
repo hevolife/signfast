@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PDFTemplate } from '../types/pdf';
 import { PDFTemplateService } from '../services/pdfTemplateService';
-import { SupabaseAuthError } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useDemo } from '../contexts/DemoContext';
 import { useDemoTemplates } from './useDemoForms';
@@ -15,7 +13,6 @@ export const usePDFTemplates = () => {
   const { user } = useAuth();
   const { isDemoMode, demoTemplates } = useDemo();
   const demoTemplatesHook = useDemoTemplates();
-  const navigate = useNavigate();
 
   // Si on est en mode démo, utiliser les données de démo
   if (isDemoMode) {
@@ -38,13 +35,6 @@ export const usePDFTemplates = () => {
           setTotalPages(result.totalPages);
           console.log('📄 Templates chargés:', result.templates.length);
         } catch (supabaseError) {
-          // Vérifier si c'est une erreur d'authentification
-          if (supabaseError instanceof SupabaseAuthError) {
-            console.warn('📄 Session invalide, redirection vers login');
-            navigate('/login');
-            return;
-          }
-          
           // Vérifier si c'est une erreur de réseau
           if (supabaseError instanceof TypeError && supabaseError.message === 'Failed to fetch') {
             console.warn('📄 Erreur réseau détectée:', supabaseError.message);

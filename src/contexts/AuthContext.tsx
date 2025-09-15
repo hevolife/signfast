@@ -130,27 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    try {
-      // Nettoyer le localStorage avant la déconnexion
-      localStorage.removeItem('sb-auth-token');
-      localStorage.removeItem('supabase.auth.token');
-      
-      // Déconnexion Supabase
-      await supabase.auth.signOut();
-      
-      // Forcer la mise à jour de l'état
-      setSession(null);
-      setUser(null);
-      
-      console.log('✅ Déconnexion réussie');
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-      // Forcer la déconnexion locale même en cas d'erreur
-      localStorage.removeItem('sb-auth-token');
-      localStorage.removeItem('supabase.auth.token');
-      setSession(null);
-      setUser(null);
-    }
+    await supabase.auth.signOut();
   }, [isImpersonating, stopImpersonation]);
 
   useEffect(() => {

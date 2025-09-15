@@ -14,18 +14,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Chargement des variables d'environnement Docker -->
-    <script src="/config.js"></script>
-    <script>
-      // Injecter les variables d'environnement pour Docker
-      if (!window.ENV && window.location.hostname !== 'localhost') {
-        window.ENV = {
-          VITE_SUPABASE_URL: 'http://localhost:8000',
-          VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-        };
-        console.log('🔧 Variables d\'environnement Docker injectées');
-      }
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
