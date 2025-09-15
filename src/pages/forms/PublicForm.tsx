@@ -336,6 +336,19 @@ export const PublicForm: React.FC = () => {
         form.fields || []
       );
       
+      // Vérifier que tous les champs obligatoires sont présents dans les données normalisées
+      const requiredFields = form.fields?.filter(f => f.required).map(f => f.label) || [];
+      const { isValid: isNormalizedValid, missingFields: normalizedMissingFields } = validateNormalizedData(
+        normalizedData,
+        requiredFields
+      );
+      
+      if (!isNormalizedValid) {
+        console.error('❌ Champs obligatoires manquants après normalisation:', normalizedMissingFields);
+        setErrors(normalizedMissingFields.map(field => `Le champ "${field}" est obligatoire`));
+        return;
+      }
+      
       // Afficher les conflits détectés
       if (conflicts.length > 0) {
         console.warn('⚠️ Conflits de normalisation détectés:', conflicts);
