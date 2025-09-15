@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSupportAdmin } from '../../hooks/useSupport';
+import { supabase } from '../../lib/supabase';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
