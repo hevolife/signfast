@@ -70,8 +70,6 @@ export const FormSelector: React.FC<FormSelectorProps> = ({
       // Supprimer les doublons
       const uniqueVariables = [...new Set(variables)];
       setPreviewVariables(uniqueVariables);
-      
-      console.log('🔍 Variables générées (avec conditionnels):', uniqueVariables);
     }
   };
 
