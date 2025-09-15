@@ -135,15 +135,9 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       // Compression asynchrone
       import('../../utils/imageCompression').then(({ ImageCompressor }) => {
         ImageCompressor.compressSignature(rawSignature).then(compressedSignature => {
-          console.log('✍️ Signature compressée:', {
-            original: Math.round(rawSignature.length / 1024) + 'KB',
-            compressed: Math.round(compressedSignature.length / 1024) + 'KB'
-          });
-          
           onSignatureChange(compressedSignature);
           setIsEmpty(false);
         }).catch(error => {
-          console.warn('⚠️ Erreur compression signature:', error);
           onSignatureChange(rawSignature);
           setIsEmpty(false);
         });
@@ -154,7 +148,6 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       });
       
     } catch (error) {
-      console.error('Erreur sauvegarde signature:', error);
       onSignatureChange('');
       setIsEmpty(true);
     }

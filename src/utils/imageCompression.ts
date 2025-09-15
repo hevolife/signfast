@@ -74,17 +74,9 @@ export class ImageCompressor {
         maxSizeKB
       );
 
-      console.log('🖼️ Image compressée:', {
-        originalSize: file instanceof File ? `${(file.size / 1024).toFixed(1)}KB` : 'N/A',
-        newSize: `${(compressedDataUrl.length / 1024).toFixed(1)}KB`,
-        dimensions: `${newWidth}x${newHeight}`,
-        format: finalFormat,
-        compression: `${Math.round((1 - compressedDataUrl.length / (typeof file === 'string' ? file.length : file.size)) * 100)}%`
-      });
 
       return compressedDataUrl;
     } catch (error) {
-      console.error('❌ Erreur compression image:', error);
       // Fallback : retourner l'original ou une version très basique
       if (typeof file === 'string') {
         return file;
@@ -199,8 +191,6 @@ export class ImageCompressor {
     while (attempts < maxAttempts) {
       dataUrl = canvas.toDataURL(`image/${format}`, quality);
       const sizeKB = dataUrl.length / 1024;
-      
-      console.log(`🔄 Tentative ${attempts + 1}: ${sizeKB.toFixed(1)}KB avec qualité ${Math.round(quality * 100)}%`);
       
       if (sizeKB <= maxSizeKB || quality <= 0.1) {
         break;

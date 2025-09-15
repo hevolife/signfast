@@ -41,8 +41,6 @@ const ErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () => void }> 
   error, 
   resetErrorBoundary 
 }) => {
-  console.error('🚨 Erreur capturée par ErrorBoundary:', error);
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 text-center">
@@ -282,7 +280,6 @@ function App() {
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
       onError={(error, errorInfo) => {
-        console.error('🚨 ErrorBoundary a capturé une erreur:', error, errorInfo);
       }}
       onReset={() => {
         // Nettoyer le localStorage en cas d'erreur
@@ -290,7 +287,6 @@ function App() {
           localStorage.removeItem('signfast_demo');
           sessionStorage.clear();
         } catch (e) {
-          console.warn('Impossible de nettoyer le storage:', e);
         }
         window.location.reload();
       }}
