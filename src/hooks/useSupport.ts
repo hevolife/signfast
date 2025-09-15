@@ -56,10 +56,30 @@ export const useSupport = () => {
         // Calculer le nombre de messages non lus pour chaque ticket
         const ticketsWithUnreadCount = (data || []).map(ticket => ({
           ...ticket,
-          unread_count: ticket.support_messages?.filter(msg => 
-            msg.is_admin_reply && 
-            new Date(msg.created_at) > new Date(ticket.updated_at || ticket.created_at)
-          ).length || 0
+          unread_count: (() => {
+            // Récupérer le temps de lecture local pour ce ticket
+            const readTickets = JSON.parse(localStorage.getItem('read_support_tickets') || '{}');
+            const localReadTime = readTickets[ticket.id];
+            
+            // Utiliser le temps le plus récent entre la DB et le local
+            const effectiveReadTime = localReadTime && new Date(localReadTime) > new Date(ticket.updated_at || ticket.created_at)
+              ? localReadTime 
+              : ticket.updated_at || ticket.created_at;
+            
+            const unreadCount = ticket.support_messages?.filter(msg => 
+              msg.is_admin_reply && 
+              new Date(msg.created_at) > new Date(effectiveReadTime)
+            ).length || 0;
+            
+            console.log(`🔔 Ticket ${ticket.id} unread count:`, {
+              dbTime: ticket.updated_at,
+              localTime: localReadTime,
+              effectiveTime: effectiveReadTime,
+              unreadCount
+            });
+            
+            return unreadCount;
+          })()
         }));
         
         setTickets(ticketsWithUnreadCount);
