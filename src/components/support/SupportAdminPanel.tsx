@@ -67,9 +67,6 @@ export const SupportAdminPanel: React.FC = () => {
     setLoadingMessages(true);
     
     try {
-      console.log('🔔 Admin === SÉLECTION TICKET ===');
-      console.log('🔔 Admin Ticket sélectionné:', ticketId);
-      
       // Charger les messages du ticket
       const { data: messages, error: messagesError } = await supabase
         .from('support_messages')
@@ -78,18 +75,14 @@ export const SupportAdminPanel: React.FC = () => {
         .order('created_at', { ascending: true });
 
       if (messagesError) {
-        console.error('🔔 Admin Erreur chargement messages:', messagesError);
         setTicketMessages([]);
       } else {
         setTicketMessages(messages || []);
-        console.log('🔔 Admin Messages chargés:', messages?.length || 0);
         // Scroller vers le bas après chargement des messages
         setTimeout(scrollToBottom, 200);
       }
       
-      console.log('🔔 Admin Marquage du ticket comme lu...');
       await markAdminTicketAsRead(ticketId);
-      console.log('🔔 Admin Ticket marqué comme lu');
       
       // Mettre à jour seulement le ticket local pour éviter le refetch complet
       setAllTickets(prev => prev.map(ticket => 
@@ -98,9 +91,7 @@ export const SupportAdminPanel: React.FC = () => {
           : ticket
       ));
       
-      console.log('🔔 Admin === FIN SÉLECTION TICKET ===');
     } catch (error) {
-      console.error('🔔 Admin Erreur sélection ticket:', error);
       setTicketMessages([]);
     } finally {
       setLoadingMessages(false);

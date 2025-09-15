@@ -89,30 +89,20 @@ export const SupportPanel: React.FC = () => {
     setLoadingMessages(true);
     
     try {
-      console.log('🔔 === SÉLECTION TICKET ===');
-      console.log('🔔 Ticket sélectionné:', ticketId);
-      
       const messages = await getTicketMessages(ticketId);
       setTicketMessages(messages);
-      console.log('🔔 Messages chargés:', messages.length);
       
       // Scroller vers le bas après chargement des messages
       setTimeout(scrollToBottom, 200);
       
-      console.log('🔔 Marquage du ticket comme lu...');
       await markTicketAsRead(ticketId);
-      console.log('🔔 Ticket marqué comme lu, actualisation notifications...');
       
       // Actualiser les notifications avec un délai plus long
       setTimeout(() => {
-        console.log('🔔 Actualisation des notifications...');
         refreshNotifications();
-        console.log('🔔 Notifications actualisées');
       }, 1500); // Délai augmenté à 1.5 secondes
       
-      console.log('🔔 === FIN SÉLECTION TICKET ===');
     } catch (error) {
-      console.error('Erreur chargement messages:', error);
       setTicketMessages([]);
     } finally {
       setLoadingMessages(false);

@@ -5,11 +5,11 @@ import './index.css';
 
 // Gestion d'erreur globale pour éviter l'écran blanc
 window.addEventListener('error', (event) => {
-  console.error('Erreur globale capturée:', event.error);
+  // Silent error handling
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Promise rejetée non gérée:', event.reason);
+  // Silent promise rejection handling
 });
 
 // Enregistrer le service worker pour PWA avec gestion d'erreurs améliorée
@@ -20,22 +20,20 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
         scope: '/'
       });
       
-      console.log('✅ Service Worker enregistré avec succès:', registration.scope);
-      
       // Vérifier les mises à jour
       registration.addEventListener('updatefound', () => {
-        console.log('🔄 Nouvelle version du Service Worker disponible');
+        // Silent update detection
       });
       
     } catch (error) {
-      console.warn('❌ Échec enregistrement Service Worker:', error);
+      // Silent service worker registration failure
     }
   });
   
   // Gérer les messages du service worker
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SW_UPDATE_AVAILABLE') {
-      console.log('🔄 Mise à jour PWA disponible');
+      // Silent PWA update available
     }
   });
 }
@@ -54,8 +52,6 @@ const renderApp = () => {
       </StrictMode>
     );
   } catch (error) {
-    console.error('Erreur lors du rendu de l\'application:', error);
-    
     // Afficher un message d'erreur de fallback
     const rootElement = document.getElementById('root');
     if (rootElement) {

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
 import { SupportTicket, SupportMessage, CreateTicketData, SendMessageData } from '../types/support';
 
 export const useSupport = () => {
@@ -188,13 +187,8 @@ export const useSupport = () => {
   const markTicketAsRead = async (ticketId: string): Promise<void> => {
     try {
       if (!user) {
-        console.warn('🔔 Pas d\'utilisateur pour markTicketAsRead');
         return;
       }
-
-      console.log('🔔 === DÉBUT MARQUAGE COMME LU ===');
-      console.log('🔔 Ticket ID:', ticketId);
-      console.log('🔔 User ID:', user.id);
 
       // Marquer le ticket comme lu en mettant à jour updated_at avec un timestamp futur
       // pour s'assurer que tous les messages admin existants sont considérés comme lus
@@ -205,28 +199,13 @@ export const useSupport = () => {
         .eq('user_id', user?.id);
       
       if (error) {
-        console.error('🔔 ❌ Erreur markTicketAsRead:', error);
-        console.error('🔔 Détails erreur:', {
-          message: error.message,
-          code: error.code,
-          details: error.details
-        });
       } else {
-        console.log('🔔 ✅ Ticket marqué comme lu dans la DB:', ticketId);
-        
         // Sauvegarder localement que ce ticket a été lu
         const readTickets = JSON.parse(localStorage.getItem('read_support_tickets') || '{}');
         readTickets[ticketId] = new Date().toISOString();
         localStorage.setItem('read_support_tickets', JSON.stringify(readTickets));
-        console.log('🔔 ✅ Ticket sauvegardé comme lu localement');
-        
-        // Mise à jour réussie, pas besoin de vérification supplémentaire
-        console.log('🔔 ✅ Mise à jour confirmée par l\'absence d\'erreur');
       }
-      
-      console.log('🔔 === FIN MARQUAGE COMME LU ===');
     } catch (error) {
-      console.error('🔔 ❌ Erreur générale markTicketAsRead:', error);
     }
   };
 
@@ -328,13 +307,8 @@ export const useSupportAdmin = () => {
   const markAdminTicketAsRead = async (ticketId: string): Promise<void> => {
     try {
       if (!user) {
-        console.warn('🔔 Admin - Pas d\'utilisateur pour markAdminTicketAsRead');
         return;
       }
-
-      console.log('🔔 Admin === DÉBUT MARQUAGE COMME LU ===');
-      console.log('🔔 Admin Ticket ID:', ticketId);
-      console.log('🔔 Admin User ID:', user.id);
 
       // Marquer le ticket comme lu en mettant à jour updated_at avec un timestamp futur
       // pour s'assurer que tous les messages utilisateur existants sont considérés comme lus
@@ -344,28 +318,13 @@ export const useSupportAdmin = () => {
         .eq('id', ticketId);
       
       if (error) {
-        console.error('🔔 Admin ❌ Erreur markAdminTicketAsRead:', error);
-        console.error('🔔 Admin Détails erreur:', {
-          message: error.message,
-          code: error.code,
-          details: error.details
-        });
       } else {
-        console.log('🔔 Admin ✅ Ticket marqué comme lu dans la DB:', ticketId);
-        
         // Sauvegarder localement que ce ticket a été lu (côté admin)
         const readTickets = JSON.parse(localStorage.getItem('admin_read_support_tickets') || '{}');
         readTickets[ticketId] = new Date().toISOString();
         localStorage.setItem('admin_read_support_tickets', JSON.stringify(readTickets));
-        console.log('🔔 Admin ✅ Ticket sauvegardé comme lu localement');
-        
-        // Mise à jour réussie, pas besoin de vérification supplémentaire
-        console.log('🔔 Admin ✅ Mise à jour confirmée par l\'absence d\'erreur');
       }
-      
-      console.log('🔔 Admin === FIN MARQUAGE COMME LU ===');
     } catch (error) {
-      console.error('🔔 Admin ❌ Erreur générale markAdminTicketAsRead:', error);
     }
   };
   const updateTicketStatus = async (ticketId: string, status: SupportTicket['status']): Promise<boolean> => {
