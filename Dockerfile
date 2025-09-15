@@ -25,7 +25,7 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 # Copier les fichiers construits
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copier le script d'entrée pour les variables d'environnement
+# Copier le script d'entrée pour les variables d\'environnement
 COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
