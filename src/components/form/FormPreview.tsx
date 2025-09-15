@@ -62,8 +62,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
       id: field.id,
       required: field.required,
       placeholder: field.placeholder,
-      // Utiliser la clé normalisée pour récupérer la valeur
-      value: formData[normalizeLabel(field.label)] || formData[field.id] || '',
+      value: formData[field.id] || '',
     };
 
     switch (field.type) {
@@ -136,7 +135,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                       type="radio"
                       name={field.id}
                       value={option}
-                      checked={formData[field.id] === option}
+                      checked={formData[normalizeLabel(field.label)] === option}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       className="text-blue-600"
                     />
