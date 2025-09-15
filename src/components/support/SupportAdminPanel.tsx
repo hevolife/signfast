@@ -91,12 +91,12 @@ export const SupportAdminPanel: React.FC = () => {
       await markAdminTicketAsRead(ticketId);
       console.log('🔔 Admin Ticket marqué comme lu');
       
-      // Actualiser la liste des tickets pour refléter les changements
-      setTimeout(() => {
-        console.log('🔔 Admin Actualisation de la liste...');
-        refetch();
-        console.log('🔔 Admin Liste actualisée');
-      }, 1000);
+      // Mettre à jour seulement le ticket local pour éviter le refetch complet
+      setAllTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, unread_count: 0 }
+          : ticket
+      ));
       
       console.log('🔔 Admin === FIN SÉLECTION TICKET ===');
     } catch (error) {

@@ -403,7 +403,12 @@ export const useSupportAdmin = () => {
         return false;
       }
 
-      await fetchAllTickets(); // Rafraîchir la liste
+      // Mettre à jour seulement le ticket local pour éviter le refetch complet
+      setAllTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, status }
+          : ticket
+      ));
       return true;
     } catch (error) {
       console.error('Erreur générale updateTicketStatus:', error);
@@ -447,6 +452,8 @@ export const useSupportAdmin = () => {
   };
 
   return {
+    allTickets,
+    setAllTickets,
     allTickets,
     totalCount,
     loading,
