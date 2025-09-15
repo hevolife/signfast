@@ -301,7 +301,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
       </Card>
 
       {/* Liste des sous-comptes */}
-      {subAccounts.length === 0 ? (
+      {!Array.isArray(subAccounts) || subAccounts.length === 0 ? (
         <Card>
           <CardContent className="text-center py-16">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -324,7 +324,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
         </Card>
       ) : (
         <div className="space-y-4">
-          {subAccounts.map((subAccount) => (
+          {Array.isArray(subAccounts) && subAccounts.map((subAccount) => (
             <Card key={subAccount.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 {editingAccount === subAccount.id ? (
