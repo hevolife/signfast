@@ -12,21 +12,42 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
     const response = await fetch(url, options);
     
-    // Handle 404 errors for missing tables gracefully
+    // Handle 404 errors for missing sub_accounts table gracefully
     if (response.status === 404) {
+      // Check if this is a sub_accounts table request
+      const urlString = url.toString();
+      if (urlString.includes('sub_accounts')) {
+        console.log('⚠️ Sub-accounts table not found - feature disabled');
+        // Return empty data response to prevent crashes
+        return new Response(JSON.stringify({ data: [], error: null }), {
+          status: 200,
+          statusText: 'OK (Sub-accounts table not found)',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // For other 404s, try to parse the response body
       try {
         const body = await response.clone().json();
-        if (body.code === 'PGRST205' && body.message?.includes('sub_accounts')) {
-          console.log('⚠️ Sub-accounts table not found - feature disabled');
+        if (body.code === 'PGRST205') {
+          console.log('⚠️ Database table not found - feature disabled');
           // Return empty data response to prevent crashes
-          return new Response(JSON.stringify({ data: [], error: null }), {
+          return new Response(JSON.stringify({ data: null, error: null }), {
             status: 200,
-            statusText: 'OK (Table not found)',
+            statusText: 'OK (Database table not found)',
             headers: { 'Content-Type': 'application/json' }
           });
         }
       } catch (parseError) {
-        // If we can't parse the response, continue with original response
+        // If we can't parse the response and it's a sub_accounts request, handle it anyway
+        if (urlString.includes('sub_accounts')) {
+          console.log('⚠️ Sub-accounts request failed - feature disabled');
+          return new Response(JSON.stringify({ data: [], error: null }), {
+            status: 200,
+            statusText: 'OK (Sub-accounts fallback)',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
       }
     }
     
