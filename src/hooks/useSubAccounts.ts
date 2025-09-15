@@ -46,11 +46,28 @@ export const useSubAccounts = () => {
         setSubAccounts(data || []);
         setTotalCount(data?.length || 0);
       }
-    } catch (error) {
-      console.error('Erreur générale fetchSubAccounts:', error);
-      // En cas d'erreur générale, on définit des valeurs par défaut
-      setSubAccounts([]);
-      setTotalCount(0);
+    } catch (error: any) {
+      console.error('Error fetching sub accounts:', error);
+      
+      // Check if the error is due to missing table - check both message and details
+      const errorMessage = error?.message || '';
+      const errorDetails = error?.details || '';
+      const errorBody = typeof error === 'string' ? error : JSON.stringify(error);
+      
+      if (errorMessage.includes('PGRST205') || 
+          errorMessage.includes('sub_accounts') ||
+          errorDetails.includes('sub_accounts') ||
+          errorBody.includes('PGRST205') ||
+          errorBody.includes('sub_accounts')) {
+        setTableExists(false);
+        setSubAccounts([]);
+        setError(null);
+      } else {
+        setError(error.message || 'Failed to fetch sub accounts');
+        setSubAccounts([]);
+        setTableExists(true);
+      }
+      setLoading(false);
     } finally {
       setLoading(false);
     }
