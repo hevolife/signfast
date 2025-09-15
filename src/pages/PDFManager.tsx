@@ -53,7 +53,6 @@ export const PDFManager: React.FC = () => {
   const [loadingResponseData, setLoadingResponseData] = useState(false);
   const [loadedResponsesCount, setLoadedResponsesCount] = useState(0);
   const [loadingPdfCards, setLoadingPdfCards] = useState(true);
-  const [loadedResponsesCount, setLoadedResponsesCount] = useState(0);
   const product = stripeConfig.products[0];
 
   useEffect(() => {
