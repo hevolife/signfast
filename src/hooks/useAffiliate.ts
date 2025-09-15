@@ -28,8 +28,6 @@ export const useAffiliate = () => {
     }
 
     try {
-      console.log('📊 Chargement données affiliation pour:', user.id);
-      
       // Tester d'abord si les tables existent
       const { error: testError } = await supabase
         .from('affiliate_programs')
@@ -37,7 +35,6 @@ export const useAffiliate = () => {
         .limit(1);
       
       if (testError && testError.code === 'PGRST205') {
-        console.log('📊 Tables d\'affiliation non créées');
         setTablesExist(false);
         setLoading(false);
         return;
@@ -59,12 +56,10 @@ export const useAffiliate = () => {
       
       // Si aucun programme n'existe, essayer de le créer automatiquement
       if (!programData) {
-        console.log('📊 Aucun programme trouvé, création automatique...');
         const createdProgram = await createAffiliateProgram();
         if (createdProgram) {
           setProgram(createdProgram);
         } else {
-          console.warn('📊 Impossible de créer le programme automatiquement');
           setProgram(null);
         }
       } else {
@@ -86,7 +81,6 @@ export const useAffiliate = () => {
           .order('created_at', { ascending: false });
         
         if (referralsError) {
-          console.error('Erreur récupération parrainages:', referralsError);
           setReferrals([]);
         } else {
           // Deuxième requête : récupérer les profils utilisateurs
@@ -102,7 +96,6 @@ export const useAffiliate = () => {
                 .in('user_id', userIds);
               
               if (profilesError) {
-                console.error('Erreur récupération profils:', profilesError);
               }
               
               // Mapper les profils aux parrainages
@@ -127,7 +120,6 @@ export const useAffiliate = () => {
       }
       
     } catch (error: any) {
-      console.error('Erreur chargement affiliation:', error);
       if (error.code === 'PGRST205') {
         setTablesExist(false);
       }
@@ -140,8 +132,6 @@ export const useAffiliate = () => {
     if (!user) return null;
 
     try {
-      console.log('📊 Création programme d\'affiliation pour:', user.id);
-      
       // Générer un code d'affiliation unique
       const affiliateCode = `AF${user.id.slice(0, 8).toUpperCase()}${Date.now().toString().slice(-4)}`;
       
@@ -160,18 +150,13 @@ export const useAffiliate = () => {
         .single();
 
       if (error) {
-        console.error('❌ Erreur création programme:', error);
         return null;
       }
 
-      console.log('✅ Programme d\'affiliation créé:', data.affiliate_code);
       return data;
     } catch (error) {
-      console.error('❌ Erreur création programme:', error);
-      
       // Si c'est une erreur de contrainte de clé étrangère, déconnecter l'utilisateur
       if (error.code === '23503') {
-        console.log('🔄 Contrainte de clé étrangère violée, déconnexion de l\'utilisateur...');
         // Forcer la déconnexion pour résoudre les incohérences de session
         await supabase.auth.signOut();
         window.location.reload();
@@ -215,8 +200,6 @@ export const useAffiliateAdmin = () => {
 
   const fetchAllPrograms = async () => {
     try {
-      console.log('📊 Admin: Chargement tous les programmes...');
-      
       // Récupérer tous les programmes d'affiliation
       const { data: programs, error: programsError } = await supabase
         .from('affiliate_programs')
@@ -224,7 +207,6 @@ export const useAffiliateAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (programsError) {
-        console.error('❌ Erreur programmes:', programsError);
         throw new Error(programsError.message);
       }
 
@@ -268,7 +250,6 @@ export const useAffiliateAdmin = () => {
               user_email: null // Email non disponible sans API admin
             };
           } catch (error) {
-            console.error('Erreur calcul stats pour programme:', program.user_id, error);
             return {
               ...program,
               user_profiles: null,
@@ -281,10 +262,8 @@ export const useAffiliateAdmin = () => {
       );
 
       setAllPrograms(programsWithStats);
-      console.log('📊 Admin: Programmes chargés:', programsWithStats.length);
       
     } catch (error: any) {
-      console.error('Erreur chargement programmes admin:', error);
       setAllPrograms([]);
     } finally {
       setLoading(false);
@@ -299,7 +278,6 @@ export const useAffiliateAdmin = () => {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Erreur mise à jour commission:', error);
         return false;
       }
 
@@ -307,7 +285,6 @@ export const useAffiliateAdmin = () => {
       await fetchAllPrograms();
       return true;
     } catch (error) {
-      console.error('Erreur mise à jour commission:', error);
       return false;
     }
   };

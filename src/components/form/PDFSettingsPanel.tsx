@@ -120,9 +120,6 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
   const getFormVariables = () => {
     if (!form.fields) return [];
     
-    console.log('📋 Génération variables pour formulaire:', form.title);
-    console.log('📋 Champs disponibles:', form.fields.map(f => f.label));
-    
     const variables = form.fields.map(field => {
       // Normaliser le nom du champ pour créer une variable
       const variableName = field.label
@@ -139,7 +136,6 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
     // Ajouter des variables système
     variables.push('${date_creation}', '${heure_creation}', '${numero_reponse}');
     
-    console.log('📋 Variables générées:', variables);
     return variables;
   };
 
