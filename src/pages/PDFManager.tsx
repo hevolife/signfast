@@ -51,6 +51,7 @@ export const PDFManager: React.FC = () => {
   const [selectedResponseForDetails, setSelectedResponseForDetails] = useState<FormResponsePDF | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const product = stripeConfig.products[0];
+  const [loadingPdfCards, setLoadingPdfCards] = useState(true);
 
   useEffect(() => {
     if (user && forms.length > 0) {
@@ -182,6 +183,7 @@ export const PDFManager: React.FC = () => {
       setResponses([]);
       setTotalCount(0);
       setLoading(false);
+      setLoadingPdfCards(false);
       return;
     }
 
@@ -557,6 +559,7 @@ export const PDFManager: React.FC = () => {
       return;
     }
 
+    setLoadingPdfCards(true);
     try {
       const { error } = await supabase
         .from('responses')
@@ -812,7 +815,38 @@ export const PDFManager: React.FC = () => {
             ))}
           </div>
         ) : filteredAndSortedResponses.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+          loadingPdfCards ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Skeleton cards pendant le chargement */}
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i} className="animate-pulse bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/2"></div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex-1"></div>
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
             <CardContent className="text-center py-16">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-3xl mb-6 shadow-xl">
                 <FileText className="h-10 w-10" />
