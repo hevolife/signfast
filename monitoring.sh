@@ -39,9 +39,18 @@ check_container_health() {
         
         if docker-compose ps | grep -q "signfast-app.*Up"; then
             log_message "Container restarted successfully"
+            # Test if website responds after restart
+            sleep 10
+            if curl -f -s --max-time 10 http://localhost:3000 > /dev/null; then
+                log_message "Website responding after container restart"
+            else
+                send_alert "Container restarted but website still not responding"
+            fi
         else
             send_alert "Failed to restart SignFast container"
         fi
+    else
+        log_message "Container health check: OK"
     fi
 }
 
@@ -61,7 +70,22 @@ check_website_response() {
             log_message "Website responding after restart"
         else
             send_alert "Website still not responding after restart"
+            
+            # Try a full restart if simple restart failed
+            log_message "Attempting full restart (down/up)"
+            docker-compose down
+            sleep 5
+            docker-compose up -d
+            sleep 30
+            
+            if curl -f -s --max-time 10 "$url" > /dev/null; then
+                log_message "Website responding after full restart"
+            else
+                send_alert "Website still not responding after full restart - manual intervention required"
+            fi
         fi
+    else
+        log_message "Website response check: OK"
     fi
 }
 

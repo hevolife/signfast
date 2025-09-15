@@ -596,6 +596,146 @@ echo "=== Docker Stats ==="
 docker stats --no-stream
 EOF
 
+    # Health check script
+    cat > /opt/signfast/health.sh << 'EOF'
+#!/bin/bash
+
+echo "=== SignFast Health Check ==="
+echo "Date: $(date)"
+echo ""
+
+# Check if container is running
+echo "🐳 Container Status:"
+if docker-compose ps | grep -q "signfast-app.*Up"; then
+    echo "✅ SignFast container is running"
+    CONTAINER_STATUS="UP"
+else
+    echo "❌ SignFast container is down"
+    CONTAINER_STATUS="DOWN"
+fi
+
+# Check if website responds
+echo ""
+echo "🌐 Website Status:"
+if curl -f -s --max-time 10 http://localhost:3000 > /dev/null; then
+    echo "✅ Local website responding (port 3000)"
+    LOCAL_STATUS="UP"
+else
+    echo "❌ Local website not responding"
+    LOCAL_STATUS="DOWN"
+fi
+
+# Check public website if domain is configured
+if [ "$DOMAIN" != "localhost" ] && [ ! -z "$DOMAIN" ]; then
+    echo ""
+    echo "🌍 Public Website Status:"
+    if curl -f -s --max-time 10 "https://$DOMAIN" > /dev/null; then
+        echo "✅ Public website responding (https://$DOMAIN)"
+        PUBLIC_STATUS="UP"
+    else
+        echo "❌ Public website not responding"
+        PUBLIC_STATUS="DOWN"
+    fi
+else
+    PUBLIC_STATUS="N/A"
+fi
+
+# Check SSL certificate
+if [ "$DOMAIN" != "localhost" ] && [ ! -z "$DOMAIN" ]; then
+    echo ""
+    echo "🔒 SSL Certificate:"
+    if echo | openssl s_client -servername "$DOMAIN" -connect "$DOMAIN:443" 2>/dev/null | openssl x509 -noout -dates > /dev/null 2>&1; then
+        EXPIRY=$(echo | openssl s_client -servername "$DOMAIN" -connect "$DOMAIN:443" 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d= -f2)
+        echo "✅ SSL certificate valid until: $EXPIRY"
+        SSL_STATUS="VALID"
+    else
+        echo "❌ SSL certificate invalid or not found"
+        SSL_STATUS="INVALID"
+    fi
+else
+    SSL_STATUS="N/A"
+fi
+
+# Check disk space
+echo ""
+echo "💾 Disk Usage:"
+DISK_USAGE=$(df /opt/signfast | tail -1 | awk '{print $5}' | sed 's/%//')
+if [ $DISK_USAGE -lt 80 ]; then
+    echo "✅ Disk usage: ${DISK_USAGE}% (healthy)"
+    DISK_STATUS="OK"
+elif [ $DISK_USAGE -lt 90 ]; then
+    echo "⚠️ Disk usage: ${DISK_USAGE}% (warning)"
+    DISK_STATUS="WARNING"
+else
+    echo "❌ Disk usage: ${DISK_USAGE}% (critical)"
+    DISK_STATUS="CRITICAL"
+fi
+
+# Check memory usage
+echo ""
+echo "🧠 Memory Usage:"
+MEMORY_USAGE=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
+if [ $MEMORY_USAGE -lt 80 ]; then
+    echo "✅ Memory usage: ${MEMORY_USAGE}% (healthy)"
+    MEMORY_STATUS="OK"
+elif [ $MEMORY_USAGE -lt 90 ]; then
+    echo "⚠️ Memory usage: ${MEMORY_USAGE}% (warning)"
+    MEMORY_STATUS="WARNING"
+else
+    echo "❌ Memory usage: ${MEMORY_USAGE}% (critical)"
+    MEMORY_STATUS="CRITICAL"
+fi
+
+# Overall status
+echo ""
+echo "📊 Overall Status:"
+if [ "$CONTAINER_STATUS" = "UP" ] && [ "$LOCAL_STATUS" = "UP" ] && ([ "$PUBLIC_STATUS" = "UP" ] || [ "$PUBLIC_STATUS" = "N/A" ]); then
+    echo "✅ SignFast is HEALTHY and RUNNING"
+    echo ""
+    echo "🎉 Your SignFast installation is working perfectly!"
+    if [ "$PUBLIC_STATUS" = "UP" ]; then
+        echo "🌐 Access your site at: https://$DOMAIN"
+    fi
+    echo "📱 Local access: http://localhost:3000"
+    exit 0
+else
+    echo "❌ SignFast has ISSUES"
+    echo ""
+    echo "🔧 Troubleshooting:"
+    if [ "$CONTAINER_STATUS" = "DOWN" ]; then
+        echo "   - Container is down, try: signfast restart"
+    fi
+    if [ "$LOCAL_STATUS" = "DOWN" ]; then
+        echo "   - Local website not responding, check logs: signfast logs"
+    fi
+    if [ "$PUBLIC_STATUS" = "DOWN" ]; then
+        echo "   - Public website not responding, check nginx: sudo systemctl status nginx"
+    fi
+    exit 1
+fi
+EOF
+
+    # Quick status script
+    cat > /opt/signfast/quick-status.sh << 'EOF'
+#!/bin/bash
+
+# Quick one-line status check
+echo -n "SignFast Status: "
+
+if docker-compose ps | grep -q "signfast-app.*Up"; then
+    if curl -f -s --max-time 5 http://localhost:3000 > /dev/null; then
+        echo "🟢 RUNNING"
+        exit 0
+    else
+        echo "🟡 CONTAINER UP BUT NOT RESPONDING"
+        exit 1
+    fi
+else
+    echo "🔴 DOWN"
+    exit 1
+fi
+EOF
+
     # Make scripts executable
     chmod +x /opt/signfast/*.sh
     
@@ -772,6 +912,13 @@ case "$1" in
         echo "=== SignFast Status ==="
         ./status.sh
         ;;
+    health)
+        echo "=== SignFast Health Check ==="
+        ./health.sh
+        ;;
+    quick)
+        ./quick-status.sh
+        ;;
     start)
         echo "Démarrage de SignFast..."
         ./start.sh
@@ -807,10 +954,12 @@ case "$1" in
         docker volume prune -f
         ;;
     *)
-        echo "Usage: $0 {status|start|stop|restart|update|backup|logs|ssl-renew|cleanup}"
+        echo "Usage: $0 {status|health|quick|start|stop|restart|update|backup|logs|ssl-renew|cleanup}"
         echo ""
         echo "Commandes disponibles:"
         echo "  status     - Afficher le statut de l'application"
+        echo "  health     - Vérification complète de santé"
+        echo "  quick      - Statut rapide (une ligne)"
         echo "  start      - Démarrer SignFast"
         echo "  stop       - Arrêter SignFast"
         echo "  restart    - Redémarrer SignFast"

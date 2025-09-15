@@ -49,6 +49,12 @@ L'installation prend environ 10-15 minutes et configure automatiquement :
 # Vérifier le statut
 signfast status
 
+# Vérification complète de santé
+signfast health
+
+# Statut rapide (une ligne)
+signfast quick
+
 # Redémarrer l'application
 signfast restart
 
@@ -170,6 +176,9 @@ journalctl -u signfast.service -f
 ```bash
 # Vérifier les logs
 signfast logs
+
+# Vérification complète
+signfast health
 
 # Vérifier la configuration Docker
 cd /opt/signfast
