@@ -383,17 +383,17 @@ export const SupportAdminPanel: React.FC = () => {
               
               {/* Messages */}
               <CardContent className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96">
                   {selectedTicketData.support_messages?.map((message: any) => (
                     <div
                       key={message.id}
                       className={`flex ${message.is_admin_reply ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+                        className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg break-words ${
                           message.is_admin_reply
-                            ? 'bg-gradient-to-br from-red-500 to-pink-600 text-white'
-                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-900 dark:text-white'
+                            ? 'bg-gradient-to-br from-red-500 to-pink-600 text-white break-words'
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-900 dark:text-white break-words'
                         }`}
                       >
                         <div className="flex items-center space-x-2 mb-1">
@@ -406,7 +406,7 @@ export const SupportAdminPanel: React.FC = () => {
                             {message.is_admin_reply ? 'Support Admin' : getUserDisplayName(selectedTicketData)}
                           </span>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.message}</p>
                         <p className="text-xs opacity-75 mt-2">
                           {formatDateTimeFR(message.created_at)}
                         </p>
