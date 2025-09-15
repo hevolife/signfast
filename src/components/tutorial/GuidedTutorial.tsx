@@ -471,12 +471,12 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
 
                 {/* Navigation et mini-carte des étapes */}
                 <div className="lg:col-span-1">
-                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-6 sm:p-8 shadow-lg">
+                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-3 sm:p-4 shadow-lg">
                     <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 text-center">
                       Progression du tutoriel
                     </h3>
                     
-                    <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10 max-h-80 sm:max-h-96 lg:max-h-[500px] overflow-y-auto">
+                    <div className="space-y-1 sm:space-y-2 mb-4 sm:mb-6 max-h-48 sm:max-h-64 overflow-y-auto">
                       {tutorialSteps.map((step, index) => (
                         <button
                           key={step.id}
@@ -489,7 +489,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                               : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                           }`}
                         >
-                          <div className="flex items-center space-x-4 sm:space-x-5">
+                          <div className="flex items-center space-x-2 sm:space-x-3">
                             <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                               index === currentStep
                                 ? 'bg-white/20'
@@ -506,10 +506,10 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm sm:text-base lg:text-lg font-semibold line-clamp-2">
+                              <div className="text-xs sm:text-sm font-semibold truncate">
                                 {step.title.replace(/[🎉🎊]/g, '').trim()}
                               </div>
-                              <div className="text-xs sm:text-sm lg:text-base opacity-75 line-clamp-2 mt-1">
+                              <div className="text-xs opacity-75 truncate hidden sm:block">
                                 {step.description}
                               </div>
                             </div>
@@ -519,22 +519,13 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                     </div>
 
                     {/* Statistiques de progression */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-inner">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 shadow-inner">
                       <div className="text-center">
-                        <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3">
+                        <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
                           {completedSteps.size}/{tutorialSteps.length}
                         </div>
-                        <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium mb-4">
+                        <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                           Étapes terminées
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 shadow-inner">
-                          <div 
-                            className="h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
-                            style={{ width: `${(completedSteps.size / tutorialSteps.length) * 100}%` }}
-                          ></div>
-                        </div>
-                        <div className="mt-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                          {Math.round((completedSteps.size / tutorialSteps.length) * 100)}% terminé
                         </div>
                       </div>
                     </div>
