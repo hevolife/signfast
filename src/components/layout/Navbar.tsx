@@ -86,7 +86,7 @@ export const Navbar: React.FC = () => {
             {!!user || isDemoMode ? (
               <>
                 {/* Navigation moderne par onglets */}
-                <div className="flex items-center space-x-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-1 shadow-lg mr-4">
+                <div className="flex items-center space-x-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-2 shadow-lg mr-4">
                   {navItems.map((item) => {
                     const isActive = window.location.pathname === item.path || window.location.pathname.startsWith(item.path + '/');
                     return (

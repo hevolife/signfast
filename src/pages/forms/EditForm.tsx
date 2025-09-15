@@ -236,9 +236,9 @@ export const EditForm: React.FC = () => {
         </div>
 
         {/* Menu responsive avec scroll horizontal */}
-        <div className="mb-8 sticky top-0 z-10 py-2">
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-2 shadow-xl">
-            <nav className="flex space-x-2 overflow-x-auto scrollbar-hide justify-center">
+        <div className="mb-8 sticky top-0 z-10 py-3">
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 shadow-xl">
+            <nav className="flex space-x-3 overflow-x-auto scrollbar-hide justify-center">
               <button
                 onClick={() => setActiveTab('builder')}
                 className={`py-3 px-4 rounded-xl font-bold text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${
