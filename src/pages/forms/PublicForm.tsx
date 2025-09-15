@@ -894,7 +894,12 @@ export const PublicForm: React.FC = () => {
                     />
                   </div>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-semibold text-center">
-                    ✅ Image optimisée (1920x1080 JPEG) • {Math.round(formData[field.id].length / 1024)} KB
+                    ✅ Image optimisée pour envoi • {Math.round(formData[field.id].length / 1024)} KB
+                    {Math.round(formData[field.id].length / 1024) > 80 && (
+                      <span className="block text-orange-600 dark:text-orange-400 mt-1">
+                        ⚠️ Image un peu lourde, compression supplémentaire lors de l'envoi
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
