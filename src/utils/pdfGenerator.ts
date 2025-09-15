@@ -1,6 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { PDFField, PDFTemplate } from '../types/pdf';
-import { normalizeLabel } from './dataNormalizer';
 
 export class PDFGenerator {
   static async generatePDF(
@@ -126,29 +125,16 @@ export class PDFGenerator {
     
     const variableName = field.variable.replace(/^\$\{|\}$/g, '');
     
-    console.log(`🔍 Recherche valeur pour variable: "${variableName}"`);
-    console.log(`🔍 Clés disponibles dans data:`, Object.keys(data));
-    
     // Pour les signatures, recherche spéciale et prioritaire
     if (field.type === 'signature') {
-      // 1. Recherche par clé normalisée (PRIORITÉ ABSOLUE)
-      const normalizedVariableName = normalizeLabel(variableName);
-      let signatureValue = data[normalizedVariableName];
+      // 1. Recherche STRICTEMENT par variable exacte (PRIORITÉ ABSOLUE)
+      let signatureValue = data[variableName];
       
       if (signatureValue && typeof signatureValue === 'string' && signatureValue.startsWith('data:image')) {
-        console.log(`🔍 ✅ Signature trouvée par clé normalisée: "${normalizedVariableName}"`);
         return signatureValue;
       }
       
-      // 2. Recherche STRICTEMENT par variable exacte
-     signatureValue = data[variableName];
-      
-      if (signatureValue && typeof signatureValue === 'string' && signatureValue.startsWith('data:image')) {
-        console.log(`🔍 ✅ Signature trouvée par clé exacte: "${variableName}"`);
-        return signatureValue;
-      }
-      
-      // 3. Recherche insensible à la casse SEULEMENT pour la variable spécifique
+      // 2. Recherche insensible à la casse SEULEMENT pour la variable spécifique
       if (!signatureValue) {
         const lowerVariableName = variableName.toLowerCase();
         const matchingKey = Object.keys(data).find(key => 
@@ -157,12 +143,11 @@ export class PDFGenerator {
         
         if (matchingKey && typeof data[matchingKey] === 'string' && data[matchingKey].startsWith('data:image')) {
           signatureValue = data[matchingKey];
-          console.log(`🔍 ✅ Signature trouvée par recherche insensible à la casse: "${matchingKey}"`);
           return signatureValue;
         }
       }
       
-      // 4. Recherche par correspondance partielle pour les signatures
+      // 3. Recherche par correspondance partielle pour les signatures
       if (!signatureValue) {
         const partialMatchKey = Object.keys(data).find(key => {
           const keyLower = key.toLowerCase();
@@ -173,12 +158,11 @@ export class PDFGenerator {
         
         if (partialMatchKey) {
           signatureValue = data[partialMatchKey];
-          console.log(`🔍 ✅ Signature trouvée par correspondance partielle: "${partialMatchKey}"`);
           return signatureValue;
         }
       }
       
-      // 5. Recherche générique pour les signatures si la variable contient "signature"
+      // 4. Recherche générique pour les signatures si la variable contient "signature"
       if (!signatureValue && variableName.toLowerCase().includes('signature')) {
         const signatureKeys = Object.keys(data).filter(key => {
           const keyLower = key.toLowerCase();
@@ -191,37 +175,21 @@ export class PDFGenerator {
         
         if (signatureKeys.length > 0) {
           signatureValue = data[signatureKeys[0]];
-          console.log(`🔍 ✅ Signature trouvée par recherche générique: "${signatureKeys[0]}"`);
           return signatureValue;
         }
       }
       
-      // ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
+      // 3. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
       // Retourner vide si aucune signature correspondante trouvée
-      console.log(`🔍 ❌ Aucune signature trouvée pour: "${variableName}"`);
       return '';
     }
     
     // Pour les images, recherche spéciale similaire aux signatures
     if (field.type === 'image') {
-      // 1. Recherche par clé normalisée (PRIORITÉ ABSOLUE)
-      const normalizedVariableName = normalizeLabel(variableName);
-      let imageValue = data[normalizedVariableName];
+      // 1. Recherche EXACTE par variable (priorité absolue)
+      let imageValue = data[variableName];
       
-      if (imageValue && typeof imageValue === 'string' && imageValue.startsWith('data:image')) {
-        console.log(`🔍 ✅ Image trouvée par clé normalisée: "${normalizedVariableName}"`);
-        return imageValue;
-      }
-      
-      // 2. Recherche EXACTE par variable (priorité absolue)
-     imageValue = data[variableName];
-      
-      if (imageValue && typeof imageValue === 'string' && imageValue.startsWith('data:image')) {
-        console.log(`🔍 ✅ Image trouvée par clé exacte: "${variableName}"`);
-        return imageValue;
-      }
-      
-      // 3. Recherche insensible à la casse
+      // 2. Recherche insensible à la casse
       if (!imageValue) {
         const lowerVariableName = variableName.toLowerCase();
         const matchingKey = Object.keys(data).find(key => 
@@ -230,11 +198,10 @@ export class PDFGenerator {
         
         if (matchingKey) {
           imageValue = data[matchingKey];
-          console.log(`🔍 ✅ Image trouvée par recherche insensible à la casse: "${matchingKey}"`);
         }
       }
       
-      // 4. Recherche par clés contenant la variable
+      // 3. Recherche par clés contenant la variable
       if (!imageValue) {
         const partialMatchKey = Object.keys(data).find(key => {
           const keyLower = key.toLowerCase();
@@ -245,11 +212,10 @@ export class PDFGenerator {
         
         if (partialMatchKey) {
           imageValue = data[partialMatchKey];
-          console.log(`🔍 ✅ Image trouvée par correspondance partielle: "${partialMatchKey}"`);
         }
       }
       
-      // 5. SEULEMENT si la variable contient des mots-clés génériques
+      // 4. SEULEMENT si la variable contient des mots-clés génériques
       if (!imageValue && (
         variableName.toLowerCase().includes('image') ||
         variableName.toLowerCase().includes('photo') ||
@@ -268,45 +234,60 @@ export class PDFGenerator {
         
         if (imageKeys.length > 0) {
           imageValue = data[imageKeys[0]];
-          console.log(`🔍 ✅ Image trouvée par recherche générique: "${imageKeys[0]}"`);
+        }
+      }
+      
+      // 5. Recherche par normalisation de la variable (pour les accents, etc.)
+      if (!imageValue) {
+        const normalizedVariable = variableName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        
+        const normalizedMatchKey = Object.keys(data).find(key => {
+          const normalizedKey = key
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          return normalizedKey === normalizedVariable;
+        });
+        
+        if (normalizedMatchKey) {
+          const val = data[normalizedMatchKey];
+          if (typeof val === 'string' && val.startsWith('data:image')) {
+            imageValue = val;
+          }
         }
       }
       
       // NE PLUS FAIRE DE FALLBACK AUTOMATIQUE - respecter la variable spécifique
       if (imageValue) {
-        console.log(`🔍 ✅ Image finale sélectionnée`);
         return imageValue;
       } else {
-        console.log(`🔍 ❌ Aucune image trouvée pour: "${variableName}"`);
         return '';
       }
     }
     
     // Pour les autres types de champs, recherche normale
-    // 1. Recherche par clé normalisée (PRIORITÉ)
-    const normalizedVariableName = normalizeLabel(variableName);
-    let value = data[normalizedVariableName];
-    
-    if (value !== undefined && value !== null && value !== '') {
-      console.log(`🔍 ✅ Valeur trouvée par clé normalisée: "${normalizedVariableName}" = "${value}"`);
-      return String(value);
-    }
-    
-    // 2. Recherche par variable exacte
-    value = data[variableName];
+    let value = data[variableName];
     
     // Si pas trouvé, essayer plusieurs stratégies de recherche
     if (!value) {
-      // 3. Recherche insensible à la casse
+      // 1. Recherche insensible à la casse
       const matchingKey = Object.keys(data).find(key => 
         key.toLowerCase() === variableName.toLowerCase()
       );
       
       if (matchingKey) {
         value = data[matchingKey];
-        console.log(`🔍 ✅ Valeur trouvée par recherche insensible à la casse: "${matchingKey}"`);
       } else {
-        // 4. Recherche par clé contenant la variable
+        // 2. Recherche par clé contenant la variable
         const partialMatchKey = Object.keys(data).find(key => 
           key.toLowerCase().includes(variableName.toLowerCase()) ||
           variableName.toLowerCase().includes(key.toLowerCase())
@@ -314,18 +295,27 @@ export class PDFGenerator {
         
         if (partialMatchKey) {
           value = data[partialMatchKey];
-          console.log(`🔍 ✅ Valeur trouvée par correspondance partielle: "${partialMatchKey}"`);
+        } else {
+          // 3. Recherche par libellé de champ original (avant normalisation)
+          const originalLabelKey = Object.keys(data).find(key => {
+            const normalizedKey = key
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
+            return normalizedKey === variableName;
+          });
+          
+          if (originalLabelKey) {
+            value = data[originalLabelKey];
+          }
         }
       }
     }
     
     const finalValue = value || '';
-    
-    if (finalValue) {
-      console.log(`🔍 ✅ Valeur finale pour "${variableName}": "${finalValue}"`);
-    } else {
-      console.log(`🔍 ❌ Aucune valeur trouvée pour: "${variableName}"`);
-    }
     
     return finalValue;
   }

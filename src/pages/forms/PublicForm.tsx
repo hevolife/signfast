@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { normalizeFormData, optimizeFormData, validateNormalizedData } from '../../utils/dataNormalizer';
 import { formatDateFR } from '../../utils/dateFormatter';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -324,63 +323,9 @@ export const PublicForm: React.FC = () => {
     e.preventDefault();
     if (!form || !id) return;
     
-    console.log('📝 === SOUMISSION FORMULAIRE PUBLIC ===');
-    console.log('📝 Données brutes reçues:', Object.keys(formData));
-    
     setSubmitting(true);
     
     try {
-      // Étape 1: Normaliser les données selon les champs du formulaire
-      const { normalizedData, fieldMappings, conflicts } = normalizeFormData(
-        formData, 
-        form.fields || []
-      );
-      
-      // Vérifier que tous les champs obligatoires sont présents dans les données normalisées
-      const requiredFields = form.fields?.filter(f => f.required).map(f => f.label) || [];
-      const { isValid: isNormalizedValid, missingFields: normalizedMissingFields } = validateNormalizedData(
-        normalizedData,
-        requiredFields
-      );
-      
-      if (!isNormalizedValid) {
-        console.error('❌ Champs obligatoires manquants après normalisation:', normalizedMissingFields);
-        setErrors(normalizedMissingFields.map(field => `Le champ "${field}" est obligatoire`));
-        return;
-      }
-      
-      // Afficher les conflits détectés
-      if (conflicts.length > 0) {
-        console.warn('⚠️ Conflits de normalisation détectés:', conflicts);
-        conflicts.forEach(conflict => {
-          console.warn(`⚠️ Conflit pour "${conflict.normalizedKey}":`, conflict.conflictingLabels);
-        });
-      }
-      
-      // Étape 2: Valider les données normalisées
-      const requiredFieldLabels = (form.fields || [])
-        .filter(field => field.required)
-        .map(field => field.label);
-      
-      const validation = validateNormalizedData(normalizedData, requiredFieldLabels);
-      
-      if (!validation.isValid) {
-        if (validation.missingFields.length > 0) {
-          toast.error(`Champs obligatoires manquants: ${validation.missingFields.join(', ')}`);
-          return;
-        }
-        if (validation.errors.length > 0) {
-          toast.error(`Erreurs de validation: ${validation.errors.join(', ')}`);
-          return;
-        }
-      }
-      
-      // Étape 3: Optimiser les données (compression d'images, etc.)
-      const optimizedData = await optimizeFormData(normalizedData);
-      
-      console.log('📝 Données finales pour sauvegarde:', Object.keys(optimizedData));
-      console.log('📝 Mappings appliqués:', fieldMappings.map(m => `${m.originalLabel} → ${m.normalizedKey}`));
-      
       // Préparer les données pour la base (sans les gros fichiers)
       const dbSubmissionData: Record<string, any> = {};
       // Préparer les données complètes pour le PDF (avec les images compressées)
@@ -627,14 +572,11 @@ export const PublicForm: React.FC = () => {
       }
 
       if (error) {
-        console.error('❌ Erreur sauvegarde réponse:', error);
         console.error('❌ Erreur finale sauvegarde:', error);
         toast.error('Erreur lors de l\'envoi du formulaire. Vos images sont peut-être trop lourdes.');
         return;
       }
 
-      console.log('✅ Réponse sauvegardée avec données normalisées:', responseData.id);
-      
 
       setSubmitted(true);
       toast.success('Formulaire envoyé avec succès !');
@@ -683,6 +625,7 @@ export const PublicForm: React.FC = () => {
           break;
         }
       } else if (maskChar === 'a') {
+        // Lettre minuscule requise
         if (/[a-zA-Z]/.test(inputChar)) {
           masked += inputChar.toLowerCase();
           valueIndex++;
@@ -741,7 +684,7 @@ export const PublicForm: React.FC = () => {
     });
 
     return fieldsToShow.map(conditionalField => (
-      <div key={conditionalField.id} className="ml-6 mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 border-blue-500">
+      <div key={conditionalField.id} className="ml-6 border-l-2 border-blue-200 pl-4 mt-4">
         {renderField(conditionalField)}
       </div>
     ));

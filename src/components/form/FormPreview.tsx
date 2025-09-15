@@ -1,7 +1,6 @@
 import React from 'react';
 import { FormField } from '../../types/form';
 import { formatDateFR } from '../../utils/dateFormatter';
-import { normalizeLabel } from '../../utils/dataNormalizer';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { SignatureCanvas } from './SignatureCanvas';
@@ -15,20 +14,13 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
   const [formData, setFormData] = React.useState<Record<string, any>>({});
 
   const handleInputChange = (fieldId: string, value: any) => {
-    // Trouver le champ correspondant pour obtenir son libellé
-    const field = fields.find(f => f.id === fieldId);
-    
     // Formater les dates automatiquement
     if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
       value = formatDateFR(value);
     }
-    
-    // Utiliser la clé normalisée basée sur le libellé du champ
-    const key = field ? normalizeLabel(field.label) : fieldId;
-    
     setFormData(prev => ({
       ...prev,
-      [key]: value
+      [fieldId]: value
     }));
   };
 
@@ -257,7 +249,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
               </label>
               <SignatureCanvas
                 onSignatureChange={(signature) => handleInputChange(field.id, signature)}
-                value={formData[normalizeLabel(field.label)]}
+                value={formData[field.id]}
                 required={field.required}
               />
             </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
-import { normalizeLabel } from '../../utils/dataNormalizer';
 import { useForms } from '../../hooks/useForms';
 import { useFormResponses } from '../../hooks/useForms';
 import { Form, FormResponse } from '../../types/form';
@@ -688,15 +687,6 @@ export const FormResults: React.FC = () => {
                 {form.fields?.map((field) => {
                   const value = selectedResponse.data[field.label];
                   if (value === undefined || value === null || value === '') return null;
-                  
-                  // Essayer aussi avec la clé normalisée si la clé exacte n'existe pas
-                  let actualValue = value;
-                  if (actualValue === undefined) {
-                    const normalizedKey = normalizeLabel(field.label);
-                    actualValue = selectedResponse.data[normalizedKey];
-                  }
-                  
-                  if (actualValue === undefined || actualValue === null || actualValue === '') return null;
 
                   // Appliquer le masque de saisie si défini
                   const getDisplayValue = (fieldValue: any, field: any) => {
@@ -843,10 +833,10 @@ export const FormResults: React.FC = () => {
                           </div>
                         ) : (
                           <div>
-                            <p className="whitespace-pre-wrap font-semibold">{String(getDisplayValue(actualValue, field))}</p>
-                            {field.validation?.mask && getDisplayValue(actualValue, field) !== String(actualValue) && (
+                            <p className="whitespace-pre-wrap font-semibold">{String(getDisplayValue(value, field))}</p>
+                            {field.validation?.mask && getDisplayValue(value, field) !== String(value) && (
                               <p className="text-xs text-gray-500 mt-2 font-medium">
-                                Valeur brute : {String(actualValue)}
+                                Valeur brute : {String(value)}
                               </p>
                             )}
                           </div>
@@ -857,27 +847,36 @@ export const FormResults: React.FC = () => {
                 })}
                 {/* Afficher les données supplémentaires qui ne correspondent à aucun champ du formulaire */}
                 {(() => {
-                  // Créer un Set des clés normalisées déjà traitées
+                  // Créer un Set des libellés de champs normalisés pour éviter les doublons
                   const processedFields = new Set<string>();
+                  const normalizeLabel = (label: string): string => {
+                    return label
+                      .toLowerCase()
+                      .normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/[^a-z0-9]/g, '_')
+                      .replace(/_+/g, '_')
+                      .replace(/^_|_$/g, '');
+                  };
 
-                  // Marquer tous les champs du formulaire comme traités (par clé normalisée)
+                  // Marquer tous les champs du formulaire comme traités
                   form.fields?.forEach(field => {
                     const normalizedLabel = normalizeLabel(field.label);
                     processedFields.add(normalizedLabel);
                   });
 
-                  // Trouver les données supplémentaires (non mappées aux champs du formulaire)
+                  // Trouver les données supplémentaires
                   const extraData = Object.entries(selectedResponse.data).filter(([key, value]) => {
                     if (value === undefined || value === null || value === '') return false;
                     
                     const normalizedKey = normalizeLabel(key);
                     
-                    // Vérifier si cette clé normalisée correspond à un champ du formulaire
+                    // Vérifier si cette clé normalisée a déjà été traitée
                     if (processedFields.has(normalizedKey)) {
                       return false;
                     }
                     
-                    // Marquer comme traité pour éviter les doublons dans les données supplémentaires
+                    // Marquer comme traité pour éviter les doublons futurs
                     processedFields.add(normalizedKey);
                     return true;
                   });
