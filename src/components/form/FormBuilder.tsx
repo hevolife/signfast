@@ -131,23 +131,32 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   };
 
   const updateMultipleFields = (updates: Partial<FormField>) => {
-    setFields(prev => prev.map(field => 
-      selectedFields.has(field.id) ? { ...field, ...updates } : field
-    ));
+    try {
+      setFields(prev => prev.map(field => 
+        selectedFields.has(field.id) ? { ...field, ...updates } : field
+      ));
+    } catch (error) {
+      // Fallback silencieux en cas d'erreur
+    }
   };
 
   const copyLabelsToPlaceholders = () => {
-    const fieldsToUpdate = fields.filter(field => selectedFields.has(field.id));
-    fieldsToUpdate.forEach(field => {
-      updateField(field.id, { placeholder: field.label });
-    });
-    // toast.success(`Libellés copiés vers les placeholders pour ${fieldsToUpdate.length} champ(s)`);
+    try {
+      const fieldsToUpdate = fields.filter(field => selectedFields.has(field.id));
+      fieldsToUpdate.forEach(field => {
+        updateField(field.id, { placeholder: field.label });
+      });
+    } catch (error) {
+      // Fallback silencieux en cas d'erreur
+    }
   };
 
   const bulkSetRequired = (required: boolean) => {
-    updateMultipleFields({ required });
-    const count = selectedFields.size;
-    // toast.success(`${count} champ(s) ${required ? 'marqués comme obligatoires' : 'marqués comme optionnels'}`);
+    try {
+      updateMultipleFields({ required });
+    } catch (error) {
+      // Fallback silencieux en cas d'erreur
+    }
   };
 
   return (

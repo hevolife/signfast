@@ -30,7 +30,6 @@ export const useForms = () => {
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-      console.warn('Supabase non configuré, impossible de récupérer les formulaires');
       setForms([]);
       setTotalCount(0);
       setLoading(false);
@@ -44,7 +43,13 @@ export const useForms = () => {
       // Requêtes parallèles pour optimiser les performances
       const offset = (page - 1) * limit;
       
-      const [countResult, dataResult] = await Promise.all([
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const [countResult, dataResult] = await Promise.race([
+        Promise.all([
         supabase
           .from('forms')
           .select('id', { count: 'estimated', head: true })
@@ -55,6 +60,8 @@ export const useForms = () => {
           .eq('user_id', targetUserId)
           .range(offset, offset + limit - 1)
           .order('created_at', { ascending: false })
+        ]),
+        timeoutPromise
       ]);
 
       const { count, error: countError } = countResult;

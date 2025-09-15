@@ -138,8 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          // Ne pas déconnecter automatiquement en cas d'erreur de token
-          // Laisser l'utilisateur connecté sur cet appareil
+          // Gestion d'erreur silencieuse pour éviter les crashes
         } else {
           setSession(session);
           setUser(session?.user ?? null);
@@ -147,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       })
       .catch((error) => {
-        // Ne pas effacer la session en cas d'erreur réseau
+        // Gestion d'erreur réseau silencieuse
         setLoading(false);
       });
 

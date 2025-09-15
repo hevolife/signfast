@@ -99,7 +99,7 @@ export const useSubscription = () => {
 
       // Chargement en arrière-plan avec timeout plus long pour éviter les faux négatifs
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout subscription check')), 5000)
+        setTimeout(() => reject(new Error('Timeout subscription check')), 8000)
       );
 
       // Vérifier l'abonnement Stripe avec gestion d'erreur
@@ -138,7 +138,8 @@ export const useSubscription = () => {
         }
 
       } catch (stripeError) {
-        // En cas de timeout, considérer comme abonné pour éviter les faux négatifs
+        // En cas de timeout ou erreur 500, considérer comme abonné pour éviter les faux négatifs
+        stripeSubscription = { status: 'active' }; // Fallback optimiste
       }
 
       // Vérifier les codes secrets avec gestion d'erreur
