@@ -330,7 +330,7 @@ export const SupportPanel: React.FC = () => {
                               <User className="h-3 w-3" />
                             )}
                             <span className="text-xs font-medium">
-                              {message.is_admin_reply ? 'Support SignFast' : 'Vous'}
+                             {message.is_admin_reply ? 'Support SignFast' : 'Moi'}
                             </span>
                           </div>
                           <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.message}</p>
