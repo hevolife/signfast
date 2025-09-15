@@ -53,15 +53,23 @@ export const useSubAccounts = () => {
     try {
       console.log('👤 Création sous-compte:', subAccountData.username);
       
+      // Hash the password before sending to database
+      const passwordHash = await hashPassword(subAccountData.password, user.id);
+      
       const { data, error } = await supabase.rpc('create_sub_account', {
         p_username: subAccountData.username,
         p_display_name: subAccountData.display_name,
-        p_password: subAccountData.password,
+        p_password_hash: passwordHash,
         p_permissions: subAccountData.permissions || { pdf_access: true, download_only: true }
       });
 
       if (error) {
-        console.error('Erreur création sous-compte:', error);
+        // Handle missing function gracefully
+        if (error.code === 'PGRST202' || error.message?.includes('Could not find the function')) {
+          toast.error('La fonctionnalité des sous-comptes n\'est pas encore configurée');
+          return null;
+        }
+        toast.error('Erreur lors de la création du sous-compte');
         return null;
       }
 
@@ -79,7 +87,8 @@ export const useSubAccounts = () => {
       const newSubAccount = subAccounts.find(sa => sa.id === data.sub_account_id);
       return newSubAccount || null;
     } catch (error) {
-      console.error('Erreur générale createSubAccount:', error);
+      // Handle any other errors gracefully
+      toast.error('La fonctionnalité des sous-comptes n\'est pas encore configurée');
       return null;
     }
   };
