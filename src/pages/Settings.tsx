@@ -457,10 +457,10 @@ export const Settings: React.FC = () => {
         {/* Onglets */}
         <div className="mb-8 bg-white/60 backdrop-blur-sm rounded-2xl p-3 shadow-xl">
           <div>
-            <nav className="flex space-x-2 justify-center flex-wrap">
+            <nav className="flex space-x-3 justify-center flex-wrap">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-3 px-2 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 rounded-lg">
@@ -471,7 +471,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`py-3 px-2 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('security', activeTab === 'security')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 rounded-lg">
@@ -482,7 +482,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('affiliate')}
-                className={`py-3 px-2 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 rounded-lg">
@@ -493,7 +493,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('subscription')}
-                className={`py-3 px-2 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
+                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subscription', activeTab === 'subscription')}`}
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-1 rounded-lg">
@@ -504,7 +504,7 @@ export const Settings: React.FC = () => {
               </button>
               <button
                 onClick={toggleDarkMode}
-                className="py-3 px-2 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-gray-100 hover:to-slate-200 hover:text-gray-700 hover:shadow-lg"
+                className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-gray-100 hover:to-slate-200 hover:text-gray-700 hover:shadow-lg"
                 title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
               >
                 <div className="flex items-center space-x-2">
