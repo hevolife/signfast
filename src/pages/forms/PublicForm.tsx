@@ -570,6 +570,7 @@ export const PublicForm: React.FC = () => {
                 type="text"
                 label={field.label}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
+                className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all"
               />
             )}
           </div>
@@ -584,6 +585,7 @@ export const PublicForm: React.FC = () => {
               type={field.type === 'phone' ? 'tel' : field.type}
               label={field.label}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
+              className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all"
             />
           </div>
         );
@@ -599,7 +601,7 @@ export const PublicForm: React.FC = () => {
               <textarea
                 {...baseProps}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                className="w-full px-4 py-3 border border-gray-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 bg-white/70 backdrop-blur-sm font-medium shadow-lg transition-all"
                 rows={3}
               />
             </div>
@@ -625,9 +627,9 @@ export const PublicForm: React.FC = () => {
                       onChange={(e) => {
                         handleInputChange(field.id, e.target.value);
                       }}
-                      className="text-blue-600"
+                      className="text-blue-600 w-4 h-4 focus:ring-blue-500 focus:ring-2"
                     />
-                    <span className="text-gray-700 dark:text-gray-300">{option}</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{option}</span>
                   </label>
                 ))}
               </div>
@@ -658,9 +660,9 @@ export const PublicForm: React.FC = () => {
                           : currentValues.filter((v: string) => v !== option);
                         handleInputChange(field.id, newValues);
                       }}
-                      className="text-blue-600"
+                      className="text-blue-600 w-4 h-4 focus:ring-blue-500 focus:ring-2 rounded"
                     />
-                    <span className="text-gray-700 dark:text-gray-300">{option}</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{option}</span>
                   </label>
                 ))}
               </div>
@@ -678,6 +680,7 @@ export const PublicForm: React.FC = () => {
               type="date"
               label={field.label}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
+              className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium shadow-lg transition-all"
             />
           </div>
         );
@@ -700,75 +703,51 @@ export const PublicForm: React.FC = () => {
                   if (file) {
                     // Pour les images, traitement optimisé avec redimensionnement
                     if (file.type.startsWith('image/')) {
-                      // Validation et traitement avec redimensionnement automatique
+                      // Utiliser le traitement optimisé pour formulaires publics
                       import('../../utils/imageCompression').then(({ ImageCompressor }) => {
-                        const validation = ImageCompressor.validateImage(file);
-                        if (!validation.valid) {
-                          toast.error(validation.error || 'Image invalide');
-                          return;
-                        }
-                        
-                        toast.loading('🖼️ Traitement de l\'image (redimensionnement 1920x1080 + conversion JPEG)...');
-                        
-                        // Utiliser la nouvelle fonction de traitement pour formulaires publics
                         ImageCompressor.processPublicFormImage(file)
                           .then(processedImage => {
-                            toast.dismiss();
-                            toast.success('✅ Image optimisée et prête (1920x1080 JPEG)');
                             handleInputChange(field.id, processedImage);
                           })
                           .catch(error => {
-                            toast.dismiss();
-                            console.error('Erreur traitement image:', error);
-                            toast.error('Erreur lors du traitement de l\'image');
+                            console.error('Erreur traitement image preview:', error);
+                            // Fallback
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const base64 = event.target?.result as string;
+                              handleInputChange(field.id, base64);
+                            };
+                            reader.readAsDataURL(file);
                           });
-                      }).catch(() => {
-                        // Fallback : lecture basique sans optimisation
-                        toast.error('Module de compression non disponible');
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const base64 = event.target?.result as string;
-                          handleInputChange(field.id, base64);
-                        };
-                        reader.readAsDataURL(file);
                       });
                     } else {
-                      // Compression de l'image
-                      toast.loading('🖼️ Compression de l\'image...');
-                      ImageCompressor.compressImage(file, {
-                        maxWidth: 1920,
-                        maxHeight: 1080,
-                        quality: 0.75,
-                        maxSizeKB: 512,
-                        format: 'jpeg',
-                        preserveTransparency: false
-                      }).then(compressedImage => {
-                        toast.dismiss();
-                        toast.success('✅ Image compressée et prête');
-                        handleInputChange(field.id, compressedImage);
-                      }).catch(error => {
-                        toast.dismiss();
-                        toast.error('Erreur lors de la compression');
-                      });
+                      // Pour les autres fichiers, stocker le nom
+                      handleInputChange(field.id, file.name);
                     }
-                  } else {
-                    // Pour les autres fichiers, stocker le nom
-                    handleInputChange(field.id, file.name);
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                className="w-full px-4 py-3 border border-gray-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white bg-white/70 backdrop-blur-sm font-medium shadow-lg transition-all"
               />
-              {/* Aperçu de l'image si c'est une image */}
+              {/* Aperçu de l'image */}
               {formData[field.id] && typeof formData[field.id] === 'string' && formData[field.id].startsWith('data:image') && (
-                <div className="mt-2">
-                  <p className="text-xs text-green-600 mb-1">✅ Image optimisée (1920x1080 JPEG) et prête pour le PDF</p>
-                  <img
-                    src={formData[field.id]}
-                    alt="Aperçu"
-                    className="max-w-xs max-h-32 object-contain border border-gray-300 rounded shadow-lg"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Taille finale: {Math.round(formData[field.id].length / 1024)} KB
+                <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+                      <span className="text-white text-xs">✅</span>
+                    </div>
+                    <span className="text-sm font-bold text-green-900 dark:text-green-300">
+                      Image optimisée
+                    </span>
+                  </div>
+                  <div className="bg-white/70 dark:bg-gray-800/70 p-3 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm shadow-inner">
+                    <img
+                      src={formData[field.id]}
+                      alt="Aperçu"
+                      className="max-w-xs max-h-32 object-contain mx-auto border border-gray-300 rounded-lg shadow-lg"
+                    />
+                  </div>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-semibold text-center">
+                    ✅ Image optimisée (1920x1080 JPEG) • {Math.round(formData[field.id].length / 1024)} KB
                   </p>
                 </div>
               )}
@@ -784,11 +763,26 @@ export const PublicForm: React.FC = () => {
                 {field.label}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
               </label>
-              <SignatureCanvas
-                onSignatureChange={(signature) => handleInputChange(field.id, signature)}
-                value={formData[field.id]}
-                required={field.required}
-              />
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                    <span className="text-white text-xs">✍️</span>
+                  </div>
+                  <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
+                    Signature électronique
+                  </span>
+                </div>
+                <div className="bg-white/70 dark:bg-gray-800/70 p-3 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm shadow-inner">
+                  <SignatureCanvas
+                    onSignatureChange={(signature) => handleInputChange(field.id, signature)}
+                    value={formData[field.id]}
+                    required={field.required}
+                  />
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-2 font-medium text-center">
+                  🔒 Signature sécurisée et légalement valide
+                </p>
+              </div>
             </div>
           </div>
         );
@@ -1034,7 +1028,7 @@ export const PublicForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Logo de l'entreprise - Toujours affiché pour debug */}
         <div className="text-center mb-8">
@@ -1043,7 +1037,7 @@ export const PublicForm: React.FC = () => {
               <img
                 src={formOwnerProfile.logo_url}
                 alt={formOwnerProfile.company_name || "Logo de l'entreprise"}
-                className="h-24 w-auto mx-auto object-contain max-w-xs"
+                className="h-24 w-auto mx-auto object-contain max-w-xs drop-shadow-lg hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
                   console.error('❌ Erreur chargement logo:', formOwnerProfile.logo_url);
                   e.currentTarget.style.display = 'none';
@@ -1055,8 +1049,8 @@ export const PublicForm: React.FC = () => {
             ) : (
               <div className="h-24 flex items-center justify-center">
                 <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-2 shadow-xl hover:scale-110 transition-transform duration-300">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                   </div>
@@ -1067,11 +1061,11 @@ export const PublicForm: React.FC = () => {
           
           {/* Informations de l'entreprise */}
           {formOwnerProfile?.company_name ? (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 font-semibold">
               {formOwnerProfile.company_name}
             </p>
           ) : (
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 mt-2 font-medium">
               {formOwnerProfile?.first_name || formOwnerProfile?.last_name 
                 ? `${formOwnerProfile.first_name || ''} ${formOwnerProfile.last_name || ''}`.trim()
                 : 'Utilisateur SignFast'
@@ -1080,18 +1074,23 @@ export const PublicForm: React.FC = () => {
           )}
         </div>
         
-        <Card>
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
           <CardHeader>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
-              {form.title}
-            </h1>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl mb-6 shadow-lg">
+                <span className="text-2xl">📝</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+                {form.title}
+              </h1>
+            </div>
             {form.description && (
-              <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-center font-medium leading-relaxed">
                 {form.description}
               </p>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {form.fields.map((field) => (
                 <div key={field.id}>
@@ -1099,13 +1098,24 @@ export const PublicForm: React.FC = () => {
                 </div>
               ))}
               
-              <div className="pt-4">
+              <div className="pt-6">
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl"
                 >
-                  {submitting ? 'Envoi en cours...' : 'Envoyer'}
+                  {submitting ? (
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Envoi en cours...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>✨</span>
+                      <span>Envoyer le formulaire</span>
+                      <span>📤</span>
+                    </div>
+                  )}
                 </Button>
               </div>
             </form>
@@ -1113,16 +1123,17 @@ export const PublicForm: React.FC = () => {
         </Card>
         
         {/* Pied de page SignFast */}
-        <div className="text-center mt-8 py-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-center mt-8 py-6 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg">
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
             Propulsé par{' '}
             <a
               href="https://signfastpro.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
+              className="text-blue-600 hover:text-blue-700 font-bold hover:underline transition-colors inline-flex items-center space-x-1"
             >
-              SignFast
+              <span>SignFast</span>
+              <span className="text-lg">⚡</span>
             </a>
           </p>
         </div>
