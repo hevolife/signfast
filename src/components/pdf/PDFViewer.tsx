@@ -62,7 +62,7 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
     if (file) {
       loadPDF();
     }
-  }, [file, currentPage]);
+  }, [file]);
 
   useEffect(() => {
     if (pdfDoc && numPages > 0) {
@@ -135,6 +135,8 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
   const renderCurrentPage = async () => {
     if (!pdfDoc) return;
     
+    console.log(`📄 Rendu de la page ${currentPage}/${numPages}`);
+    
     // Annuler toute tâche de rendu en cours pour cette page
     const existingTask = renderTasksRef.current.get(currentPage);
     if (existingTask) {
@@ -172,6 +174,10 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       canvas.height = viewport.height;
       canvas.width = viewport.width;
       
+      // Marquer le canvas avec le numéro de page
+      canvas.setAttribute('data-page', currentPage.toString());
+      canvas.className = 'border shadow-xl cursor-crosshair bg-white max-w-none transition-all border-blue-500 border-4 shadow-blue-200 ring-2 ring-blue-300';
+      
       context.clearRect(0, 0, canvas.width, canvas.height);
 
       const renderContext = {
@@ -184,8 +190,11 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
       
       await renderTask.promise;
       renderTasksRef.current.delete(currentPage);
+      
+      console.log(`✅ Page ${currentPage} rendue avec succès`);
     } catch (error) {
       if (error.name !== 'RenderingCancelledException') {
+        console.error(`❌ Erreur rendu page ${currentPage}:`, error);
       }
       renderTasksRef.current.delete(currentPage);
     }
@@ -342,13 +351,12 @@ const PDFViewerComponent: React.ForwardRefRenderFunction<PDFViewerRef, PDFViewer
               ref={(el) => {
                 if (el) {
                   canvasRefs.current.set(currentPage, el);
-                  console.log(`📄 Canvas ref enregistré pour page ${currentPage}`);
                   
                   // Forcer le rendu si le PDF est déjà chargé
                   if (pdfDoc && numPages > 0) {
                     setTimeout(() => {
                       renderCurrentPage();
-                    }, 50);
+                    }, 100);
                   }
                 }
               }}
