@@ -1,5 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Custom error class for Supabase authentication errors
+export class SupabaseAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SupabaseAuthError';
+  }
+}
+
 // Use runtime environment variables from window.ENV if available, fallback to build-time variables
 const supabaseUrl = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_URL) 
   ? window.ENV.VITE_SUPABASE_URL 
@@ -28,22 +36,32 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
             const { data, error } = await supabase.auth.refreshSession();
             if (error) {
               console.log('❌ Impossible de rafraîchir, déconnexion nécessaire');
-              supabase.auth.signOut();
+              await supabase.auth.signOut();
+              throw new SupabaseAuthError('Session expired and could not be refreshed');
             } else {
               console.log('✅ Token rafraîchi avec succès');
             }
           } catch (refreshError) {
             console.log('❌ Erreur rafraîchissement, déconnexion');
-            supabase.auth.signOut();
+            await supabase.auth.signOut();
+            throw new SupabaseAuthError('Session expired and could not be refreshed');
           }
         }
       } catch (error) {
-        // If we can't parse the response body, ignore
+        // If we can't parse the response body but it's a 403, treat as auth error
+        if (response.status === 403) {
+          await supabase.auth.signOut();
+          throw new SupabaseAuthError('Authentication failed');
+        }
       }
     }
     
     return response;
   } catch (error) {
+    // Re-throw SupabaseAuthError as-is
+    if (error instanceof SupabaseAuthError) {
+      throw error;
+    }
     console.warn('Network error in customFetch:', error);
     // Re-throw the error to let the calling code handle it
     throw error;

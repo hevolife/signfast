@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { SupabaseAuthError } from '../lib/supabase';
 import { Form, FormResponse } from '../types/form';
 import { useAuth } from '../contexts/AuthContext';
 import { useDemo } from '../contexts/DemoContext';
@@ -12,6 +14,7 @@ export const useForms = () => {
   const { user, isImpersonating, impersonationData } = useAuth();
   const { isDemoMode } = useDemo();
   const demoFormsHook = useDemoForms();
+  const navigate = useNavigate();
 
   // Si on est en mode démo, utiliser les données de démo
   if (isDemoMode) {
@@ -90,6 +93,13 @@ export const useForms = () => {
         // Silent error
       }
     } catch (error) {
+      // Handle authentication errors specifically
+      if (error instanceof SupabaseAuthError) {
+        console.log('🔄 Redirection vers login suite à erreur d\'authentification');
+        navigate('/login');
+        return;
+      }
+      
       console.warn('Impossible de récupérer les formulaires:', error instanceof Error ? error.message : 'Erreur inconnue');
       setForms([]);
       setTotalCount(0);
@@ -218,6 +228,13 @@ export const useForms = () => {
       console.log('📝 Liste rechargée');
       return true;
     } catch (error) {
+      // Handle authentication errors specifically
+      if (error instanceof SupabaseAuthError) {
+        console.log('🔄 Redirection vers login suite à erreur d\'authentification');
+        navigate('/login');
+        return false;
+      }
+      
       console.error('📝 ERREUR GÉNÉRALE:', error);
       console.error('📝 Message:', error instanceof Error ? error.message : String(error));
       
