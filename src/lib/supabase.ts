@@ -12,6 +12,24 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
     const response = await fetch(url, options);
     
+    // Handle 404 errors for missing tables gracefully
+    if (response.status === 404) {
+      try {
+        const body = await response.clone().json();
+        if (body.code === 'PGRST205' && body.message?.includes('sub_accounts')) {
+          console.log('⚠️ Sub-accounts table not found - feature disabled');
+          // Return empty data response to prevent crashes
+          return new Response(JSON.stringify({ data: [], error: null }), {
+            status: 200,
+            statusText: 'OK (Table not found)',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (parseError) {
+        // If we can't parse the response, continue with original response
+      }
+    }
+    
     // Handle 500 errors gracefully
     if (response.status === 500) {
       console.warn('⚠️ Server error 500, retrying with fallback...');
