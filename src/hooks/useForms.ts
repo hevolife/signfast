@@ -6,21 +6,20 @@ import { useDemo } from '../contexts/DemoContext';
 import { useDemoForms } from './useDemoForms';
 
 export const useForms = () => {
-  const { user, isImpersonating, impersonationData } = useAuth();
-  const { isDemoMode } = useDemo();
-  const demoFormsHook = useDemoForms();
-  
   const [forms, setForms] = useState<Form[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { user, isImpersonating, impersonationData } = useAuth();
+  const { isDemoMode } = useDemo();
+  const demoFormsHook = useDemoForms();
+
+  // Si on est en mode démo, utiliser les données de démo
+  if (isDemoMode) {
+    console.log('📝 Mode démo actif, utilisation hook démo');
+    return demoFormsHook;
+  }
 
   const fetchForms = async (page: number = 1, limit: number = 10) => {
-    // Si on est en mode démo, déléguer au hook démo
-    if (isDemoMode) {
-      console.log('📝 Mode démo actif, utilisation hook démo');
-      return;
-    }
-
     if (!user) {
       setLoading(false);
       return;
@@ -114,10 +113,6 @@ export const useForms = () => {
   }, [user, isDemoMode]);
 
   const createForm = async (formData: Partial<Form>) => {
-    if (isDemoMode) {
-      return demoFormsHook.createForm(formData);
-    }
-
     if (!user) {
       return null;
     }
@@ -144,10 +139,6 @@ export const useForms = () => {
   };
 
   const updateForm = async (id: string, updates: Partial<Form>) => {
-    if (isDemoMode) {
-      return demoFormsHook.updateForm(id, updates);
-    }
-
     if (!user) {
       return false;
     }
@@ -202,10 +193,6 @@ export const useForms = () => {
   };
 
   const deleteForm = async (id: string) => {
-    if (isDemoMode) {
-      return demoFormsHook.deleteForm(id);
-    }
-
     if (!user) {
       return false;
     }
@@ -230,36 +217,6 @@ export const useForms = () => {
     }
   };
 
-  useEffect(() => {
-    if (isDemoMode) {
-      // En mode démo, utiliser les données du hook démo
-      setForms(demoFormsHook.forms);
-      setTotalCount(demoFormsHook.totalCount);
-      setLoading(demoFormsHook.loading);
-      return;
-    }
-
-    if (user) {
-      fetchForms(1, 10);
-    } else {
-      setLoading(false);
-    }
-  }, [user, isDemoMode, demoFormsHook.forms, demoFormsHook.totalCount, demoFormsHook.loading]);
-
-  // Si on est en mode démo, retourner les données du hook démo
-  if (isDemoMode) {
-    return {
-      forms: demoFormsHook.forms,
-      totalCount: demoFormsHook.totalCount,
-      loading: demoFormsHook.loading,
-      createForm,
-      updateForm,
-      deleteForm,
-      refetch: demoFormsHook.refetch,
-      fetchPage: demoFormsHook.fetchPage,
-    };
-  }
-
   return {
     forms,
     totalCount,
@@ -273,53 +230,24 @@ export const useForms = () => {
 };
 
 export const useFormResponses = (formId: string) => {
-  const { isDemoMode } = useDemo();
   const [responses, setResponses] = useState<FormResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const [availableFields, setAvailableFields] = useState<string[]>([]);
+  const { isDemoMode } = useDemo();
 
-  // Fonction pour découvrir les champs disponibles dans les données JSONB
-  const discoverAvailableFields = async () => {
-    if (isDemoMode) {
-      return [];
-    }
-
-    try {
-      // Récupérer un échantillon de réponses pour analyser la structure des données
-      const { data: sampleResponses, error } = await supabase
-        .from('responses')
-        .select('data')
-        .eq('form_id', formId)
-        .limit(5);
-
-      if (error) throw error;
-
-      const fieldsSet = new Set<string>();
-      
-      (sampleResponses || []).forEach(response => {
-        if (response.data && typeof response.data === 'object') {
-          Object.keys(response.data).forEach(key => fieldsSet.add(key));
-        }
-      });
-
-      const fields = Array.from(fieldsSet).sort();
-      setAvailableFields(fields);
-      return fields;
-    } catch (error) {
-      console.error('Error discovering fields:', error);
-      return [];
-    }
-  };
+  // If in demo mode, return empty data without making Supabase requests
+  if (isDemoMode) {
+    return {
+      responses: [],
+      totalCount: 0,
+      loading: false,
+      fetchSingleResponseData: async () => null,
+      refetch: async () => {},
+      fetchPage: async () => {},
+    };
+  }
 
   const fetchResponses = async (page: number = 1, limit: number = 10) => {
-    if (isDemoMode) {
-      setResponses([]);
-      setTotalCount(0);
-      setLoading(false);
-      return;
-    }
-
     const offset = (page - 1) * limit;
     
     try {
@@ -346,11 +274,6 @@ export const useFormResponses = (formId: string) => {
         ...response,
         data: {}
       })));
-
-      // Découvrir les champs disponibles si pas encore fait
-      if (availableFields.length === 0) {
-        await discoverAvailableFields();
-      }
     } catch (error) {
       // Silent error
     } finally {
@@ -359,10 +282,6 @@ export const useFormResponses = (formId: string) => {
   };
 
   const fetchSingleResponseData = async (responseId: string) => {
-    if (isDemoMode) {
-      return null;
-    }
-
     try {
       const { data, error } = await supabase
         .from('responses')
@@ -385,125 +304,17 @@ export const useFormResponses = (formId: string) => {
       return null;
     }
   };
-
-  // Nouvelle fonction pour récupérer des champs spécifiques
-  const fetchSpecificFields = async (responseId: string, fields: string[]) => {
-    if (isDemoMode) {
-      return null;
-    }
-
-    try {
-      if (fields.length === 0) {
-        return null;
-      }
-
-      // Construire la requête select avec les champs JSONB spécifiques
-      const selectFields = fields.map(field => `data->>'${field}' as ${field}`).join(', ');
-      
-      const { data, error } = await supabase
-        .from('responses')
-        .select(selectFields)
-        .eq('id', responseId)
-        .single();
-
-      if (error) throw error;
-      
-      console.log('📊 Champs spécifiques récupérés:', data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching specific fields:', error);
-      return null;
-    }
-  };
-
-  // Fonction pour récupérer plusieurs réponses avec des champs spécifiques
-  const fetchResponsesWithFields = async (fields: string[], page: number = 1, limit: number = 10) => {
-    if (isDemoMode) {
-      setResponses([]);
-      setTotalCount(0);
-      setLoading(false);
-      return;
-    }
-
-    const offset = (page - 1) * limit;
-    
-    try {
-      if (fields.length === 0) {
-        // Fallback vers la méthode normale si aucun champ spécifié
-        return await fetchResponses(page, limit);
-      }
-
-      // Construire la requête select avec les champs JSONB spécifiques
-      const selectFields = [
-        'id', 
-        'form_id', 
-        'created_at', 
-        'ip_address', 
-        'user_agent',
-        ...fields.map(field => `data->>'${field}' as ${field}`)
-      ].join(', ');
-      
-      const { data, error } = await supabase
-        .from('responses')
-        .select(selectFields)
-        .eq('form_id', formId)
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Transformer les données pour correspondre au format attendu
-      const transformedResponses = (data || []).map(response => {
-        const { id, form_id, created_at, ip_address, user_agent, ...fieldData } = response;
-        return {
-          id,
-          form_id,
-          created_at,
-          ip_address,
-          user_agent,
-          data: fieldData
-        };
-      });
-      
-      setResponses(transformedResponses);
-      console.log('📊 Réponses avec champs spécifiques récupérées:', transformedResponses.length);
-      
-    } catch (error) {
-      console.error('Error fetching responses with specific fields:', error);
-    }
-  };
-
-  // Fonction pour récupérer les champs disponibles
-  const getAvailableFields = async () => {
-    if (isDemoMode) {
-      return [];
-    }
-
-    if (availableFields.length === 0) {
-      return await discoverAvailableFields();
-    }
-    return availableFields;
-  };
-
   useEffect(() => {
-    if (formId && !isDemoMode) {
+    if (formId) {
       fetchResponses();
-    } else if (isDemoMode) {
-      setResponses([]);
-      setTotalCount(0);
-      setLoading(false);
     }
-  }, [formId, isDemoMode]);
+  }, [formId]);
 
   return {
     responses,
     totalCount,
     loading,
-    availableFields,
     fetchSingleResponseData,
-    fetchSpecificFields,
-    fetchResponsesWithFields,
-    getAvailableFields,
     refetch: fetchResponses,
     fetchPage: fetchResponses,
   };

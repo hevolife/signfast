@@ -6,21 +6,20 @@ import { useDemo } from '../contexts/DemoContext';
 import { useDemoTemplates } from './useDemoForms';
 
 export const usePDFTemplates = () => {
-  const { user } = useAuth();
-  const { isDemoMode, demoTemplates } = useDemo();
-  const demoTemplatesHook = useDemoTemplates();
-  
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { isDemoMode, demoTemplates } = useDemo();
+  const demoTemplatesHook = useDemoTemplates();
+
+  // Si on est en mode démo, utiliser les données de démo
+  if (isDemoMode) {
+    return demoTemplatesHook;
+  }
 
   const fetchTemplates = async (page: number = 1, limit: number = 10) => {
-    // Si on est en mode démo, déléguer au hook démo
-    if (isDemoMode) {
-      return;
-    }
-
     try {
       if (user) {
         // L'utilisateur effectif est déjà géré par le contexte Auth
@@ -74,33 +73,12 @@ export const usePDFTemplates = () => {
   };
 
   useEffect(() => {
-    if (isDemoMode) {
-      // En mode démo, utiliser les données du hook démo
-      setTemplates(demoTemplatesHook.templates);
-      setTotalCount(demoTemplatesHook.totalCount);
-      setTotalPages(demoTemplatesHook.totalPages);
-      setLoading(demoTemplatesHook.loading);
-      return;
-    }
-
     if (user) {
       fetchTemplates(1, 10);
     } else {
       setLoading(false);
     }
-  }, [user, isDemoMode, demoTemplatesHook.templates, demoTemplatesHook.totalCount, demoTemplatesHook.totalPages, demoTemplatesHook.loading]);
-
-  // Si on est en mode démo, retourner les données du hook démo
-  if (isDemoMode) {
-    return {
-      templates: demoTemplatesHook.templates,
-      totalCount: demoTemplatesHook.totalCount,
-      totalPages: demoTemplatesHook.totalPages,
-      loading: demoTemplatesHook.loading,
-      refetch: demoTemplatesHook.refetch,
-      fetchPage: demoTemplatesHook.fetchPage,
-    };
-  }
+  }, [user]);
 
   return {
     templates,
