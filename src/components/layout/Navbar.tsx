@@ -9,6 +9,7 @@ import { FormInput, LogOut, LayoutDashboard, FileText, HardDrive, Crown, Setting
 import { useDarkMode } from '../../hooks/useDarkMode';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { SupportNotificationBadge } from '../notifications/SupportNotificationBadge';
+import toast from 'react-hot-toast';
 
 export const Navbar: React.FC = () => {
   const { user, signOut, isImpersonating, impersonationData, stopImpersonation } = useAuth();
