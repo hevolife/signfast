@@ -215,19 +215,11 @@ export const useSupportAdmin = () => {
         .from('support_tickets')
         .select(`
           *,
-          user:users!user_id(
-            email,
-            user_profiles(first_name, last_name, company_name)
-          ),
           support_messages(
             id,
             message,
             is_admin_reply,
-            created_at,
-            user:users!user_id(
-              email,
-              user_profiles(first_name, last_name, company_name)
-            )
+            created_at
           )
         `)
         .order('created_at', { ascending: false });
