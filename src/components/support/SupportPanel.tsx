@@ -304,7 +304,7 @@ export const SupportPanel: React.FC = () => {
               
               {/* Messages */}
               <CardContent className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96">
                   {loadingMessages ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -319,8 +319,8 @@ export const SupportPanel: React.FC = () => {
                         <div
                           className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
                             message.is_admin_reply
-                              ? 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-900 dark:text-white'
-                              : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+                              ? 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-900 dark:text-white break-words'
+                              : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white break-words'
                           }`}
                         >
                           <div className="flex items-center space-x-2 mb-1">
@@ -333,7 +333,7 @@ export const SupportPanel: React.FC = () => {
                               {message.is_admin_reply ? 'Support SignFast' : 'Vous'}
                             </span>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                          <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.message}</p>
                           <p className="text-xs opacity-75 mt-2">
                             {formatDateTimeFR(message.created_at)}
                           </p>
