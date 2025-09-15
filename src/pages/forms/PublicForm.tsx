@@ -929,37 +929,106 @@ export const PublicForm: React.FC = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="text-center py-16">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-50 dark:from-gray-900 dark:via-green-900/20 dark:to-emerald-900/20 flex items-center justify-center px-4">
+        <div className="max-w-lg w-full">
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl hover:shadow-3xl transition-all duration-500">
+            <CardContent className="text-center py-12 px-8">
             {!showFinalMessage ? (
               <>
-                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-green-400 rounded-full blur-xl opacity-30 animate-pulse"></div>
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center mx-auto shadow-xl animate-bounce">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+                  </div>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent mb-4">
                   Merci pour votre réponse !
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Patientez quelques secondes...
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  Traitement de votre formulaire en cours...
                 </p>
-                <div className="mt-4 flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-75"></div>
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-150"></div>
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-green-500 rounded-full animate-pulse"></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse delay-150"></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full animate-pulse delay-300"></div>
                 </div>
               </>
             ) : (
               <>
-                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Parfait !
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Votre formulaire a été envoyé avec succès.
-                </p>
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full blur-xl opacity-40 animate-pulse"></div>
+                  <div className="relative w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-2xl animate-in zoom-in duration-700">
+                    <CheckCircle className="h-12 w-12 text-white animate-in zoom-in duration-500 delay-300" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full animate-ping"></div>
+                </div>
+                
+                <div className="space-y-6 animate-in slide-in-from-bottom duration-700 delay-500">
+                  <div>
+                    <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+                      🎉 Parfait !
+                    </h2>
+                    <p className="text-xl text-gray-700 dark:text-gray-300 font-medium mb-2">
+                      Votre formulaire a été envoyé avec succès
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Nous avons bien reçu vos informations
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800 shadow-lg">
+                    <div className="flex items-center justify-center space-x-3 mb-4">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white text-lg">✅</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-green-900 dark:text-green-300">
+                        Prochaines étapes
+                      </h3>
+                    </div>
+                    <div className="space-y-3 text-sm text-green-800 dark:text-green-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-600 text-xs">📧</span>
+                        </div>
+                        <span>Vous recevrez une confirmation par email si configurée</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-600 text-xs">📄</span>
+                        </div>
+                        <span>Le document PDF sera généré automatiquement</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-600 text-xs">🔒</span>
+                        </div>
+                        <span>Vos données sont sécurisées et traitées avec soin</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium text-center">
+                      💡 Besoin d'aide ? Contactez-nous si vous avez des questions
+                    </p>
+                  </div>
+                </div>
               </>
             )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          
+          {/* Animation de confettis */}
+          {showFinalMessage && (
+            <div className="fixed inset-0 pointer-events-none z-50">
+              <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-yellow-400 rounded-full animate-ping delay-100"></div>
+              <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-green-400 rounded-full animate-ping delay-300"></div>
+              <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-blue-400 rounded-full animate-ping delay-500"></div>
+              <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-purple-400 rounded-full animate-ping delay-700"></div>
+              <div className="absolute top-3/4 left-1/2 w-2 h-2 bg-pink-400 rounded-full animate-ping delay-900"></div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
