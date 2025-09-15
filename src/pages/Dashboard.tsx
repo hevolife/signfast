@@ -187,7 +187,6 @@ export const Dashboard: React.FC = () => {
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
                   <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
                     Formulaires
                   </p>
@@ -260,7 +259,6 @@ export const Dashboard: React.FC = () => {
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
                     {totalResponses}
                   </p>
-                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                   <p className="text-xs text-white/80 flex items-center">
                     <TrendingUp className="h-3 w-3 mr-1" />
                     +12% ce mois
