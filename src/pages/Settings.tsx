@@ -514,6 +514,21 @@ export const Settings: React.FC = () => {
                   <span>{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
                 </div>
               </button>
+              <button
+                onClick={() => {
+                  // Déclencher l'événement pour réactiver le message d'accueil
+                  window.dispatchEvent(new CustomEvent('show-welcome-modal'));
+                }}
+                className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-green-100 hover:to-emerald-200 hover:text-green-700 hover:shadow-lg"
+                title="Revoir le guide de démarrage"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 rounded-lg">
+                    <span className="text-sm">🎯</span>
+                  </div>
+                  <span>Guide démarrage</span>
+                </div>
+              </button>
             </nav>
           </div>
         </div>

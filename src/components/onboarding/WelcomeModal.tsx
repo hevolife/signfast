@@ -9,17 +9,33 @@ export const WelcomeModal: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showSteps, setShowSteps] = useState(false);
+  const [forceShow, setForceShow] = useState(false);
 
   // Vérifier si c'est un nouvel utilisateur (créé il y a moins de 5 minutes)
   const isNewUser = user && user.created_at && 
-    (Date.now() - new Date(user.created_at).getTime()) < 5 * 60 * 1000;
+    (Date.now() - new Date(user.created_at).getTime()) < 24 * 60 * 60 * 1000; // 24h au lieu de 5 min
 
   // Vérifier si l'utilisateur a déjà vu le message d'accueil
   const hasSeenWelcome = localStorage.getItem(`welcome_seen_${user?.id}`);
 
+  // Écouter les événements pour réactiver le modal
+  useEffect(() => {
+    const handleShowWelcome = () => {
+      console.log('🎉 Réactivation du message d\'accueil');
+      setForceShow(true);
+      setIsVisible(true);
+      setTimeout(() => {
+        setShowSteps(true);
+      }, 1000);
+    };
+
+    window.addEventListener('show-welcome-modal', handleShowWelcome);
+    return () => window.removeEventListener('show-welcome-modal', handleShowWelcome);
+  }, []);
+
   // Afficher le modal seulement pour les nouveaux utilisateurs qui n'ont pas encore vu le message
   useEffect(() => {
-    if (isNewUser && !hasSeenWelcome && user) {
+    if ((isNewUser && !hasSeenWelcome && user) || forceShow) {
       // Délai pour laisser le temps à l'interface de se charger
       const timer = setTimeout(() => {
         setIsVisible(true);
@@ -31,7 +47,7 @@ export const WelcomeModal: React.FC = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [isNewUser, hasSeenWelcome, user]);
+  }, [isNewUser, hasSeenWelcome, user, forceShow]);
 
   // Animation des étapes
   useEffect(() => {
@@ -50,6 +66,7 @@ export const WelcomeModal: React.FC = () => {
     if (user) {
       localStorage.setItem(`welcome_seen_${user.id}`, 'true');
     }
+    setForceShow(false);
     setIsVisible(false);
     // Rediriger vers la création du premier formulaire
     window.location.href = '/forms/new';
@@ -59,10 +76,11 @@ export const WelcomeModal: React.FC = () => {
     if (user) {
       localStorage.setItem(`welcome_seen_${user.id}`, 'true');
     }
+    setForceShow(false);
     setIsVisible(false);
   };
 
-  if (!isVisible || !user) return null;
+  if (!isVisible) return null;
 
   const steps = [
     {
