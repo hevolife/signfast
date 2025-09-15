@@ -550,6 +550,21 @@ export const Settings: React.FC = () => {
                   <span>Guide démarrage</span>
                 </div>
               </button>
+              <button
+                onClick={() => {
+                  // Déclencher l'événement pour ouvrir le tutoriel
+                  window.dispatchEvent(new CustomEvent('show-tutorial'));
+                }}
+                className="py-3 px-4 rounded-xl font-bold text-sm transition-all active:scale-95 hover:scale-105 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-purple-100 hover:to-pink-200 hover:text-purple-700 hover:shadow-lg"
+                title="Lancer le tutoriel interactif"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 rounded-lg">
+                    <span className="text-sm">📚</span>
+                  </div>
+                  <span>Tutoriel guidé</span>
+                </div>
+              </button>
             </nav>
           </div>
         </div>

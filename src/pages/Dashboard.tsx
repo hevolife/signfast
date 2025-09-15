@@ -294,7 +294,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Cartes de statistiques principales */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8" data-tutorial="dashboard-stats">
           {/* Formulaires */}
           <Card className="group bg-gradient-to-br from-blue-500 to-indigo-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-4 sm:p-6">

@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import { X, Sparkles, Zap, CheckCircle, Clock, Gift, ArrowRight, FormInput, FileText, PenTool, Crown } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 export const WelcomeModal: React.FC = () => {
   const { user } = useAuth();
@@ -283,6 +284,23 @@ export const WelcomeModal: React.FC = () => {
                 <FormInput className="h-4 w-4 group-hover:animate-pulse" />
                 <span>Créer mon premier formulaire</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Button>
+            
+            <Button
+              onClick={() => {
+                setIsVisible(false);
+                // Déclencher le tutoriel après fermeture du modal
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('show-tutorial'));
+                }, 500);
+              }}
+              variant="ghost"
+              className="sm:w-auto bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-700 dark:text-purple-300 font-semibold py-2 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <div className="flex items-center space-x-2">
+                <BookOpen className="h-4 w-4" />
+                <span>Tutoriel guidé</span>
               </div>
             </Button>
             

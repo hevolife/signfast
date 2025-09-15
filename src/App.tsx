@@ -35,6 +35,7 @@ import { Support } from './pages/Support';
 import { DemoTimer } from './components/demo/DemoTimer';
 import { WelcomeModal } from './components/onboarding/WelcomeModal';
 import { SupportNotificationToast } from './components/notifications/SupportNotificationToast';
+import { TutorialTrigger } from './components/tutorial/TutorialTrigger';
 
 // Composant d'erreur de fallback
 const ErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () => void }> = ({ 
@@ -139,6 +140,8 @@ const AppContent: React.FC = () => {
         <WelcomeModal />
         {/* Notifications support globales */}
         <SupportNotificationToast />
+        {/* Tutoriel guidé pour nouveaux utilisateurs */}
+        <TutorialTrigger />
         {!isPublicForm && <Navbar />}
         <main>
           <Routes>
