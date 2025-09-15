@@ -845,6 +845,94 @@ export const FormResults: React.FC = () => {
                     </div>
                   );
                 })}
+                {/* Afficher les données supplémentaires qui ne correspondent à aucun champ du formulaire */}
+                {(() => {
+                  // Créer un Set des libellés de champs normalisés pour éviter les doublons
+                  const processedFields = new Set<string>();
+                  const normalizeLabel = (label: string): string => {
+                    return label
+                      .toLowerCase()
+                      .normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/[^a-z0-9]/g, '_')
+                      .replace(/_+/g, '_')
+                      .replace(/^_|_$/g, '');
+                  };
+
+                  // Marquer tous les champs du formulaire comme traités
+                  form.fields?.forEach(field => {
+                    const normalizedLabel = normalizeLabel(field.label);
+                    processedFields.add(normalizedLabel);
+                  });
+
+                  // Trouver les données supplémentaires
+                  const extraData = Object.entries(selectedResponse.data).filter(([key, value]) => {
+                    if (value === undefined || value === null || value === '') return false;
+                    
+                    const normalizedKey = normalizeLabel(key);
+                    
+                    // Vérifier si cette clé normalisée a déjà été traitée
+                    if (processedFields.has(normalizedKey)) {
+                      return false;
+                    }
+                    
+                    // Marquer comme traité pour éviter les doublons futurs
+                    processedFields.add(normalizedKey);
+                    return true;
+                  });
+
+                  return extraData.map(([key, value]) => (
+                    <div key={key} className="border-b border-gray-200/50 dark:border-gray-700/50 pb-4">
+                      <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        {key}
+                        <span className="ml-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-lg">
+                          Donnée supplémentaire
+                        </span>
+                      </div>
+                      <div className="text-gray-900 dark:text-white font-medium">
+                        {typeof value === 'string' && value.startsWith('data:image') ? (
+                          <div className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="w-6 h-6 bg-gradient-to-br from-gray-500 to-slate-600 rounded-full flex items-center justify-center shadow-md">
+                                <span className="text-white text-xs">📷</span>
+                              </div>
+                              <span className="text-sm font-bold text-gray-900 dark:text-gray-300">
+                                Image supplémentaire
+                              </span>
+                            </div>
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-inner">
+                              <img
+                                src={value}
+                                alt={key}
+                                className="max-w-full max-h-48 object-contain mx-auto rounded-lg shadow-md"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-xs text-gray-700 dark:text-gray-400 font-medium">
+                                📁 Fichier image supplémentaire
+                              </span>
+                              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                {Math.round(value.length / 1024)} KB
+                              </span>
+                            </div>
+                          </div>
+                        ) : Array.isArray(value) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {value.map((item, idx) => (
+                              <span key={idx} className="bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm dark:from-orange-900 dark:to-yellow-900 dark:text-orange-300">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="whitespace-pre-wrap font-semibold">{String(value)}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ));
+                })()}
                 </>
                 )}
 
