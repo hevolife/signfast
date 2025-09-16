@@ -279,8 +279,29 @@ export const useSubAccounts = () => {
     try {
       const passwordHash = await hashPassword(newPassword, user.id);
       
-          // Fallback sera géré ci-dessous
+      // Si les tables existent, essayer Supabase
+      if (tablesExist) {
+      try {
+        const { error } = await supabase
+          .from('sub_accounts')
+          .update({
+            password_hash: passwordHash,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subAccountId)
+          .eq('main_account_id', user.id);
+
+        if (error) {
+          throw error;
         }
+        
+        await fetchSubAccounts();
+        return true;
+        
+      } catch (supabaseError) {
+        console.log('⚠️ Supabase non disponible, utilisation du localStorage');
+          // Fallback sera géré ci-dessous
+      }
       }
       
       // Fallback vers localStorage
@@ -296,26 +317,6 @@ export const useSubAccounts = () => {
       setSubAccounts(updatedSubAccounts);
       
       return true;
-        
-        return true;
-        
-      } catch (supabaseError) {
-        console.log('⚠️ Supabase non disponible, utilisation du localStorage');
-        
-        // Fallback vers localStorage
-        const existingSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
-        const updatedSubAccounts = existingSubAccounts.map((sa: SubAccount) => 
-          sa.id === subAccountId 
-            ? { ...sa, password_hash: passwordHash, updated_at: new Date().toISOString() }
-            : sa
-        );
-        
-        localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
-        
-        setSubAccounts(updatedSubAccounts);
-        
-        return true;
-      }
 
     } catch (error) {
       console.error('Erreur générale resetSubAccountPassword:', error);
