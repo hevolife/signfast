@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start:prod": "serve ./dist -s -l 3000",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop signfast",
+    "pm2:restart": "pm2 restart signfast",
+    "pm2:delete": "pm2 delete signfast",
+    "pm2:logs": "pm2 logs signfast",
+    "pm2:status": "pm2 status"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
