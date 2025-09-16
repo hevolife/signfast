@@ -35,39 +35,6 @@ export const useSubAccounts = () => {
         return;
       }
       
-      // Essayer d'abord de créer la table si elle n'existe pas
-      try {
-        await supabase.rpc('exec', {
-          sql: `
-            CREATE TABLE IF NOT EXISTS sub_accounts (
-              id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-              main_account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-              username text NOT NULL,
-              display_name text NOT NULL,
-              password_hash text NOT NULL,
-              permissions jsonb DEFAULT '{"pdf_access": true, "download_only": true}'::jsonb,
-              is_active boolean DEFAULT true,
-              last_login_at timestamptz,
-              created_at timestamptz DEFAULT now(),
-              updated_at timestamptz DEFAULT now(),
-              UNIQUE(main_account_id, username)
-            );
-            
-            ALTER TABLE sub_accounts ENABLE ROW LEVEL SECURITY;
-            
-            CREATE POLICY IF NOT EXISTS "Users can manage their own sub accounts"
-              ON sub_accounts
-              FOR ALL
-              TO authenticated
-              USING (main_account_id = auth.uid())
-              WITH CHECK (main_account_id = auth.uid());
-          `
-        });
-        console.log('✅ Table sub_accounts créée avec succès');
-      } catch (createError) {
-        console.log('⚠️ Impossible de créer la table automatiquement:', createError);
-      }
-      
       const { data, error } = await supabase
         .from('sub_accounts')
         .select('*')

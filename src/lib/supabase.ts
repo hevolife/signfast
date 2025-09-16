@@ -33,6 +33,17 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       });
     }
     
+    // Handle exec RPC requests
+    if (urlString.includes('rpc/exec')) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Exec function not available'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const response = await fetch(url, options);
     
     // Handle 500 errors gracefully
