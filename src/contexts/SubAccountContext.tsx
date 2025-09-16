@@ -110,7 +110,17 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           p_user_agent: navigator.userAgent
         });
 
-        if (error || !data.success) {
+        if (error) {
+          // Check if it's a function not found error
+          if (error.code === 'PGRST202' || error.message?.includes('Could not find the function')) {
+            console.log('⚠️ Fonction RPC authenticate_sub_account non disponible, authentification locale');
+            return await loginAsSubAccountLocal(mainAccountEmail, username, password);
+          }
+          console.error('Erreur authentification:', error);
+          return false;
+        }
+
+        if (!data.success) {
           console.error('Erreur authentification:', error || data.error);
           return false;
         }
