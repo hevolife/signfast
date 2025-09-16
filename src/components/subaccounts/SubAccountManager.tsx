@@ -121,6 +121,9 @@ export const SubAccountManager: React.FC = () => {
       if (success) {
         toast.success('Sous-compte mis à jour !');
         setEditingAccount(null);
+        // Réinitialiser les champs d'édition
+        setEditDisplayName('');
+        setEditPermissions({ pdf_access: true, download_only: true });
       } else {
         toast.error('Erreur lors de la mise à jour');
       }

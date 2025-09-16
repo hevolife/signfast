@@ -201,11 +201,7 @@ export const useSubAccounts = () => {
           throw error;
         }
         
-        // Mettre à jour immédiatement l'état local
-        setSubAccounts(prev => prev.map(sa => 
-          sa.id === subAccountId ? { ...sa, ...updates, updated_at: new Date().toISOString() } : sa
-        ));
-        
+        await fetchSubAccounts();
         return true;
         
       } catch (supabaseError) {
@@ -300,7 +296,13 @@ export const useSubAccounts = () => {
           throw error;
         }
         
-        await fetchSubAccounts();
+        // Mettre à jour immédiatement l'état local
+        setSubAccounts(prev => prev.map(sa => 
+          sa.id === subAccountId 
+            ? { ...sa, password_hash: passwordHash, updated_at: new Date().toISOString() }
+            : sa
+        ));
+        
         return true;
         
       } catch (supabaseError) {
