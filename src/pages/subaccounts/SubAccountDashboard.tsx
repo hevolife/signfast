@@ -71,11 +71,36 @@ export const SubAccountDashboard: React.FC = () => {
         return;
       }
 
+      // Debug: Vérifier d'abord si la table pdf_storage existe et contient des données
+      console.log('🔍 Vérification table pdf_storage...');
+      try {
+        const { data: allPdfs, error: debugError } = await supabase
+          .from('pdf_storage')
+          .select('id, user_id, file_name')
+          .limit(5);
+        
+        if (debugError) {
+          console.log('❌ Erreur accès table pdf_storage:', debugError);
+        } else {
+          console.log('🔍 Échantillon PDFs dans la table:', allPdfs?.length || 0);
+          if (allPdfs && allPdfs.length > 0) {
+            console.log('🔍 Premiers PDFs:', allPdfs.map(p => ({ id: p.id, user_id: p.user_id, file_name: p.file_name })));
+            
+            // Vérifier si des PDFs appartiennent au compte principal
+            const mainAccountPdfs = allPdfs.filter(p => p.user_id === mainAccountId);
+            console.log('🔍 PDFs du compte principal trouvés:', mainAccountPdfs.length);
+          }
+        }
+      } catch (debugError) {
+        console.log('❌ Erreur debug table:', debugError);
+      }
+
       const offset = (currentPage - 1) * itemsPerPage;
 
       // Récupérer le nombre total avec gestion d'erreur améliorée
       let totalCount = 0;
       try {
+        console.log('📊 Comptage PDFs pour user_id:', mainAccountId);
         const { count, error: countError } = await supabase
         .from('pdf_storage')
         .select('id', { count: 'exact', head: true })
@@ -83,6 +108,7 @@ export const SubAccountDashboard: React.FC = () => {
 
         if (countError) {
           console.log('❌ Erreur comptage PDFs:', countError.message);
+          console.log('❌ Détails erreur comptage:', countError);
           totalCount = 0;
         } else {
           totalCount = count || 0;
@@ -98,6 +124,7 @@ export const SubAccountDashboard: React.FC = () => {
       // Récupérer les PDFs avec pagination et gestion d'erreur améliorée
       let pdfsData: any[] = [];
       try {
+        console.log('📁 Récupération PDFs avec pagination:', { offset, limit: itemsPerPage, user_id: mainAccountId });
         const { data, error } = await supabase
         .from('pdf_storage')
         .select('*')
@@ -107,10 +134,14 @@ export const SubAccountDashboard: React.FC = () => {
 
         if (error) {
           console.log('❌ Erreur récupération PDFs:', error.message);
+          console.log('❌ Détails erreur récupération:', error);
           pdfsData = [];
         } else {
           pdfsData = data || [];
           console.log('📁 PDFs récupérés:', pdfsData.length);
+          if (pdfsData.length > 0) {
+            console.log('📁 Premier PDF:', pdfsData[0]);
+          }
         }
       } catch (fetchError) {
         console.log('❌ Erreur réseau récupération PDFs');
