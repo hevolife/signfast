@@ -46,7 +46,7 @@ export const useSubAccounts = () => {
           .select('id')
           .limit(1);
 
-        if (error && (error.code === 'PGRST116' || error.code === 'PGRST205' || error.code === '42P01')) {
+        if (error && (error.code === 'PGRST116' || error.code === 'PGRST205' || error.code === '42P01' || error.code === 'NETWORK_ERROR')) {
           console.log('📋 Table sub_accounts non trouvée, utilisation du localStorage');
           setTablesExist(false);
           const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');

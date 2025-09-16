@@ -134,6 +134,50 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     });
   }
   
+  // Check if this is a table query request
+  const urlString = url.toString();
+  if (urlString.includes('/rest/v1/sub_accounts')) {
+    try {
+      const response = await customFetch(url, options);
+      
+      // If we get a 404 with PGRST205 (table not found), return a proper error response
+      if (response.status === 404) {
+        const body = await response.clone().text();
+        if (body.includes('PGRST205') || body.includes('Could not find the table')) {
+          console.log('📋 Table sub_accounts not found, returning structured error for fallback');
+          return new Response(JSON.stringify({ 
+            data: null, 
+            error: { 
+              code: 'PGRST205', 
+              message: 'Table not found',
+              details: 'sub_accounts table does not exist'
+            } 
+          }), {
+            status: 200,
+            statusText: 'OK',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.warn('⚠️ Network error accessing sub_accounts table, returning fallback response:', error);
+      return new Response(JSON.stringify({ 
+        data: null, 
+        error: { 
+          code: 'NETWORK_ERROR', 
+          message: 'Network error',
+          details: 'Could not access sub_accounts table'
+        } 
+      }), {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+  
   try {
     return await customFetch(url, options);
   } catch (error) {
