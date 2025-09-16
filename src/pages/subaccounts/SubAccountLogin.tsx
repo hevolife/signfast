@@ -33,7 +33,7 @@ export const SubAccountLogin: React.FC = () => {
         toast.success('Connexion réussie !');
         navigate('/sub-account/dashboard');
       } else {
-        toast.error('Authentification sous-compte non disponible. Veuillez contacter l\'administrateur.');
+        toast.error('Identifiants incorrects ou fonctionnalité non disponible. Veuillez vérifier vos informations ou contacter l\'administrateur.');
       }
     } catch (error) {
       toast.error('Erreur de connexion');

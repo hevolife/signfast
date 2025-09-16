@@ -112,22 +112,14 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         });
 
         if (error) {
-          // Check if it's a function not found error
-          if (error.code === 'PGRST202' || error.message?.includes('Could not find the function')) {
-            console.log('⚠️ Fonction RPC authenticate_sub_account non disponible');
-            return false;
-          }
-          console.error('Erreur authentification:', error);
+          // Gestion silencieuse des erreurs RPC
           return false;
         }
 
         if (!data.success) {
-          console.error('Erreur authentification:', error || data.error);
           return false;
         }
 
-        console.log('✅ Sous-compte connecté:', data.sub_account.username);
-        
         // Sauvegarder la session
         localStorage.setItem('sub_account_session_token', data.session_token);
         localStorage.setItem('sub_account_data', JSON.stringify(data.sub_account));
@@ -140,7 +132,6 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         
         return true;
       } catch (rpcError) {
-        console.log('⚠️ Fonction RPC non disponible');
         return false;
       }
     } catch (error) {
