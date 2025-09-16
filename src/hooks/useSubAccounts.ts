@@ -24,13 +24,24 @@ export const useSubAccounts = () => {
     try {
       setLoading(true);
       
+      // Vérifier d'abord si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        setSubAccounts([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('sub_accounts')
         .select('*')
         .eq('main_account_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error || !data) {
+      if (error) {
         // Table doesn't exist or other error - disable feature gracefully
         setSubAccounts([]);
         setTotalCount(0);
@@ -38,8 +49,8 @@ export const useSubAccounts = () => {
         setSubAccounts(data || []);
         setTotalCount(data?.length || 0);
       }
-    } catch (error: any) {
-      // Any error (including table not found) - disable feature gracefully
+    } catch (error) {
+      // Any error - disable feature gracefully
       setSubAccounts([]);
       setTotalCount(0);
     } finally {
@@ -50,86 +61,40 @@ export const useSubAccounts = () => {
   const createSubAccount = async (subAccountData: CreateSubAccountData): Promise<SubAccount | null> => {
     if (!user) return null;
 
+    // Vérifier si les sous-comptes sont disponibles
+    if (!Array.isArray(subAccounts)) {
+      toast.error('La fonctionnalité des sous-comptes n\'est pas configurée');
+      return null;
+    }
+
     try {
-      console.log('👤 Création sous-compte:', subAccountData.username);
-      
-      // Vérifier d'abord si les tables existent
-      const { error: testError } = await supabase
-        .from('sub_accounts')
-        .select('id')
-        .limit(1);
-      
-      if (testError) {
-        console.log('📊 Tables de sous-comptes non créées');
-        toast.error('La fonctionnalité des sous-comptes n\'est pas encore configurée');
-        return null;
-      }
-      
       // Hash the password before sending to database
       const passwordHash = await hashPassword(subAccountData.password, user.id);
       
-      // Essayer d'abord avec la fonction RPC
-      try {
-        const { data, error } = await supabase.rpc('create_sub_account', {
-          p_username: subAccountData.username,
-          p_display_name: subAccountData.display_name,
-          p_password_hash: passwordHash,
-          p_permissions: subAccountData.permissions || { pdf_access: true, download_only: true }
-        });
+      // Insertion directe dans la table
+      const { data, error } = await supabase
+        .from('sub_accounts')
+        .insert([{
+          main_account_id: user.id,
+          username: subAccountData.username,
+          display_name: subAccountData.display_name,
+          password_hash: passwordHash,
+          permissions: subAccountData.permissions || { pdf_access: true, download_only: true },
+          is_active: true
+        }])
+        .select()
+        .single();
 
-        if (error) {
-          throw error;
-        }
-
-        if (!data.success) {
-          toast.error(data.error || 'Erreur lors de la création du sous-compte');
-          return null;
-        }
-
-        console.log('✅ Sous-compte créé:', data.sub_account_id);
-        
-        // Rafraîchir la liste
-        await fetchSubAccounts();
-        
-        // Retourner le nouveau sous-compte
-        const newSubAccount = subAccounts.find(sa => sa.id === data.sub_account_id);
-        return newSubAccount || null;
-      } catch (rpcError: any) {
-        // Si la fonction RPC n'existe pas, utiliser l'insertion directe
-        if (rpcError.code === 'PGRST202' || rpcError.message?.includes('Could not find the function')) {
-          console.log('📊 Fonction RPC non trouvée, insertion directe...');
-          
-          const { data, error } = await supabase
-            .from('sub_accounts')
-            .insert([{
-              main_account_id: user.id,
-              username: subAccountData.username,
-              display_name: subAccountData.display_name,
-              password_hash: passwordHash,
-              permissions: subAccountData.permissions || { pdf_access: true, download_only: true },
-              is_active: true
-            }])
-            .select()
-            .single();
-
-          if (error) {
-            console.error('❌ Erreur insertion directe:', error);
-            toast.error('Erreur lors de la création du sous-compte');
-            return null;
-          }
-
-          console.log('✅ Sous-compte créé par insertion directe:', data.id);
-          
-          // Rafraîchir la liste
-          await fetchSubAccounts();
-          
-          return data;
-        } else {
-          throw rpcError;
-        }
+      if (error) {
+        toast.error('Erreur lors de la création du sous-compte');
+        return null;
       }
+      
+      // Rafraîchir la liste
+      await fetchSubAccounts();
+      
+      return data;
     } catch (error) {
-      console.error('❌ Erreur générale createSubAccount:', error);
       toast.error('Erreur lors de la création du sous-compte');
       return null;
     }

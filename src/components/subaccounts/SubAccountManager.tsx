@@ -50,7 +50,7 @@ export const SubAccountManager: React.FC = () => {
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
   
   // Si la table n'existe pas encore, afficher un message d'information
-  if (!loading && subAccounts.length === 0 && totalCount === 0) {
+  if (!loading && (!Array.isArray(subAccounts) || (subAccounts.length === 0 && totalCount === 0))) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -72,7 +72,7 @@ export const SubAccountManager: React.FC = () => {
                 Fonctionnalité en cours de configuration
               </h4>
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Le système de sous-comptes est en cours d'installation. Cette fonctionnalité sera disponible prochainement.
+                Le système de sous-comptes n'est pas encore configuré dans votre base de données. Contactez l'administrateur pour activer cette fonctionnalité.
               </p>
             </div>
           </div>
@@ -83,6 +83,12 @@ export const SubAccountManager: React.FC = () => {
 
   const handleCreateSubAccount = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérifier si les sous-comptes sont disponibles
+    if (!Array.isArray(subAccounts)) {
+      toast.error('La fonctionnalité des sous-comptes n\'est pas configurée');
+      return;
+    }
     
     if (!newUsername.trim() || !newDisplayName.trim() || !newPassword.trim()) {
       toast.error('Veuillez remplir tous les champs');
