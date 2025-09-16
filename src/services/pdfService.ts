@@ -84,13 +84,33 @@ export class PDFService {
     try {
       console.log('📄 Récupération template:', templateId);
       
+      // First, fetch published form IDs
+      const { data: publishedForms, error: formsError } = await supabase
+        .from('forms')
+        .select('id')
+        .eq('is_published', true);
+
+      if (formsError) {
+        console.error('❌ Erreur récupération formulaires publiés:', formsError);
+        throw new Error('Erreur récupération formulaires publiés');
+      }
+
+      const publishedFormIds = publishedForms?.map(form => form.id) || [];
+      
       // Récupérer le template
-      const { data: template, error: templateError } = await supabase
+      let templateQuery = supabase
         .from('pdf_templates')
         .select('*')
-        .eq('id', templateId)
-        .or('is_public.eq.true,linked_form_id.in.(select id from forms where is_published = true)')
-        .single();
+        .eq('id', templateId);
+
+      // Build the or condition dynamically
+      if (publishedFormIds.length > 0) {
+        templateQuery = templateQuery.or(`is_public.eq.true,linked_form_id.in.(${publishedFormIds.join(',')})`);
+      } else {
+        templateQuery = templateQuery.eq('is_public', true);
+      }
+
+      const { data: template, error: templateError } = await templateQuery.single();
 
       if (templateError || !template) {
         console.warn('⚠️ Template non trouvé, fallback vers PDF simple');
