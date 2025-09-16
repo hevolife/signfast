@@ -169,6 +169,7 @@ export const useSubAccounts = () => {
       const updatedSubAccounts = [...existingSubAccounts, newSubAccount];
       localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
       
+      // Mettre à jour immédiatement l'état local
       setSubAccounts(updatedSubAccounts);
       setTotalCount(updatedSubAccounts.length);
       
