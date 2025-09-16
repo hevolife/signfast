@@ -10,19 +10,8 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supaba
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
-    // Check if this is a sub_accounts request before making the call
-    const urlString = url.toString();
-    if (urlString.includes('sub_accounts')) {
-      console.log('⚠️ Sub-accounts table request intercepted - feature disabled');
-      // Return empty data response to prevent crashes and console errors
-      return new Response(JSON.stringify({ data: [], error: null }), {
-        status: 200,
-        statusText: 'OK (Sub-accounts table not found)',
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
     // Handle create_sub_account RPC requests
+    const urlString = url.toString();
     if (urlString.includes('rpc/create_sub_account')) {
       return new Response(JSON.stringify({
         success: false,
