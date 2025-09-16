@@ -98,7 +98,8 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        return await loginAsSubAccountLocal(mainAccountEmail, username, password);
+        console.log('⚠️ Supabase non configuré, authentification sous-compte non disponible');
+        return false;
       }
 
       try {
@@ -113,8 +114,8 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (error) {
           // Check if it's a function not found error
           if (error.code === 'PGRST202' || error.message?.includes('Could not find the function')) {
-            console.log('⚠️ Fonction RPC authenticate_sub_account non disponible, authentification locale');
-            return await loginAsSubAccountLocal(mainAccountEmail, username, password);
+            console.log('⚠️ Fonction RPC authenticate_sub_account non disponible');
+            return false;
           }
           console.error('Erreur authentification:', error);
           return false;
@@ -139,8 +140,8 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         
         return true;
       } catch (rpcError) {
-        console.log('⚠️ Fonction RPC non disponible, authentification locale');
-        return await loginAsSubAccountLocal(mainAccountEmail, username, password);
+        console.log('⚠️ Fonction RPC non disponible');
+        return false;
       }
     } catch (error) {
       console.error('Erreur générale loginAsSubAccount:', error);
@@ -148,61 +149,6 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const loginAsSubAccountLocal = async (
-    mainAccountEmail: string,
-    username: string,
-    password: string
-  ): Promise<boolean> => {
-    try {
-      // Trouver le compte principal par email
-      const { data: mainUser, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', mainAccountEmail)
-        .single();
-
-      if (userError || !mainUser) {
-        console.error('Compte principal non trouvé');
-        return false;
-      }
-
-      // Récupérer les sous-comptes depuis localStorage
-      const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${mainUser.id}`) || '[]');
-      
-      // Hasher le mot de passe fourni
-      const passwordHash = await hashPassword(password, mainUser.id);
-      
-      // Vérifier les identifiants
-      const subAccount = localSubAccounts.find((sa: SubAccount) => 
-        sa.username === username && 
-        sa.password_hash === passwordHash &&
-        sa.is_active
-      );
-
-      if (!subAccount) {
-        console.error('Identifiants incorrects');
-        return false;
-      }
-
-      // Générer un token de session
-      const sessionToken = crypto.randomUUID();
-      
-      // Sauvegarder la session
-      localStorage.setItem('sub_account_session_token', sessionToken);
-      localStorage.setItem('sub_account_data', JSON.stringify(subAccount));
-      
-      // Mettre à jour l'état
-      setIsSubAccount(true);
-      setSubAccount(subAccount);
-      setMainAccountId(subAccount.main_account_id);
-      setSessionToken(sessionToken);
-      
-      return true;
-    } catch (error) {
-      console.error('Erreur authentification locale:', error);
-      return false;
-    }
-  };
 
   const logoutSubAccount = () => {
     // Nettoyer le localStorage
