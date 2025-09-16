@@ -136,14 +136,14 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   
   // Check if this is a table query request
   const urlString = url.toString();
-  if (urlString.includes('/rest/v1/sub_accounts')) {
+  if (urlString.includes('/rest/v1/sub_accounts') || urlString.includes('sub_accounts?')) {
     try {
       const response = await customFetch(url, options);
       
       // If we get a 404 with PGRST205 (table not found), return a proper error response
       if (response.status === 404) {
         const body = await response.clone().text();
-        if (body.includes('PGRST205') || body.includes('Could not find the table')) {
+        if (body.includes('PGRST205') || body.includes('Could not find the table') || body.includes('sub_accounts')) {
           console.log('📋 Table sub_accounts not found, returning structured error for fallback');
           return new Response(JSON.stringify({ 
             data: null, 
