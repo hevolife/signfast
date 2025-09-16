@@ -198,6 +198,9 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
     );
   }
 
+  // Ensure subAccounts is always an array
+  const subAccountsArray = Array.isArray(subAccounts) ? subAccounts : [];
+
   return (
     <div className="space-y-6">
       {/* En-tête avec statistiques */}
@@ -213,7 +216,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                   Gestion des Sous-Comptes
                 </h2>
                 <p className="text-sm text-blue-700 dark:text-blue-400">
-                  {totalCount} sous-compte{totalCount > 1 ? 's' : ''} • Accès restreint au stockage PDF
+                  {subAccountsArray.length} sous-compte{subAccountsArray.length > 1 ? 's' : ''} • Accès restreint au stockage PDF
                 </p>
               </div>
             </div>
@@ -258,7 +261,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
       </Card>
 
       {/* Liste des sous-comptes */}
-      {subAccounts.length === 0 ? (
+      {subAccountsArray.length === 0 ? (
         <Card>
           <CardContent className="text-center py-16">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -281,7 +284,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
         </Card>
       ) : (
         <div className="space-y-4">
-          {subAccounts.map((subAccount) => (
+          {subAccountsArray.map((subAccount) => (
             <Card key={subAccount.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 {editingAccount === subAccount.id ? (
