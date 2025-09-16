@@ -27,7 +27,7 @@ import {
 import toast from 'react-hot-toast';
 
 export const SubAccountManager: React.FC = () => {
-  const { subAccounts, totalCount, loading, createSubAccount, updateSubAccount, deleteSubAccount, resetSubAccountPassword, refetch } = useSubAccounts();
+  const { subAccounts, totalCount, loading, tablesExist, createSubAccount, updateSubAccount, deleteSubAccount, resetSubAccountPassword, refetch } = useSubAccounts();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<string | null>(null);
   
@@ -91,8 +91,8 @@ export const SubAccountManager: React.FC = () => {
       } else {
         toast.error('Erreur lors de la création du sous-compte');
       }
-    } catch (error) {
-      toast.error('Erreur lors de la création du sous-compte');
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de la création du sous-compte');
     } finally {
       setCreating(false);
     }
@@ -243,6 +243,25 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
       </Card>
 
       {/* Informations importantes */}
+      {!tablesExist && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Shield className="h-6 w-6 text-blue-600" />
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                  Mode local activé
+                </h3>
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  Les sous-comptes sont stockés localement dans votre navigateur. 
+                  Pour un stockage permanent, configurez la base de données.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-800">
         <CardContent className="p-4">
           <div className="flex items-center space-x-3">
