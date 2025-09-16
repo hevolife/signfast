@@ -72,8 +72,19 @@ export const useSubAccounts = () => {
         .select('*')
         .eq('main_account_id', user.id)
         .order('created_at', { ascending: false });
-
-      if (error) {
+      if (error && (error.code === 'PGRST116' || error.code === 'PGRST205' || error.code === '42P01' || error.code === 'NETWORK_ERROR')) {
+        console.log('📋 Table sub_accounts non trouvée, utilisation du localStorage');
+        setTablesExist(false);
+        const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
+        setSubAccounts(localSubAccounts);
+        setTotalCount(localSubAccounts.length);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if data contains an error object (when safeFetch returns structured error)
+      if (data && data.error && (data.error.code === 'PGRST205' || data.error.code === 'NETWORK_ERROR')) {
+      if (error || (data && data.error)) {
         console.error('Erreur récupération sous-comptes:', error);
         setTablesExist(false);
         const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
