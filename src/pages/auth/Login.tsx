@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { FormInput, Mail, Eye, EyeOff, Lock as LockIcon, ArrowRight, Sparkles } from 'lucide-react';
+import { FormInput, Mail, Eye, EyeOff, Lock as LockIcon, ArrowRight, Sparkles, Users, ToggleLeft, ToggleRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Login: React.FC = () => {
@@ -16,6 +16,7 @@ export const Login: React.FC = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [isSubAccountMode, setIsSubAccountMode] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -116,20 +117,72 @@ export const Login: React.FC = () => {
           <CardHeader>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl mb-6 shadow-lg">
-                <LockIcon className="h-8 w-8 text-blue-600" />
+                {isSubAccountMode ? (
+                  <Users className="h-8 w-8 text-purple-600" />
+                ) : (
+                  <LockIcon className="h-8 w-8 text-blue-600" />
+                )}
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {showResetForm ? 'Réinitialiser' : 'Connexion'}
+                {showResetForm ? 'Réinitialiser' : isSubAccountMode ? 'Connexion Sous-Compte' : 'Connexion'}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 font-medium">
                 {showResetForm 
                   ? 'Saisissez votre email pour recevoir un lien de réinitialisation' 
+                  : isSubAccountMode
+                  ? 'Accès restreint au stockage PDF uniquement'
                   : 'Connectez-vous à votre espace SignFast'
                 }
               </p>
             </div>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
+            {/* Toggle entre connexion normale et sous-compte */}
+            {!showResetForm && (
+              <div className="mb-6">
+                <div className="flex items-center justify-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center space-x-3">
+                    <span className={`text-sm font-semibold transition-colors ${!isSubAccountMode ? 'text-blue-600' : 'text-gray-500'}`}>
+                      Compte principal
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSubAccountMode(!isSubAccountMode)}
+                      className="relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      style={{
+                        backgroundColor: isSubAccountMode ? '#8b5cf6' : '#3b82f6'
+                      }}
+                    >
+                      <span
+                        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
+                          isSubAccountMode ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-sm font-semibold transition-colors ${isSubAccountMode ? 'text-purple-600' : 'text-gray-500'}`}>
+                      Sous-compte
+                    </span>
+                  </div>
+                </div>
+                
+                {isSubAccountMode && (
+                  <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Users className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-semibold text-purple-900 dark:text-purple-300">
+                        Connexion sous-compte
+                      </span>
+                    </div>
+                    <div className="text-xs text-purple-700 dark:text-purple-400 space-y-1">
+                      <div>📁 Accès au stockage PDF uniquement</div>
+                      <div>📥 Téléchargement des documents</div>
+                      <div>🔒 Aucun accès aux autres fonctionnalités</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {showResetForm ? (
               <form onSubmit={handlePasswordReset} className="space-y-6">
                 <div className="space-y-4">
@@ -183,6 +236,37 @@ export const Login: React.FC = () => {
                 </div>
               </form>
             ) : (
+              isSubAccountMode ? (
+                // Redirection vers la page de connexion sous-compte
+                <div className="text-center space-y-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center justify-center space-x-3 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <Users className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-purple-900 dark:text-purple-300">
+                          Connexion Sous-Compte
+                        </h3>
+                        <p className="text-sm text-purple-700 dark:text-purple-400">
+                          Accès restreint au stockage PDF
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-purple-800 dark:text-purple-200 mb-4">
+                      Les sous-comptes ont un accès limité au stockage PDF du compte principal.
+                      Vous aurez besoin de vos identifiants spécifiques de sous-compte.
+                    </p>
+                    <Link to="/sub-account/login">
+                      <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl">
+                        <Users className="h-5 w-5 mr-2" />
+                        Accéder à la connexion sous-compte
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
                   <Input
@@ -248,6 +332,7 @@ export const Login: React.FC = () => {
                   </button>
                 </div>
               </form>
+              )
             )}
 
             <div className="mt-8 text-center">
