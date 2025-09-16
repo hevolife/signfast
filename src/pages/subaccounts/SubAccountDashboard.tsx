@@ -319,7 +319,7 @@ export const SubAccountDashboard: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={fetchPDFs}
+                onClick={fetchResponses}
                 className="flex items-center space-x-1"
               >
                 <RefreshCw className="h-4 w-4" />
