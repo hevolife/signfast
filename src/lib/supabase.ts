@@ -91,20 +91,22 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     });
   }
   
+  const urlString = url.toString();
+  
   // Check if this is a table query request
+  if (urlString.includes('/rest/v1/sub_accounts') || urlString.includes('sub_accounts?') ||
       url.includes('/rpc/set_config') ||
       url.includes('users?select=id&email=eq.')) {
-  if (urlString.includes('/rest/v1/sub_accounts') || urlString.includes('sub_accounts?')) {
     try {
       const response = await customFetch(url, options);
       
       // If we get a 404 with PGRST205 (table not found), return a proper error response
-      if (response.status === 404) {
+      if (response.status === 404 || response.status === 406) {
         const body = await response.clone().text();
         if (body.includes('PGRST205') || body.includes('Could not find the table') || body.includes('sub_accounts')) {
           console.log('📋 Table sub_accounts not found, returning structured error for fallback');
           return new Response(JSON.stringify({ 
-        if (response.status === 404 || response.status === 406) {
+            data: null,
             error: { 
               code: 'PGRST205', 
               message: 'Table not found',
