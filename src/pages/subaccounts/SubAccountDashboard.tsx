@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSubAccount } from '../../contexts/SubAccountContext';
 import { supabase } from '../../lib/supabase';
+import { PDFService } from '../../services/pdfService';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -22,21 +23,23 @@ import {
   ArrowRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { FormResponse } from '../../types/form';
 
-interface PDFDocument {
+interface ResponseWithPDF {
   id: string;
-  file_name: string;
-  template_name: string;
-  form_title: string;
-  user_name: string;
-  file_size: number;
+  form_id: string;
+  data: Record<string, any>;
   created_at: string;
-  pdf_content: string;
+  ip_address?: string;
+  user_agent?: string;
+  form_title: string;
+  template_name?: string;
+  can_generate_pdf: boolean;
 }
 
 export const SubAccountDashboard: React.FC = () => {
   const { subAccount, mainAccountId, logoutSubAccount } = useSubAccount();
-  const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
+  const [responses, setResponses] = useState<ResponseWithPDF[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size'>('date');
@@ -46,201 +49,215 @@ export const SubAccountDashboard: React.FC = () => {
 
   useEffect(() => {
     if (subAccount && mainAccountId) {
-      fetchPDFs();
+      fetchResponses();
     }
   }, [subAccount, mainAccountId, currentPage]);
 
-  const fetchPDFs = async () => {
+  const fetchResponses = async () => {
     if (!mainAccountId) {
-      console.log('❌ Pas de mainAccountId disponible');
+      console.log('❌ Pas de mainAccountId disponible pour récupérer les réponses');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('📁 Récupération PDFs pour compte principal:', mainAccountId);
+      console.log('📋 Récupération réponses pour compte principal:', mainAccountId);
       
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.log('❌ Supabase non configuré');
-        setPdfs([]);
+        console.log('❌ Supabase non configuré pour les réponses');
+        setResponses([]);
         setTotalCount(0);
         return;
       }
 
-      // Debug: Vérifier d'abord si la table pdf_storage existe et contient des données
-      console.log('🔍 Vérification table pdf_storage...');
-      try {
-        const { data: allPdfs, error: debugError } = await supabase
-          .from('pdf_storage')
-          .select('id, user_id, file_name')
-          .limit(5);
-        
-        if (debugError) {
-          console.log('❌ Erreur accès table pdf_storage:', debugError);
-        } else {
-          console.log('🔍 Échantillon PDFs dans la table:', allPdfs?.length || 0);
-          if (allPdfs && allPdfs.length > 0) {
-            console.log('🔍 Premiers PDFs:', allPdfs.map(p => ({ id: p.id, user_id: p.user_id, file_name: p.file_name })));
-            
-            // Vérifier si des PDFs appartiennent au compte principal
-            const mainAccountPdfs = allPdfs.filter(p => p.user_id === mainAccountId);
-            console.log('🔍 PDFs du compte principal trouvés:', mainAccountPdfs.length);
-          }
-        }
-      } catch (debugError) {
-        console.log('❌ Erreur debug table:', debugError);
+      // 1. Récupérer les formulaires du compte principal
+      console.log('📝 Récupération formulaires du compte principal...');
+      const { data: forms, error: formsError } = await supabase
+        .from('forms')
+        .select('id, title, settings')
+        .eq('user_id', mainAccountId)
+        .eq('is_published', true);
+
+      if (formsError) {
+        console.log('❌ Erreur récupération formulaires:', formsError);
+        setResponses([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
       }
 
-      const offset = (currentPage - 1) * itemsPerPage;
+      console.log('📝 Formulaires trouvés:', forms?.length || 0);
+      
+      if (!forms || forms.length === 0) {
+        console.log('📝 Aucun formulaire publié trouvé pour le compte principal');
+        setResponses([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
+      }
 
-      // Récupérer le nombre total avec gestion d'erreur améliorée
+      const formIds = forms.map(f => f.id);
+      console.log('📝 IDs des formulaires:', formIds);
+
+      // 2. Compter le nombre total de réponses
       let totalCount = 0;
       try {
-        console.log('📊 Comptage PDFs pour user_id:', mainAccountId);
+        console.log('📊 Comptage réponses pour formulaires:', formIds);
         const { count, error: countError } = await supabase
-        .from('pdf_storage')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', mainAccountId);
+          .from('responses')
+          .select('id', { count: 'exact', head: true })
+          .in('form_id', formIds);
 
         if (countError) {
-          console.log('❌ Erreur comptage PDFs:', countError.message);
-          console.log('❌ Détails erreur comptage:', countError);
+          console.log('❌ Erreur comptage réponses:', countError);
           totalCount = 0;
         } else {
           totalCount = count || 0;
-          console.log('📊 Nombre total de PDFs:', totalCount);
+          console.log('📊 Nombre total de réponses:', totalCount);
         }
       } catch (countError) {
-        console.log('❌ Erreur réseau comptage PDFs');
+        console.log('❌ Erreur réseau comptage réponses');
         totalCount = 0;
       }
-      
+
       setTotalCount(totalCount);
 
-      // Récupérer les PDFs avec pagination et gestion d'erreur améliorée
-      let pdfsData: any[] = [];
+      // 3. Récupérer les réponses avec pagination
+      let responsesData: any[] = [];
       try {
-        console.log('📁 Récupération PDFs avec pagination:', { offset, limit: itemsPerPage, user_id: mainAccountId });
+        const offset = (currentPage - 1) * itemsPerPage;
+        console.log('📋 Récupération réponses avec pagination:', { offset, limit: itemsPerPage });
+        
         const { data, error } = await supabase
-        .from('pdf_storage')
-        .select('*')
-        .eq('user_id', mainAccountId)
-        .range(offset, offset + itemsPerPage - 1)
-        .order('created_at', { ascending: false });
+          .from('responses')
+          .select('*')
+          .in('form_id', formIds)
+          .range(offset, offset + itemsPerPage - 1)
+          .order('created_at', { ascending: false });
 
         if (error) {
-          console.log('❌ Erreur récupération PDFs:', error.message);
-          console.log('❌ Détails erreur récupération:', error);
-          pdfsData = [];
+          console.log('❌ Erreur récupération réponses:', error);
+          responsesData = [];
         } else {
-          pdfsData = data || [];
-          console.log('📁 PDFs récupérés:', pdfsData.length);
-          if (pdfsData.length > 0) {
-            console.log('📁 Premier PDF:', pdfsData[0]);
-          }
+          responsesData = data || [];
+          console.log('📋 Réponses récupérées:', responsesData.length);
         }
       } catch (fetchError) {
-        console.log('❌ Erreur réseau récupération PDFs');
-        pdfsData = [];
+        console.log('❌ Erreur réseau récupération réponses');
+        responsesData = [];
       }
       
-      setPdfs(pdfsData);
+      // 4. Enrichir les réponses avec les informations des formulaires et templates
+      const enrichedResponses: ResponseWithPDF[] = responsesData.map(response => {
+        const form = forms.find(f => f.id === response.form_id);
+        const formTitle = form?.title || 'Formulaire inconnu';
+        const templateId = form?.settings?.pdfTemplateId;
+        const canGeneratePdf = form?.settings?.generatePdf && templateId;
+        
+        return {
+          ...response,
+          form_title: formTitle,
+          template_name: templateId ? 'Template configuré' : 'Aucun template',
+          can_generate_pdf: canGeneratePdf || false,
+        };
+      });
+
+      console.log('📋 Réponses enrichies:', enrichedResponses.length);
+      console.log('📋 Réponses avec PDF générables:', enrichedResponses.filter(r => r.can_generate_pdf).length);
+      
+      setResponses(enrichedResponses);
     } catch (error) {
-      console.log('❌ Erreur générale fetchPDFs');
-      setPdfs([]);
+      console.log('❌ Erreur générale fetchResponses');
+      setResponses([]);
       setTotalCount(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadPDF = async (pdf: PDFDocument) => {
+  const handleGenerateAndDownloadPDF = async (response: ResponseWithPDF) => {
     try {
-      if (!pdf.pdf_content) {
-        toast.error('Contenu PDF non disponible');
+      if (!response.can_generate_pdf) {
+        toast.error('Aucun template PDF configuré pour ce formulaire');
         return;
       }
 
-      // Convertir le contenu base64 en blob
-      const base64Data = pdf.pdf_content.includes(',') 
-        ? pdf.pdf_content.split(',')[1] 
-        : pdf.pdf_content;
-      
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      toast.loading('🎨 Génération du PDF en cours...', { duration: 10000 });
+
+      // Récupérer le formulaire pour obtenir le template ID
+      const { data: form, error: formError } = await supabase
+        .from('forms')
+        .select('settings, title')
+        .eq('id', response.form_id)
+        .single();
+
+      if (formError || !form?.settings?.pdfTemplateId) {
+        toast.dismiss();
+        toast.error('Template PDF non trouvé pour ce formulaire');
+        return;
       }
 
-      const blob = new Blob([bytes], { type: 'application/pdf' });
+      // Générer le PDF avec le service
+      const pdfBytes = await PDFService.generatePDFFromResponse(
+        response.id,
+        response.data,
+        response.form_title,
+        form.settings.pdfTemplateId
+      );
+
+      // Créer le nom du fichier
+      const fileName = `${response.form_title}_${response.id.slice(-8)}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Télécharger le PDF
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       
       const a = document.createElement('a');
       a.href = url;
-      a.download = pdf.file_name;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
+      toast.dismiss();
       toast.success('PDF téléchargé !');
     } catch (error) {
-      console.error('Erreur téléchargement:', error);
-      toast.error('Erreur lors du téléchargement');
+      console.error('Erreur génération/téléchargement PDF:', error);
+      toast.dismiss();
+      toast.error('Erreur lors de la génération du PDF');
     }
   };
 
-  const handleViewPDF = (pdf: PDFDocument) => {
+  const handleViewResponse = (response: ResponseWithPDF) => {
     try {
-      if (!pdf.pdf_content) {
-        toast.error('Contenu PDF non disponible');
-        return;
-      }
-
-      // Ouvrir le PDF dans un nouvel onglet
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>${pdf.file_name}</title>
-              <style>
-                body { margin: 0; padding: 0; background: #f0f0f0; }
-                iframe { width: 100vw; height: 100vh; border: none; }
-              </style>
-            </head>
-            <body>
-              <iframe src="${pdf.pdf_content}" type="application/pdf"></iframe>
-            </body>
-          </html>
-        `);
-      }
+      // Afficher les détails de la réponse dans une modal ou nouvelle page
+      console.log('👁️ Affichage détails réponse:', response.id);
+      // Pour l'instant, juste un log - vous pouvez ajouter une modal ici
+      toast.info('Fonctionnalité de visualisation à implémenter');
     } catch (error) {
-      console.error('Erreur visualisation:', error);
+      console.error('Erreur visualisation réponse:', error);
       toast.error('Erreur lors de la visualisation');
     }
   };
 
-  const filteredPdfs = pdfs.filter(pdf => {
+  const filteredResponses = responses.filter(response => {
     if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();
     return (
-      pdf.file_name.toLowerCase().includes(searchLower) ||
-      pdf.form_title.toLowerCase().includes(searchLower) ||
-      pdf.template_name.toLowerCase().includes(searchLower) ||
-      pdf.user_name.toLowerCase().includes(searchLower)
+      response.form_title.toLowerCase().includes(searchLower) ||
+      response.id.toLowerCase().includes(searchLower) ||
+      JSON.stringify(response.data).toLowerCase().includes(searchLower)
     );
   }).sort((a, b) => {
     switch (sortBy) {
       case 'name':
-        return a.file_name.localeCompare(b.file_name);
-      case 'size':
-        return b.file_size - a.file_size;
+        return a.form_title.localeCompare(b.form_title);
       case 'date':
       default:
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -334,16 +351,16 @@ export const SubAccountDashboard: React.FC = () => {
                 <HardDrive className="h-8 w-8 text-white" />
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-                Stockage PDF
+                Réponses et PDFs
               </h1>
               <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl mx-auto">
-                Accès aux documents PDF du compte principal
+                Accès aux réponses de formulaires et génération PDF du compte principal
               </p>
               
               {totalCount > 0 && (
                 <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-white/90 text-sm font-medium">
                   <FileText className="h-4 w-4" />
-                  <span>{totalCount} document{totalCount > 1 ? 's' : ''} disponible{totalCount > 1 ? 's' : ''}</span>
+                  <span>{totalCount} réponse{totalCount > 1 ? 's' : ''} disponible{totalCount > 1 ? 's' : ''}</span>
                 </div>
               )}
             </div>
@@ -358,7 +375,7 @@ export const SubAccountDashboard: React.FC = () => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input
-                    placeholder="Rechercher dans les documents..."
+                    placeholder="Rechercher dans les réponses..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium"
@@ -369,12 +386,10 @@ export const SubAccountDashboard: React.FC = () => {
                 <Filter className="h-4 w-4 text-gray-500" />
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date' | 'name' | 'size')}
+                  onClick={fetchResponses}
                   className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white font-medium bg-white/70 backdrop-blur-sm shadow-lg"
                 >
                   <option value="date">Plus récent</option>
-                  <option value="name">Par nom</option>
-                  <option value="size">Par taille</option>
                 </select>
               </div>
             </div>
@@ -386,33 +401,33 @@ export const SubAccountDashboard: React.FC = () => {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Chargement des documents...</p>
+              <p className="text-gray-600 dark:text-gray-400">Chargement des réponses...</p>
             </div>
           </div>
-        ) : filteredPdfs.length === 0 ? (
+        ) : filteredResponses.length === 0 ? (
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
             <CardContent className="text-center py-16">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <FileText className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {searchTerm ? 'Aucun document trouvé' : 'Aucun document'}
+                {searchTerm ? 'Aucune réponse trouvée' : 'Aucune réponse'}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
                 {searchTerm 
                   ? 'Essayez de modifier votre recherche'
-                  : 'Aucun document PDF n\'est disponible pour le moment'
+                  : 'Aucune réponse de formulaire n\'est disponible pour le moment'
                 }
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredPdfs.map((pdf) => (
-              <Card key={pdf.id} className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            {filteredResponses.map((response) => (
+              <Card key={response.id} className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                    {/* Informations du document */}
+                    {/* Informations de la réponse */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-4 mb-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -420,14 +435,18 @@ export const SubAccountDashboard: React.FC = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                            {pdf.file_name}
+                            Réponse #{response.id.slice(-8)}
                           </h3>
                           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                            <div>📝 Formulaire: {pdf.form_title}</div>
-                            <div>📄 Template: {pdf.template_name}</div>
-                            {pdf.user_name && (
-                              <div>👤 Signataire: {pdf.user_name}</div>
-                            )}
+                            <div>📝 Formulaire: {response.form_title}</div>
+                            <div>📄 Template: {response.template_name}</div>
+                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              response.can_generate_pdf 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                            }`}>
+                              {response.can_generate_pdf ? '✅ PDF génératable' : '❌ Pas de template'}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -438,12 +457,14 @@ export const SubAccountDashboard: React.FC = () => {
                           <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3" />
-                              <span>{formatDateTimeFR(pdf.created_at)}</span>
+                              <span>{formatDateTimeFR(response.created_at)}</span>
                             </div>
-                            <div className="flex items-center space-x-1">
-                              <HardDrive className="h-3 w-3" />
-                              <span>{Math.round(pdf.file_size / 1024)} KB</span>
-                            </div>
+                            {response.ip_address && (
+                              <div className="flex items-center space-x-1">
+                                <User className="h-3 w-3" />
+                                <span>{response.ip_address}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -454,21 +475,26 @@ export const SubAccountDashboard: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleViewPDF(pdf)}
+                        onClick={() => handleViewResponse(response)}
                         className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
                       >
                         <Eye className="h-4 w-4" />
-                        <span>Voir</span>
+                        <span>Détails</span>
                       </Button>
                       
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDownloadPDF(pdf)}
-                        className="flex items-center space-x-1 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
+                        onClick={() => handleGenerateAndDownloadPDF(response)}
+                        disabled={!response.can_generate_pdf}
+                        className={`flex items-center space-x-1 ${
+                          response.can_generate_pdf
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                        }`}
                       >
                         <Download className="h-4 w-4" />
-                        <span>Télécharger</span>
+                        <span>Générer PDF</span>
                       </Button>
                     </div>
                   </div>
@@ -482,7 +508,7 @@ export const SubAccountDashboard: React.FC = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                      Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} documents
+                      Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalCount)} sur {totalCount} réponses
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
