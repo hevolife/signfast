@@ -91,14 +91,13 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     password: string
   ): Promise<boolean> => {
     try {
-      console.log('🔐 Connexion sous-compte:', { mainAccountEmail, username });
+      // Connexion sous-compte silencieuse
       
       // Vérifier d'abord si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        console.log('⚠️ Supabase non configuré, authentification sous-compte non disponible');
         return false;
       }
 
@@ -135,7 +134,6 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return false;
       }
     } catch (error) {
-      console.error('Erreur générale loginAsSubAccount:', error);
       return false;
     }
   };

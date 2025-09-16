@@ -51,57 +51,77 @@ export const SubAccountDashboard: React.FC = () => {
   }, [subAccount, mainAccountId, currentPage]);
 
   const fetchPDFs = async () => {
-    if (!mainAccountId) return;
+    if (!mainAccountId) {
+      console.log('❌ Pas de mainAccountId disponible');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('📁 Récupération PDFs pour compte principal:', mainAccountId);
       
-      // Configurer le token de session pour l'accès RLS
-      const sessionToken = localStorage.getItem('sub_account_session_token');
-      if (sessionToken) {
-        try {
-          await supabase.rpc('set_config', {
-            parameter: 'app.sub_account_token',
-            value: sessionToken
-          });
-        } catch (error) {
-          // Ignorer l'erreur si la fonction n'existe pas
-          console.log('⚠️ Fonction set_config non disponible');
-        }
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.log('❌ Supabase non configuré');
+        setPdfs([]);
+        setTotalCount(0);
+        return;
       }
 
       const offset = (currentPage - 1) * itemsPerPage;
 
-      // Récupérer le nombre total
-      const { count, error: countError } = await supabase
+      // Récupérer le nombre total avec gestion d'erreur améliorée
+      let totalCount = 0;
+      try {
+        const { count, error: countError } = await supabase
         .from('pdf_storage')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', mainAccountId);
 
-      if (countError) {
-        console.error('Erreur comptage PDFs:', countError);
-        setTotalCount(0);
-      } else {
-        setTotalCount(count || 0);
+        if (countError) {
+          console.log('❌ Erreur comptage PDFs:', countError.message);
+          totalCount = 0;
+        } else {
+          totalCount = count || 0;
+          console.log('📊 Nombre total de PDFs:', totalCount);
+        }
+      } catch (countError) {
+        console.log('❌ Erreur réseau comptage PDFs');
+        totalCount = 0;
       }
+      
+      setTotalCount(totalCount);
 
-      // Récupérer les PDFs avec pagination
-      const { data, error } = await supabase
+      // Récupérer les PDFs avec pagination et gestion d'erreur améliorée
+      let pdfsData: any[] = [];
+      try {
+        const { data, error } = await supabase
         .from('pdf_storage')
         .select('*')
         .eq('user_id', mainAccountId)
         .range(offset, offset + itemsPerPage - 1)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Erreur récupération PDFs:', error);
-        setPdfs([]);
-      } else {
-        setPdfs(data || []);
+        if (error) {
+          console.log('❌ Erreur récupération PDFs:', error.message);
+          pdfsData = [];
+        } else {
+          pdfsData = data || [];
+          console.log('📁 PDFs récupérés:', pdfsData.length);
+        }
+      } catch (fetchError) {
+        console.log('❌ Erreur réseau récupération PDFs');
+        pdfsData = [];
       }
+      
+      setPdfs(pdfsData);
     } catch (error) {
-      console.error('Erreur générale fetchPDFs:', error);
+      console.log('❌ Erreur générale fetchPDFs');
       setPdfs([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
