@@ -59,6 +59,26 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       }
     }
     
+    
+    // Handle RPC function not found errors (404 with PGRST202)
+    if (!response.ok && response.status === 404) {
+      const errorText = await response.text();
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.code === 'PGRST202') {
+          // RPC function not found - return structured error without throwing
+          return {
+            ok: false,
+            status: 404,
+            json: async () => ({ error: 'RPC function not found', code: 'PGRST202' }),
+            text: async () => errorText
+          };
+        }
+      } catch (parseError) {
+        // If we can't parse the error, continue with normal error handling
+      }
+    }
+    
     return response;
   } catch (error) {
     console.warn('Network error in customFetch:', error);
