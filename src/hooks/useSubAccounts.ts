@@ -29,8 +29,10 @@ export const useSubAccounts = () => {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-        setSubAccounts([]);
-        setTotalCount(0);
+        console.log('📋 Supabase non configuré, utilisation du localStorage');
+        const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
+        setSubAccounts(localSubAccounts);
+        setTotalCount(localSubAccounts.length);
         setLoading(false);
         return;
       }
@@ -42,13 +44,13 @@ export const useSubAccounts = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // Si la table n'existe toujours pas, essayer une approche alternative
-        if (error.code === 'PGRST205') {
+        if (error.code === 'PGRST116' || error.code === 'PGRST205') {
           console.log('📋 Table sub_accounts non trouvée, utilisation du localStorage');
           const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
           setSubAccounts(localSubAccounts);
           setTotalCount(localSubAccounts.length);
         } else {
+          console.error('Erreur récupération sous-comptes:', error);
           setSubAccounts([]);
           setTotalCount(0);
         }
@@ -57,7 +59,6 @@ export const useSubAccounts = () => {
         setTotalCount(data?.length || 0);
       }
     } catch (error) {
-      // En cas d'erreur, utiliser le localStorage comme fallback
       console.log('📋 Erreur Supabase, utilisation du localStorage');
       const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
       setSubAccounts(localSubAccounts);
@@ -70,9 +71,85 @@ export const useSubAccounts = () => {
   const createSubAccount = async (subAccountData: CreateSubAccountData): Promise<SubAccount | null> => {
     if (!user) return null;
 
-
     try {
-      // Hash the password before sending to database
+      // Vérifier d'abord si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        return await createSubAccountLocal(subAccountData);
+      }
+
+      // Essayer d'abord avec la fonction RPC
+      try {
+        const { data: result, error } = await supabase.rpc('create_sub_account', {
+          p_main_account_id: user.id,
+          p_username: subAccountData.username,
+          p_display_name: subAccountData.display_name,
+          p_password: subAccountData.password,
+          p_permissions: subAccountData.permissions || { pdf_access: true, download_only: true }
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (result?.success) {
+          await fetchSubAccounts();
+          return result.sub_account;
+        } else {
+          toast.error(result?.error || 'Erreur lors de la création');
+          return null;
+        }
+      } catch (rpcError) {
+        console.log('⚠️ Fonction RPC non disponible, insertion directe');
+        
+        // Fallback vers insertion directe
+        const passwordHash = await hashPassword(subAccountData.password, user.id);
+        
+        const { data, error } = await supabase
+          .from('sub_accounts')
+          .insert([{
+            main_account_id: user.id,
+            username: subAccountData.username,
+            display_name: subAccountData.display_name,
+            password_hash: passwordHash,
+            permissions: subAccountData.permissions || { pdf_access: true, download_only: true },
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          if (error.code === '23505') {
+            toast.error('Ce nom d\'utilisateur existe déjà');
+          } else {
+            toast.error('Erreur lors de la création du sous-compte');
+          }
+          return null;
+        }
+        
+        await fetchSubAccounts();
+        return data;
+      }
+      
+    } catch (error) {
+      console.log('⚠️ Supabase non disponible, utilisation du localStorage');
+      return await createSubAccountLocal(subAccountData);
+    }
+  };
+
+  const createSubAccountLocal = async (subAccountData: CreateSubAccountData): Promise<SubAccount | null> => {
+    try {
+      const existingSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
+      
+      // Vérifier que le nom d'utilisateur n'existe pas déjà
+      const usernameExists = existingSubAccounts.some((sa: SubAccount) => sa.username === subAccountData.username);
+      if (usernameExists) {
+        toast.error('Ce nom d\'utilisateur existe déjà');
+        return null;
+      }
+      
       const passwordHash = await hashPassword(subAccountData.password, user.id);
       
       const newSubAccount: SubAccount = {
@@ -88,52 +165,13 @@ export const useSubAccounts = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Essayer d'abord Supabase
-      try {
-        const { data, error } = await supabase
-          .from('sub_accounts')
-          .insert([{
-            main_account_id: user.id,
-            username: subAccountData.username,
-            display_name: subAccountData.display_name,
-            password_hash: passwordHash,
-            permissions: subAccountData.permissions || { pdf_access: true, download_only: true },
-            is_active: true
-          }])
-          .select()
-          .single();
-
-        if (error) {
-          throw error;
-        }
-        
-        // Rafraîchir la liste
-        await fetchSubAccounts();
-        return data;
-        
-      } catch (supabaseError) {
-        console.log('⚠️ Supabase non disponible, utilisation du localStorage');
-        
-        // Fallback vers localStorage
-        const existingSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
-        
-        // Vérifier que le nom d'utilisateur n'existe pas déjà
-        const usernameExists = existingSubAccounts.some((sa: SubAccount) => sa.username === subAccountData.username);
-        if (usernameExists) {
-          toast.error('Ce nom d\'utilisateur existe déjà');
-          return null;
-        }
-        
-        const updatedSubAccounts = [...existingSubAccounts, newSubAccount];
-        localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
-        
-        // Mettre à jour l'état local
-        setSubAccounts(updatedSubAccounts);
-        setTotalCount(updatedSubAccounts.length);
-        
-        return newSubAccount;
-      }
+      const updatedSubAccounts = [...existingSubAccounts, newSubAccount];
+      localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
       
+      setSubAccounts(updatedSubAccounts);
+      setTotalCount(updatedSubAccounts.length);
+      
+      return newSubAccount;
     } catch (error) {
       toast.error('Erreur lors de la création du sous-compte');
       return null;
@@ -161,7 +199,6 @@ export const useSubAccounts = () => {
           throw error;
         }
         
-        // Rafraîchir la liste
         await fetchSubAccounts();
         return true;
         
@@ -178,7 +215,6 @@ export const useSubAccounts = () => {
         
         localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
         
-        // Mettre à jour l'état local
         setSubAccounts(updatedSubAccounts);
         setTotalCount(updatedSubAccounts.length);
         
@@ -207,7 +243,6 @@ export const useSubAccounts = () => {
           throw error;
         }
         
-        // Rafraîchir la liste
         await fetchSubAccounts();
         return true;
         
@@ -220,7 +255,6 @@ export const useSubAccounts = () => {
         
         localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
         
-        // Mettre à jour l'état local
         setSubAccounts(updatedSubAccounts);
         setTotalCount(updatedSubAccounts.length);
         
@@ -237,7 +271,6 @@ export const useSubAccounts = () => {
     if (!user) return false;
 
     try {
-      // Hasher le nouveau mot de passe
       const passwordHash = await hashPassword(newPassword, user.id);
       
       // Essayer d'abord Supabase
@@ -270,7 +303,6 @@ export const useSubAccounts = () => {
         
         localStorage.setItem(`sub_accounts_${user.id}`, JSON.stringify(updatedSubAccounts));
         
-        // Mettre à jour l'état local
         setSubAccounts(updatedSubAccounts);
         
         return true;

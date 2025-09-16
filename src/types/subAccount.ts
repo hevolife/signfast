@@ -3,6 +3,7 @@ export interface SubAccount {
   main_account_id: string;
   username: string;
   display_name: string;
+  password_hash: string;
   is_active: boolean;
   permissions: {
     pdf_access: boolean;

@@ -33,11 +33,32 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       });
     }
     
-    // Handle exec RPC requests
-    if (urlString.includes('rpc/exec')) {
+    // Handle authenticate_sub_account RPC requests
+    if (urlString.includes('rpc/authenticate_sub_account')) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Exec function not available'
+        error: 'Sub-account authentication not configured'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Handle validate_sub_account_session RPC requests
+    if (urlString.includes('rpc/validate_sub_account_session')) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Sub-account session validation not configured'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Handle set_config RPC requests
+    if (urlString.includes('rpc/set_config')) {
+      return new Response(JSON.stringify({
+        success: true
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }

@@ -30,7 +30,6 @@ export const SubAccountManager: React.FC = () => {
   const { subAccounts, totalCount, loading, createSubAccount, updateSubAccount, deleteSubAccount, resetSubAccountPassword, refetch } = useSubAccounts();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<string | null>(null);
-  const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set());
   
   // Formulaire de création
   const [newUsername, setNewUsername] = useState('');
@@ -49,54 +48,9 @@ export const SubAccountManager: React.FC = () => {
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
   
-  // Si la table n'existe pas encore, afficher un message d'information
-  if (!loading && !Array.isArray(subAccounts)) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Gestion des sous-comptes
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Créez et gérez des comptes d'accès limité pour votre équipe
-            </p>
-          </div>
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Nouveau sous-compte</span>
-          </Button>
-        </div>
-
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-start">
-            <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3 flex-shrink-0" />
-            <div>
-              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Mode de compatibilité activé
-              </h4>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                Les sous-comptes fonctionnent en mode local. Pour une synchronisation complète, appliquez la migration de base de données.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const handleCreateSubAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Vérifier si les sous-comptes sont disponibles
-    if (!Array.isArray(subAccounts)) {
-      toast.error('La fonctionnalité des sous-comptes n\'est pas configurée');
-      return;
-    }
-    
+
     if (!newUsername.trim() || !newDisplayName.trim() || !newPassword.trim()) {
       toast.error('Veuillez remplir tous les champs');
       return;
@@ -224,16 +178,6 @@ export const SubAccountManager: React.FC = () => {
     }
   };
 
-  const togglePasswordVisibility = (accountId: string) => {
-    const newSet = new Set(showPasswords);
-    if (newSet.has(accountId)) {
-      newSet.delete(accountId);
-    } else {
-      newSet.add(accountId);
-    }
-    setShowPasswords(newSet);
-  };
-
   const copyLoginInfo = (subAccount: SubAccount) => {
     const loginInfo = `Connexion sous-compte SignFast:
 URL: ${window.location.origin}/sub-account/login
@@ -314,7 +258,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
       </Card>
 
       {/* Liste des sous-comptes */}
-      {!Array.isArray(subAccounts) || subAccounts.length === 0 ? (
+      {subAccounts.length === 0 ? (
         <Card>
           <CardContent className="text-center py-16">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -337,7 +281,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
         </Card>
       ) : (
         <div className="space-y-4">
-          {Array.isArray(subAccounts) && subAccounts.map((subAccount) => (
+          {subAccounts.map((subAccount) => (
             <Card key={subAccount.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 {editingAccount === subAccount.id ? (

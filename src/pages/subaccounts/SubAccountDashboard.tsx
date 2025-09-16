@@ -59,10 +59,15 @@ export const SubAccountDashboard: React.FC = () => {
       // Configurer le token de session pour l'accès RLS
       const sessionToken = localStorage.getItem('sub_account_session_token');
       if (sessionToken) {
-        await supabase.rpc('set_config', {
-          parameter: 'app.sub_account_token',
-          value: sessionToken
-        });
+        try {
+          await supabase.rpc('set_config', {
+            parameter: 'app.sub_account_token',
+            value: sessionToken
+          });
+        } catch (error) {
+          // Ignorer l'erreur si la fonction n'existe pas
+          console.log('⚠️ Fonction set_config non disponible');
+        }
       }
 
       const offset = (currentPage - 1) * itemsPerPage;
