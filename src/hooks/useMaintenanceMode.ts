@@ -36,7 +36,6 @@ export const useMaintenanceMode = () => {
         setIsMaintenanceMode(data.value === 'true');
       }
     } catch (error) {
-      console.warn('Erreur maintenance mode:', error);
       setIsMaintenanceMode(false);
     } finally {
       setLoading(false);
