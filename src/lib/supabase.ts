@@ -10,50 +10,7 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supaba
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
-    // Handle create_sub_account RPC requests
     const urlString = url.toString();
-    if (urlString.includes('rpc/create_sub_account')) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Sub-account functionality not configured'
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    // Handle authenticate_sub_account RPC requests
-    if (urlString.includes('rpc/authenticate_sub_account')) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Sub-account authentication not configured'
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    // Handle validate_sub_account_session RPC requests
-    if (urlString.includes('rpc/validate_sub_account_session')) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Sub-account session validation not configured'
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    // Handle set_config RPC requests
-    if (urlString.includes('rpc/set_config')) {
-      return new Response(JSON.stringify({
-        success: true
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
     const response = await fetch(url, options);
     
     // Handle 500 errors gracefully
