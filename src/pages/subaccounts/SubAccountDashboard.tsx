@@ -238,7 +238,7 @@ export const SubAccountDashboard: React.FC = () => {
       // Afficher les détails de la réponse dans une modal ou nouvelle page
       console.log('👁️ Affichage détails réponse:', response.id);
       // Pour l'instant, juste un log - vous pouvez ajouter une modal ici
-      toast.info('Fonctionnalité de visualisation à implémenter');
+      toast('Fonctionnalité de visualisation à implémenter');
     } catch (error) {
       console.error('Erreur visualisation réponse:', error);
       toast.error('Erreur lors de la visualisation');
