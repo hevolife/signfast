@@ -471,6 +471,39 @@ export const SubAccountDashboard: React.FC = () => {
                           </h3>
                           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <div>📝 Formulaire: {response.form_title}</div>
+                            <div>👤 Répondant: {(() => {
+                              // Extraire le nom et prénom depuis les données de la réponse
+                              const data = response.data || {};
+                              
+                              // Chercher les champs nom/prénom avec différentes variantes
+                              const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
+                                              data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
+                              const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
+                                             data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
+                              
+                              // Si on a nom ET prénom
+                              if (firstName && lastName) {
+                                return `${firstName} ${lastName}`;
+                              }
+                              
+                              // Si on a seulement un nom complet
+                              if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
+                                return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
+                              }
+                              
+                              // Si on a seulement le prénom
+                              if (firstName) {
+                                return firstName;
+                              }
+                              
+                              // Si on a seulement le nom
+                              if (lastName) {
+                                return lastName;
+                              }
+                              
+                              // Fallback
+                              return 'Non renseigné';
+                            })()}</div>
                             <div>📄 Template: {response.template_name}</div>
                             <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               response.can_generate_pdf 
