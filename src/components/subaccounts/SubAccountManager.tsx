@@ -50,7 +50,7 @@ export const SubAccountManager: React.FC = () => {
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
   
   // Si la table n'existe pas encore, afficher un message d'information
-  if (!loading && (!Array.isArray(subAccounts) || (subAccounts.length === 0 && totalCount === 0))) {
+  if (!loading && !Array.isArray(subAccounts)) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -62,17 +62,24 @@ export const SubAccountManager: React.FC = () => {
               Créez et gérez des comptes d'accès limité pour votre équipe
             </p>
           </div>
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nouveau sous-compte</span>
+          </Button>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <div className="flex items-start">
-            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
+            <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3 flex-shrink-0" />
             <div>
               <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Fonctionnalité en cours de configuration
+                Mode de compatibilité activé
               </h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Le système de sous-comptes n'est pas encore configuré dans votre base de données. Contactez l'administrateur pour activer cette fonctionnalité.
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                Les sous-comptes fonctionnent en mode local. Pour une synchronisation complète, appliquez la migration de base de données.
               </p>
             </div>
           </div>
