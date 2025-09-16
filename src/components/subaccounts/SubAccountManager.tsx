@@ -314,7 +314,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3 mb-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center">
-                        <Edit className="h-5 w-5 text-white" />
+                        <Edit2 className="h-5 w-5 text-white" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         Modification de {subAccount.username}
@@ -463,7 +463,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                         onClick={() => handleEditSubAccount(subAccount)}
                         className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit2 className="h-4 w-4" />
                         <span>Modifier</span>
                       </Button>
                       

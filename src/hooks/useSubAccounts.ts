@@ -56,6 +56,17 @@ export const useSubAccounts = () => {
           return;
         }
         
+        // Check if data contains an error object (when safeFetch returns structured error)
+        if (data && typeof data === 'object' && data.error && (data.error.code === 'PGRST205' || data.error.code === 'NETWORK_ERROR')) {
+          console.log('📋 Table sub_accounts non trouvée (structured error), utilisation du localStorage');
+          setTablesExist(false);
+          const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
+          setSubAccounts(localSubAccounts);
+          setTotalCount(localSubAccounts.length);
+          setLoading(false);
+          return;
+        }
+        
         setTablesExist(true);
       } catch (testError) {
         console.log('📋 Erreur test table, utilisation du localStorage');
@@ -83,12 +94,13 @@ export const useSubAccounts = () => {
       }
       
       // Check if data contains an error object (when safeFetch returns structured error)
-      if (data && data.error && (data.error.code === 'PGRST205' || data.error.code === 'NETWORK_ERROR')) {
+      if (data && typeof data === 'object' && data.error && (data.error.code === 'PGRST205' || data.error.code === 'NETWORK_ERROR')) {
         console.log('📋 Table sub_accounts non trouvée, utilisation du localStorage');
         setTablesExist(false);
         const localSubAccounts = JSON.parse(localStorage.getItem(`sub_accounts_${user.id}`) || '[]');
         setSubAccounts(localSubAccounts);
         setTotalCount(localSubAccounts.length);
+        setLoading(false);
         setLoading(false);
         return;
       }
