@@ -290,6 +290,17 @@ export const Navbar: React.FC = () => {
                         <div className="flex flex-col items-center space-y-2">
                           <div className="p-2 rounded-xl">
                             <span className="text-lg">{item.emoji}</span>
+                          </div>
+                          <div className="text-center">
+                            <span className="font-bold text-sm">{item.label}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
               {/* Actions spéciales mobile */}
               <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50 space-y-3">
                 {!isDemoMode && user && isSuperAdmin && (
