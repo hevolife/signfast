@@ -64,21 +64,25 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             console.warn('⚠️ Erreur validation session en arrière-plan:', error);
             // Ne pas déconnecter en cas d'erreur réseau
           });
+          
+          // Marquer comme chargé après restauration
+          setLoading(false);
         } catch (parseError) {
           console.error('Erreur parsing données sous-compte:', parseError);
           // Nettoyer en cas d'erreur de parsing
           localStorage.removeItem('sub_account_session_token');
           localStorage.removeItem('sub_account_data');
+          setLoading(false);
         }
       } else {
         console.log('🔍 Aucune session sous-compte sauvegardée');
+        setLoading(false);
       }
     } catch (error) {
       console.error('Erreur vérification session:', error);
       // Nettoyer en cas d'erreur
       localStorage.removeItem('sub_account_session_token');
       localStorage.removeItem('sub_account_data');
-    } finally {
       setLoading(false);
     }
   };

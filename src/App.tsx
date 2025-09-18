@@ -117,7 +117,7 @@ const AppContent: React.FC = () => {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [user, location.pathname, isPublicForm, navigate]);
+  }, [user, location.pathname, isPublicForm, navigate, isSubAccountPage]);
 
   const dndBackend = isMobile ? TouchBackend : HTML5Backend;
   const dndOptions = isMobile ? { enableMouseEvents: true } : {};

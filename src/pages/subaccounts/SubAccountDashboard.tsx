@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSubAccount } from '../../contexts/SubAccountContext';
 import { supabase } from '../../lib/supabase';
 import { OptimizedPDFService } from '../../services/optimizedPDFService';
@@ -39,7 +40,8 @@ interface ResponseWithPDF {
 }
 
 export const SubAccountDashboard: React.FC = () => {
-  const { subAccount, mainAccountId, logoutSubAccount } = useSubAccount();
+  const { subAccount, mainAccountId, logoutSubAccount, loading: subAccountLoading } = useSubAccount();
+  const navigate = useNavigate();
   const [responses, setResponses] = useState<ResponseWithPDF[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +51,14 @@ export const SubAccountDashboard: React.FC = () => {
   const [itemsPerPage] = useState(10);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithPDF | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
+
+  // Rediriger vers la page de connexion sous-compte si pas connecté
+  useEffect(() => {
+    if (!subAccountLoading && !subAccount) {
+      console.log('🔄 Sous-compte non connecté, redirection vers login');
+      navigate('/sub-account/login', { replace: true });
+    }
+  }, [subAccount, subAccountLoading, navigate]);
 
   useEffect(() => {
     if (subAccount && mainAccountId) {
