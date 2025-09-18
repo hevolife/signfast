@@ -46,6 +46,8 @@ export const SubAccountDashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [selectedResponse, setSelectedResponse] = useState<ResponseWithPDF | null>(null);
+  const [showResponseModal, setShowResponseModal] = useState(false);
 
   useEffect(() => {
     if (subAccount && mainAccountId) {
@@ -235,15 +237,41 @@ export const SubAccountDashboard: React.FC = () => {
   };
 
   const handleViewResponse = (response: ResponseWithPDF) => {
-    try {
-      // Afficher les détails de la réponse dans une modal ou nouvelle page
-      console.log('👁️ Affichage détails réponse:', response.id);
-      // Pour l'instant, juste un log - vous pouvez ajouter une modal ici
-      toast('Fonctionnalité de visualisation à implémenter');
-    } catch (error) {
-      console.error('Erreur visualisation réponse:', error);
-      toast.error('Erreur lors de la visualisation');
+    setSelectedResponse(response);
+    setShowResponseModal(true);
+  };
+
+  const getResponseDisplayName = (response: ResponseWithPDF): string => {
+    const data = response.data || {};
+    
+    // Chercher les champs nom/prénom avec différentes variantes
+    const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
+                    data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
+    const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
+                   data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
+    
+    // Si on a nom ET prénom
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
     }
+    
+    // Si on a seulement un nom complet
+    if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
+      return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
+    }
+    
+    // Si on a seulement le prénom
+    if (firstName) {
+      return firstName;
+    }
+    
+    // Si on a seulement le nom
+    if (lastName) {
+      return lastName;
+    }
+    
+    // Fallback vers l'ID si aucun nom trouvé
+    return `Réponse #${response.id.slice(-8)}`;
   };
 
   const filteredResponses = responses.filter(response => {
@@ -253,12 +281,13 @@ export const SubAccountDashboard: React.FC = () => {
     return (
       response.form_title.toLowerCase().includes(searchLower) ||
       response.id.toLowerCase().includes(searchLower) ||
-      JSON.stringify(response.data).toLowerCase().includes(searchLower)
+      JSON.stringify(response.data).toLowerCase().includes(searchLower) ||
+      getResponseDisplayName(response).toLowerCase().includes(searchLower)
     );
   }).sort((a, b) => {
     switch (sortBy) {
       case 'name':
-        return a.form_title.localeCompare(b.form_title);
+        return getResponseDisplayName(a).localeCompare(getResponseDisplayName(b));
       case 'date':
       default:
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -436,75 +465,11 @@ export const SubAccountDashboard: React.FC = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                            {(() => {
-                              // Extraire le nom et prénom depuis les données de la réponse
-                              const data = response.data || {};
-                              
-                              // Chercher les champs nom/prénom avec différentes variantes
-                              const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
-                                              data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
-                              const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
-                                             data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
-                              
-                              // Si on a nom ET prénom
-                              if (firstName && lastName) {
-                                return `${firstName} ${lastName}`;
-                              }
-                              
-                              // Si on a seulement un nom complet
-                              if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
-                                return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
-                              }
-                              
-                              // Si on a seulement le prénom
-                              if (firstName) {
-                                return firstName;
-                              }
-                              
-                              // Si on a seulement le nom
-                              if (lastName) {
-                                return lastName;
-                              }
-                              
-                              // Fallback vers l'ID si aucun nom trouvé
-                              return `Réponse #${response.id.slice(-8)}`;
-                            })()}
+                            {getResponseDisplayName(response)}
                           </h3>
                           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <div>📝 Formulaire: {response.form_title}</div>
-                            <div>👤 Répondant: {(() => {
-                              // Extraire le nom et prénom depuis les données de la réponse
-                              const data = response.data || {};
-                              
-                              // Chercher les champs nom/prénom avec différentes variantes
-                              const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
-                                              data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
-                              const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
-                                             data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
-                              
-                              // Si on a nom ET prénom
-                              if (firstName && lastName) {
-                                return `${firstName} ${lastName}`;
-                              }
-                              
-                              // Si on a seulement un nom complet
-                              if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
-                                return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
-                              }
-                              
-                              // Si on a seulement le prénom
-                              if (firstName) {
-                                return firstName;
-                              }
-                              
-                              // Si on a seulement le nom
-                              if (lastName) {
-                                return lastName;
-                              }
-                              
-                              // Fallback
-                              return 'Non renseigné';
-                            })()}</div>
+                            <div>👤 Répondant: {getResponseDisplayName(response)}</div>
                             <div>📄 Template: {response.template_name}</div>
                             <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               response.can_generate_pdf 
@@ -630,6 +595,138 @@ export const SubAccountDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             )}
+          </div>
+        )}
+
+        {/* Modal de détail de réponse */}
+        {showResponseModal && selectedResponse && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                      Détails de la réponse
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                      {getResponseDisplayName(selectedResponse)} • {formatDateTimeFR(selectedResponse.created_at)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowResponseModal(false)}
+                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(selectedResponse.data).map(([key, value]) => {
+                  if (value === undefined || value === null || value === '') return null;
+
+                  return (
+                    <div key={key} className="border-b border-gray-200/50 dark:border-gray-700/50 pb-4">
+                      <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        {key}
+                      </div>
+                      <div className="text-gray-900 dark:text-white font-medium">
+                        {typeof value === 'string' && value.startsWith('data:image') ? (
+                          <div>
+                            {key.toLowerCase().includes('signature') ? (
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                                    <span className="text-white text-xs">✍️</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
+                                    Signature électronique
+                                  </span>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700 shadow-inner">
+                                  <img
+                                    src={value}
+                                    alt="Signature électronique"
+                                    className="max-w-full max-h-32 object-contain mx-auto"
+                                    style={{ imageRendering: 'crisp-edges' }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-3">
+                                  <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">
+                                    ✅ Signature valide et légale
+                                  </span>
+                                  <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                    {Math.round(value.length / 1024)} KB
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-lg">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+                                    <span className="text-white text-xs">📷</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-green-900 dark:text-green-300">
+                                    Image uploadée
+                                  </span>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-inner">
+                                  <img
+                                    src={value}
+                                    alt={key}
+                                    className="max-w-full max-h-48 object-contain mx-auto rounded-lg shadow-md"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-3">
+                                  <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                                    📁 Fichier image
+                                  </span>
+                                  <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                    {Math.round(value.length / 1024)} KB
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : Array.isArray(value) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {value.map((item, idx) => (
+                              <span key={idx} className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm dark:from-blue-900 dark:to-indigo-900 dark:text-blue-300">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="whitespace-pre-wrap font-semibold">{String(value)}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Métadonnées */}
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-4 rounded-xl shadow-inner">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    Informations techniques
+                  </h4>
+                  <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
+                    <div>ID de réponse : {selectedResponse.id}</div>
+                    <div>Date de soumission : {formatDateTimeFR(selectedResponse.created_at)}</div>
+                    {selectedResponse.ip_address && (
+                      <div>Adresse IP : {selectedResponse.ip_address}</div>
+                    )}
+                    {selectedResponse.user_agent && (
+                      <div>Navigateur : {selectedResponse.user_agent}</div>
+                    )}
+                    <div>Formulaire : {selectedResponse.form_title}</div>
+                    <div>Template : {selectedResponse.template_name}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
