@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { LanguageSelector } from './components/language/LanguageSelector';
-import { useAuth } from '../contexts/AuthContext';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { useSubAccounts } from '../hooks/useSubAccounts';
-import { useAffiliate } from '../hooks/useAffiliate';
-import { useDarkMode } from '../hooks/useDarkMode';
-import { pwaManager } from '../main';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Card, CardContent, CardHeader } from '../components/ui/Card';
-import { SubAccountManager } from '../components/subaccounts/SubAccountManager';
-import { AffiliatePanel } from '../components/affiliate/AffiliatePanel';
-import { TutorialButton } from '../components/tutorial/TutorialButton';
+import { useAuth } from './contexts/AuthContext';
+import { useUserProfile } from './hooks/useUserProfile';
+import { useSubAccounts } from './hooks/useSubAccounts';
+import { useAffiliate } from './hooks/useAffiliate';
+import { useDarkMode } from './hooks/useDarkMode';
+import { pwaManager } from './main';
+import { Button } from './components/ui/Button';
+import { Input } from './components/ui/Input';
+import { Card, CardContent, CardHeader } from './components/ui/Card';
+import { SubAccountManager } from './components/subaccounts/SubAccountManager';
+import { AffiliatePanel } from './components/affiliate/AffiliatePanel';
+import { TutorialButton } from './components/tutorial/TutorialButton';
 import { 
   User, 
   Building, 
