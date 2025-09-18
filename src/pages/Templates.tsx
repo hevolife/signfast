@@ -57,6 +57,20 @@ export const Templates: React.FC = () => {
     }
   ];
 
+  // Charger les templates depuis localStorage
+  React.useEffect(() => {
+    const savedTemplates = localStorage.getItem('templates');
+    if (savedTemplates) {
+      try {
+        const userTemplates = JSON.parse(savedTemplates);
+        // Ajouter les templates utilisateur aux templates par défaut
+        templates.push(...userTemplates);
+      } catch (error) {
+        console.error('Erreur lors du chargement des templates:', error);
+      }
+    }
+  }, []);
+
   const categories = ['Tous', 'Immobilier', 'Business', 'Juridique', 'RH', 'Commercial'];
 
   return (

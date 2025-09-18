@@ -13,6 +13,7 @@ import { Forms } from './pages/Forms';
 import { Templates } from './pages/Templates';
 import { Settings } from './pages/Settings';
 import { NewForm } from './pages/forms/NewForm';
+import { NewTemplate } from './pages/templates/NewTemplate';
 
 function App() {
   return (
@@ -54,6 +55,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Templates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/templates/new"
+                element={
+                  <ProtectedRoute>
+                    <NewTemplate />
                   </ProtectedRoute>
                 }
               />
