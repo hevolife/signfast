@@ -660,15 +660,6 @@ export const FormResults: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {loadingResponseData ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Chargement des données...</p>
-                    </div>
-                  </div>
-                ) : (
-                <>
                 {form.fields?.map((field) => {
                   const value = selectedResponse.data[field.label];
                   if (value === undefined || value === null || value === '') return null;
@@ -918,8 +909,6 @@ export const FormResults: React.FC = () => {
                     </div>
                   ));
                 })()}
-                </>
-                )}
 
                 {/* Métadonnées */}
                 <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-4 rounded-xl shadow-inner">
