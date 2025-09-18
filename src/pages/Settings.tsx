@@ -199,30 +199,30 @@ export const Settings: React.FC = () => {
         {/* Navigation des onglets */}
         <div className="mb-8 sticky top-0 z-10 py-3">
           <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 shadow-xl">
-            <nav className="flex space-x-3 overflow-x-auto scrollbar-hide justify-center">
+            <nav className="flex space-x-2 lg:space-x-3 overflow-x-auto scrollbar-hide justify-start lg:justify-center">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-3 px-4 rounded-xl font-bold text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
+                className={`py-2 px-3 lg:py-3 lg:px-4 rounded-xl font-bold text-xs lg:text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('profile', activeTab === 'profile')}`}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 lg:space-x-2">
                   <div className="p-1 bg-white/70 rounded-lg shadow-md">
-                    <User className="h-4 w-4" />
+                    <User className="h-3 w-3 lg:h-4 lg:w-4" />
                   </div>
-                  <span>Profil</span>
+                  <span className="hidden sm:inline lg:inline">Profil</span>
                 </div>
               </button>
               
               <button
                 onClick={() => setActiveTab('subaccounts')}
-                className={`py-3 px-4 rounded-xl font-bold text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subaccounts', activeTab === 'subaccounts')}`}
+                className={`py-2 px-3 lg:py-3 lg:px-4 rounded-xl font-bold text-xs lg:text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('subaccounts', activeTab === 'subaccounts')}`}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 lg:space-x-2">
                   <div className="p-1 bg-white/70 rounded-lg shadow-md">
-                    <Users className="h-4 w-4" />
+                    <Users className="h-3 w-3 lg:h-4 lg:w-4" />
                   </div>
-                  <span>Sous-comptes</span>
+                  <span className="hidden sm:inline lg:inline">Sous-comptes</span>
                   {subAccountTablesExist && subAccounts.length > 0 && (
-                    <span className="bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className="bg-purple-500 text-white text-xs rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center">
                       {subAccounts.length}
                     </span>
                   )}
@@ -232,15 +232,15 @@ export const Settings: React.FC = () => {
               {affiliateTablesExist && (
                 <button
                   onClick={() => setActiveTab('affiliate')}
-                  className={`py-3 px-4 rounded-xl font-bold text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
+                  className={`py-2 px-3 lg:py-3 lg:px-4 rounded-xl font-bold text-xs lg:text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 lg:space-x-2">
                     <div className="p-1 bg-white/70 rounded-lg shadow-md">
-                      <Gift className="h-4 w-4" />
+                      <Gift className="h-3 w-3 lg:h-4 lg:w-4" />
                     </div>
-                    <span>Affiliation</span>
+                    <span className="hidden sm:inline lg:inline">Affiliation</span>
                     {affiliateProgram && (
-                      <span className="bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      <span className="bg-green-500 text-white text-xs rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center">
                         {affiliateProgram.total_referrals}
                       </span>
                     )}
@@ -250,15 +250,15 @@ export const Settings: React.FC = () => {
               
               <button
                 onClick={() => setActiveTab('pwa')}
-                className={`py-3 px-4 rounded-xl font-bold text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('pwa', activeTab === 'pwa')}`}
+                className={`py-2 px-3 lg:py-3 lg:px-4 rounded-xl font-bold text-xs lg:text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('pwa', activeTab === 'pwa')}`}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 lg:space-x-2">
                   <div className="p-1 bg-white/70 rounded-lg shadow-md">
-                    <Smartphone className="h-4 w-4" />
+                    <Smartphone className="h-3 w-3 lg:h-4 lg:w-4" />
                   </div>
-                  <span>Application</span>
+                  <span className="hidden sm:inline lg:inline">Application</span>
                   {pwaManager.isPWAMode() && (
-                    <span className="bg-indigo-500 text-white text-xs rounded-full w-2 h-2"></span>
+                    <span className="bg-indigo-500 text-white text-xs rounded-full w-2 h-2 lg:w-2 lg:h-2"></span>
                   )}
                 </div>
               </button>
