@@ -16,6 +16,8 @@ import {
   GripVertical,
   File,
   X
+  Move,
+  MousePointer
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -41,6 +43,9 @@ export const NewTemplate: React.FC = () => {
   const [isPublic, setIsPublic] = useState(true);
   const [uploadedPdf, setUploadedPdf] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [pdfDimensions, setPdfDimensions] = useState({ width: 595, height: 842 }); // A4 par défaut
 
   const categories = ['Business', 'Immobilier', 'Juridique', 'RH', 'Commercial'];
 
@@ -94,6 +99,61 @@ export const NewTemplate: React.FC = () => {
     setSelectedField(newField.id);
   };
 
+  const handleMouseDown = (e: React.MouseEvent, fieldId: string) => {
+    e.preventDefault();
+    const field = fields.find(f => f.id === fieldId);
+    if (!field) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    setIsDragging(fieldId);
+    setDragOffset({ x: offsetX, y: offsetY });
+    setSelectedField(fieldId);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    const container = e.currentTarget as HTMLElement;
+    const rect = container.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left - dragOffset.x, rect.width - 200));
+    const y = Math.max(0, Math.min(e.clientY - rect.top - dragOffset.y, rect.height - 30));
+
+    // Convertir en coordonnées PDF (proportionnelles)
+    const pdfX = Math.round((x / rect.width) * pdfDimensions.width);
+    const pdfY = Math.round((y / rect.height) * pdfDimensions.height);
+
+    updateField(isDragging, { x: pdfX, y: pdfY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(null);
+    setDragOffset({ x: 0, y: 0 });
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Convertir en coordonnées PDF
+    const pdfX = Math.round((x / rect.width) * pdfDimensions.width);
+    const pdfY = Math.round((y / rect.height) * pdfDimensions.height);
+
+    // Si aucun champ sélectionné, ne rien faire
+    if (!selectedField) {
+      toast.info('Sélectionnez un champ dans la liste pour le positionner');
+      return;
+    }
+
+    // Déplacer le champ sélectionné
+    updateField(selectedField, { x: pdfX, y: pdfY });
+    toast.success('Champ repositionné !');
+  };
   const updateField = (id: string, updates: Partial<TemplateField>) => {
     setFields(fields.map(field => 
       field.id === id ? { ...field, ...updates } : field
@@ -342,53 +402,140 @@ export const NewTemplate: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Zone de design du PDF */}
-                <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-96 relative overflow-hidden">
+                <div 
+                  className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 min-h-96 relative overflow-hidden cursor-crosshair"
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onClick={handleCanvasClick}
+                  style={{ aspectRatio: `${pdfDimensions.width}/${pdfDimensions.height}` }}
+                >
                   {/* Aperçu PDF si uploadé */}
                   {pdfPreviewUrl && (
-                    <div className="absolute inset-4 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                      <iframe
+                        src={pdfPreviewUrl}
+                        className="w-full h-full border-0 pointer-events-none"
+                        title="Aperçu PDF"
+                      />
+                      <div className="absolute inset-0 bg-black/5 pointer-events-none"></div>
+                    </div>
+                  )}
+
+                  {/* Grille d'aide */}
+                  <div className="absolute inset-0 opacity-20 pointer-events-none">
+                    <svg className="w-full h-full">
+                      <defs>
+                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#grid)" />
+                    </svg>
+                  </div>
+
+                  {/* Champs positionnés sur le PDF */}
+                  {fields.map((field) => {
+                    const containerRect = { width: pdfDimensions.width, height: pdfDimensions.height };
+                    const leftPercent = (field.x / containerRect.width) * 100;
+                    const topPercent = (field.y / containerRect.height) * 100;
+                    const widthPercent = (field.width / containerRect.width) * 100;
+                    const heightPercent = (field.height / containerRect.height) * 100;
+
+                    return (
+                      <div
+                        key={field.id}
+                        className={`absolute border-2 rounded cursor-move transition-all ${
+                          selectedField === field.id
+                            ? 'border-blue-500 bg-blue-100/50 shadow-lg'
+                            : isDragging === field.id
+                            ? 'border-green-500 bg-green-100/50 shadow-lg'
+                            : 'border-gray-400 bg-white/80 hover:border-blue-400 hover:bg-blue-50/50'
+                        }`}
+                        style={{
+                          left: `${leftPercent}%`,
+                          top: `${topPercent}%`,
+                          width: `${Math.max(widthPercent, 10)}%`,
+                          height: `${Math.max(heightPercent, 3)}%`,
+                          minWidth: '80px',
+                          minHeight: '24px',
+                        }}
+                        onMouseDown={(e) => handleMouseDown(e, field.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedField(field.id);
+                        }}
+                      >
+                        <div className="flex items-center justify-between h-full px-2 text-xs">
+                          <div className="flex items-center space-x-1 truncate">
+                            <GripVertical className="h-3 w-3 text-gray-500 flex-shrink-0" />
+                            <span className="font-medium text-gray-700 truncate">
+                              {field.name}
+                            </span>
+                            {field.required && <span className="text-red-500">*</span>}
+                          </div>
+                          <div className="flex items-center space-x-1 flex-shrink-0">
+                            <span className="text-gray-500 text-xs">
+                              {field.type}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Poignées de redimensionnement */}
+                        {selectedField === field.id && (
+                          <>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-se-resize"></div>
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-ne-resize"></div>
+                            <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-sw-resize"></div>
+                            <div className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-nw-resize"></div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Instructions d'utilisation */}
+                  {!uploadedPdf && fields.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <File className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-                        <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                          PDF Template
+                        <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Zone de design du template
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {uploadedPdf?.name}
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                          Uploadez un PDF ou ajoutez des champs pour commencer
                         </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-4"
-                          onClick={() => window.open(pdfPreviewUrl, '_blank')}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Voir le PDF
-                        </Button>
                       </div>
                     </div>
                   )}
-                  
-                  <div className="text-center text-gray-500 dark:text-gray-400 mb-4">
-                    <FileText className="h-12 w-12 mx-auto mb-2" />
-                    <p>{uploadedPdf ? 'PDF uploadé - Ajoutez des champs' : 'Zone de design du PDF'}</p>
-                    <p className="text-sm">{uploadedPdf ? 'Positionnez vos champs sur le PDF' : 'Uploadez un PDF ou glissez les champs depuis la gauche'}</p>
-                  </div>
 
-                  {fields.length === 0 && !uploadedPdf ? (
-                    <div className="text-center py-12">
-                      <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400 mb-2">
-                        Aucun PDF ou champ ajouté
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        Uploadez un PDF ou sélectionnez un type de champ à gauche
-                      </p>
+                  {/* Instructions pour les champs */}
+                  {fields.length > 0 && (
+                    <div className="absolute top-2 left-2 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 text-xs text-blue-700 dark:text-blue-300 max-w-xs">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <MousePointer className="h-3 w-3" />
+                        <span className="font-medium">Instructions :</span>
+                      </div>
+                      <ul className="space-y-1 text-xs">
+                        <li>• Cliquez sur un champ pour le sélectionner</li>
+                        <li>• Glissez-déposez pour repositionner</li>
+                        <li>• Cliquez dans le vide pour placer le champ sélectionné</li>
+                      </ul>
                     </div>
-                  ) : fields.length > 0 && (
-                    <div className="space-y-4">
-                      {fields.map((field, index) => (
+                  )}
+                </div>
+
+                {/* Liste des champs en bas */}
+                {fields.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                      Champs du template ({fields.length})
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {fields.map((field) => (
                         <div
                           key={field.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                          className={`p-3 border rounded-lg cursor-pointer transition-all ${
                             selectedField === field.id
                               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                               : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
@@ -396,17 +543,17 @@ export const NewTemplate: React.FC = () => {
                           onClick={() => setSelectedField(field.id)}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <GripVertical className="h-4 w-4 text-gray-400" />
+                            <div className="flex items-center space-x-2">
+                              <Move className="h-4 w-4 text-gray-400" />
                               <div>
-                                <div className="font-medium text-gray-900 dark:text-white">
+                                <div className="font-medium text-gray-900 dark:text-white text-sm">
                                   {field.name}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-xs text-gray-500">
                                   {fieldTypes.find(t => t.type === field.type)?.label}
                                   {field.required && <span className="text-red-500 ml-1">*</span>}
-                                  <span className="ml-2 text-xs">
-                                    Position: {field.x}, {field.y}
+                                  <span className="ml-2">
+                                    ({field.x}, {field.y})
                                   </span>
                                 </div>
                               </div>
@@ -420,14 +567,14 @@ export const NewTemplate: React.FC = () => {
                               }}
                               className="p-1 text-red-600 hover:text-red-700"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -500,10 +647,10 @@ export const NewTemplate: React.FC = () => {
                     {uploadedPdf && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-                          💡 Conseil
+                          💡 Positionnement
                         </p>
                         <p className="text-xs text-blue-600 dark:text-blue-400">
-                          Ajustez les positions X/Y pour placer le champ exactement où vous le souhaitez sur votre PDF.
+                          Glissez le champ directement sur le PDF ou ajustez les coordonnées X/Y manuellement.
                         </p>
                       </div>
                     )}
@@ -515,9 +662,11 @@ export const NewTemplate: React.FC = () => {
                 <CardContent className="p-8 text-center">
                   <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 dark:text-gray-400">
-                    {uploadedPdf 
-                      ? 'Ajoutez des champs à votre PDF ou sélectionnez un champ existant'
-                      : 'Sélectionnez un champ pour modifier ses propriétés'
+                    {fields.length > 0
+                      ? 'Sélectionnez un champ pour modifier ses propriétés'
+                      : uploadedPdf 
+                      ? 'Ajoutez des champs à votre PDF'
+                      : 'Ajoutez des champs ou uploadez un PDF pour commencer'
                     }
                   </p>
                 </CardContent>
