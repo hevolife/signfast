@@ -14,10 +14,6 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
   const [formData, setFormData] = React.useState<Record<string, any>>({});
 
   const handleInputChange = (fieldId: string, value: any) => {
-    // Formater les dates automatiquement
-    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      value = formatDateFR(value);
-    }
     setFormData(prev => ({
       ...prev,
       [fieldId]: value

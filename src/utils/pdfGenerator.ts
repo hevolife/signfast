@@ -716,6 +716,17 @@ export class PDFGenerator {
     if (!value) return '';
     
     try {
+      // Si la valeur contient déjà un masque appliqué (ex: 15/03/2024), la retourner telle quelle
+      if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        return value;
+      }
+      
+      // Si la valeur est au format masqué personnalisé (ex: 15-03-2024), la convertir
+      if (value.match(/^\d{2}[-\.]\d{2}[-\.]\d{4}$/)) {
+        const parts = value.split(/[-\.]/);
+        return `${parts[0]}/${parts[1]}/${parts[2]}`;
+      }
+      
       if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [year, month, day] = value.split('-');
         return `${day}/${month}/${year}`;

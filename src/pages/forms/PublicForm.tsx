@@ -103,7 +103,39 @@ export const PublicForm: React.FC = () => {
       return;
     }
 
+    // Traitement spécial pour les dates avec masque
+    if ((field.type === 'date' || field.type === 'birthdate') && field.validation?.mask && typeof value === 'string') {
+      // Appliquer le masque à la valeur de date
+      const maskedValue = applyDateMask(value, field.validation.mask);
+      setFormData(prev => ({ ...prev, [field.label]: maskedValue }));
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [field.label]: value }));
+  };
+
+  // Fonction pour appliquer un masque à une date
+  const applyDateMask = (dateValue: string, mask: string): string => {
+    if (!dateValue || !mask) return dateValue;
+    
+    // Si c'est une date au format ISO (YYYY-MM-DD), la convertir selon le masque
+    if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateValue.split('-');
+      
+      // Appliquer le masque spécifié
+      if (mask === '99/99/9999') {
+        return `${day}/${month}/${year}`;
+      } else if (mask === '99-99-9999') {
+        return `${day}-${month}-${year}`;
+      } else if (mask === '99.99.9999') {
+        return `${day}.${month}.${year}`;
+      } else {
+        // Format par défaut français
+        return `${day}/${month}/${year}`;
+      }
+    }
+    
+    return dateValue;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
