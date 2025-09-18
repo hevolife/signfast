@@ -37,14 +37,50 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const checkExistingSession = async () => {
     try {
       const savedToken = localStorage.getItem('sub_account_session_token');
+      const savedSubAccountData = localStorage.getItem('sub_account_data');
       
-      if (savedToken) {
+      if (savedToken && savedSubAccountData) {
+        try {
+          const subAccountData = JSON.parse(savedSubAccountData);
+          
+          // Restaurer immédiatement l'état depuis localStorage
+          setIsSubAccount(true);
+          setSubAccount(subAccountData);
+          setMainAccountId(subAccountData.main_account_id);
+          setSessionToken(savedToken);
+          
+          console.log('🔄 Session sous-compte restaurée depuis localStorage:', subAccountData.username);
+          
+          // Valider la session en arrière-plan
+          const isValid = await validateSession(savedToken);
+          if (!isValid) {
+            console.log('❌ Session invalide, nettoyage...');
+            // Session invalide, nettoyer
+            localStorage.removeItem('sub_account_session_token');
+            localStorage.removeItem('sub_account_data');
+            setIsSubAccount(false);
+            setSubAccount(null);
+            setMainAccountId(null);
+            setSessionToken(null);
+          } else {
+            console.log('✅ Session sous-compte validée');
+          }
+        } catch (parseError) {
+          console.error('Erreur parsing données sous-compte:', parseError);
+          // Nettoyer en cas d'erreur de parsing
+          localStorage.removeItem('sub_account_session_token');
+          localStorage.removeItem('sub_account_data');
+        }
+      } else if (savedToken) {
+        // Token sans données, essayer de valider
         const isValid = await validateSession(savedToken);
         if (!isValid) {
           // Session invalide, nettoyer
           localStorage.removeItem('sub_account_session_token');
           localStorage.removeItem('sub_account_data');
         }
+      } else {
+        console.log('🔍 Aucune session sous-compte sauvegardée');
       }
     } catch (error) {
       console.error('Erreur vérification session:', error);
@@ -58,11 +94,22 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const validateSession = async (token: string): Promise<boolean> => {
     try {
+      // Vérifier si Supabase est configuré
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+        console.log('🔍 Supabase non configuré, validation locale du token');
+        // En mode local, considérer le token comme valide s'il existe
+        return true;
+      }
+
       const { data, error } = await supabase.rpc('validate_sub_account_session', {
         p_session_token: token
       });
 
       if (error || !data.success) {
+        console.log('❌ Validation session échouée:', error?.message || 'Session invalide');
         return false;
       }
 
@@ -73,11 +120,17 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setSessionToken(token);
       
       // Configurer le token pour les requêtes Supabase
-      await supabase.rpc('set_config', {
-        parameter: 'app.sub_account_token',
-        value: token
-      });
+      try {
+        await supabase.rpc('set_config', {
+          parameter: 'app.sub_account_token',
+          value: token
+        });
+      } catch (configError) {
+        console.warn('⚠️ Impossible de configurer le token Supabase:', configError);
+        // Continuer même si la config échoue
+      }
 
+      console.log('✅ Session validée avec succès pour:', data.sub_account.username);
       return true;
     } catch (error) {
       console.error('Erreur validation session:', error);
