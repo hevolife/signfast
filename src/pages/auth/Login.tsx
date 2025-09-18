@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { pwaManager } from '../../main';
@@ -11,7 +10,6 @@ import { FormInput, Mail, Eye, EyeOff, Lock as LockIcon, ArrowRight, Sparkles, U
 import toast from 'react-hot-toast';
 
 export const Login: React.FC = () => {
-  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -147,14 +145,14 @@ export const Login: React.FC = () => {
                 )}
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {showResetForm ? 'Réinitialiser' : isSubAccountMode ? 'Connexion Sous-Compte' : t('auth.login.title')}
+                {showResetForm ? 'Réinitialiser' : isSubAccountMode ? 'Connexion Sous-Compte' : 'Connexion'}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 font-medium">
                 {showResetForm 
                   ? 'Saisissez votre email pour recevoir un lien de réinitialisation' 
                   : isSubAccountMode
                   ? 'Accès restreint au stockage PDF uniquement'
-                  : t('auth.login.subtitle')
+                  : 'Connectez-vous à votre espace SignFast'
                 }
               </p>
             </div>
@@ -295,7 +293,7 @@ export const Login: React.FC = () => {
                   <Input
                     id="email"
                     type="email"
-                    label={t('auth.login.email')}
+                    label="Adresse email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -307,7 +305,7 @@ export const Login: React.FC = () => {
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
-                      label={t('auth.login.password')}
+                      label="Mot de passe"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -332,11 +330,11 @@ export const Login: React.FC = () => {
                   {loading ? (
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>{t('common.loading')}</span>
+                      <span>Connexion...</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center space-x-2">
-                      <span>{t('auth.login.submit')}</span>
+                      <span>Se connecter</span>
                       <ArrowRight className="h-4 w-4" />
                     </div>
                   )}
@@ -351,7 +349,7 @@ export const Login: React.FC = () => {
                     }}
                     className="text-sm text-blue-600 hover:text-blue-700 hover:underline font-medium transition-colors"
                   >
-                    {t('auth.login.forgot')}
+                    Mot de passe oublié ?
                   </button>
                 </div>
               </form>
@@ -382,7 +380,7 @@ export const Login: React.FC = () => {
                   >
                     <div className="flex items-center justify-center space-x-2">
                       <Sparkles className="h-4 w-4" />
-                      <span>{t('auth.login.signup')}</span>
+                      <span>Créer un compte gratuit</span>
                     </div>
                   </Button>
                 </Link>

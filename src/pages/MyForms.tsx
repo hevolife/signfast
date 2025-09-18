@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
 import { formatDateFR } from '../utils/dateFormatter';
 import { useOptimizedForms } from '../hooks/useOptimizedForms';
 import { useLimits } from '../hooks/useLimits';
@@ -19,7 +18,6 @@ import { QRCodeGenerator } from '../components/form/QRCodeGenerator';
 import toast from 'react-hot-toast';
 
 export const MyForms: React.FC = () => {
-  const { t } = useLanguage();
   const { forms, totalCount, loading, deleteForm, fetchPage } = useOptimizedForms();
   const { isSubscribed, hasSecretCode } = useSubscription();
   const { forms: formsLimits } = useLimits();
@@ -96,7 +94,7 @@ export const MyForms: React.FC = () => {
                 <FileTextIcon className="h-8 w-8 text-white" />
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-                {t('forms.title')}
+                Mes Formulaires
                 {isSubscribed && (
                   <span className="block text-lg sm:text-xl text-white/90 font-medium mt-2">
                     {product.name} • Illimité
@@ -106,7 +104,7 @@ export const MyForms: React.FC = () => {
               <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl mx-auto">
                 {isSubscribed 
                   ? `Créez et gérez vos formulaires illimités avec ${product.name}`
-                  : t('forms.subtitle')
+                  : 'Créez, gérez et analysez vos formulaires en toute simplicité'
                 }
               </p>
               
@@ -123,7 +121,7 @@ export const MyForms: React.FC = () => {
                   <Link to="/forms/new">
                     <Button className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold px-6 py-3 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5">
                       <Plus className="h-5 w-5 mr-2" />
-                      {t('forms.new')}
+                      Nouveau formulaire
                     </Button>
                   </Link>
                 ) : (
@@ -132,7 +130,7 @@ export const MyForms: React.FC = () => {
                     className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold px-6 py-3 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
                   >
                     <Plus className="h-5 w-5 mr-2" />
-                    {t('forms.new')}
+                    Nouveau formulaire
                   </Button>
                 )}
               </div>
@@ -260,7 +258,7 @@ export const MyForms: React.FC = () => {
                         ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
                         : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
                     }`}>
-                     {form.is_published ? t('forms.published') : t('forms.draft')}
+                      {form.is_published ? 'Publié' : 'Brouillon'}
                     </div>
                   </div>
                 </CardHeader>
@@ -283,7 +281,7 @@ export const MyForms: React.FC = () => {
                         disabled={isLocked}
                       >
                         <Edit className="h-4 w-4" />
-                       <span className="hidden sm:inline">{t('forms.edit')}</span>
+                        <span className="hidden sm:inline">Modifier</span>
                       </Button>
                     </Link>
                     
@@ -295,7 +293,7 @@ export const MyForms: React.FC = () => {
                         disabled={isLocked}
                       >
                         <BarChart3 className="h-4 w-4" />
-                       <span className="hidden sm:inline">{t('forms.stats')}</span>
+                        <span className="hidden sm:inline">Stats</span>
                       </Button>
                     </Link>
                     

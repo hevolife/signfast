@@ -1,7 +1,5 @@
 import React from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
-import { LanguageSelector } from '../components/language/LanguageSelector';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { useDemo } from '../contexts/DemoContext';
@@ -35,7 +33,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
   const { startDemo } = useDemo();
   const location = useLocation();
   const [isVisible, setIsVisible] = React.useState(false);
@@ -52,11 +49,6 @@ export const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 overflow-hidden">
-      {/* Sélecteur de langue en haut à droite */}
-      <div className="absolute top-4 right-4 z-50">
-        <LanguageSelector variant="compact" showLabel={false} />
-      </div>
-      
       {/* Hero Section avec animations */}
       <div className="relative overflow-hidden">
         {/* Background animé */}
@@ -78,24 +70,25 @@ export const Home: React.FC = () => {
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight animate-in slide-in-from-bottom duration-1000 delay-500">
-              {t('home.hero.title').split(' ').slice(0, 2).join(' ')}
+              Créez des
               <span className="block bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
-                {t('home.hero.title').split(' ').slice(2, 4).join(' ')}
+                contrats électroniques
               </span>
               <span className="block animate-in slide-in-from-right duration-1000 delay-700">
-                {t('home.hero.title').split(' ').slice(4).join(' ')}
+                en quelques clics
               </span>
             </h1>
             
             <p className="text-xl lg:text-2xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed animate-in fade-in duration-1000 delay-1000">
-              {t('home.hero.subtitle')}
+              Contrats de location, prestations de services, accords commerciaux... 
+              Créez, signez et gérez tous vos documents légaux avec signature électronique valide.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-in slide-in-from-bottom duration-1000 delay-1200">
               <Link to="/signup">
                 <Button size="lg" className="group bg-white text-blue-600 hover:bg-gray-100 font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 rounded-2xl">
                   <PenTool className="h-6 w-6 mr-3 group-hover:animate-pulse" />
-                  {t('home.hero.cta.primary')}
+                  Créer mon premier contrat
                   <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -109,7 +102,7 @@ export const Home: React.FC = () => {
                 }}
               >
                 <Eye className="h-5 w-5 mr-2 group-hover:animate-pulse" />
-                <span>{t('home.hero.cta.demo')}</span>
+                <span>Voir la démo</span>
                 <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
@@ -118,15 +111,15 @@ export const Home: React.FC = () => {
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto animate-in fade-in duration-1000 delay-1500">
               <div className="text-center group">
                 <div className="text-3xl lg:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform">99.9%</div>
-                <div className="text-white/80 text-sm font-medium">{t('home.hero.stats.reliability')}</div>
+                <div className="text-white/80 text-sm font-medium">Fiabilité</div>
               </div>
               <div className="text-center group">
                 <div className="text-3xl lg:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform">2min</div>
-                <div className="text-white/80 text-sm font-medium">{t('home.hero.stats.creation')}</div>
+                <div className="text-white/80 text-sm font-medium">Création moyenne</div>
               </div>
               <div className="text-center group">
                 <div className="text-3xl lg:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform">100%</div>
-                <div className="text-white/80 text-sm font-medium">{t('home.hero.stats.legal')}</div>
+                <div className="text-white/80 text-sm font-medium">Légal en France</div>
               </div>
             </div>
           </div>
@@ -247,10 +240,10 @@ export const Home: React.FC = () => {
               Signature électronique nouvelle génération
             </div>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-              {t('features.title')}
+              Signature électronique simplifiée
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              {t('features.subtitle')}
+              Une solution complète pour digitaliser vos processus contractuels avec une interface moderne
             </p>
           </div>
 
@@ -260,29 +253,29 @@ export const Home: React.FC = () => {
               {[
                 {
                   icon: <PenTool className="h-8 w-8 text-blue-600" />,
-                  title: t('features.legal.title'),
-                  description: t('features.legal.desc'),
+                  title: "Signature électronique légale",
+                  description: "Signatures conformes au règlement eIDAS européen. Valeur juridique équivalente à la signature manuscrite.",
                   color: "from-blue-100 to-blue-200",
                   delay: "delay-100"
                 },
                 {
                   icon: <Clock className="h-8 w-8 text-green-600" />,
-                  title: t('features.fast.title'),
-                  description: t('features.fast.desc'),
+                  title: "Création en 2 minutes",
+                  description: "Interface intuitive avec templates pré-conçus. Glissez-déposez vos champs et c'est prêt.",
                   color: "from-green-100 to-green-200",
                   delay: "delay-200"
                 },
                 {
                   icon: <Smartphone className="h-8 w-8 text-purple-600" />,
-                  title: t('features.mobile.title'),
-                  description: t('features.mobile.desc'),
+                  title: "Signature sur mobile",
+                  description: "Vos clients signent directement sur leur téléphone, tablette ou ordinateur. Aucune app à télécharger.",
                   color: "from-purple-100 to-purple-200",
                   delay: "delay-300"
                 },
                 {
                   icon: <Shield className="h-8 w-8 text-red-600" />,
-                  title: t('features.security.title'),
-                  description: t('features.security.desc'),
+                  title: "Sécurité maximale",
+                  description: "Chiffrement bout-en-bout, horodatage certifié et archivage sécurisé pendant 10 ans.",
                   color: "from-red-100 to-red-200",
                   delay: "delay-400"
                 }
@@ -379,10 +372,10 @@ export const Home: React.FC = () => {
               Processus simplifié
             </div>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-              {t('process.title')}
+              3 étapes pour un contrat signé
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
-              {t('process.subtitle')}
+              Processus simplifié pour une efficacité maximale
             </p>
           </div>
 
@@ -390,8 +383,8 @@ export const Home: React.FC = () => {
             {[
               {
                 step: "01",
-                title: t('process.step1.title'),
-                description: t('process.step1.desc'),
+                title: "Créez votre contrat",
+                description: "Choisissez un template ou créez votre contrat personnalisé avec notre éditeur intuitif",
                 icon: <FileText className="h-12 w-12 text-blue-600" />,
                 color: "blue",
                 bgColor: "from-blue-50 to-blue-100",
@@ -399,8 +392,8 @@ export const Home: React.FC = () => {
               },
               {
                 step: "02", 
-                title: t('process.step2.title'),
-                description: t('process.step2.desc'),
+                title: "Partagez et collectez",
+                description: "Envoyez le lien à vos clients. Ils remplissent et signent directement en ligne",
                 icon: <Share2 className="h-12 w-12 text-green-600" />,
                 color: "green",
                 bgColor: "from-green-50 to-green-100",
@@ -408,8 +401,8 @@ export const Home: React.FC = () => {
               },
               {
                 step: "03",
-                title: t('process.step3.title'),
-                description: t('process.step3.desc'),
+                title: "Récupérez le PDF signé",
+                description: "Téléchargez automatiquement le contrat signé au format PDF avec valeur légale",
                 icon: <Download className="h-12 w-12 text-purple-600" />,
                 color: "purple",
                 bgColor: "from-purple-50 to-purple-100",

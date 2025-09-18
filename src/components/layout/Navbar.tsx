@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useDemo } from '../../contexts/DemoContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { pwaManager } from '../../main';
 import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
@@ -16,7 +15,6 @@ import toast from 'react-hot-toast';
 export const Navbar: React.FC = () => {
   const { user, signOut, isImpersonating, impersonationData, stopImpersonation } = useAuth();
   const { isSubscribed, subscriptionStatus } = useSubscription();
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isDemoMode, endDemo } = useDemo();
@@ -68,12 +66,12 @@ export const Navbar: React.FC = () => {
   };
 
   const navItems = user || isDemoMode ? [
-    { path: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard'), color: 'blue', emoji: '📊' },
-    { path: '/forms', icon: FileText, label: t('nav.forms'), color: 'green', emoji: '📝' },
-    { path: '/pdf/templates', icon: FileText, label: t('nav.templates'), color: 'purple', emoji: '📄' },
-    { path: '/pdf/manager', icon: HardDrive, label: t('nav.storage'), color: 'orange', emoji: '💾' },
-    { path: '/support', icon: MessageCircle, label: t('nav.support'), color: 'indigo', emoji: '🚀' },
-    { path: '/settings', icon: Settings, label: t('nav.settings'), color: 'indigo', emoji: '⚙️' },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', color: 'blue', emoji: '📊' },
+    { path: '/forms', icon: FileText, label: 'Formulaires', color: 'green', emoji: '📝' },
+    { path: '/pdf/templates', icon: FileText, label: 'Templates', color: 'purple', emoji: '📄' },
+    { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', color: 'orange', emoji: '💾' },
+    { path: '/support', icon: MessageCircle, label: 'Support', color: 'indigo', emoji: '🚀' },
+    { path: '/settings', icon: Settings, label: 'Paramètres', color: 'indigo', emoji: '⚙️' },
   ] : [];
 
   const getNavItemColorClasses = (color: string, isActive: boolean) => {
@@ -198,12 +196,12 @@ export const Navbar: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <Link to="/login">
                     <Button variant="ghost" size="sm" className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 hover:from-blue-200 hover:to-indigo-200 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                      {t('nav.login')}
+                      Connexion
                     </Button>
                   </Link>
                   <Link to="/signup">
                     <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl">
-                      {t('nav.signup')}
+                      S'inscrire
                     </Button>
                   </Link>
                 </div>
@@ -227,12 +225,12 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Link to="/login">
                   <Button variant="ghost" size="sm" className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 hover:from-blue-200 hover:to-indigo-200 font-semibold rounded-xl shadow-lg">
-                    {t('nav.login')}
+                    Connexion
                   </Button>
                 </Link>
                 <Link to="/signup">
                   <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold shadow-xl rounded-xl">
-                    {t('nav.signup')}
+                    S'inscrire
                   </Button>
                 </Link>
               </div>
@@ -344,7 +342,7 @@ export const Navbar: React.FC = () => {
                 >
                   <div className="flex items-center justify-center space-x-3">
                     <LogOut className="h-5 w-5" />
-                    <span>{isDemoMode ? t('nav.quitDemo') : t('nav.logout')}</span>
+                    <span>{isDemoMode ? 'Quitter la démo' : 'Se déconnecter'}</span>
                   </div>
                 </Button>
               </div>
