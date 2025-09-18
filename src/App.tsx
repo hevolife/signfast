@@ -11,6 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Forms } from './pages/Forms';
 import { Templates } from './pages/Templates';
 import { Settings } from './pages/Settings';
+import { NewForm } from './pages/forms/NewForm';
 
 function App() {
   return (
@@ -35,6 +36,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Forms />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forms/new"
+              element={
+                <ProtectedRoute>
+                  <NewForm />
                 </ProtectedRoute>
               }
             />
