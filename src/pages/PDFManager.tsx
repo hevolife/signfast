@@ -1405,6 +1405,30 @@ export const PDFGenerationPage: React.FC = () => {
                                     </div>
                                     <span className="text-sm font-bold text-green-900 dark:text-green-300">
                                       Image uploadée
+                                    </span>
+                                  </div>
+                                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-inner">
+                                    <img
+                                      src={value}
+                                      alt="Image uploadée"
+                                      className="max-w-full max-h-48 object-contain mx-auto rounded-lg"
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between mt-3">
+                                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                                      📷 Image valide
+                                    </span>
+                                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                                      {Math.round(value.length / 1024)} KB
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 font-medium">
+                              {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                            </div>
                           )}
                         </div>
                       ));
