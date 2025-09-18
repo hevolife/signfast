@@ -95,12 +95,13 @@ export const SupportPanel: React.FC = () => {
       // Scroller vers le bas après chargement des messages
       setTimeout(scrollToBottom, 200);
       
+      // Marquer le ticket comme lu immédiatement lors du clic
       await markTicketAsRead(ticketId);
       
-      // Actualiser les notifications avec un délai plus long
+      // Actualiser les notifications immédiatement
       setTimeout(() => {
         refreshNotifications();
-      }, 1500); // Délai augmenté à 1.5 secondes
+      }, 100); // Délai réduit pour réactivité
       
     } catch (error) {
       setTicketMessages([]);
