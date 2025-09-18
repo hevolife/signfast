@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useForms } from '../hooks/useForms';
-import { useFormResponses } from '../hooks/useForms';
+import { useOptimizedForms } from '../hooks/useOptimizedForms';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { usePDFTemplates } from '../hooks/usePDFTemplates';
@@ -35,7 +34,7 @@ import {
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
-  const { forms, totalCount: totalForms, loading: formsLoading, fetchPage } = useForms();
+  const { forms, totalCount: totalForms, loading: formsLoading, fetchPage } = useOptimizedForms();
   const { templates, loading: templatesLoading } = usePDFTemplates();
   const { isSubscribed, hasSecretCode, secretCodeType } = useSubscription();
   const { forms: formsLimits, pdfTemplates: templatesLimits, savedPdfs: savedPdfsLimits } = useLimits();

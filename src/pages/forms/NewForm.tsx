@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FormBuilder } from '../../components/form/FormBuilder';
-import { useForms } from '../../hooks/useForms';
+import { OptimizedFormBuilder } from '../../components/optimized/OptimizedFormBuilder';
+import { useOptimizedForms } from '../../hooks/useOptimizedForms';
 import { FormField } from '../../types/form';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useDemo } from '../../contexts/DemoContext';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
+import { FormInput, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const NewForm: React.FC = () => {
@@ -14,7 +15,7 @@ export const NewForm: React.FC = () => {
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [saving, setSaving] = useState(false);
-  const { createForm } = useForms();
+  const { createForm } = useOptimizedForms();
   const { isDemoMode } = useDemo();
   const navigate = useNavigate();
 
@@ -70,18 +71,23 @@ export const NewForm: React.FC = () => {
 
   if (step === 'info') {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full">
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl">
             <CardHeader>
-              <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-                Nouveau formulaire
-              </h2>
-              <p className="text-center text-gray-600 dark:text-gray-400">
-                Commencez par donner un titre à votre formulaire
-              </p>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl mb-6 shadow-lg">
+                  <FormInput className="h-8 w-8 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Nouveau formulaire
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Commencez par donner un titre à votre formulaire
+                </p>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <form onSubmit={handleBasicInfo} className="space-y-4">
                 <Input
                   id="title"
@@ -89,6 +95,7 @@ export const NewForm: React.FC = () => {
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="Ex: Enquête de satisfaction"
+                  className="bg-white/70 backdrop-blur-sm border-gray-200/50 focus:border-blue-500 rounded-xl font-medium shadow-lg"
                   required
                 />
                 
@@ -100,13 +107,16 @@ export const NewForm: React.FC = () => {
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Décrivez brièvement votre formulaire..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 bg-white/70 backdrop-blur-sm shadow-lg"
                     rows={3}
                   />
                 </div>
 
-                <Button type="submit" className="w-full">
-                  Créer le formulaire
+                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Sparkles className="h-5 w-5" />
+                    <span>Créer le formulaire</span>
+                  </div>
                 </Button>
               </form>
             </CardContent>
@@ -117,7 +127,7 @@ export const NewForm: React.FC = () => {
   }
 
   return (
-    <FormBuilder
+    <OptimizedFormBuilder
       onSave={handleSaveForm}
       saving={saving}
     />

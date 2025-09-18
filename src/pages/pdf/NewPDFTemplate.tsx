@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PDFTemplateEditor } from '../../components/pdf/PDFTemplateEditor';
+import { OptimizedPDFTemplateEditor } from '../../components/optimized/OptimizedPDFTemplateEditor';
 import { PDFField } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -191,7 +191,7 @@ export const NewPDFTemplate: React.FC = () => {
   };
 
   return (
-    <PDFTemplateEditor
+    <OptimizedPDFTemplateEditor
       onSave={handleSave}
       formVariables={getFormVariables()}
       linkedFormId={linkedFormId}

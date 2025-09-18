@@ -15,7 +15,6 @@ import {
 export const MobileBottomNav: React.FC = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
-  const { unreadSupportMessages } = useNotifications();
   const location = useLocation();
 
   // Ne pas afficher sur les formulaires publics
@@ -32,6 +31,7 @@ export const MobileBottomNav: React.FC = () => {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', emoji: '📊' },
     { path: '/forms', icon: FileText, label: 'Formulaires', emoji: '📝' },
     { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', emoji: '💾' },
+    { path: '/support', icon: MessageCircle, label: 'Support', emoji: '💬' },
     { path: '/settings', icon: Settings, label: 'Paramètres', emoji: '⚙️' },
   ];
 

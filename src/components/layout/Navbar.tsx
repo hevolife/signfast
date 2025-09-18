@@ -70,6 +70,7 @@ export const Navbar: React.FC = () => {
     { path: '/forms', icon: FileText, label: 'Formulaires', color: 'green', emoji: '📝' },
     { path: '/pdf/templates', icon: FileText, label: 'Templates', color: 'purple', emoji: '📄' },
     { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', color: 'orange', emoji: '💾' },
+    { path: '/support', icon: MessageCircle, label: 'Support', color: 'indigo', emoji: '💬' },
     { path: '/settings', icon: Settings, label: 'Paramètres', color: 'indigo', emoji: '⚙️' },
   ] : [];
 
@@ -289,15 +290,6 @@ export const Navbar: React.FC = () => {
                         <div className="flex flex-col items-center space-y-2">
                           <div className="p-2 rounded-xl">
                             <span className="text-lg">{item.emoji}</span>
-                          </div>
-                          <span className="font-bold text-sm">{item.label}</span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-
               {/* Actions spéciales mobile */}
               <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50 space-y-3">
                 {!isDemoMode && user && isSuperAdmin && (

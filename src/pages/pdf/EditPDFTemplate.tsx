@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PDFTemplateEditor } from '../../components/pdf/PDFTemplateEditor';
+import { OptimizedPDFTemplateEditor } from '../../components/optimized/OptimizedPDFTemplateEditor';
 import { PDFField, PDFTemplate } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useAuth } from '../../contexts/AuthContext';
-import { useForms } from '../../hooks/useForms';
+import { useOptimizedForms } from '../../hooks/useOptimizedForms';
 import { usePDFTemplates } from '../../hooks/usePDFTemplates';
 import { useDemo } from '../../contexts/DemoContext';
-import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 export const EditPDFTemplate: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { forms, refetch: refetchForms } = useForms();
+  const { forms, refetch: refetchForms } = useOptimizedForms();
   const { templates, loading: templatesLoading } = usePDFTemplates();
   const { isDemoMode, updateDemoTemplate, updateDemoForm } = useDemo();
   const [template, setTemplate] = useState<PDFTemplate | null>(null);
@@ -289,7 +288,7 @@ export const EditPDFTemplate: React.FC = () => {
   }
 
   return (
-    <PDFTemplateEditor
+    <OptimizedPDFTemplateEditor
       onSave={handleSave}
       initialFields={fieldsReady ? template.fields : []}
       formVariables={getFormVariables()}

@@ -41,7 +41,6 @@ import { WelcomeModal } from './components/onboarding/WelcomeModal';
 import { SupportNotificationToast } from './components/notifications/SupportNotificationToast';
 import { TutorialTrigger } from './components/tutorial/TutorialTrigger';
 
-// Composant d'erreur de fallback
 const ErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () => void }> = ({ 
   error, 
   resetErrorBoundary 
@@ -93,7 +92,6 @@ const AppContent: React.FC = () => {
   const isPublicForm = location.pathname.startsWith('/form/');
   const [isMobile, setIsMobile] = React.useState(false);
   
-  // Détecter si on est sur mobile
   React.useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -104,33 +102,27 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Gérer la redirection PWA vers login
   React.useEffect(() => {
     const isPWA = pwaManager.isPWAMode();
     
-    // Gestion PWA améliorée
     if (isPWA) {
-      // Si on est dans une PWA et que l'utilisateur n'est pas connecté
       if (!user && !isPublicForm && location.pathname !== '/login' && location.pathname !== '/signup') {
         console.log('📱 PWA: Utilisateur non connecté, redirection vers login');
         navigate('/login?pwa=true', { replace: true });
       }
       
-      // Si on est sur la page d'accueil en PWA et connecté, rediriger vers dashboard
       if (user && location.pathname === '/') {
         console.log('📱 PWA: Utilisateur connecté sur accueil, redirection vers dashboard');
         navigate('/dashboard', { replace: true });
       }
     }
   }, [user, location.pathname, isPublicForm, navigate]);
-  // Backend DnD adaptatif
+
   const dndBackend = isMobile ? TouchBackend : HTML5Backend;
   const dndOptions = isMobile ? { enableMouseEvents: true } : {};
   
-  // Vérifier si l'utilisateur est super admin
   const isSuperAdmin = user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
   
-  // Afficher le mode maintenance si activé et que l'utilisateur n'est pas super admin
   if (!maintenanceLoading && isMaintenanceMode && !isSuperAdmin) {
     return <MaintenanceMode />;
   }
@@ -138,13 +130,9 @@ const AppContent: React.FC = () => {
   return (
     <DndProvider backend={dndBackend} options={dndOptions}>
       <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isPublicForm ? '' : 'pb-16 md:pb-0'}`}>
-        {/* Timer de démo affiché sur toutes les pages */}
         <DemoTimer />
-        {/* Message d'accueil pour nouveaux utilisateurs */}
         <WelcomeModal />
-        {/* Notifications support globales */}
         <SupportNotificationToast />
-        {/* Tutoriel guidé pour nouveaux utilisateurs */}
         <TutorialTrigger />
         {!isPublicForm && <Navbar />}
         <main>
@@ -279,6 +267,7 @@ const AppContent: React.FC = () => {
             },
           }}
         />
+        {!isPublicForm && <MobileBottomNav />}
       </div>
     </DndProvider>
   );
@@ -289,13 +278,14 @@ function App() {
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
       onError={(error, errorInfo) => {
+        console.error('Error caught by boundary:', error, errorInfo);
       }}
       onReset={() => {
-        // Nettoyer le localStorage en cas d'erreur
         try {
           localStorage.removeItem('signfast_demo');
           sessionStorage.clear();
         } catch (e) {
+          console.warn('Error clearing storage:', e);
         }
         window.location.reload();
       }}

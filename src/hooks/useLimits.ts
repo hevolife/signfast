@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDemo } from '../contexts/DemoContext';
 import { useSubscription } from './useSubscription';
-import { useForms } from './useForms';
+import { useOptimizedForms } from './useOptimizedForms';
 import { usePDFTemplates } from './usePDFTemplates';
-import { PDFService } from '../services/pdfService';
+import { OptimizedPDFService } from '../services/optimizedPDFService';
 import { stripeConfig } from '../stripe-config';
 
 interface LimitData {
@@ -18,7 +18,7 @@ export const useLimits = () => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
   const { isSubscribed, hasSecretCode, loading: subscriptionLoading } = useSubscription();
-  const { forms } = useForms();
+  const { forms } = useOptimizedForms();
   const { templates } = usePDFTemplates();
   const [responsesCount, setResponsesCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export const useLimits = () => {
 
   const refreshLimits = async () => {
     try {
-      const count = await PDFService.countResponsesForUser(user?.id || '');
+      const count = await OptimizedPDFService.countUserPDFs(user?.id || '');
       setResponsesCount(count);
     } catch (error) {
       console.error('Erreur refresh limits:', error);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { formatDateFR } from '../utils/dateFormatter';
-import { useForms } from '../hooks/useForms';
+import { useOptimizedForms } from '../hooks/useOptimizedForms';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { SubscriptionBanner } from '../components/subscription/SubscriptionBanner';
@@ -18,7 +18,7 @@ import { QRCodeGenerator } from '../components/form/QRCodeGenerator';
 import toast from 'react-hot-toast';
 
 export const MyForms: React.FC = () => {
-  const { forms, totalCount, loading, deleteForm, fetchPage } = useForms();
+  const { forms, totalCount, loading, deleteForm, fetchPage } = useOptimizedForms();
   const { isSubscribed, hasSecretCode } = useSubscription();
   const { forms: formsLimits } = useLimits();
   const [showLimitModal, setShowLimitModal] = React.useState(false);

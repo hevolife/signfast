@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FormBuilder } from '../../components/form/FormBuilder';
+import { OptimizedFormBuilder } from '../../components/optimized/OptimizedFormBuilder';
 import { PDFSettingsPanel } from '../../components/form/PDFSettingsPanel';
-import { useForms } from '../../hooks/useForms';
+import { useOptimizedForms } from '../../hooks/useOptimizedForms';
 import { FormField } from '../../types/form';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-import { ExternalLink, Eye, Settings, Share2, FileText, Sparkles, Edit as EditIcon, QrCode } from 'lucide-react';
+import { ExternalLink, Eye, Share2, Edit as EditIcon, QrCode } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { PDFTemplate } from '../../types/pdf';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { useSubscription } from '../../hooks/useSubscription';
 import { stripeConfig } from '../../stripe-config';
@@ -20,9 +18,8 @@ import { QRCodeGenerator } from '../../components/form/QRCodeGenerator';
 export const EditForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
-  const { forms, updateForm, loading } = useForms();
+  const { forms, updateForm, loading } = useOptimizedForms();
   const { isSubscribed } = useSubscription();
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -298,7 +295,7 @@ export const EditForm: React.FC = () => {
         </div>
 
         {activeTab === 'builder' && (
-          <FormBuilder
+          <OptimizedFormBuilder
             initialFields={form.fields || []}
             onSave={handleSaveForm}
             saving={saving}

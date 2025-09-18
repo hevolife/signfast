@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
-import { useForms } from '../../hooks/useForms';
-import { useFormResponses } from '../../hooks/useForms';
+import { useOptimizedForms } from '../../hooks/useOptimizedForms';
+import { useOptimizedFormResponses } from '../../hooks/useOptimizedForms';
 import { Form, FormResponse } from '../../types/form';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -31,14 +31,13 @@ import toast from 'react-hot-toast';
 
 export const FormResults: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { forms } = useForms();
-  const { responses, totalCount, loading: responsesLoading, fetchSingleResponseData, refetch, fetchPage } = useFormResponses(id || '');
+  const { forms } = useOptimizedForms();
+  const { responses, totalCount, loading: responsesLoading, refetch, fetchPage } = useOptimizedFormResponses(id || '');
   const [form, setForm] = useState<Form | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
-  const [loadingResponseData, setLoadingResponseData] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -58,20 +57,6 @@ export const FormResults: React.FC = () => {
   const handleViewResponse = async (response: FormResponse) => {
     setSelectedResponse(response);
     setShowResponseModal(true);
-    
-    // Always fetch the full response data when viewing details
-    setLoadingResponseData(true);
-    try {
-      const fullData = await fetchSingleResponseData(response.id);
-      if (fullData) {
-        // Update the selected response with the full data
-        setSelectedResponse(prev => prev ? { ...prev, data: fullData } : null);
-      }
-    } catch (error) {
-      console.error('Erreur chargement données réponse:', error);
-    } finally {
-      setLoadingResponseData(false);
-    }
   };
   const handleDeleteResponse = async (responseId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette réponse ?')) {
