@@ -397,7 +397,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-3">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                               {subAccount.display_name}
                             </h3>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -408,7 +408,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                               {subAccount.is_active ? 'Actif' : 'Inactif'}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <div className="flex items-center space-x-2">
                               <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">
                                 @{subAccount.username}
@@ -423,7 +423,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                                 <Copy className="h-3 w-3" />
                               </Button>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 hidden sm:block">
                               Créé le {formatDateTimeFR(subAccount.created_at)}
                               {subAccount.last_login_at && (
                                 <span className="ml-2">• Dernière connexion: {formatDateTimeFR(subAccount.last_login_at)}</span>
@@ -435,20 +435,22 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
 
                       {/* Permissions */}
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 hidden sm:block">
                           Permissions accordées
                         </h4>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
                           {subAccount.permissions.pdf_access && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                               <FileText className="h-3 w-3 mr-1" />
-                              Accès PDF
+                              <span className="hidden sm:inline">Accès PDF</span>
+                              <span className="sm:hidden">PDF</span>
                             </span>
                           )}
                           {subAccount.permissions.download_only && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                               <Download className="h-3 w-3 mr-1" />
-                              Téléchargement
+                              <span className="hidden sm:inline">Téléchargement</span>
+                              <span className="sm:hidden">DL</span>
                             </span>
                           )}
                         </div>
@@ -456,35 +458,35 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                     </div>
 
                     {/* Actions */}
-                    <div className="flex lg:flex-col items-center lg:items-end space-x-2 lg:space-x-0 lg:space-y-2">
+                    <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end space-y-2 sm:space-y-0 sm:space-x-2 lg:space-x-0 lg:space-y-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditSubAccount(subAccount)}
-                        className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
+                        className="flex items-center justify-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 w-full sm:w-auto"
                       >
                         <Edit2 className="h-4 w-4" />
-                        <span>Modifier</span>
+                        <span className="text-xs sm:text-sm">Modifier</span>
                       </Button>
                       
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setResettingPassword(subAccount.id)}
-                        className="flex items-center space-x-1 bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300"
+                        className="flex items-center justify-center space-x-1 bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300 w-full sm:w-auto"
                       >
                         <Key className="h-4 w-4" />
-                        <span>Reset MDP</span>
+                        <span className="text-xs sm:text-sm">Reset MDP</span>
                       </Button>
                       
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteSubAccount(subAccount)}
-                        className="flex items-center space-x-1 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
+                        className="flex items-center justify-center space-x-1 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 w-full sm:w-auto"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span>Supprimer</span>
+                        <span className="text-xs sm:text-sm">Supprimer</span>
                       </Button>
                     </div>
                   </div>
@@ -498,26 +500,26 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Input
-                        label="Nouveau mot de passe"
+                        label="Nouveau MDP"
                         type="password"
                         value={resetPassword}
                         onChange={(e) => setResetPassword(e.target.value)}
                         placeholder="••••••••"
                       />
                       <Input
-                        label="Confirmer le mot de passe"
+                        label="Confirmer MDP"
                         type="password"
                         value={resetPasswordConfirm}
                         onChange={(e) => setResetPasswordConfirm(e.target.value)}
                         placeholder="••••••••"
                       />
                     </div>
-                    <div className="flex space-x-2 mt-3">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-3">
                       <Button
                         size="sm"
                         onClick={() => handleResetPassword(subAccount.id)}
                         disabled={!resetPassword || resetPassword !== resetPasswordConfirm}
-                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto"
                       >
                         Réinitialiser
                       </Button>
@@ -529,6 +531,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                           setResetPassword('');
                           setResetPasswordConfirm('');
                         }}
+                        className="w-full sm:w-auto"
                       >
                         Annuler
                       </Button>
@@ -580,7 +583,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                   pattern="^[a-zA-Z0-9_-]{3,20}$"
                   required
                 />
-                <p className="text-xs text-gray-500 -mt-2">
+                <p className="text-xs text-gray-500 -mt-2 hidden sm:block">
                   3-20 caractères, lettres, chiffres, _ et - uniquement
                 </p>
                 
@@ -602,7 +605,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                 />
                 
                 <Input
-                  label="Confirmer le mot de passe"
+                  label="Confirmer MDP"
                   type="password"
                   value={newPasswordConfirm}
                   onChange={(e) => setNewPasswordConfirm(e.target.value)}
@@ -610,7 +613,7 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                   required
                 />
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 hidden sm:block">
                   <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">
                     Permissions par défaut
                   </h4>
@@ -623,28 +626,28 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                   </div>
                 </div>
 
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => setShowCreateForm(false)}
-                    className="flex-1"
+                    className="flex-1 w-full"
                     disabled={creating}
                   >
                     Annuler
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1"
+                    className="flex-1 w-full"
                     disabled={creating || !newUsername || !newDisplayName || !newPassword || newPassword !== newPasswordConfirm}
                   >
                     {creating ? (
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Création...</span>
+                        <span className="text-sm">Création...</span>
                       </div>
                     ) : (
-                      'Créer le sous-compte'
+                      <span className="text-sm">Créer le sous-compte</span>
                     )}
                   </Button>
                 </div>
