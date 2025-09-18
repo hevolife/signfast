@@ -2,40 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Styles de base */
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-  
-  body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  }
-}
-
-/* Composants personnalisés */
-@layer components {
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* Animations personnalisées */
+/* Masquer la scrollbar sur les navigateurs webkit */
 @layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE et Edge */
+    scrollbar-width: none;  /* Firefox */
   }
-  
-  .animate-slide-in-bottom {
-    animation: slideInFromBottom 0.6s ease-out;
-  }
-  
-  .animate-slide-in-top {
-    animation: slideInFromTop 0.6s ease-out;
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari et Opera */
   }
 }
