@@ -16,6 +16,181 @@ import { FileText, Download, Trash2, Search, Calendar, HardDrive, RefreshCw, Loc
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// Hook pour l'Intersection Observer
+const useIntersectionObserver = (options = {}) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [hasIntersected, setHasIntersected] = useState(false);
+  const elementRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+        if (entry.isIntersecting && !hasIntersected) {
+          setHasIntersected(true);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px',
+        ...options
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [hasIntersected]);
+
+  return { elementRef, isIntersecting, hasIntersected };
+};
+
+// Composant PDFCard avec lazy loading
+const PDFCard: React.FC<{
+  pdf: any;
+  index: number;
+  onView: (pdf: any) => void;
+  onDownload: (pdf: any) => void;
+  onDelete: (fileName: string, formTitle: string) => void;
+}> = ({ pdf, index, onView, onDownload, onDelete }) => {
+  const { elementRef, hasIntersected } = useIntersectionObserver();
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (hasIntersected) {
+      // Délai progressif pour effet de cascade
+      const timer = setTimeout(() => {
+        setShouldRender(true);
+      }, index * 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasIntersected, index]);
+
+  return (
+    <div ref={elementRef} className="h-full">
+      {!shouldRender ? (
+        // Skeleton card
+        <Card className="animate-pulse bg-white/60 backdrop-blur-sm border-0 shadow-lg h-full">
+          <CardHeader>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/2"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex-1"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        // Carte réelle avec animation
+        <Card className="group bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 h-full animate-in slide-in-from-bottom duration-500">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center space-x-4 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <span className="text-white text-lg">📄</span>
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                    {(() => {
+                      try {
+                        const data = typeof pdf.formData === 'string' ? JSON.parse(pdf.formData) : pdf.formData;
+                        const firstName = data?.['Prénom'] || data?.['prénom'] || data?.['Prenom'] || data?.['prenom'] || 
+                                        data?.['first_name'] || data?.['firstName'] || data?.['nom_complet']?.split(' ')[0] || '';
+                        const lastName = data?.['Nom'] || data?.['nom'] || data?.['Nom de famille'] || data?.['nom_de_famille'] || 
+                                       data?.['last_name'] || data?.['lastName'] || data?.['nom_complet']?.split(' ').slice(1).join(' ') || '';
+                        
+                        if (firstName && lastName) {
+                          return `${firstName} ${lastName}`;
+                        }
+                        if (data?.['nom_complet'] || data?.['Nom complet'] || data?.['nomComplet']) {
+                          return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
+                        }
+                        if (firstName) return firstName;
+                        if (lastName) return lastName;
+                        return pdf.userName || `PDF #${pdf.fileName.slice(-12, -4)}`;
+                      } catch {
+                        return pdf.userName || `PDF #${pdf.fileName.slice(-12, -4)}`;
+                      }
+                    })()}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 font-medium">
+                    {pdf.formTitle}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="text-xs bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 px-3 py-1 rounded-full font-semibold shadow-sm dark:from-orange-900/30 dark:to-red-900/30 dark:text-orange-300">
+                {pdf.templateName}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full font-semibold">
+                {Math.round(pdf.size / 1024)} KB
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full font-semibold">
+                {formatDateTimeFR(pdf.createdAt)}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onView(pdf)}
+                className="flex-1 flex items-center justify-center space-x-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
+              >
+                <Eye className="h-4 w-4" />
+                <span className="hidden sm:inline">Détails</span>
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onDownload(pdf)}
+                className="flex items-center justify-center space-x-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Télécharger</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(pdf.fileName, pdf.formTitle)}
+                className="bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
+                title="Supprimer le PDF"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
 interface FormResponsePDF {
   id: string;
   form_id: string;
@@ -895,90 +1070,14 @@ export const PDFManager: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredAndSortedResponses.map((response, index) => {
-              const isLocked = !isSubscribed && !hasSecretCode && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
-              const isGenerating = generatingPdf === response.id;
-              
-              return (
-                <Card key={response.id} className={`group relative bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ${isLocked ? 'opacity-75' : ''}`}>
-                  {isLocked && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-900/80 to-yellow-900/80 rounded-2xl flex items-center justify-center z-10 backdrop-blur-sm">
-                      <div className="text-center p-4">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-white/90 text-orange-600 rounded-3xl mb-4 shadow-xl">
-                          <Lock className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-white font-bold text-lg mb-3">PDF verrouillé</h3>
-                        <p className="text-orange-100 text-sm mb-4 font-medium">
-                          Passez à {product.name} pour débloquer
-                        </p>
-                        <Link to="/subscription">
-                          <Button size="sm" className="flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 mx-auto font-bold">
-                            <Crown className="h-4 w-4" />
-                           <span>Passer Pro</span>
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-4 mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <span className="text-white text-lg">📄</span>
-                        </div>
-                        <div>
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                            {response.user_name || 'Utilisateur anonyme'}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 font-medium">
-                            {response.form_title}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="text-xs bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-3 py-1 rounded-full font-semibold shadow-sm dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300">
-                        {response.template_name}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full font-semibold">
-                        {formatDateTimeFR(response.created_at)}
-                      </span>
-                      {response.ip_address && (
-                        <span className="text-xs text-blue-500 dark:text-blue-400 bg-blue-100 dark:bg-blue-800 px-3 py-1 rounded-full font-semibold">
-                          IP: {response.ip_address}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Aperçu des données */}
-                    <div className="text-xs text-blue-600 dark:text-blue-400 mb-4 flex items-center space-x-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-xl font-medium">
-                      <span>📋</span>
-                      <span>{Object.keys(response.response_data).length} champs remplis</span>
-                      {Object.keys(response.response_data).filter(key => 
-                        typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
-                      ).length > 0 && (
-                        <span className="text-green-600 dark:text-green-400">
-                          • {Object.keys(response.response_data).filter(key => 
-                            typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
-                          ).length} image{Object.keys(response.response_data).filter(key => 
-                            typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
-                          ).length > 1 ? 's' : ''}/signature{Object.keys(response.response_data).filter(key => 
-                            typeof response.response_data[key] === 'string' && response.response_data[key].startsWith('data:image')
-                          ).length > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => generateAndDownloadPDF(response)}
-                        className="flex-1 flex items-center justify-center space-x-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
-                        title="Générer et télécharger le PDF"
+              <PDFCard
+                key={pdf.fileName}
+                pdf={pdf}
+                index={index}
+                onView={handleViewPdf}
+                onDownload={handleDownloadPdf}
+                onDelete={handleDeletePdf}
+              />
                         disabled={isLocked || isGenerating}
                       >
                         {isGenerating ? (
