@@ -315,11 +315,135 @@ export class PDFGenerator {
       }
     }
     
-    const finalValue = value || '';
+    // Appliquer le masque de saisie si c'est un champ texte et qu'il a un masque
+    let finalValue = value || '';
+    
+    if (field.type === 'text' && finalValue && typeof finalValue === 'string') {
+      // Chercher le masque dans les données du formulaire
+      const maskInfo = this.findFieldMask(variableName, data);
+      if (maskInfo) {
+        finalValue = this.applyTextMask(finalValue, maskInfo);
+      }
+    }
     
     return finalValue;
   }
 
+  /**
+   * Cherche le masque de saisie pour un champ donné
+   */
+  private static findFieldMask(variableName: string, data: Record<string, any>): string | null {
+    // Chercher dans les métadonnées du formulaire si elles existent
+    if (data._form_metadata && data._form_metadata.fields) {
+      const field = data._form_metadata.fields.find((f: any) => {
+        const fieldVariableName = f.label
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        return fieldVariableName === variableName;
+      });
+      
+      if (field && field.validation && field.validation.mask) {
+        return field.validation.mask;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Applique un masque de saisie à une valeur texte
+   */
+  private static applyTextMask(value: string, mask: string): string {
+    if (!value || !mask) return value;
+    
+    // Si la valeur semble déjà formatée avec le masque, la retourner telle quelle
+    if (this.valueMatchesMask(value, mask)) {
+      return value;
+    }
+    
+    let masked = '';
+    let maskIndex = 0;
+    let valueIndex = 0;
+    
+    // Nettoyer la valeur (garder seulement les caractères alphanumériques)
+    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    
+    while (maskIndex < mask.length && valueIndex < cleanValue.length) {
+      const maskChar = mask[maskIndex];
+      const inputChar = cleanValue[valueIndex];
+      
+      if (maskChar === '9') {
+        // Chiffre requis
+        if (/[0-9]/.test(inputChar)) {
+          masked += inputChar;
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else if (maskChar === 'A') {
+        // Lettre majuscule requise
+        if (/[a-zA-Z]/.test(inputChar)) {
+          masked += inputChar.toUpperCase();
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else if (maskChar === 'a') {
+        // Lettre minuscule requise
+        if (/[a-zA-Z]/.test(inputChar)) {
+          masked += inputChar.toLowerCase();
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else if (maskChar === '*') {
+        // Caractère alphanumérique
+        if (/[a-zA-Z0-9]/.test(inputChar)) {
+          masked += inputChar;
+          valueIndex++;
+        } else {
+          break;
+        }
+      } else {
+        // Caractère littéral du masque
+        masked += maskChar;
+      }
+      
+      maskIndex++;
+    }
+    
+    return masked || value; // Fallback vers la valeur originale si le masquage échoue
+  }
+
+  /**
+   * Vérifie si une valeur correspond déjà au masque
+   */
+  private static valueMatchesMask(value: string, mask: string): boolean {
+    if (value.length !== mask.length) return false;
+    
+    for (let i = 0; i < mask.length; i++) {
+      const maskChar = mask[i];
+      const valueChar = value[i];
+      
+      if (maskChar === '9') {
+        if (!/[0-9]/.test(valueChar)) return false;
+      } else if (maskChar === 'A') {
+        if (!/[A-Z]/.test(valueChar)) return false;
+      } else if (maskChar === 'a') {
+        if (!/[a-z]/.test(valueChar)) return false;
+      } else if (maskChar === '*') {
+        if (!/[a-zA-Z0-9]/.test(valueChar)) return false;
+      } else {
+        if (valueChar !== maskChar) return false;
+      }
+    }
+    
+    return true;
+  }
   private static async drawText(
     page: any,
     text: string,

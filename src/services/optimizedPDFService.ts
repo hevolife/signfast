@@ -59,6 +59,24 @@ export class OptimizedPDFService {
         throw new Error('Template PDF non trouvé');
       }
 
+      // Récupérer les informations du formulaire lié pour les masques
+      let formMetadata = null;
+      if (template.linked_form_id) {
+        try {
+          const { data: linkedForm, error: formError } = await supabase
+            .from('forms')
+            .select('fields')
+            .eq('id', template.linked_form_id)
+            .single();
+          
+          if (!formError && linkedForm) {
+            formMetadata = { fields: linkedForm.fields };
+          }
+        } catch (formError) {
+          console.warn('Impossible de récupérer les métadonnées du formulaire:', formError);
+        }
+      }
+
       // Convertir le template
       const pdfTemplate = {
         id: template.id,
@@ -67,6 +85,10 @@ export class OptimizedPDFService {
         originalPdfUrl: template.pdf_content,
       };
 
+      // Ajouter les métadonnées du formulaire aux données si disponibles
+      const enrichedFormData = formMetadata 
+        ? { ...formData, _form_metadata: formMetadata }
+        : formData;
       // Convertir le PDF en bytes
       const base64Data = template.pdf_content.split(',')[1];
       const binaryString = atob(base64Data);
@@ -75,7 +97,7 @@ export class OptimizedPDFService {
         originalPdfBytes[i] = binaryString.charCodeAt(i);
       }
 
-      return await PDFGenerator.generatePDF(pdfTemplate, formData, originalPdfBytes);
+      return await PDFGenerator.generatePDF(pdfTemplate, enrichedFormData, originalPdfBytes);
     } catch (error) {
       console.error('❌ Erreur génération avec template:', error);
       throw error;
