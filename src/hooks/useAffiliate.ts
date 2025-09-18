@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { AffiliateProgram, AffiliateReferral, AffiliateStats } from '../types/affiliate';
@@ -143,7 +144,7 @@ export const useAffiliate = () => {
       console.log('📊 Création programme d\'affiliation pour:', user.id);
       
       // Générer un code d'affiliation unique
-      const affiliateCode = `AF${user.id.slice(0, 8).toUpperCase()}${Date.now().toString().slice(-4)}`;
+      const affiliateCode = `AF-${uuidv4().slice(0, 8).toUpperCase()}`;
       
       const { data, error } = await supabase
         .from('affiliate_programs')
