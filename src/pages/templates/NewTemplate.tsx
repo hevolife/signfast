@@ -14,6 +14,8 @@ import {
   Plus,
   Trash2,
   GripVertical
+  File,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -37,6 +39,8 @@ export const NewTemplate: React.FC = () => {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(true);
+  const [uploadedPdf, setUploadedPdf] = useState<File | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   const categories = ['Business', 'Immobilier', 'Juridique', 'RH', 'Commercial'];
 
@@ -48,6 +52,32 @@ export const NewTemplate: React.FC = () => {
     { type: 'checkbox', label: 'Case à cocher', icon: FileText },
   ];
 
+  const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setUploadedPdf(file);
+      const url = URL.createObjectURL(file);
+      setPdfPreviewUrl(url);
+      
+      // Auto-remplir le nom du template avec le nom du fichier
+      if (!templateName) {
+        const fileName = file.name.replace('.pdf', '');
+        setTemplateName(fileName);
+      }
+      
+      toast.success('PDF uploadé avec succès !');
+    } else {
+      toast.error('Veuillez sélectionner un fichier PDF valide');
+    }
+  };
+
+  const removePdf = () => {
+    setUploadedPdf(null);
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(null);
+    }
+  };
   const addField = (type: TemplateField['type']) => {
     const newField: TemplateField = {
       id: `field_${Date.now()}`,
@@ -83,8 +113,8 @@ export const NewTemplate: React.FC = () => {
       return;
     }
 
-    if (fields.length === 0) {
-      toast.error('Ajoutez au moins un champ au template');
+    if (fields.length === 0 && !uploadedPdf) {
+      toast.error('Ajoutez au moins un champ au template ou uploadez un PDF');
       return;
     }
 
@@ -97,6 +127,8 @@ export const NewTemplate: React.FC = () => {
         category,
         fields,
         is_public: isPublic,
+        has_pdf: !!uploadedPdf,
+        pdf_name: uploadedPdf?.name,
         created_at: new Date().toISOString(),
       };
 
@@ -152,6 +184,66 @@ export const NewTemplate: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Panneau des types de champs */}
           <div className="lg:col-span-1">
+            {/* Upload PDF */}
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Upload className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-bold text-gray-900 dark:text-white">
+                    Upload PDF
+                  </h3>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4">
+                {!uploadedPdf ? (
+                  <div>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handlePdfUpload}
+                      className="hidden"
+                      id="pdf-upload"
+                    />
+                    <label
+                      htmlFor="pdf-upload"
+                      className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-400 transition-colors"
+                    >
+                      <File className="h-8 w-8 text-gray-400 mb-2" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Cliquez pour uploader
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        PDF uniquement
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <File className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                            {uploadedPdf.name}
+                          </p>
+                          <p className="text-xs text-green-700 dark:text-green-300">
+                            {(uploadedPdf.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={removePdf}
+                        className="p-1 text-red-600 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader>
                 <h3 className="font-bold text-gray-900 dark:text-white">
@@ -250,24 +342,48 @@ export const NewTemplate: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Zone de design du PDF */}
-                <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-96 relative">
+                <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-96 relative overflow-hidden">
+                  {/* Aperçu PDF si uploadé */}
+                  {pdfPreviewUrl && (
+                    <div className="absolute inset-4 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <File className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                        <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                          PDF Template
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {uploadedPdf?.name}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => window.open(pdfPreviewUrl, '_blank')}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir le PDF
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="text-center text-gray-500 dark:text-gray-400 mb-4">
                     <FileText className="h-12 w-12 mx-auto mb-2" />
-                    <p>Zone de design du PDF</p>
-                    <p className="text-sm">Glissez les champs depuis la gauche</p>
+                    <p>{uploadedPdf ? 'PDF uploadé - Ajoutez des champs' : 'Zone de design du PDF'}</p>
+                    <p className="text-sm">{uploadedPdf ? 'Positionnez vos champs sur le PDF' : 'Uploadez un PDF ou glissez les champs depuis la gauche'}</p>
                   </div>
 
-                  {fields.length === 0 ? (
+                  {fields.length === 0 && !uploadedPdf ? (
                     <div className="text-center py-12">
                       <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500 dark:text-gray-400 mb-2">
-                        Aucun champ ajouté
+                        Aucun PDF ou champ ajouté
                       </p>
                       <p className="text-sm text-gray-400">
-                        Sélectionnez un type de champ à gauche pour commencer
+                        Uploadez un PDF ou sélectionnez un type de champ à gauche
                       </p>
                     </div>
-                  ) : (
+                  ) : fields.length > 0 && (
                     <div className="space-y-4">
                       {fields.map((field, index) => (
                         <div
@@ -289,6 +405,9 @@ export const NewTemplate: React.FC = () => {
                                 <div className="text-sm text-gray-500">
                                   {fieldTypes.find(t => t.type === field.type)?.label}
                                   {field.required && <span className="text-red-500 ml-1">*</span>}
+                                  <span className="ml-2 text-xs">
+                                    Position: {field.x}, {field.y}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -377,6 +496,17 @@ export const NewTemplate: React.FC = () => {
                         Champ obligatoire
                       </span>
                     </label>
+
+                    {uploadedPdf && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200">
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                          💡 Conseil
+                        </p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          Ajustez les positions X/Y pour placer le champ exactement où vous le souhaitez sur votre PDF.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -385,7 +515,10 @@ export const NewTemplate: React.FC = () => {
                 <CardContent className="p-8 text-center">
                   <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 dark:text-gray-400">
-                    Sélectionnez un champ pour modifier ses propriétés
+                    {uploadedPdf 
+                      ? 'Ajoutez des champs à votre PDF ou sélectionnez un champ existant'
+                      : 'Sélectionnez un champ pour modifier ses propriétés'
+                    }
                   </p>
                 </CardContent>
               </Card>
