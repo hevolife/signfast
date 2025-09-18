@@ -200,15 +200,15 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <LanguageProvider>
-      <AuthProvider>
-        <DemoProvider>
+      <DemoProvider>
+        <AuthProvider>
           <NotificationProvider>
             <SubAccountProvider>
               <AppContent />
             </SubAccountProvider>
           </NotificationProvider>
-        </DemoProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </DemoProvider>
     </LanguageProvider>
   );
 };
