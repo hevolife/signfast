@@ -280,7 +280,6 @@ const AppContent: React.FC = () => {
             },
           }}
         />
-        {!isPublicForm && !isSubAccountPage && <MobileBottomNav />}
       </div>
     </DndProvider>
   );
