@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { PWAManager } from './utils/pwaManager';
 
 // Gestion d'erreur globale pour éviter l'écran blanc
 window.addEventListener('error', (event) => {
@@ -12,7 +13,10 @@ window.addEventListener('unhandledrejection', (event) => {
   // Silent promise rejection handling
 });
 
-// Enregistrer le service worker pour PWA avec gestion d'erreurs améliorée
+// Initialiser le gestionnaire PWA
+const pwaManager = new PWAManager();
+
+// Enregistrer le service worker pour PWA avec gestion d'erreurs améliorée et cache intelligent
 if ('serviceWorker' in navigator && 'PushManager' in window) {
   window.addEventListener('load', async () => {
     try {
@@ -20,22 +24,47 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
         scope: '/'
       });
       
+      console.log('✅ Service Worker enregistré');
+      
+      // Initialiser le gestionnaire PWA avec l'enregistrement
+      pwaManager.init(registration);
+      
       // Vérifier les mises à jour
       registration.addEventListener('updatefound', () => {
-        // Silent update detection
+        console.log('🔄 Mise à jour Service Worker détectée');
+        const newWorker = registration.installing;
+        
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('✅ Nouvelle version disponible');
+              // Notifier l'utilisateur qu'une mise à jour est disponible
+              pwaManager.notifyUpdateAvailable();
+            }
+          });
+        }
       });
       
     } catch (error) {
-      // Silent service worker registration failure
+      console.warn('⚠️ Échec enregistrement Service Worker:', error);
     }
   });
   
   // Gérer les messages du service worker
   navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SW_ACTIVATED') {
+      console.log('🚀 Service Worker activé:', event.data.version);
+      pwaManager.handleServiceWorkerActivated(event.data);
+    }
+    
     if (event.data && event.data.type === 'SW_UPDATE_AVAILABLE') {
-      // Silent PWA update available
+      console.log('🔄 Mise à jour PWA disponible');
+      pwaManager.notifyUpdateAvailable();
     }
   });
+  
+  // Gérer la détection PWA
+  pwaManager.detectPWALaunch();
 }
 
 // Fonction de rendu avec gestion d'erreur

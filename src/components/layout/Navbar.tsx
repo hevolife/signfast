@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useDemo } from '../../contexts/DemoContext';
+import { pwaManager } from '../../main';
 import { stripeConfig } from '../../stripe-config';
 import { Button } from '../ui/Button';
 import { FormInput, LogOut, LayoutDashboard, FileText, HardDrive, Crown, Settings, Shield, Menu, X, Sparkles, MessageCircle } from 'lucide-react';
@@ -29,7 +30,12 @@ export const Navbar: React.FC = () => {
       // Si on est en mode démo, juste terminer la démo
       if (isDemoMode) {
         endDemo();
-        navigate('/');
+        // Gestion PWA pour la démo
+        if (pwaManager.isPWAMode()) {
+          navigate('/login?pwa=true');
+        } else {
+          navigate('/');
+        }
         return;
       }
       
@@ -40,8 +46,9 @@ export const Navbar: React.FC = () => {
       
       // Attendre un peu puis forcer la redirection si nécessaire
       setTimeout(() => {
-        if (window.location.pathname !== '/') {
-          window.location.href = '/';
+        const targetPath = pwaManager.isPWAMode() ? '/login?pwa=true' : '/';
+        if (window.location.pathname !== targetPath) {
+          window.location.href = targetPath;
         }
       }, 1000);
       
@@ -51,7 +58,10 @@ export const Navbar: React.FC = () => {
       localStorage.clear();
       sessionStorage.clear();
       toast.error('Déconnexion forcée');
-      window.location.href = '/';
+      
+      // Gestion PWA même en cas d'erreur
+      const targetPath = pwaManager.isPWAMode() ? '/login?pwa=true' : '/';
+      window.location.href = targetPath;
     }
   };
 

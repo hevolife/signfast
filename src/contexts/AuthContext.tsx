@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useDemo } from './DemoContext';
+import { pwaManager } from '../main';
 
 interface ImpersonationData {
   admin_user_id: string;
@@ -131,6 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
+      console.log('🔐 Début processus de déconnexion...');
+      
       // Nettoyer le localStorage avant la déconnexion
       localStorage.removeItem('sb-auth-token');
       localStorage.removeItem('currentUserForms');
@@ -143,8 +146,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       
-      // Redirection forcée
-      window.location.href = '/';
+      // Gestion PWA pour la déconnexion
+      if (pwaManager.isPWAMode()) {
+        console.log('📱 Déconnexion PWA, redirection vers login');
+        pwaManager.handleLogout();
+      } else {
+        console.log('🌐 Déconnexion navigateur, redirection vers accueil');
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Erreur déconnexion:', error);
       // Forcer la déconnexion même en cas d'erreur
@@ -152,7 +161,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.clear();
       setUser(null);
       setSession(null);
-      window.location.href = '/';
+      
+      // Gestion PWA même en cas d'erreur
+      if (pwaManager.isPWAMode()) {
+        pwaManager.handleLogout();
+      } else {
+        window.location.href = '/';
+      }
     }
   }, [isImpersonating, stopImpersonation]);
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { pwaManager } from '../../main';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -18,6 +19,10 @@ export const Signup: React.FC = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Détecter si on arrive depuis une PWA
+  const isPWAMode = pwaManager.isPWAMode();
+  const isFromPWA = new URLSearchParams(location.search).get('pwa') === 'true';
   
   // Récupérer le code d'affiliation depuis l'URL
   const affiliateCode = searchParams.get('ref');
@@ -98,9 +103,16 @@ export const Signup: React.FC = () => {
         }
         
         toast.success('🎉 Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription et accéder à SignFast.', { duration: 2000 });
-        // Rediriger vers la page demandée ou le dashboard
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
+        
+        // Gestion de la redirection selon le contexte
+        if (isPWAMode || isFromPWA) {
+          console.log('📱 Inscription PWA réussie, redirection dashboard');
+          navigate('/dashboard', { replace: true });
+        } else {
+          // Rediriger vers la page demandée ou le dashboard
+          const from = location.state?.from?.pathname || '/dashboard';
+          navigate(from, { replace: true });
+        }
       }
     } catch (error) {
       toast.error('Une erreur est survenue');
@@ -122,6 +134,14 @@ export const Signup: React.FC = () => {
               SignFast
             </span>
           </Link>
+          {(isPWAMode || isFromPWA) && (
+            <div className="mt-3 inline-flex items-center space-x-2 bg-purple-100 dark:bg-purple-900/30 px-3 py-1 rounded-full">
+              <span className="text-lg">📱</span>
+              <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
+                Mode Application
+              </span>
+            </div>
+          )}
           <p className="text-gray-600 dark:text-gray-400 mt-2 font-medium">
             Rejoignez des milliers d'utilisateurs
           </p>

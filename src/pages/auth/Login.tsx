@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { pwaManager } from '../../main';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -20,6 +21,11 @@ export const Login: React.FC = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Détecter si on arrive depuis une PWA
+  const isPWAMode = pwaManager.isPWAMode();
+  const isFromPWA = new URLSearchParams(location.search).get('pwa') === 'true';
+  const isFromLogout = new URLSearchParams(location.search).get('logout') === 'true';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +48,16 @@ export const Login: React.FC = () => {
         }
         
         toast.success('Connexion réussie !', { duration: 2000 });
-        // Rediriger vers la page demandée ou le dashboard
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
+        
+        // Gestion de la redirection selon le contexte
+        if (isPWAMode || isFromPWA) {
+          console.log('📱 Connexion PWA réussie, redirection dashboard');
+          navigate('/dashboard', { replace: true });
+        } else {
+          // Rediriger vers la page demandée ou le dashboard
+          const from = location.state?.from?.pathname || '/dashboard';
+          navigate(from, { replace: true });
+        }
       }
     } catch (error) {
       toast.error('Une erreur est survenue');
@@ -108,6 +121,14 @@ export const Login: React.FC = () => {
               SignFast
             </span>
           </Link>
+          {(isPWAMode || isFromPWA) && (
+            <div className="mt-3 inline-flex items-center space-x-2 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+              <span className="text-lg">📱</span>
+              <span className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                {isFromLogout ? 'Déconnexion PWA' : 'Mode Application'}
+              </span>
+            </div>
+          )}
           <p className="text-gray-600 dark:text-gray-400 mt-2 font-medium">
             Signature électronique simplifiée
           </p>

@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DemoProvider } from './contexts/DemoContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SubAccountProvider } from './contexts/SubAccountContext';
+import { pwaManager } from './main';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 import { MaintenanceMode } from './components/MaintenanceMode';
 import { Navbar } from './components/layout/Navbar';
@@ -105,20 +106,20 @@ const AppContent: React.FC = () => {
 
   // Gérer la redirection PWA vers login
   React.useEffect(() => {
-    // Vérifier si on est dans une PWA
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  window.navigator.standalone === true ||
-                  document.referrer.includes('android-app://');
+    const isPWA = pwaManager.isPWAMode();
     
-    // Si on est dans une PWA et que l'utilisateur n'est pas connecté
-    if (isPWA && !user && !isPublicForm && location.pathname !== '/login' && location.pathname !== '/signup') {
-      // Vérifier d'abord s'il y a une session locale sauvegardée
-      const savedSession = localStorage.getItem('sb-auth-token');
-      if (!savedSession) {
-        console.log('📱 PWA détectée, redirection vers login');
-        navigate('/login', { replace: true });
-      } else {
-        console.log('📱 PWA détectée mais session locale trouvée, tentative de restauration');
+    // Gestion PWA améliorée
+    if (isPWA) {
+      // Si on est dans une PWA et que l'utilisateur n'est pas connecté
+      if (!user && !isPublicForm && location.pathname !== '/login' && location.pathname !== '/signup') {
+        console.log('📱 PWA: Utilisateur non connecté, redirection vers login');
+        navigate('/login?pwa=true', { replace: true });
+      }
+      
+      // Si on est sur la page d'accueil en PWA et connecté, rediriger vers dashboard
+      if (user && location.pathname === '/') {
+        console.log('📱 PWA: Utilisateur connecté sur accueil, redirection vers dashboard');
+        navigate('/dashboard', { replace: true });
       }
     }
   }, [user, location.pathname, isPublicForm, navigate]);
