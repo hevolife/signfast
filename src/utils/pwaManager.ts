@@ -150,17 +150,32 @@ export class PWAManager {
     
     this.updateAvailable = true;
     
-    toast.custom((t) => (
-      <div className={`${
-        t.visible ? 'animate-enter' : 'animate-leave'
-      } max-w-md w-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
-        <div className="flex-1 w-0 p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                <span className="text-white text-lg">🔄</span>
-              </div>
-            </div>
+toast.custom((t) => (
+  <div
+    className={`${
+      t.visible ? 'animate-enter' : 'animate-leave'
+    } max-w-md w-full bg-gradient-to-r from-indigo-500 to-purple-600
+       shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+  >
+    <div className="flex-1 w-0 p-4">
+      <div className="flex items-start">
+        <div className="flex-shrink-0">
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+            <span className="text-white text-lg">🔄</span>
+          </div>
+        </div>
+
+        {/* Contenu du toast */}
+        <div className="ml-3 flex-1">
+          <p className="text-sm font-medium text-white">
+            Mise à jour en cours…
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+));
+
             <div className="ml-3 flex-1">
               <p className="text-sm font-bold text-white">
                 Mise à jour disponible
