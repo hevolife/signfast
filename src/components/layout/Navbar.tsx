@@ -123,14 +123,16 @@ export const Navbar: React.FC = () => {
                           <div className="flex items-center space-x-2">
                             <div className="p-1 rounded-lg">
                               {item.path === '/support' ? (
-                                <SupportNotificationBadge showIcon={false} />
+                                <div className="relative">
+                                  <span className="text-lg">🚀</span>
+                                  {unreadSupportMessages > 0 && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+                                      {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
+                                    </div>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="text-lg">{item.emoji}</span>
-                              )}
-                              {item.path === '/support' && unreadSupportMessages > 0 && (
-                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
-                                  {unreadSupportMessages > 9 ? '9+' : unreadSupportMessages}
-                                </div>
                               )}
                             </div>
                             <span className="hidden xl:inline">{item.label}</span>
