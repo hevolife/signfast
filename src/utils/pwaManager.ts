@@ -109,7 +109,6 @@ export class PWAManager {
     }
   }
 
-  /** ---------  CORRIGÉ ICI --------- **/
   notifyUpdateAvailable() {
     if (this.updateAvailable) return;
     this.updateAvailable = true;
@@ -119,8 +118,7 @@ export class PWAManager {
         <div
           className={`${
             t.visible ? 'animate-enter' : 'animate-leave'
-          } max-w-md w-full bg-gradient-to-r from-indigo-500 to-purple-600
-             shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          } max-w-md w-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
         >
           <div className="flex-1 w-0 p-4">
             <div className="flex items-start">
@@ -158,7 +156,6 @@ export class PWAManager {
       }
     );
   }
-  /** --------- FIN CORRECTION --------- **/
 
   async applyUpdate() {
     try {
