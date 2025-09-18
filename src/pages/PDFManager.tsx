@@ -204,7 +204,7 @@ const PDFCardWithActions: React.FC<{
   );
 };
 
-export const PDFGenerationPage: React.FC = () => {
+export const PDFManager: React.FC = () => {
   const { user } = useAuth();
   const { forms, loading: formsLoading } = useForms();
   const { isSubscribed, product, hasSecretCode } = useSubscription();
