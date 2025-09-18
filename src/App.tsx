@@ -90,6 +90,7 @@ const AppContent: React.FC = () => {
   const { user } = useAuth();
   const { isMaintenanceMode, loading: maintenanceLoading } = useMaintenanceMode();
   const isPublicForm = location.pathname.startsWith('/form/');
+  const isSubAccountPage = location.pathname.startsWith('/sub-account/');
   const [isMobile, setIsMobile] = React.useState(false);
   
   React.useEffect(() => {
@@ -134,7 +135,7 @@ const AppContent: React.FC = () => {
         <WelcomeModal />
         <SupportNotificationToast />
         <TutorialTrigger />
-        {!isPublicForm && <Navbar />}
+        {!isPublicForm && !isSubAccountPage && <Navbar />}
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -267,7 +268,7 @@ const AppContent: React.FC = () => {
             },
           }}
         />
-        {!isPublicForm && <MobileBottomNav />}
+        {!isPublicForm && !isSubAccountPage && <MobileBottomNav />}
       </div>
     </DndProvider>
   );
