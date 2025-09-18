@@ -205,7 +205,7 @@ export const SubAccountDashboard: React.FC = () => {
       const pdfBytes = await OptimizedPDFService.generatePDF({
         templateId: form.settings.pdfTemplateId,
         formTitle: response.form_title,
-        response.id,
+        responseId: response.id,
         formData: response.data,
         saveToServer: false,
       });

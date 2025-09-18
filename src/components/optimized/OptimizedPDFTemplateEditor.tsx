@@ -3,7 +3,7 @@ import { OptimizedPDFViewer, OptimizedPDFViewerRef } from './OptimizedPDFViewer'
 import { PDFFieldPalette } from '../pdf/PDFFieldPalette';
 import { PDFFieldOverlay } from '../pdf/PDFFieldOverlay';
 import { PDFFieldProperties } from '../pdf/PDFFieldProperties';
-import { FormSelector } from '../form/FormSelector';
+import { FormSelector } from '../pdf/FormSelector';
 import { PDFField } from '../../types/pdf';
 import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader } from '../ui/Card';
