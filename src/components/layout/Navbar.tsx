@@ -320,20 +320,6 @@ export const Navbar: React.FC = () => {
                 )}
 
                 {/* Mode sombre mobile */}
-                <button
-                  onClick={toggleDarkMode}
-                  className="w-full p-4 rounded-xl bg-gradient-to-r from-gray-100 to-slate-100 dark:from-gray-800 dark:to-slate-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl">
-                      <span className="text-lg">{isDarkMode ? '☀️' : '🌙'}</span>
-                    </div>
-                    <div className="text-left">
-                      <span className="font-bold text-gray-800 dark:text-gray-200">{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Changer l'apparence</p>
-                    </div>
-                  </div>
-                </button>
 
                 {/* Déconnexion mobile */}
                 <Button

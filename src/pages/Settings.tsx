@@ -422,23 +422,19 @@ export const Settings: React.FC = () => {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
                     <div className="flex items-center space-x-3">
-                      {isDarkMode ? <Moon className="h-5 w-5 text-indigo-600" /> : <Sun className="h-5 w-5 text-yellow-500" />}
+                      <Sun className="h-5 w-5 text-yellow-500" />
                       <div>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {isDarkMode ? 'Mode sombre' : 'Mode clair'}
+                          Mode clair
                         </span>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Changer l'apparence de l'interface
+                          Mode sombre désactivé
                         </p>
                       </div>
                     </div>
-                    <Button
-                      onClick={toggleDarkMode}
-                      variant="ghost"
-                      className="bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 hover:from-indigo-200 hover:to-purple-200 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-300"
-                    >
-                      Changer
-                    </Button>
+                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
+                      Désactivé
+                    </span>
                   </div>
 
                   {/* Tutoriel */}
