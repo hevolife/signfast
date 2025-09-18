@@ -236,19 +236,14 @@ export const Settings: React.FC = () => {
                 <button
                   onClick={() => setActiveTab('affiliate')}
                   className={`py-2 px-3 lg:py-3 lg:px-4 rounded-xl font-bold text-xs lg:text-sm whitespace-nowrap flex-shrink-0 transition-all active:scale-95 hover:scale-105 ${getTabColorClasses('affiliate', activeTab === 'affiliate')}`}
-      <LanguageProvider>
-        <DemoProvider>
-          <AuthProvider>
-            <NotificationProvider>
-              <SubAccountProvider>
-                <Router>
-                  <AppContent />
-                </Router>
-              </SubAccountProvider>
-            </NotificationProvider>
-          </AuthProvider>
-        </DemoProvider>
-      </LanguageProvider>
+                >
+                  <div className="flex items-center space-x-1 lg:space-x-2">
+                    <div className="p-1 bg-white/70 rounded-lg shadow-md">
+                      <Gift className="h-3 w-3 lg:h-4 lg:w-4" />
+                    </div>
+                    <span className="hidden sm:inline lg:inline">Affiliation</span>
+                    {affiliateProgram && (
+                      <span className="bg-green-500 text-white text-xs rounded-full w-2 h-2 lg:w-2 lg:h-2">
                       </span>
                     )}
                   </div>
