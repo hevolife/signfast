@@ -14,7 +14,7 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // Initialiser le gestionnaire PWA
-const pwaManager = new PWAManager();
+export const pwaManager = new PWAManager();
 
 // Enregistrer le service worker pour PWA avec gestion d'erreurs améliorée et cache intelligent
 if ('serviceWorker' in navigator && 'PushManager' in window) {
