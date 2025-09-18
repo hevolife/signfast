@@ -20,7 +20,8 @@ import {
   Shield,
   FormInput,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { FormResponse } from '../../types/form';
