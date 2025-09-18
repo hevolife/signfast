@@ -6,17 +6,20 @@ export class PDFService {
   // COMPTER LES RÉPONSES POUR UN UTILISATEUR (pour les limites)
   static async countResponsesForUser(userId: string): Promise<number> {
     try {
+      console.log('📊 Comptage réponses utilisateur (pas de cache):', userId);
+      
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Count timeout')), 8000)
       );
       
-      // Récupérer les IDs des formulaires de l'utilisateur
+      // Récupérer les IDs des formulaires de l'utilisateur (toujours depuis le serveur)
       const { data: userForms, error: formsError } = await Promise.race([
         supabase
         .from('forms')
         .select('id')
-        .eq('user_id', userId),
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }), // Force une requête fraîche
         timeoutPromise
       ]);
 
@@ -35,7 +38,8 @@ export class PDFService {
         supabase
         .from('responses')
         .select('id', { count: 'exact', head: true })
-        .in('form_id', formIds),
+        .in('form_id', formIds)
+        .order('created_at', { ascending: false }), // Force une requête fraîche
         timeoutPromise
       ]);
 

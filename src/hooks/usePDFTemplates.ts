@@ -27,41 +27,29 @@ export const usePDFTemplates = () => {
 
         try {
           // Utilisateur connecté : récupérer ses templates depuis Supabase
+          console.log('📄 Récupération templates (pas de cache):', targetUserId);
           const result = await PDFTemplateService.getUserTemplates(targetUserId, page, limit);
           setTemplates(result.templates);
           setTotalCount(result.totalCount);
           setTotalPages(result.totalPages);
         } catch (supabaseError) {
+          console.warn('📄 Erreur Supabase templates:', supabaseError);
           // Vérifier si c'est une erreur de réseau
           if (supabaseError instanceof TypeError && supabaseError.message === 'Failed to fetch') {
             // Vous pouvez ajouter une notification toast ici si nécessaire
           } else {
           }
           
-          // Fallback vers localStorage si Supabase n'est pas disponible
-          const saved = localStorage.getItem('pdfTemplates');
-          if (saved) {
-            setTemplates(JSON.parse(saved));
-            setTotalCount(JSON.parse(saved).length);
-            setTotalPages(1);
-          } else {
-            setTemplates([]);
-            setTotalCount(0);
-            setTotalPages(0);
-          }
-        }
-      } else {
-        // Utilisateur non connecté : fallback localStorage
-        const saved = localStorage.getItem('pdfTemplates');
-        if (saved) {
-          setTemplates(JSON.parse(saved));
-          setTotalCount(JSON.parse(saved).length);
-          setTotalPages(1);
-        } else {
+          // Pas de fallback cache - données vides en cas d'erreur
           setTemplates([]);
           setTotalCount(0);
           setTotalPages(0);
         }
+      } else {
+        // Utilisateur non connecté : données vides
+        setTemplates([]);
+        setTotalCount(0);
+        setTotalPages(0);
       }
     } catch (error) {
       setTemplates([]);

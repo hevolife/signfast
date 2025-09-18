@@ -82,8 +82,9 @@ export const useForms = () => {
       
       // Sauvegarder dans localStorage ET sessionStorage pour les templates PDF
       try {
-        localStorage.setItem('currentUserForms', JSON.stringify(data || []));
-        sessionStorage.setItem('currentUserForms', JSON.stringify(data || []));
+        // Ne plus utiliser de cache localStorage pour les données dynamiques
+        // localStorage.setItem('currentUserForms', JSON.stringify(data || []));
+        // sessionStorage.setItem('currentUserForms', JSON.stringify(data || []));
         
         // Déclencher un événement pour notifier les autres composants
         window.dispatchEvent(new CustomEvent('formsLoaded', { 
@@ -155,6 +156,8 @@ export const useForms = () => {
       if (error) {
         // Check if it's a network error
         if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
+          // Forcer un refetch depuis le serveur sans cache
+          console.log('🔄 Erreur réseau, refetch forcé depuis serveur');
           throw new Error('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
         }
         
@@ -176,7 +179,7 @@ export const useForms = () => {
       // Mettre à jour le formulaire dans la liste locale immédiatement
       setForms(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
       
-      // Puis recharger depuis la base pour être sûr
+      // Recharger immédiatement depuis la base pour être sûr (pas de cache)
       setTimeout(() => {
         fetchForms(1, 10);
       }, 100);

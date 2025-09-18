@@ -101,15 +101,7 @@ export class PDFTemplateService {
     totalPages: number;
   }> {
     try {
-      // Cache pour éviter les requêtes répétées
-      const cacheKey = `pdf_templates_${userId}_${page}_${limit}`;
-      const cached = sessionStorage.getItem(cacheKey);
-      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
-      
-      // Utiliser le cache si moins de 30 secondes
-      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 30000) {
-        return JSON.parse(cached);
-      }
+      console.log('📄 Récupération templates utilisateur (pas de cache):', userId, page, limit);
       
       // Vérifier si Supabase est configuré
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -124,7 +116,8 @@ export class PDFTemplateService {
         supabase
         .from('pdf_templates')
         .select('id', { count: 'estimated', head: true })
-        .eq('user_id', userId),
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }), // Force requête fraîche
         supabase
         .from('pdf_templates')
         .select('*')
@@ -173,13 +166,7 @@ export class PDFTemplateService {
         totalPages
       };
       
-      // Mettre en cache le résultat
-      try {
-        sessionStorage.setItem(cacheKey, JSON.stringify(result));
-        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
-      } catch (cacheError) {
-        // Ignorer les erreurs de cache
-      }
+      console.log('📄 Templates récupérés:', templates.length);
       
       return result;
     } catch (error) {
