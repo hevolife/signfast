@@ -388,30 +388,180 @@ export const PublicForm: React.FC = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 flex items-center justify-center py-12 px-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="text-center py-16">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-10 w-10 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Merci !
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Votre formulaire a été soumis avec succès.
-            </p>
-            
-            {generatedPdfUrl && (
-              <Button
-                onClick={downloadPDF}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold"
-              >
-                <Download className="h-5 w-5 mr-2" />
-                Télécharger le PDF
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-blue-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-blue-900/20 flex items-center justify-center py-12 px-4 relative overflow-hidden">
+        {/* Background décoratif animé */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-green-200/30 to-emerald-200/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full blur-2xl animate-bounce delay-500"></div>
+          <div className="absolute bottom-1/3 right-1/3 w-24 h-24 bg-gradient-to-br from-pink-200/30 to-purple-200/30 rounded-full blur-xl animate-pulse delay-1500"></div>
+        </div>
+        
+        {/* Particules flottantes */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-10 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+          <div className="absolute top-32 right-16 w-3 h-3 bg-blue-400 rounded-full animate-ping delay-1000"></div>
+          <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-yellow-400 rounded-full animate-ping delay-500"></div>
+          <div className="absolute bottom-16 right-1/4 w-3 h-3 bg-purple-400 rounded-full animate-ping delay-1500"></div>
+          <div className="absolute top-1/3 right-12 w-2 h-2 bg-pink-400 rounded-full animate-ping delay-2000"></div>
+        </div>
+        
+        <div className="relative max-w-2xl w-full mx-auto">
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 animate-in slide-in-from-bottom-8 duration-1000">
+            <CardContent className="text-center py-12 px-8 relative overflow-hidden">
+              {/* Background gradient subtil */}
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-blue-50/50 dark:from-green-900/10 dark:to-blue-900/10"></div>
+              
+              <div className="relative">
+                {/* Animation de succès avec cercles concentriques */}
+                <div className="relative mb-8 animate-in zoom-in duration-1000 delay-300">
+                  <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-2xl relative">
+                    {/* Cercles d'animation */}
+                    <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-30"></div>
+                    <div className="absolute inset-2 rounded-full bg-green-300 animate-ping opacity-20 delay-300"></div>
+                    <div className="absolute inset-4 rounded-full bg-green-200 animate-ping opacity-10 delay-600"></div>
+                    
+                    {/* Icône principale */}
+                    <CheckCircle className="h-16 w-16 text-white animate-pulse" />
+                    
+                    {/* Étoiles scintillantes */}
+                    <div className="absolute -top-3 -right-3 text-yellow-400 animate-bounce">
+                      <span className="text-2xl">✨</span>
+                    </div>
+                    <div className="absolute -bottom-3 -left-3 text-yellow-400 animate-bounce delay-500">
+                      <span className="text-xl">⭐</span>
+                    </div>
+                    <div className="absolute -top-3 -left-3 text-yellow-400 animate-bounce delay-1000">
+                      <span className="text-lg">💫</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Titre principal avec animation */}
+                <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 animate-in slide-in-from-top duration-1000 delay-500">
+                  <span className="bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                    Parfait !
+                  </span>
+                </h1>
+                
+                {/* Message de confirmation */}
+                <div className="space-y-4 mb-8 animate-in slide-in-from-bottom duration-1000 delay-700">
+                  <p className="text-xl sm:text-2xl text-gray-800 dark:text-gray-200 font-semibold">
+                    🎉 Votre formulaire a été envoyé avec succès !
+                  </p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
+                    Merci pour votre confiance. Vos informations ont été transmises en toute sécurité.
+                  </p>
+                </div>
+
+                {/* Informations de confirmation */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800 mb-8 shadow-lg animate-in fade-in duration-1000 delay-1000">
+                  <div className="flex items-center justify-center space-x-3 mb-4">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                      <CheckCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-green-900 dark:text-green-300">
+                      Confirmation de réception
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-green-600">📝</span>
+                      <span className="text-green-800 dark:text-green-200">Données sécurisées</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-green-600">🔒</span>
+                      <span className="text-green-800 dark:text-green-200">Chiffrement SSL</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-green-600">⚡</span>
+                      <span className="text-green-800 dark:text-green-200">Traitement instantané</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-green-600">🇫🇷</span>
+                      <span className="text-green-800 dark:text-green-200">Conforme RGPD</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bouton de téléchargement PDF avec animation */}
+                {generatedPdfUrl && (
+                  <div className="animate-in slide-in-from-bottom duration-1000 delay-1200">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800 mb-6 shadow-lg">
+                      <div className="flex items-center justify-center space-x-3 mb-4">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                          <Download className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
+                          Document PDF généré
+                        </h3>
+                      </div>
+                      <p className="text-sm text-blue-700 dark:text-blue-400 mb-4">
+                        Votre document personnalisé est prêt à être téléchargé
+                      </p>
+                      <Button
+                        onClick={downloadPDF}
+                        className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 rounded-2xl"
+                      >
+                        <Download className="h-6 w-6 mr-3 group-hover:animate-bounce" />
+                        <span>Télécharger votre PDF</span>
+                        <div className="ml-3 opacity-75 group-hover:opacity-100 transition-opacity">📄</div>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Message de fin avec branding */}
+                <div className="animate-in fade-in duration-1000 delay-1500">
+                  <div className="flex items-center justify-center space-x-3 text-gray-500 dark:text-gray-400">
+                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                      <FormInput className="h-3 w-3 text-white" />
+                    </div>
+                    <span className="text-sm font-medium">
+                      Propulsé par <span className="font-bold text-blue-600">SignFast</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Signature électronique française • Sécurisé et conforme
+                  </p>
+                </div>
+
+                {/* Confettis CSS */}
+                <style jsx>{`
+                  @keyframes confetti-fall {
+                    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+                  }
+                  
+                  .confetti {
+                    position: absolute;
+                    width: 10px;
+                    height: 10px;
+                    background: linear-gradient(45deg, #10b981, #3b82f6);
+                    animation: confetti-fall 3s linear infinite;
+                  }
+                  
+                  .confetti:nth-child(1) { left: 10%; animation-delay: 0s; background: #10b981; }
+                  .confetti:nth-child(2) { left: 20%; animation-delay: 0.5s; background: #3b82f6; }
+                  .confetti:nth-child(3) { left: 30%; animation-delay: 1s; background: #8b5cf6; }
+                  .confetti:nth-child(4) { left: 40%; animation-delay: 1.5s; background: #f59e0b; }
+                  .confetti:nth-child(5) { left: 50%; animation-delay: 2s; background: #ef4444; }
+                  .confetti:nth-child(6) { left: 60%; animation-delay: 0.3s; background: #06b6d4; }
+                  .confetti:nth-child(7) { left: 70%; animation-delay: 0.8s; background: #84cc16; }
+                  .confetti:nth-child(8) { left: 80%; animation-delay: 1.3s; background: #ec4899; }
+                  .confetti:nth-child(9) { left: 90%; animation-delay: 1.8s; background: #6366f1; }
+                `}</style>
+                
+                {/* Confettis animés */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="confetti"></div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
