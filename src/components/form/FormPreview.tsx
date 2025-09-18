@@ -190,7 +190,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
         return (
           <div>
             <Input
-              {...baseProps}
+              id={field.id}
+              required={field.required}
+              placeholder={field.placeholder}
               type="file"
               label={field.label}
               accept="image/*,.pdf,.doc,.docx"

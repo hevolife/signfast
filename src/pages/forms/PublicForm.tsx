@@ -310,7 +310,9 @@ export const PublicForm: React.FC = () => {
         return (
           <div className="space-y-2">
             <Input
-              {...baseProps}
+              id={field.id}
+              required={field.required}
+              placeholder={field.placeholder}
               type="file"
               label={field.label}
               accept="image/*,.pdf,.doc,.docx"
