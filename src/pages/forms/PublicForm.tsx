@@ -36,28 +36,34 @@ export const PublicForm: React.FC = () => {
     if (!id) return;
 
     try {
-      const { data: formData, error } = await supabase
+      // Première requête : récupérer le formulaire
+      const { data: formData, error: formError } = await supabase
         .from('forms')
-        .select(`
-          *,
-          user_profiles!user_id (
-            logo_url,
-            company_name,
-            first_name,
-            last_name
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .eq('is_published', true)
         .single();
 
-      if (error || !formData) {
+      if (formError || !formData) {
         toast.error('Formulaire non trouvé ou non publié');
         return;
       }
 
       setForm(formData);
-      setUserProfile(formData.user_profiles);
+
+      // Deuxième requête : récupérer le profil utilisateur
+      if (formData.user_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('logo_url, company_name, first_name, last_name')
+          .eq('user_id', formData.user_id)
+          .single();
+
+        if (!profileError && profileData) {
+          setUserProfile(profileData);
+        }
+      }
+
       setIsPasswordProtected(!!formData.password);
       
       if (!formData.password) {
