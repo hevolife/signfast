@@ -13,7 +13,7 @@ import {
   Settings,
   Plus,
   Trash2,
-  GripVertical
+  GripVertical,
   File,
   X
 } from 'lucide-react';
