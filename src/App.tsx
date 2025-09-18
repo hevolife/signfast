@@ -292,13 +292,13 @@ function App() {
     >
       <DemoProvider>
         <AuthProvider>
-          <SubAccountProvider>
-            <NotificationProvider>
+          <NotificationProvider>
+            <SubAccountProvider>
               <Router>
                 <AppContent />
               </Router>
-            </NotificationProvider>
-          </SubAccountProvider>
+            </SubAccountProvider>
+          </NotificationProvider>
         </AuthProvider>
       </DemoProvider>
     </ErrorBoundary>
