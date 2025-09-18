@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 export const PublicForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [form, setForm] = useState<Form | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -35,22 +36,31 @@ export const PublicForm: React.FC = () => {
     if (!id) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: formData, error } = await supabase
         .from('forms')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!user_id (
+            logo_url,
+            company_name,
+            first_name,
+            last_name
+          )
+        `)
         .eq('id', id)
         .eq('is_published', true)
         .single();
 
-      if (error || !data) {
+      if (error || !formData) {
         toast.error('Formulaire non trouvé ou non publié');
         return;
       }
 
-      setForm(data);
-      setIsPasswordProtected(!!data.password);
+      setForm(formData);
+      setUserProfile(formData.user_profiles);
+      setIsPasswordProtected(!!formData.password);
       
-      if (!data.password) {
+      if (!formData.password) {
         setPasswordVerified(true);
       }
     } catch (error) {
@@ -454,14 +464,31 @@ export const PublicForm: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header du formulaire */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <FormInput className="h-6 w-6 text-white" />
+          {/* Logo de l'entreprise si disponible */}
+          {userProfile?.logo_url ? (
+            <div className="mb-6">
+              <img
+                src={userProfile.logo_url}
+                alt={userProfile.company_name || 'Logo entreprise'}
+                className="max-w-32 max-h-32 object-contain mx-auto mb-4 shadow-lg rounded-lg"
+              />
+              {userProfile.company_name && (
+                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                  {userProfile.company_name}
+                </p>
+              )}
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              SignFast
-            </span>
-          </div>
+          ) : (
+            <div className="inline-flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <FormInput className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                SignFast
+              </span>
+            </div>
+          )}
+          
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
             {form.title}
           </h1>
