@@ -245,32 +245,100 @@ export const SubAccountDashboard: React.FC = () => {
   const getResponseDisplayName = (response: ResponseWithPDF): string => {
     const data = response.data || {};
     
-    // Chercher les champs nom/prénom avec différentes variantes
-    const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
-                    data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
-    const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
-                   data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
+    console.log('🔍 Données de réponse pour extraction nom:', Object.keys(data));
+    
+    // Chercher les champs nom/prénom avec toutes les variantes possibles
+    const firstNameVariants = [
+      'Prénom', 'prénom', 'Prenom', 'prenom', 'first_name', 'firstName', 'firstname',
+      'First Name', 'First_Name', 'PRENOM', 'PRÉNOM', 'Nom complet', 'nom_complet'
+    ];
+    
+    const lastNameVariants = [
+      'Nom', 'nom', 'Nom de famille', 'nom_de_famille', 'last_name', 'lastName', 'lastname',
+      'Last Name', 'Last_Name', 'NOM', 'family_name', 'familyName', 'surname'
+    ];
+    
+    const fullNameVariants = [
+      'Nom complet', 'nom_complet', 'nomComplet', 'full_name', 'fullName', 'Full Name',
+      'Nom et prénom', 'nom_et_prenom', 'name', 'Name', 'Nom_complet', 'NOM_COMPLET'
+    ];
+    
+    // 1. Chercher d'abord un nom complet
+    let fullName = '';
+    for (const variant of fullNameVariants) {
+      if (data[variant] && typeof data[variant] === 'string' && data[variant].trim()) {
+        fullName = data[variant].trim();
+        console.log('✅ Nom complet trouvé:', variant, '=', fullName);
+        break;
+      }
+    }
+    
+    if (fullName) {
+      return fullName;
+    }
+    
+    // 2. Chercher prénom et nom séparément
+    let firstName = '';
+    let lastName = '';
+    
+    for (const variant of firstNameVariants) {
+      if (data[variant] && typeof data[variant] === 'string' && data[variant].trim()) {
+        firstName = data[variant].trim();
+        console.log('✅ Prénom trouvé:', variant, '=', firstName);
+        break;
+      }
+    }
+    
+    for (const variant of lastNameVariants) {
+      if (data[variant] && typeof data[variant] === 'string' && data[variant].trim()) {
+        lastName = data[variant].trim();
+        console.log('✅ Nom trouvé:', variant, '=', lastName);
+        break;
+      }
+    }
     
     // Si on a nom ET prénom
     if (firstName && lastName) {
+      console.log('✅ Nom complet construit:', `${firstName} ${lastName}`);
       return `${firstName} ${lastName}`;
-    }
-    
-    // Si on a seulement un nom complet
-    if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
-      return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
     }
     
     // Si on a seulement le prénom
     if (firstName) {
+      console.log('✅ Prénom seul:', firstName);
       return firstName;
     }
     
     // Si on a seulement le nom
     if (lastName) {
+      console.log('✅ Nom seul:', lastName);
       return lastName;
     }
     
+    // 3. Chercher dans d'autres champs qui pourraient contenir un nom
+    const otherNameFields = ['client', 'Client', 'utilisateur', 'Utilisateur', 'personne', 'Personne'];
+    for (const field of otherNameFields) {
+      if (data[field] && typeof data[field] === 'string' && data[field].trim()) {
+        console.log('✅ Nom trouvé dans champ alternatif:', field, '=', data[field]);
+        return data[field].trim();
+      }
+    }
+    
+    // 4. Chercher le premier champ texte qui ressemble à un nom (plus de 2 caractères, pas d'email)
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'string' && 
+          value.trim().length > 2 && 
+          !value.includes('@') && 
+          !value.startsWith('data:') &&
+          !value.match(/^\d+$/) && // Pas que des chiffres
+          !value.match(/^\d{2}\/\d{2}\/\d{4}$/) && // Pas une date
+          key.toLowerCase().includes('nom') || key.toLowerCase().includes('name')) {
+        console.log('✅ Nom potentiel trouvé:', key, '=', value);
+        return value.trim();
+      }
+    }
+    
+    console.log('❌ Aucun nom trouvé, utilisation fallback');
     // Fallback vers l'ID si aucun nom trouvé
     return `Réponse #${response.id.slice(-8)}`;
   };
