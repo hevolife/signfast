@@ -218,27 +218,27 @@ Mot de passe: [DÉFINI_PAR_VOUS]`;
                 <h2 className="text-xl font-bold text-blue-900 dark:text-blue-300">
                   Gestion des Sous-Comptes
                 </h2>
-                <p className="text-sm text-blue-700 dark:text-blue-400">
+                <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-400">
                   {subAccountsArray.length} sous-compte{subAccountsArray.length > 1 ? 's' : ''} • Accès restreint au stockage PDF
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={refetch}
-                className="flex items-center space-x-1"
+                className="flex items-center justify-center space-x-1 w-full sm:w-auto"
               >
                 <RefreshCw className="h-4 w-4" />
-                <span>Actualiser</span>
+                <span className="text-xs sm:text-sm">Actualiser</span>
               </Button>
               <Button
                 onClick={() => setShowCreateForm(true)}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
-                <span>Nouveau sous-compte</span>
+                <span className="text-xs sm:text-sm">Nouveau sous-compte</span>
               </Button>
             </div>
           </div>
