@@ -1,18 +1,14 @@
 export interface FormField {
   id: string;
-  type: 'text' | 'email' | 'number' | 'radio' | 'checkbox' | 'date' | 'file' | 'textarea' | 'phone' | 'birthdate' | 'signature';
+  type: 'text' | 'email' | 'number' | 'radio' | 'checkbox' | 'date' | 'file' | 'textarea' | 'phone' | 'signature';
   label: string;
   placeholder?: string;
   required: boolean;
   options?: string[];
-  conditionalFields?: {
-    [optionValue: string]: FormField[];
-  };
   validation?: {
     min?: number;
     max?: number;
     pattern?: string;
-    mask?: string;
   };
 }
 
@@ -25,7 +21,6 @@ export interface Form {
     allowMultiple: boolean;
     requireAuth: boolean;
     collectEmail: boolean;
-    pdfTemplateId?: string;
     generatePdf: boolean;
     emailPdf: boolean;
     savePdfToServer: boolean;
@@ -45,11 +40,4 @@ export interface FormResponse {
   created_at: string;
   ip_address?: string;
   user_agent?: string;
-}
-
-export interface FormStats {
-  totalResponses: number;
-  todayResponses: number;
-  avgCompletionTime: number;
-  fieldStats: Record<string, any>;
 }

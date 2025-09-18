@@ -26,16 +26,10 @@ export const Input: React.FC<InputProps> = ({
       <input
         id={id}
         className={cn(
-          'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 touch-manipulation',
+          'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-all',
           error && 'border-red-500 focus:ring-red-500',
           className
         )}
-        style={{
-          WebkitAppearance: 'none',
-          fontSize: '16px',
-          minHeight: '44px',
-          ...props.style
-        }}
         {...props}
       />
       {error && (
