@@ -321,6 +321,112 @@ const PDFCard: React.FC<{
   );
 };
 
+export const PDFGenerationPage: React.FC = () => {
+  const { user } = useAuth();
+  const { forms, loading: formsLoading } = useForms();
+  const { isSubscribed, product, hasSecretCode } = useSubscription();
+  const { savedPdfsLimits } = useLimits();
+  
+  const [responses, setResponses] = useState<FormResponsePDF[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingPdfCards, setLoadingPdfCards] = useState(false);
+  const [loadedResponsesCount, setLoadedResponsesCount] = useState(0);
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedResponseForDetails, setSelectedResponseForDetails] = useState<FormResponsePDF | null>(null);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 12;
+  
+  // Filtres et recherche
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFormFilter, setSelectedFormFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<'date' | 'form' | 'user'>('date');
+  
+  // Temps réel
+  const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
+  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+  const [newResponsesCount, setNewResponsesCount] = useState(0);
+
+  // Types
+  interface FormResponsePDF {
+    id: string;
+    form_id: string;
+    form_title: string;
+    form_description: string;
+    response_data: Record<string, any>;
+    created_at: string;
+    ip_address?: string;
+    user_agent?: string;
+    pdf_template_id?: string;
+    template_name: string;
+    user_name?: string;
+  }
+
+  interface FormResponse {
+    id: string;
+    form_id: string;
+    data: Record<string, any>;
+    created_at: string;
+    ip_address?: string;
+    user_agent?: string;
+  }
+
+  // Charger les réponses au montage et quand les formulaires changent
+  useEffect(() => {
+    if (!formsLoading && user) {
+      loadFormResponses();
+    }
+  }, [user, forms, formsLoading, currentPage]);
+
+  // Écoute temps réel des nouvelles réponses
+  useEffect(() => {
+    if (!user || !isRealTimeEnabled || forms.length === 0) {
+      return;
+    }
+
+    console.log('🔔 Activation écoute temps réel pour les réponses');
+    
+    const userFormIds = forms.map(form => form.id);
+    
+    const channel = supabase
+      .channel('pdf-responses-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'responses',
+          filter: `form_id=in.(${userFormIds.join(',')})`
+        },
+        (payload) => {
+          console.log('🔔 Nouvelle réponse détectée:', payload.new);
+          setNewResponsesCount(prev => prev + 1);
+          setLastUpdateTime(new Date());
+          
+          // Actualiser automatiquement après 2 secondes
+          setTimeout(() => {
+            console.log('🔄 Actualisation automatique après nouvelle réponse');
+            loadFormResponses(true);
+            setNewResponsesCount(0);
+          }, 2000);
+          
+          toast.success('📄 Nouvelle réponse reçue !', {
+            duration: 3000
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'responses',
+          filter: `form_id=in.(${userFormIds.join(',')})`
+        },
         (payload) => {
           console.log('🔔 Réponse supprimée détectée:', payload.old);
           setLastUpdateTime(new Date());
