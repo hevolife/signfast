@@ -1070,14 +1070,49 @@ export const PDFManager: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredAndSortedResponses.map((response, index) => {
-              <PDFCard
-                key={pdf.fileName}
-                pdf={pdf}
-                index={index}
-                onView={handleViewPdf}
-                onDownload={handleDownloadPdf}
-                onDelete={handleDeletePdf}
-              />
+              const isLocked = !isSubscribed && !hasSecretCode;
+              const isGenerating = generatingPdf === response.id;
+              
+              return (
+                <Card key={response.id} className="group bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 h-full animate-in slide-in-from-bottom duration-500">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <span className="text-white text-lg">📄</span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                            {response.user_name || `Réponse #${response.id.slice(-8)}`}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 font-medium">
+                            {response.form_title}
+                          </p>
+                        </div>
+                      </div>
+                      {isLocked && (
+                        <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full">
+                          <Lock className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="text-xs bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-3 py-1 rounded-full font-semibold shadow-sm dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300">
+                        {response.template_name}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full font-semibold">
+                        {formatDateTimeFR(response.created_at)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => generateAndDownloadPDF(response)}
+                        className="flex-1 flex items-center justify-center space-x-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
                         disabled={isLocked || isGenerating}
                       >
                         {isGenerating ? (
