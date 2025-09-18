@@ -227,4 +227,4 @@ export const PDFGenerationPage: React.FC = () => {
   // Filtres et recherche
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFormFilter, setSelectedFormFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'date' | 'form
+  const [sortBy, setSortBy] = useState<'date' | 'form_title'>('date');
