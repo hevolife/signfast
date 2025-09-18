@@ -23,7 +23,7 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   
   // Vérifier si l'utilisateur est super admin (seulement si pas en mode démo)
-  const isSuperAdmin = !isDemoMode && user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com');
+  const isSuperAdmin = !isDemoMode && (user?.email === 'admin@signfast.com' || user?.email?.endsWith('@admin.signfast.com'));
   
   const handleSignOut = async () => {
     try {
@@ -111,7 +111,7 @@ export const Navbar: React.FC = () => {
 
           {/* Navigation Desktop */}
           <div className="hidden lg:flex items-center space-x-2">
-            {!!user || isDemoMode ? (
+            {(!!user || isDemoMode) ? (
               <>
                 {/* Navigation moderne par onglets */}
                 <div className="flex items-center space-x-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-2 shadow-lg mr-4">
@@ -133,7 +133,7 @@ export const Navbar: React.FC = () => {
                                 </div>
                               ) : (
                                 <span className="text-lg">{item.emoji}</span>
-                                 <span className="text-lg">📩</span>
+                              )}
                             </div>
                             <span className="hidden xl:inline">{item.label}</span>
                           </div>
