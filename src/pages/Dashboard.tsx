@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useForms } from '../contexts/FormsContext';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { 
@@ -18,6 +19,7 @@ import {
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { forms } = useForms();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
@@ -52,7 +54,7 @@ export const Dashboard: React.FC = () => {
                     Formulaires
                   </p>
                   <p className="text-3xl font-bold text-white">
-                    0
+                    {forms.length}
                   </p>
                 </div>
                 <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">
@@ -88,7 +90,11 @@ export const Dashboard: React.FC = () => {
                     Cette semaine
                   </p>
                   <p className="text-3xl font-bold text-white">
-                    0
+                    {forms.filter(f => {
+                      const weekAgo = new Date();
+                      weekAgo.setDate(weekAgo.getDate() - 7);
+                      return new Date(f.created_at) > weekAgo;
+                    }).length}
                   </p>
                 </div>
                 <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">

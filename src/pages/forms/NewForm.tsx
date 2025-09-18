@@ -23,6 +23,7 @@ import {
   Settings
 } from 'lucide-react';
 import { FormField } from '../../types/form';
+import { useForms } from '../../contexts/FormsContext';
 import toast from 'react-hot-toast';
 
 const fieldTypes = [
@@ -40,6 +41,7 @@ const fieldTypes = [
 
 export const NewForm: React.FC = () => {
   const navigate = useNavigate();
+  const { addForm } = useForms();
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [fields, setFields] = useState<FormField[]>([]);
@@ -104,7 +106,14 @@ export const NewForm: React.FC = () => {
     }
 
     try {
-      // Ici on sauvegarderait en base de données
+      addForm({
+        title: formTitle,
+        description: formDescription,
+        fields,
+        settings,
+        is_published: false,
+        password: null,
+      });
       toast.success('Formulaire créé avec succès !');
       navigate('/forms');
     } catch (error) {
