@@ -48,7 +48,11 @@ export const MobileBottomNav: React.FC = () => {
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}>
                 <div className="relative mb-1">
-                  <span className="text-lg">{item.emoji}</span>
+                 {item.path === '/support' ? (
+                   <span className="text-lg">📩</span>
+                 ) : (
+                   <span className="text-lg">{item.emoji}</span>
+                 )}
                 </div>
                 <span className="text-xs font-medium truncate w-full text-center">
                   {item.label}
