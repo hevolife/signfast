@@ -109,36 +109,36 @@ export const TutorialTrigger: React.FC = () => {
     <>
       {/* Prompt flottant pour proposer le tutoriel */}
       {showPrompt && (
-        <div className="fixed bottom-20 right-4 z-30 animate-in slide-in-from-bottom duration-700">
-          <Card className="max-w-sm bg-gradient-to-r from-blue-500 to-indigo-600 border-0 shadow-2xl">
-            <CardContent className="p-4">
+        <div className="fixed bottom-20 left-4 right-4 sm:bottom-20 sm:right-4 sm:left-auto z-30 animate-in slide-in-from-bottom duration-700">
+          <Card className="w-full sm:max-w-sm bg-gradient-to-r from-blue-500 to-indigo-600 border-0 shadow-2xl">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-white" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-bold text-sm mb-1">
+                  <h3 className="text-white font-bold text-xs sm:text-sm mb-1">
                     🎯 Tutoriel interactif
                   </h3>
-                  <p className="text-white/90 text-xs mb-3">
+                  <p className="text-white/90 text-xs sm:text-sm mb-3">
                     Découvrez SignFast en 5 minutes avec notre guide animé !
                   </p>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <Button
                       size="sm"
                       onClick={handleStartTutorial}
-                      className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold text-xs px-3 py-1.5"
+                      className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold text-xs px-3 py-2 sm:py-1.5 flex-1 sm:flex-none"
                     >
-                      <Play className="h-3 w-3 mr-1" />
+                      <Play className="h-3 w-3 mr-2" />
                       Commencer
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleDismissPrompt}
-                      className="text-white/80 hover:text-white hover:bg-white/20 rounded-full w-6 h-6 p-0"
+                      className="text-white/80 hover:text-white hover:bg-white/20 rounded-full w-8 h-8 sm:w-6 sm:h-6 p-0 self-center sm:self-auto"
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -152,36 +152,36 @@ export const TutorialTrigger: React.FC = () => {
 
       {/* Notification de reprise du tutoriel */}
       {showResumeNotification && (
-        <div className="fixed bottom-20 right-4 z-30 animate-in slide-in-from-bottom duration-500">
-          <Card className="max-w-sm bg-gradient-to-r from-indigo-500 to-purple-600 border-0 shadow-2xl">
-            <CardContent className="p-4">
+        <div className="fixed bottom-20 left-4 right-4 sm:bottom-20 sm:right-4 sm:left-auto z-30 animate-in slide-in-from-bottom duration-500">
+          <Card className="w-full sm:max-w-sm bg-gradient-to-r from-indigo-500 to-purple-600 border-0 shadow-2xl">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-white" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-bold text-sm mb-1">
+                  <h3 className="text-white font-bold text-xs sm:text-sm mb-1">
                     📚 Tutoriel en pause
                   </h3>
-                  <p className="text-white/90 text-xs mb-3">
+                  <p className="text-white/90 text-xs sm:text-sm mb-3">
                     Reprenez votre tutoriel là où vous l'avez laissé !
                   </p>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <Button
                       size="sm"
                       onClick={handleResumeTutorial}
-                      className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold text-xs px-3 py-1.5"
+                      className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-bold text-xs px-3 py-2 sm:py-1.5 flex-1 sm:flex-none"
                     >
-                      <Play className="h-3 w-3 mr-1" />
+                      <Play className="h-3 w-3 mr-2" />
                       Reprendre
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleDismissResume}
-                      className="text-white/80 hover:text-white hover:bg-white/20 rounded-full w-6 h-6 p-0"
+                      className="text-white/80 hover:text-white hover:bg-white/20 rounded-full w-8 h-8 sm:w-6 sm:h-6 p-0 self-center sm:self-auto"
                     >
                       <X className="h-3 w-3" />
                     </Button>

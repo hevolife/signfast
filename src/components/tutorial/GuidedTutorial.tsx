@@ -326,33 +326,33 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
       {/* Modal principal du tutoriel */}
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div className="w-full max-w-6xl mx-auto my-4">
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl overflow-hidden">
+          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             {/* Header avec progression */}
-            <div className={`relative overflow-hidden bg-gradient-to-r ${currentStepData.color} p-6`}>
+            <div className={`relative overflow-hidden bg-gradient-to-r ${currentStepData.color} p-4 sm:p-6 flex-shrink-0`}>
               <div className="absolute inset-0 bg-black/10"></div>
-              <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-xl animate-pulse"></div>
+              <div className="absolute top-2 right-2 sm:top-4 sm:right-4 w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-full blur-xl animate-pulse"></div>
               
               <div className="relative">
                 {/* Contrôles en haut à droite */}
-                <div className="absolute top-0 right-0 flex items-center space-x-2">
-                  <div className="flex items-center space-x-1 bg-white/20 backdrop-blur-sm rounded-full p-2">
+                <div className="absolute top-0 right-0 flex items-center space-x-1 sm:space-x-2">
+                  <div className="flex items-center space-x-1 bg-white/20 backdrop-blur-sm rounded-full p-1 sm:p-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={togglePlayPause}
-                      className="text-white hover:bg-white/20 rounded-full w-8 h-8 p-0"
+                      className="text-white hover:bg-white/20 rounded-full w-6 h-6 sm:w-8 sm:h-8 p-0"
                       title={isPlaying ? 'Pause' : 'Play'}
                     >
-                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      {isPlaying ? <Pause className="h-3 w-3 sm:h-4 sm:w-4" /> : <Play className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={restartTutorial}
-                      className="text-white hover:bg-white/20 rounded-full w-8 h-8 p-0"
+                      className="text-white hover:bg-white/20 rounded-full w-6 h-6 sm:w-8 sm:h-8 p-0"
                       title="Recommencer"
                     >
-                      <RotateCcw className="h-4 w-4" />
+                      <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                   
@@ -360,23 +360,23 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={onClose}
-                    className="text-white/80 hover:text-white hover:bg-white/20 rounded-full w-10 h-10 p-0"
+                    className="text-white/80 hover:text-white hover:bg-white/20 rounded-full w-8 h-8 sm:w-10 sm:h-10 p-0"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
 
                 {/* Titre et description */}
-                <div className="pr-32">
+                <div className="pr-20 sm:pr-32">
                   <div className="flex items-center space-x-4 mb-4">
-                    <div className={`w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg`}>
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg`}>
                       {currentStepData.icon}
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white mb-1">
+                      <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
                         {currentStepData.title}
                       </h2>
-                      <p className="text-white/90 font-medium">
+                      <p className="text-sm sm:text-base text-white/90 font-medium">
                         {currentStepData.description}
                       </p>
                     </div>
@@ -384,13 +384,13 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                   
                   {/* Barre de progression */}
                   <div className="mb-4">
-                    <div className="flex items-center justify-between text-white/90 text-sm font-medium mb-2">
+                    <div className="flex items-center justify-between text-white/90 text-xs sm:text-sm font-medium mb-2">
                       <span>Étape {currentStep + 1} sur {tutorialSteps.length}</span>
                       <span>{Math.round(progress)}% terminé</span>
                     </div>
-                    <div className="w-full bg-white/20 rounded-full h-3 shadow-inner">
+                    <div className="w-full bg-white/20 rounded-full h-2 sm:h-3 shadow-inner">
                       <div 
-                        className="h-3 bg-gradient-to-r from-white to-yellow-200 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                        className="h-2 sm:h-3 bg-gradient-to-r from-white to-yellow-200 rounded-full transition-all duration-1000 ease-out shadow-lg"
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
@@ -400,31 +400,31 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
             </div>
 
             {/* Contenu principal - Layout horizontal */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[400px] sm:min-h-[500px] flex-1 overflow-hidden">
               {/* Contenu de l'étape - Côté gauche */}
-              <div className="p-8 flex flex-col justify-center">
+              <div className="p-4 sm:p-6 lg:p-8 flex flex-col justify-center overflow-y-auto">
                 <div className="space-y-6">
                   <div className="prose max-w-none">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base lg:text-lg">
                       {currentStepData.content}
                     </p>
                   </div>
                   
                   {/* Conseils spécifiques à l'étape */}
                   {currentStepData.tips && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800">
                       <div className="flex items-center space-x-2 mb-3">
-                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                          <span className="text-white text-xs">💡</span>
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                          <span className="text-white text-xs sm:text-sm">💡</span>
                         </div>
-                        <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300">
+                        <h4 className="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-300">
                           Points clés à retenir
                         </h4>
                       </div>
                       <div className="space-y-2">
                         {currentStepData.tips.map((tip, index) => (
-                          <div key={index} className="flex items-start space-x-2 text-sm text-blue-800 dark:text-blue-200">
-                            <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div key={index} className="flex items-start space-x-2 text-xs sm:text-sm text-blue-800 dark:text-blue-200">
+                            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                             <span>{tip}</span>
                           </div>
                         ))}
@@ -434,16 +434,16 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
 
                   {/* Action spéciale selon l'étape */}
                   {currentStepData.action && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                          <Zap className="h-5 w-5 text-white" />
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                          <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <h4 className="text-sm font-bold text-green-900 dark:text-green-300 mb-1">
+                          <h4 className="text-xs sm:text-sm font-bold text-green-900 dark:text-green-300 mb-1">
                             Action recommandée
                           </h4>
-                          <p className="text-xs text-green-700 dark:text-green-400">
+                          <p className="text-xs sm:text-sm text-green-700 dark:text-green-400">
                             {currentStepData.action.type === 'navigate' 
                               ? 'Cliquez pour accéder à cette fonctionnalité'
                               : 'Suivez les instructions pour continuer'
@@ -453,9 +453,9 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                         <Button
                           onClick={handleActionClick}
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm px-2 sm:px-3"
                         >
-                          <ArrowRight className="h-4 w-4 mr-1" />
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Essayer
                         </Button>
                       </div>
@@ -465,19 +465,19 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
               </div>
 
               {/* Navigation et progression - Côté droit */}
-              <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-8 flex flex-col">
+              <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-4 sm:p-6 lg:p-8 flex flex-col overflow-hidden">
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 text-center">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 text-center">
                     📚 Progression du tutoriel
                   </h3>
                   
                   {/* Liste des étapes */}
-                  <div className="space-y-3 mb-8 max-h-80 overflow-y-auto">
+                  <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 max-h-60 sm:max-h-80 overflow-y-auto">
                     {tutorialSteps.map((step, index) => (
                       <button
                         key={step.id}
                         onClick={() => handleStepClick(index)}
-                        className={`w-full text-left p-4 rounded-xl transition-all duration-300 ${
+                        className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 ${
                           index === currentStep
                             ? `bg-gradient-to-r ${step.color} text-white shadow-lg transform scale-105`
                             : completedSteps.has(index)
@@ -485,7 +485,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                             : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       >
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                             index === currentStep
                               ? 'bg-white/20'
@@ -502,15 +502,15 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold leading-tight">
+                            <div className="text-sm sm:text-base font-semibold leading-tight">
                               {step.title}
                             </div>
-                            <div className="text-sm opacity-75 leading-tight mt-1">
+                            <div className="text-xs sm:text-sm opacity-75 leading-tight mt-1">
                               {step.description}
                             </div>
                           </div>
                           {index === currentStep && (
-                            <ChevronRight className="h-5 w-5 animate-pulse" />
+                            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
                           )}
                         </div>
                       </button>
@@ -518,24 +518,24 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                   </div>
 
                   {/* Statistiques de progression */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg">
                     <div className="text-center">
-                      <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                      <div className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                         {completedSteps.size}/{tutorialSteps.length}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-4">
+                      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-4">
                         Étapes terminées
                       </div>
                       
                       {/* Barre de progression circulaire */}
-                      <div className="relative w-24 h-24 mx-auto mb-4">
-                        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4">
+                        <svg className="w-16 h-16 sm:w-24 sm:h-24 transform -rotate-90" viewBox="0 0 100 100">
                           <circle
                             cx="50"
                             cy="50"
                             r="40"
                             stroke="currentColor"
-                            strokeWidth="8"
+                            strokeWidth="6"
                             fill="transparent"
                             className="text-gray-200 dark:text-gray-700"
                           />
@@ -544,7 +544,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                             cy="50"
                             r="40"
                             stroke="currentColor"
-                            strokeWidth="8"
+                            strokeWidth="6"
                             fill="transparent"
                             strokeDasharray={`${2 * Math.PI * 40}`}
                             strokeDashoffset={`${2 * Math.PI * 40 * (1 - (completedSteps.size / tutorialSteps.length))}`}
@@ -553,7 +553,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
+                          <span className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">
                             {Math.round((completedSteps.size / tutorialSteps.length) * 100)}%
                           </span>
                         </div>
@@ -561,7 +561,7 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
                       
                       {/* Indicateur de lecture automatique */}
                       {isPlaying && currentStep < tutorialSteps.length - 1 && (
-                        <div className="flex items-center justify-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
+                        <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-blue-600 dark:text-blue-400">
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                           <span>Lecture automatique...</span>
                         </div>
@@ -573,44 +573,44 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({
             </div>
 
             {/* Footer avec navigation */}
-            <div className="bg-gray-50 dark:bg-gray-800 px-8 py-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+            <div className="bg-gray-50 dark:bg-gray-800 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   <Button
                     variant="ghost"
                     onClick={handlePrevStep}
                     disabled={currentStep === 0}
-                    className="flex items-center space-x-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold rounded-xl"
+                    className="flex items-center space-x-1 sm:space-x-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold rounded-xl text-xs sm:text-sm px-3 sm:px-4 py-2"
                   >
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Précédent</span>
                   </Button>
                   
                   <Button
                     variant="ghost"
                     onClick={handleSkip}
-                    className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium"
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium text-xs sm:text-sm px-2 sm:px-3 py-2"
                   >
                     Passer le tutoriel
                   </Button>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   {currentStep === tutorialSteps.length - 1 ? (
                     <Button
                       onClick={handleComplete}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
+                      className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 text-xs sm:text-sm px-3 sm:px-4 py-2"
                     >
-                      <Crown className="h-4 w-4" />
+                      <Crown className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span>Terminer le tutoriel</span>
                     </Button>
                   ) : (
                     <Button
                       onClick={handleNextStep}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
+                      className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 text-xs sm:text-sm px-3 sm:px-4 py-2"
                     >
                       <span>Suivant</span>
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   )}
                 </div>
