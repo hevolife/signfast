@@ -133,8 +133,8 @@ export const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       const rawSignature = canvas.toDataURL('image/png', 1.0);
       
       // Compression asynchrone
-      import('../../utils/imageCompression').then(({ ImageCompressor }) => {
-        ImageCompressor.compressSignature(rawSignature).then(compressedSignature => {
+      import('../../utils/optimizedImageProcessor').then(({ OptimizedImageProcessor }) => {
+        OptimizedImageProcessor.processSignature(rawSignature).then(compressedSignature => {
           onSignatureChange(compressedSignature);
           setIsEmpty(false);
         }).catch(error => {

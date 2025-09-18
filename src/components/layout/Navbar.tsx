@@ -202,6 +202,7 @@ export const Navbar: React.FC = () => {
                       S'inscrire
                     </Button>
                   </Link>
+                  </Link>
                 </div>
               </>
             )}

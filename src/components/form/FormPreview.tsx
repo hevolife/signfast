@@ -200,8 +200,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                   // Pour les images, traitement optimisé
                   if (file.type.startsWith('image/')) {
                     // Utiliser le traitement optimisé pour formulaires publics
-                    import('../../utils/imageCompression').then(({ ImageCompressor }) => {
-                      ImageCompressor.processPublicFormImage(file)
+                    import('../../utils/optimizedImageProcessor').then(({ OptimizedImageProcessor }) => {
+                      OptimizedImageProcessor.processPublicFormImage(file)
                         .then(processedImage => {
                           handleInputChange(field.id, processedImage);
                         })

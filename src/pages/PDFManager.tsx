@@ -5,7 +5,7 @@ import { formatDateTimeFR } from '../utils/dateFormatter';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { useAuth } from '../contexts/AuthContext';
-import { useForms } from '../hooks/useForms';
+import { useOptimizedForms } from '../hooks/useOptimizedForms';
 import { SubscriptionBanner } from '../components/subscription/SubscriptionBanner';
 import { LimitReachedModal } from '../components/subscription/LimitReachedModal';
 import { stripeConfig } from '../stripe-config';
@@ -207,7 +207,7 @@ interface FormResponsePDF {
 
 export const PDFManager: React.FC = () => {
   const { user } = useAuth();
-  const { forms } = useForms();
+  const { forms } = useOptimizedForms();
   const [responses, setResponses] = useState<FormResponsePDF[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);

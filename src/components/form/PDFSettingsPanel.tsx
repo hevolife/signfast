@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form } from '../../types/form';
 import { usePDFTemplates } from '../../hooks/usePDFTemplates';
-import { useForms } from '../../hooks/useForms';
+import { useOptimizedForms } from '../../hooks/useOptimizedForms';
 import { PDFTemplateService } from '../../services/pdfTemplateService';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader } from '../ui/Card';
@@ -19,7 +19,7 @@ export const PDFSettingsPanel: React.FC<PDFSettingsPanelProps> = ({
   onUpdate,
 }) => {
   const { templates, loading } = usePDFTemplates();
-  const { forms, refetch: refetchForms } = useForms();
+  const { forms, refetch: refetchForms } = useOptimizedForms();
   const [updatingTemplate, setUpdatingTemplate] = React.useState(false);
   const [testingWebhook, setTestingWebhook] = React.useState(false);
 

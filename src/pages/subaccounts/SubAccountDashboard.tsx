@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSubAccount } from '../../contexts/SubAccountContext';
 import { supabase } from '../../lib/supabase';
-import { PDFService } from '../../services/pdfService';
+import { OptimizedPDFService } from '../../services/optimizedPDFService';
 import { formatDateTimeFR } from '../../utils/dateFormatter';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -202,12 +202,13 @@ export const SubAccountDashboard: React.FC = () => {
       }
 
       // Générer le PDF avec le service
-      const pdfBytes = await PDFService.generatePDFFromResponse(
+      const pdfBytes = await OptimizedPDFService.generatePDF({
+        templateId: form.settings.pdfTemplateId,
+        formTitle: response.form_title,
         response.id,
-        response.data,
-        response.form_title,
-        form.settings.pdfTemplateId
-      );
+        formData: response.data,
+        saveToServer: false,
+      });
 
       // Créer le nom du fichier
       const fileName = `${response.form_title}_${response.id.slice(-8)}_${new Date().toISOString().split('T')[0]}.pdf`;
