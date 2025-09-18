@@ -6,7 +6,6 @@ import { formatDateTimeFR } from '../utils/dateFormatter';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { useAuth } from '../contexts/AuthContext';
-import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import { useForms } from '../hooks/useForms';
 import { SubscriptionBanner } from '../components/subscription/SubscriptionBanner';
 import { LimitReachedModal } from '../components/subscription/LimitReachedModal';
