@@ -172,6 +172,50 @@ const useIntersectionObserver = (options = {}) => {
 
     observer.observe(element);
 
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [hasIntersected, options]);
+
+  return [elementRef, isIntersecting || hasIntersected];
+};
+
+const PDFCardWithActions: React.FC<{
+  pdf: any;
+  onDownload: (fileName: string, formTitle: string) => void;
+  onDelete: (fileName: string, formTitle: string) => void;
+}> = ({ pdf, onDownload, onDelete }) => {
+  return (
+    <div className="min-h-[200px]">
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 animate-in slide-in-from-bottom duration-500">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            {/* Informations du PDF */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-4 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                    {pdf.fileName}
+                  </h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <div>📝 Formulaire: {pdf.formTitle}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex lg:flex-col items-center lg:items-end space-x-2 lg:space-x-0 lg:space-y-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDownload(pdf.fileName, pdf.formTitle)}
+                className="flex items-center space-x-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
+                title="Télécharger le PDF"
+              >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Télécharger</span>
               </Button>
@@ -186,9 +230,9 @@ const useIntersectionObserver = (options = {}) => {
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
