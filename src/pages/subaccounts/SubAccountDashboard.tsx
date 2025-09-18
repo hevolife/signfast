@@ -466,11 +466,14 @@ export const SubAccountDashboard: React.FC = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                            {getResponseDisplayName(response)}
+                            {(() => {
+                              const displayName = getResponseDisplayName(response);
+                              return displayName.startsWith('Réponse #') ? displayName : displayName;
+                            })()}
                           </h3>
                           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <div>📝 Formulaire: {response.form_title}</div>
-                            <div>👤 Répondant: {getResponseDisplayName(response)}</div>
+                            <div>📅 {formatDateTimeFR(response.created_at)}</div>
                             <div>📄 Template: {response.template_name}</div>
                             <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               response.can_generate_pdf 
