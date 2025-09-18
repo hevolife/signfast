@@ -70,7 +70,7 @@ export const Navbar: React.FC = () => {
     { path: '/forms', icon: FileText, label: 'Formulaires', color: 'green', emoji: '📝' },
     { path: '/pdf/templates', icon: FileText, label: 'Templates', color: 'purple', emoji: '📄' },
     { path: '/pdf/manager', icon: HardDrive, label: 'Stockage', color: 'orange', emoji: '💾' },
-    { path: '/support', icon: MessageCircle, label: 'Support', color: 'indigo', emoji: '💬' },
+    { path: '/support', icon: MessageCircle, label: 'Support', color: 'indigo', emoji: '🚀' },
     { path: '/settings', icon: Settings, label: 'Paramètres', color: 'indigo', emoji: '⚙️' },
   ] : [];
 
