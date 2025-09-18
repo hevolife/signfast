@@ -23,7 +23,6 @@ export const SupportNotificationToast: React.FC = () => {
       if (newMessages > 0) {
         toast.custom((t) => (
           <div className={`${
-            className={`${
               t.visible ? 'animate-enter' : 'animate-leave'
           } max-w-md w-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer hover:shadow-xl transition-all duration-300 mt-20`}
             onClick={() => {
