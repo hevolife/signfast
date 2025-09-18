@@ -15,7 +15,7 @@ import {
   Trash2,
   GripVertical,
   File,
-  X
+  X,
   Move,
   MousePointer
 } from 'lucide-react';
