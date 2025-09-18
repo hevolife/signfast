@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { LanguageSelector } from '../components/language/LanguageSelector';
+import { useLanguage } from './contexts/LanguageContext';
+import { LanguageSelector } from './components/language/LanguageSelector';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubAccounts } from '../hooks/useSubAccounts';
