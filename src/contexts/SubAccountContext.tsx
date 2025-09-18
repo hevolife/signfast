@@ -36,6 +36,7 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const checkExistingSession = async () => {
     try {
+      console.log('🔍 Vérification session sous-compte existante...');
       const savedToken = localStorage.getItem('sub_account_session_token');
       const savedSubAccountData = localStorage.getItem('sub_account_data');
       
@@ -43,13 +44,18 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         try {
           const subAccountData = JSON.parse(savedSubAccountData);
           
+          console.log('🔄 Restauration session sous-compte:', subAccountData.username);
+          
           // Restaurer immédiatement l'état depuis localStorage
           setIsSubAccount(true);
           setSubAccount(subAccountData);
           setMainAccountId(subAccountData.main_account_id);
           setSessionToken(savedToken);
           
-          console.log('🔄 Session sous-compte restaurée depuis localStorage:', subAccountData.username);
+          // Marquer comme chargé IMMÉDIATEMENT après restauration
+          setLoading(false);
+          
+          console.log('✅ Session sous-compte restaurée avec succès');
           
           // Valider la session en arrière-plan sans déconnecter en cas d'erreur
           validateSession(savedToken).then(isValid => {
@@ -64,9 +70,6 @@ export const SubAccountProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             console.warn('⚠️ Erreur validation session en arrière-plan:', error);
             // Ne pas déconnecter en cas d'erreur réseau
           });
-          
-          // Marquer comme chargé après restauration
-          setLoading(false);
         } catch (parseError) {
           console.error('Erreur parsing données sous-compte:', parseError);
           // Nettoyer en cas d'erreur de parsing

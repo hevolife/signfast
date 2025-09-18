@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DemoProvider } from './contexts/DemoContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SubAccountProvider } from './contexts/SubAccountContext';
+import { useSubAccount } from './contexts/SubAccountContext';
 import { pwaManager } from './main';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 import { MaintenanceMode } from './components/MaintenanceMode';
@@ -88,6 +89,7 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isSubAccount, loading: subAccountLoading } = useSubAccount();
   const { isMaintenanceMode, loading: maintenanceLoading } = useMaintenanceMode();
   const isPublicForm = location.pathname.startsWith('/form/');
   const isSubAccountPage = location.pathname.startsWith('/sub-account/');
@@ -107,17 +109,27 @@ const AppContent: React.FC = () => {
     const isPWA = pwaManager.isPWAMode();
     
     if (isPWA) {
-      if (!user && !isPublicForm && location.pathname !== '/login' && location.pathname !== '/signup') {
+      // Ne pas rediriger si on est en cours de chargement du sous-compte
+      if (subAccountLoading) {
+        return;
+      }
+      
+      // Ne pas rediriger si on est connecté en tant que sous-compte
+      if (isSubAccount && isSubAccountPage) {
+        return;
+      }
+      
+      if (!user && !isSubAccount && !isPublicForm && !isSubAccountPage && location.pathname !== '/login' && location.pathname !== '/signup') {
         console.log('📱 PWA: Utilisateur non connecté, redirection vers login');
         navigate('/login?pwa=true', { replace: true });
       }
       
-      if (user && location.pathname === '/') {
+      if ((user || isSubAccount) && location.pathname === '/') {
         console.log('📱 PWA: Utilisateur connecté sur accueil, redirection vers dashboard');
-        navigate('/dashboard', { replace: true });
+        navigate(isSubAccount ? '/sub-account/dashboard' : '/dashboard', { replace: true });
       }
     }
-  }, [user, location.pathname, isPublicForm, navigate, isSubAccountPage]);
+  }, [user, isSubAccount, subAccountLoading, location.pathname, isPublicForm, isSubAccountPage, navigate]);
 
   const dndBackend = isMobile ? TouchBackend : HTML5Backend;
   const dndOptions = isMobile ? { enableMouseEvents: true } : {};
