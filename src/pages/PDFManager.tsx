@@ -6,6 +6,7 @@ import { formatDateTimeFR } from '../utils/dateFormatter';
 import { useLimits } from '../hooks/useLimits';
 import { useSubscription } from '../hooks/useSubscription';
 import { useAuth } from '../contexts/AuthContext';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import { useForms } from '../hooks/useForms';
 import { SubscriptionBanner } from '../components/subscription/SubscriptionBanner';
 import { LimitReachedModal } from '../components/subscription/LimitReachedModal';
@@ -1404,40 +1405,6 @@ export const PDFGenerationPage: React.FC = () => {
                                     </div>
                                     <span className="text-sm font-bold text-green-900 dark:text-green-300">
                                       Image uploadée
-                                    </span>
-                                  </div>
-                                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700 shadow-inner">
-                                    <img
-                                      src={value}
-                                      alt={key}
-                                      className="max-w-full max-h-48 object-contain mx-auto rounded-lg shadow-md"
-                                    />
-                                  </div>
-                                  <div className="flex items-center justify-between mt-3">
-                                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-                                      📁 Fichier image
-                                    </span>
-                                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg">
-                                      {Math.round(value.length / 1024)} KB
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ) : Array.isArray(value) ? (
-                            <div className="flex flex-wrap gap-2">
-                              {value.map((item, idx) => (
-                                <span key={idx} className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-2 rounded-full text-sm font-semibold shadow-sm dark:from-blue-900 dark:to-indigo-900 dark:text-blue-300">
-                                  {item}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                              <p className="text-gray-900 dark:text-white font-medium whitespace-pre-wrap break-words">
-                                {String(value)}
-                              </p>
-                            </div>
                           )}
                         </div>
                       ));
