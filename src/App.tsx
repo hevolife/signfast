@@ -9,6 +9,7 @@ import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Forms } from './pages/Forms';
+import { Templates } from './pages/Templates';
 import { Settings } from './pages/Settings';
 
 function App() {
@@ -34,6 +35,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Forms />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/templates"
+              element={
+                <ProtectedRoute>
+                  <Templates />
                 </ProtectedRoute>
               }
             />

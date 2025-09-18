@@ -38,6 +38,12 @@ export const Navbar: React.FC = () => {
                       <span>Formulaires</span>
                     </Button>
                   </Link>
+                  <Link to="/templates">
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4" />
+                      <span>Templates</span>
+                    </Button>
+                  </Link>
                   <Link to="/settings">
                     <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                       <Settings className="h-4 w-4" />

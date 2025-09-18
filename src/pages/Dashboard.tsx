@@ -152,16 +152,16 @@ export const Dashboard: React.FC = () => {
           </Card>
 
           <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-            <Link to="/settings">
+            <Link to="/templates">
               <CardContent className="p-6 text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                  <Settings className="h-6 w-6" />
+                  <FileText className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-purple-900 mb-2 text-lg">
-                  Paramètres
+                  Templates PDF
                 </h3>
                 <p className="text-sm text-purple-700">
-                  Configurer mon compte
+                  Gérer mes templates
                 </p>
               </CardContent>
             </Link>
