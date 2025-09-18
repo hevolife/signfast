@@ -4,6 +4,8 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubAccounts } from '../hooks/useSubAccounts';
 import { useAffiliate } from '../hooks/useAffiliate';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSelector } from '../components/language/LanguageSelector';
 import { pwaManager } from '../main';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -28,7 +30,8 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   Shield,
-  Database
+  Database,
+  Globe
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -36,6 +39,7 @@ export const Settings: React.FC = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, updateProfile, uploadLogo } = useUserProfile();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { t } = useLanguage();
   const { program: affiliateProgram, tablesExist: affiliateTablesExist } = useAffiliate();
   const { subAccounts, tablesExist: subAccountTablesExist } = useSubAccounts();
   const [activeTab, setActiveTab] = useState('profile');
@@ -180,10 +184,10 @@ export const Settings: React.FC = () => {
                 <SettingsIcon className="h-8 w-8 text-white" />
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-                Paramètres
+                {t('settings.title')}
               </h1>
               <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl mx-auto">
-                Personnalisez votre expérience SignFast
+                {t('settings.subtitle')}
               </p>
               
               {pwaManager.isPWAMode() && (
@@ -208,7 +212,7 @@ export const Settings: React.FC = () => {
                   <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <User className="h-3 w-3 lg:h-4 lg:w-4" />
                   </div>
-                  <span className="hidden sm:inline lg:inline">Profil</span>
+                  <span className="hidden sm:inline lg:inline">{t('settings.profile')}</span>
                 </div>
               </button>
               
@@ -220,7 +224,7 @@ export const Settings: React.FC = () => {
                   <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <Users className="h-3 w-3 lg:h-4 lg:w-4" />
                   </div>
-                  <span className="hidden sm:inline lg:inline">Sous-comptes</span>
+                  <span className="hidden sm:inline lg:inline">{t('settings.subaccounts')}</span>
                   {subAccountTablesExist && subAccounts.length > 0 && (
                     <span className="bg-purple-500 text-white text-xs rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center">
                       {subAccounts.length}
@@ -238,7 +242,7 @@ export const Settings: React.FC = () => {
                     <div className="p-1 bg-white/70 rounded-lg shadow-md">
                       <Gift className="h-3 w-3 lg:h-4 lg:w-4" />
                     </div>
-                    <span className="hidden sm:inline lg:inline">Affiliation</span>
+                    <span className="hidden sm:inline lg:inline">{t('settings.affiliate')}</span>
                     {affiliateProgram && (
                       <span className="bg-green-500 text-white text-xs rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center">
                         {affiliateProgram.total_referrals}
@@ -256,7 +260,7 @@ export const Settings: React.FC = () => {
                   <div className="p-1 bg-white/70 rounded-lg shadow-md">
                     <Smartphone className="h-3 w-3 lg:h-4 lg:w-4" />
                   </div>
-                  <span className="hidden sm:inline lg:inline">Application</span>
+                  <span className="hidden sm:inline lg:inline">{t('settings.app')}</span>
                   {pwaManager.isPWAMode() && (
                     <span className="bg-indigo-500 text-white text-xs rounded-full w-2 h-2 lg:w-2 lg:h-2"></span>
                   )}
@@ -278,10 +282,10 @@ export const Settings: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      Informations personnelles
+                      {t('settings.profile.personal')}
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Gérez vos informations de profil
+                      {t('settings.profile.description')}
                     </p>
                   </div>
                 </div>
@@ -289,38 +293,38 @@ export const Settings: React.FC = () => {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label="Prénom"
+                    label={t('settings.profile.firstName')}
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Votre prénom"
+                    placeholder={t('settings.profile.firstNamePlaceholder')}
                   />
                   <Input
-                    label="Nom"
+                    label={t('settings.profile.lastName')}
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Votre nom"
+                    placeholder={t('settings.profile.lastNamePlaceholder')}
                   />
                 </div>
                 
                 <Input
-                  label="Nom de l'entreprise"
+                  label={t('settings.profile.company')}
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Nom de votre entreprise"
+                  placeholder={t('settings.profile.companyPlaceholder')}
                 />
                 
                 <Input
-                  label="Adresse"
+                  label={t('settings.profile.address')}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Adresse complète"
+                  placeholder={t('settings.profile.addressPlaceholder')}
                 />
                 
                 <Input
-                  label="SIRET"
+                  label={t('settings.profile.siret')}
                   value={siret}
                   onChange={(e) => setSiret(e.target.value)}
-                  placeholder="Numéro SIRET"
+                  placeholder={t('settings.profile.siretPlaceholder')}
                 />
 
                 <Button
@@ -336,7 +340,7 @@ export const Settings: React.FC = () => {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <Save className="h-5 w-5" />
-                      <span>Sauvegarder</span>
+                      <span>{t('common.save')}</span>
                     </div>
                   )}
                 </Button>
@@ -354,10 +358,10 @@ export const Settings: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                        Logo de l'entreprise
+                        {t('settings.profile.logo')}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Personnalisez vos documents
+                        {t('settings.profile.logoDescription')}
                       </p>
                     </div>
                   </div>
@@ -382,12 +386,12 @@ export const Settings: React.FC = () => {
                     {logoUploading ? (
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                        <span>Upload...</span>
+                        <span>{t('common.uploading')}</span>
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2">
                         <Upload className="h-4 w-4" />
-                        <span>{profile?.logo_url ? 'Changer le logo' : 'Ajouter un logo'}</span>
+                        <span>{profile?.logo_url ? t('settings.profile.changeLogo') : t('settings.profile.addLogo')}</span>
                       </div>
                     )}
                   </Button>
@@ -411,10 +415,10 @@ export const Settings: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                        Préférences
+                        {t('settings.preferences.title')}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Personnalisez l'interface
+                        {t('settings.preferences.description')}
                       </p>
                     </div>
                   </div>
@@ -425,16 +429,34 @@ export const Settings: React.FC = () => {
                       <Sun className="h-5 w-5 text-yellow-500" />
                       <div>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          Mode clair
+                          {t('settings.preferences.lightMode')}
                         </span>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Mode sombre désactivé
+                          {t('settings.preferences.lightModeDescription')}
                         </p>
                       </div>
                     </div>
                     <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                      Désactivé
+                      {t('settings.preferences.disabled')}
                     </span>
+                  </div>
+
+                  {/* Sélection de langue */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <Globe className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {t('settings.language')}
+                        </span>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {t('settings.language.description')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <LanguageSelector variant="buttons" showLabel={false} />
+                    </div>
                   </div>
 
                   {/* Tutoriel */}
@@ -443,10 +465,10 @@ export const Settings: React.FC = () => {
                       <BookOpen className="h-5 w-5 text-green-600" />
                       <div>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          Tutoriel guidé
+                          {t('settings.preferences.tutorial')}
                         </span>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Revoir le guide d'utilisation
+                          {t('settings.preferences.tutorialDescription')}
                         </p>
                       </div>
                     </div>
@@ -480,10 +502,10 @@ export const Settings: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      Application Progressive (PWA)
+                      {t('settings.pwa.title')}
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Gestion de l'application et du cache
+                      {t('settings.pwa.description')}
                     </p>
                   </div>
                 </div>
@@ -504,10 +526,10 @@ export const Settings: React.FC = () => {
                       </div>
                       <div>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          Mode PWA
+                          {t('settings.pwa.mode')}
                         </span>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {pwaManager.isPWAMode() ? 'Actif' : 'Inactif'}
+                          {pwaManager.isPWAMode() ? t('settings.pwa.active') : t('settings.pwa.inactive')}
                         </p>
                       </div>
                     </div>
@@ -528,10 +550,10 @@ export const Settings: React.FC = () => {
                       </div>
                       <div>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          Connectivité
+                          {t('settings.pwa.connectivity')}
                         </span>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {pwaManager.isOnline() ? 'En ligne' : 'Hors ligne'}
+                          {pwaManager.isOnline() ? t('settings.pwa.online') : t('settings.pwa.offline')}
                         </p>
                       </div>
                     </div>
@@ -542,7 +564,7 @@ export const Settings: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Gestion du cache
+                      {t('settings.pwa.cacheManagement')}
                     </h3>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -553,7 +575,7 @@ export const Settings: React.FC = () => {
                         className="flex items-center space-x-1"
                       >
                         <RefreshCw className={`h-4 w-4 ${loadingCache ? 'animate-spin' : ''}`} />
-                        <span>Actualiser</span>
+                        <span>{t('common.refresh')}</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -562,7 +584,7 @@ export const Settings: React.FC = () => {
                         className="flex items-center space-x-1 text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span>Vider le cache</span>
+                        <span>{t('settings.pwa.clearCache')}</span>
                       </Button>
                     </div>
                   </div>
@@ -572,7 +594,7 @@ export const Settings: React.FC = () => {
                       <div className="flex items-center space-x-2 mb-3">
                         <Database className="h-4 w-4 text-blue-600" />
                         <span className="font-medium text-blue-900 dark:text-blue-300">
-                          Informations de cache
+                          {t('settings.pwa.cacheInfo')}
                         </span>
                       </div>
                       
@@ -581,7 +603,7 @@ export const Settings: React.FC = () => {
                       ) : (
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-blue-700 dark:text-blue-400">Taille totale:</span>
+                            <span className="text-sm text-blue-700 dark:text-blue-400">{t('settings.pwa.totalSize')}:</span>
                             <span className="font-mono text-sm text-blue-900 dark:text-blue-300">
                               {formatBytes(cacheInfo.totalSize)}
                             </span>
@@ -609,7 +631,7 @@ export const Settings: React.FC = () => {
                         className="flex items-center space-x-2"
                       >
                         <HardDrive className="h-4 w-4" />
-                        <span>Charger les informations de cache</span>
+                        <span>{t('settings.pwa.loadCacheInfo')}</span>
                       </Button>
                     </div>
                   )}
@@ -620,13 +642,13 @@ export const Settings: React.FC = () => {
                   <div className="flex items-center space-x-2 mb-3">
                     <Sparkles className="h-4 w-4 text-green-600" />
                     <span className="font-medium text-green-900 dark:text-green-300">
-                      Installation PWA
+                      {t('settings.pwa.installation')}
                     </span>
                   </div>
                   <div className="space-y-2 text-sm text-green-800 dark:text-green-200">
-                    <div>📱 <strong>Mobile:</strong> Appuyez sur "Ajouter à l'écran d'accueil"</div>
-                    <div>💻 <strong>Desktop:</strong> Cliquez sur l'icône d'installation dans la barre d'adresse</div>
-                    <div>🔄 <strong>Avantage:</strong> Accès rapide et fonctionnement hors ligne</div>
+                    <div>📱 <strong>{t('settings.pwa.mobile')}:</strong> {t('settings.pwa.mobileInstruction')}</div>
+                    <div>💻 <strong>{t('settings.pwa.desktop')}:</strong> {t('settings.pwa.desktopInstruction')}</div>
+                    <div>🔄 <strong>{t('settings.pwa.advantage')}:</strong> {t('settings.pwa.advantageDescription')}</div>
                   </div>
                 </div>
               </CardContent>

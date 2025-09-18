@@ -32,6 +32,9 @@ const translations = {
     'nav.signup': 'S\'inscrire',
     'nav.logout': 'Déconnexion',
     'nav.admin': 'Admin',
+    'nav.quitDemo': 'Quitter la démo',
+    'nav.templates': 'Templates',
+    'nav.storage': 'Stockage',
 
     // Page d'accueil
     'home.hero.title': 'Créez des contrats électroniques en quelques clics',
@@ -138,6 +141,9 @@ const translations = {
     'nav.signup': 'Sign Up',
     'nav.logout': 'Logout',
     'nav.admin': 'Admin',
+    'nav.quitDemo': 'Quit Demo',
+    'nav.templates': 'Templates',
+    'nav.storage': 'Storage',
 
     // Homepage
     'home.hero.title': 'Create electronic contracts in just a few clicks',
@@ -244,6 +250,9 @@ const translations = {
     'nav.signup': 'Registrarse',
     'nav.logout': 'Cerrar sesión',
     'nav.admin': 'Admin',
+    'nav.quitDemo': 'Salir de la demo',
+    'nav.templates': 'Plantillas',
+    'nav.storage': 'Almacenamiento',
 
     // Homepage
     'home.hero.title': 'Crea contratos electrónicos en pocos clics',
