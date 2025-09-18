@@ -47,202 +47,6 @@ interface PDFResponse {
   can_generate_pdf: boolean;
 }
 
-// Composant de carte PDF avec lazy loading
-const PDFCard: React.FC<{
-  response: PDFResponse;
-  index: number;
-  onGenerateAndDownload: (response: PDFResponse) => void;
-  onView: (response: PDFResponse) => void;
-  onDelete: (responseId: string) => void;
-  isLocked: boolean;
-}> = ({ response, index, onGenerateAndDownload, onView, onDelete, isLocked }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          // Délai progressif basé sur l'index pour un effet de cascade
-          setTimeout(() => {
-            setIsVisible(true);
-          }, index * 100);
-          observer.disconnect();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '50px'
-      }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [index]);
-
-  // Extraire le nom de l'utilisateur depuis les données
-  const getUserName = (data: Record<string, any>): string => {
-    const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
-                     data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
-    const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
-                    data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
-    
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
-    }
-    
-    if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
-      return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
-    }
-    
-    if (firstName) return firstName;
-    if (lastName) return lastName;
-    
-    return `Réponse #${response.id.slice(-8)}`;
-  };
-
-  return (
-    <div ref={cardRef} className="min-h-[200px]">
-      {isVisible ? (
-        <Card className={`group relative bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 animate-in slide-in-from-bottom duration-500 ${isLocked ? 'opacity-75' : ''}`}>
-          {isLocked && (
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-900/80 to-yellow-900/80 rounded-2xl flex items-center justify-center z-10 backdrop-blur-sm">
-              <div className="text-center p-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-white/90 text-orange-600 rounded-3xl mb-4 shadow-xl">
-                  <Lock className="h-6 w-6" />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-3">PDF verrouillé</h3>
-                <p className="text-orange-100 text-sm mb-4 font-medium">
-                  Passez à {stripeConfig.products[0].name} pour débloquer
-                </p>
-                <Link to="/subscription">
-                  <Button size="sm" className="flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 mx-auto font-bold">
-                    <Crown className="h-4 w-4" />
-                    <span>Passer Pro</span>
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-          
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-              {/* Informations de la réponse */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                      {getUserName(response.data)}
-                    </h3>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <div>📝 Formulaire: {response.form_title}</div>
-                      <div>📄 Template: {response.template_name || 'Aucun template'}</div>
-                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        response.can_generate_pdf 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                      }`}>
-                        {response.can_generate_pdf ? '✅ PDF génératable' : '❌ Pas de template'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Métadonnées */}
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-3 rounded-xl shadow-inner">
-                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>{formatDateTimeFR(response.created_at)}</span>
-                      </div>
-                      {response.ip_address && (
-                        <div className="flex items-center space-x-1">
-                          <User className="h-3 w-3" />
-                          <span>{response.ip_address}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex lg:flex-col items-center lg:items-end space-x-2 lg:space-x-0 lg:space-y-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onView(response)}
-                  className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                  disabled={isLocked}
-                >
-                  <Eye className="h-4 w-4" />
-                  <span>Détails</span>
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onGenerateAndDownload(response)}
-                  disabled={!response.can_generate_pdf || isLocked}
-                  className={`flex items-center space-x-1 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 ${
-                    response.can_generate_pdf && !isLocked
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
-                  }`}
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Générer PDF</span>
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(response.id)}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
-                  disabled={isLocked}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        // Skeleton card pendant le chargement
-        <Card className="animate-pulse bg-white/60 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/2"></div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex-1"></div>
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
 export const PDFManager: React.FC = () => {
   const { user } = useAuth();
   const { forms } = useForms();
@@ -260,6 +64,200 @@ export const PDFManager: React.FC = () => {
   const [itemsPerPage] = useState(10);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const product = stripeConfig.products[0];
+  
+  // Composant de carte PDF avec lazy loading
+  const PDFCard: React.FC<{
+    response: PDFResponse;
+    index: number;
+  }> = ({ response, index }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            // Délai progressif basé sur l'index pour un effet de cascade
+            setTimeout(() => {
+              setIsVisible(true);
+            }, index * 100);
+            observer.disconnect();
+          }
+        },
+        {
+          threshold: 0.1,
+          rootMargin: '50px'
+        }
+      );
+
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
+
+      return () => observer.disconnect();
+    }, [index]);
+
+    // Extraire le nom de l'utilisateur depuis les données
+    const getUserName = (data: Record<string, any>): string => {
+      const firstName = data['Prénom'] || data['prénom'] || data['Prenom'] || data['prenom'] || 
+                       data['first_name'] || data['firstName'] || data['nom_complet']?.split(' ')[0] || '';
+      const lastName = data['Nom'] || data['nom'] || data['Nom de famille'] || data['nom_de_famille'] || 
+                      data['last_name'] || data['lastName'] || data['nom_complet']?.split(' ').slice(1).join(' ') || '';
+      
+      if (firstName && lastName) {
+        return `${firstName} ${lastName}`;
+      }
+      
+      if (data['nom_complet'] || data['Nom complet'] || data['nomComplet']) {
+        return data['nom_complet'] || data['Nom complet'] || data['nomComplet'];
+      }
+      
+      if (firstName) return firstName;
+      if (lastName) return lastName;
+      
+      return `Réponse #${response.id.slice(-8)}`;
+    };
+
+    const isLocked = !isSubscribed && !hasSecretCode && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
+
+    return (
+      <div ref={cardRef} className="min-h-[200px]">
+        {isVisible ? (
+          <Card className={`group relative bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 animate-in slide-in-from-bottom duration-500 ${isLocked ? 'opacity-75' : ''}`}>
+            {isLocked && (
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-900/80 to-yellow-900/80 rounded-2xl flex items-center justify-center z-10 backdrop-blur-sm">
+                <div className="text-center p-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/90 text-orange-600 rounded-3xl mb-4 shadow-xl">
+                    <Lock className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-white font-bold text-lg mb-3">PDF verrouillé</h3>
+                  <p className="text-orange-100 text-sm mb-4 font-medium">
+                    Passez à {product.name} pour débloquer
+                  </p>
+                  <Link to="/subscription">
+                    <Button size="sm" className="flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 mx-auto font-bold">
+                      <Crown className="h-4 w-4" />
+                      <span>Passer Pro</span>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+            
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
+                {/* Informations de la réponse */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <FileText className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                        {getUserName(response.data)}
+                      </h3>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <div>📝 Formulaire: {response.form_title}</div>
+                        <div>📄 Template: {response.template_name || 'Aucun template'}</div>
+                        <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          response.can_generate_pdf 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                        }`}>
+                          {response.can_generate_pdf ? '✅ PDF génératable' : '❌ Pas de template'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Métadonnées */}
+                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-3 rounded-xl shadow-inner">
+                    <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDateTimeFR(response.created_at)}</span>
+                        </div>
+                        {response.ip_address && (
+                          <div className="flex items-center space-x-1">
+                            <User className="h-3 w-3" />
+                            <span>{response.ip_address}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex lg:flex-col items-center lg:items-end space-x-2 lg:space-x-0 lg:space-y-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleViewResponse(response)}
+                    className="flex items-center space-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    disabled={isLocked}
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span>Détails</span>
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleGenerateAndDownloadPDF(response)}
+                    disabled={!response.can_generate_pdf || isLocked}
+                    className={`flex items-center space-x-1 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 ${
+                      response.can_generate_pdf && !isLocked
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                    }`}
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Générer PDF</span>
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteResponse(response.id)}
+                    className="bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold rounded-xl"
+                    disabled={isLocked}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          // Skeleton card pendant le chargement
+          <Card className="animate-pulse bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/2"></div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex-1"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-16"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     if (user && !isDemoMode) {
@@ -682,19 +680,12 @@ export const PDFManager: React.FC = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {/* Cartes avec lazy loading */}
             {filteredResponses.map((response, index) => {
-              const isLocked = !isSubscribed && !hasSecretCode && index >= savedPdfsLimits.max && savedPdfsLimits.max !== Infinity;
-              
               return (
                 <PDFCard
                   key={response.id}
                   response={response}
                   index={index}
-                  onGenerateAndDownload={handleGenerateAndDownloadPDF}
-                  onView={handleViewResponse}
-                  onDelete={handleDeleteResponse}
-                  isLocked={isLocked}
                 />
               );
             })}
