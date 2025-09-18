@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { formatDateFR } from '../../utils/dateFormatter';
-import { useForms } from '../../hooks/useForms';
+import { useOptimizedForms as useForms } from '../../hooks/useOptimizedForms';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { FormInput, RefreshCw, Eye, Unlink } from 'lucide-react';
