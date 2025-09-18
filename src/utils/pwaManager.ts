@@ -165,7 +165,7 @@ toast.custom((t) => (
           </div>
         </div>
 
-        {/* Contenu du toast */}
+        {/* Exemple de texte ou contenu du toast */}
         <div className="ml-3 flex-1">
           <p className="text-sm font-medium text-white">
             Mise à jour en cours…
@@ -175,7 +175,6 @@ toast.custom((t) => (
     </div>
   </div>
 ));
-
             <div className="ml-3 flex-1">
               <p className="text-sm font-bold text-white">
                 Mise à jour disponible
