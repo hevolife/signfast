@@ -13,6 +13,10 @@ export interface FormField {
     max?: number;
     pattern?: string;
     mask?: string;
+    minFiles?: number;
+    maxFiles?: number;
+    acceptedTypes?: string;
+    maxFileSize?: number;
   };
 }
 

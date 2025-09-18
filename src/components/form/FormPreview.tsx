@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { SignatureCanvas } from './SignatureCanvas';
 import { MaskedInput } from './MaskedInput';
+import toast from 'react-hot-toast';
 
 interface FormPreviewProps {
   fields: FormField[];

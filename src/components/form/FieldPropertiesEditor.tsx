@@ -512,6 +512,87 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
         </div>
       )}
 
+      {field.type === 'file' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Nombre minimum de fichiers"
+              type="number"
+              min="0"
+              max="10"
+              value={field.validation?.minFiles || ''}
+              onChange={(e) => onUpdate({
+                validation: {
+                  ...field.validation,
+                  minFiles: e.target.value ? parseInt(e.target.value) : undefined
+                }
+              })}
+              placeholder="Ex: 1"
+            />
+            <Input
+              label="Nombre maximum de fichiers"
+              type="number"
+              min="1"
+              max="10"
+              value={field.validation?.maxFiles || ''}
+              onChange={(e) => onUpdate({
+                validation: {
+                  ...field.validation,
+                  maxFiles: e.target.value ? parseInt(e.target.value) : undefined
+                }
+              })}
+              placeholder="Ex: 5"
+            />
+          </div>
+          
+          <div>
+            <Input
+              label="Types de fichiers acceptés"
+              value={field.validation?.acceptedTypes || ''}
+              onChange={(e) => onUpdate({
+                validation: {
+                  ...field.validation,
+                  acceptedTypes: e.target.value || undefined
+                }
+              })}
+              placeholder="Ex: .pdf,.doc,.docx,.jpg,.png"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Extensions séparées par des virgules (ex: .pdf,.jpg,.png)
+            </p>
+          </div>
+          
+          <div>
+            <Input
+              label="Taille maximale par fichier (MB)"
+              type="number"
+              min="0.1"
+              max="50"
+              step="0.1"
+              value={field.validation?.maxFileSize || ''}
+              onChange={(e) => onUpdate({
+                validation: {
+                  ...field.validation,
+                  maxFileSize: e.target.value ? parseFloat(e.target.value) : undefined
+                }
+              })}
+              placeholder="Ex: 5"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Taille maximale en mégaoctets (MB)
+            </p>
+          </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-800 dark:text-blue-200 font-medium">Configuration actuelle :</p>
+            <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1 mt-1">
+              <div>📁 Fichiers : {field.validation?.minFiles || 0} min, {field.validation?.maxFiles || 'illimité'} max</div>
+              <div>📄 Types : {field.validation?.acceptedTypes || 'tous types'}</div>
+              <div>📏 Taille max : {field.validation?.maxFileSize || 'illimitée'} MB</div>
+            </div>
+          </div>
+        </div>
+      )}
       {field.type === 'birthdate' && (
         <div className="grid grid-cols-2 gap-4">
           <Input
