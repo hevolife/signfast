@@ -146,7 +146,7 @@ export const NewTemplate: React.FC = () => {
 
     // Si aucun champ sélectionné, ne rien faire
     if (!selectedField) {
-      toast.info('Sélectionnez un champ dans la liste pour le positionner');
+      toast('Sélectionnez un champ dans la liste pour le positionner');
       return;
     }
 
