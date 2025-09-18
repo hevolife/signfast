@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { PWAManager } from './utils/pwaManager';
+import { PWAManager } from './utils/pwaManager.tsx';
 
 // Gestion d'erreur globale pour éviter l'écran blanc
 window.addEventListener('error', (event) => {
