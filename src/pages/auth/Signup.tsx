@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { pwaManager } from '../../main';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +10,7 @@ import { FormInput, Eye, EyeOff, UserPlus, ArrowRight, Gift, Crown, Sparkles, Ch
 import toast from 'react-hot-toast';
 
 export const Signup: React.FC = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -178,10 +180,10 @@ export const Signup: React.FC = () => {
                 <UserPlus className="h-8 w-8 text-purple-600" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Créer un compte
+                {t('auth.signup.title')}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 font-medium">
-                Commencez à créer vos contrats en 2 minutes
+                {t('auth.signup.subtitle')}
               </p>
             </div>
           </CardHeader>
@@ -191,7 +193,7 @@ export const Signup: React.FC = () => {
                 <Input
                   id="email"
                   type="email"
-                  label="Adresse email"
+                  label={t('auth.signup.email')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -208,7 +210,7 @@ export const Signup: React.FC = () => {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    label="Mot de passe"
+                    label={t('auth.signup.password')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -234,7 +236,7 @@ export const Signup: React.FC = () => {
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
-                    label="Confirmer le mot de passe"
+                    label={t('auth.signup.confirm')}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -291,12 +293,12 @@ export const Signup: React.FC = () => {
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Création...</span>
+                    <span>{t('common.loading')}</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center space-x-2">
                     <UserPlus className="h-5 w-5" />
-                    <span>Créer mon compte</span>
+                    <span>{t('auth.signup.submit')}</span>
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 )}
@@ -326,7 +328,7 @@ export const Signup: React.FC = () => {
                     className="w-full bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-800 dark:hover:to-indigo-800 font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 rounded-xl border border-blue-200 dark:border-blue-800"
                   >
                     <div className="flex items-center justify-center space-x-2">
-                      <span>Se connecter</span>
+                      <span>{t('auth.signup.login')}</span>
                       <ArrowRight className="h-4 w-4" />
                     </div>
                   </Button>

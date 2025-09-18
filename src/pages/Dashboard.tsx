@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useOptimizedForms } from '../hooks/useOptimizedForms';
 import { useLimits } from '../hooks/useLimits';
@@ -32,6 +33,7 @@ import {
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
   const { forms, totalCount: totalForms, loading: formsLoading, fetchPage } = useOptimizedForms();
@@ -276,10 +278,10 @@ export const Dashboard: React.FC = () => {
                 <Sparkles className="h-8 w-8 text-white" />
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-                Dashboard SignFast
+                {t('dashboard.title')}
               </h1>
               <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl mx-auto">
-                Vue d'ensemble de votre activité et gestion complète de vos documents
+                {t('dashboard.subtitle')}
               </p>
               
             </div>
@@ -300,7 +302,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
-                    Formulaires
+                    {t('dashboard.stats.forms')}
                   </p>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
                     {forms.length}
@@ -322,7 +324,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
-                    Templates PDF
+                    {t('dashboard.stats.templates')}
                   </p>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
                     {templates.length}
@@ -344,7 +346,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
-                    PDFs Sauvegardés
+                    {t('dashboard.stats.pdfs')}
                   </p>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
                     {savedPdfsLimits.current}
@@ -366,7 +368,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-semibold text-white/90 mb-1">
-                    Réponses Totales
+                    {t('dashboard.stats.responses')}
                   </p>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
                     {totalResponses}
