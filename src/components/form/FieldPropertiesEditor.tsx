@@ -659,7 +659,6 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
           )}
         </div>
       )}
-    </div>
       {field.type === 'scan' && (
         <div className="space-y-4">
           <div>
@@ -805,5 +804,6 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
           </div>
         </div>
       )}
+    </div>
   );
 };
