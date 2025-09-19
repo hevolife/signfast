@@ -149,16 +149,42 @@ export class PDFGenerator {
         }
       }
       
-      // 3. Recherche par correspondance partielle pour les signatures
+      // 3. Recherche par normalisation de la variable (pour les accents, espaces, etc.)
       if (!signatureValue) {
+        const normalizedVariable = variableName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        
+        const normalizedMatchKey = Object.keys(data).find(key => {
+          const normalizedKey = key
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          return normalizedKey === normalizedVariable && 
+                 typeof data[key] === 'string' && data[key].startsWith('data:image');
+        });
+        
+        if (normalizedMatchKey) {
+          signatureValue = data[normalizedMatchKey];
+          console.log('✅ Signature trouvée par normalisation:', normalizedMatchKey, '→', signatureValue.substring(0, 50) + '...');
+          return signatureValue;
+        }
+      }
+      
+      // 4. Recherche par correspondance partielle SEULEMENT si la variable contient "signature"
+      if (!signatureValue && (variableName.toLowerCase().includes('signature') || variableName.toLowerCase().includes('sign'))) {
         const partialMatchKey = Object.keys(data).find(key => {
           const keyLower = key.toLowerCase();
           const varLower = variableName.toLowerCase();
-          // SEULEMENT si la variable ET la clé contiennent des mots-clés de signature
-          const isSignatureKey = keyLower.includes('signature') || keyLower.includes('sign');
-          const isSignatureVar = varLower.includes('signature') || varLower.includes('sign');
           
-          return isSignatureKey && isSignatureVar && 
+          return (keyLower.includes('signature') || keyLower.includes('sign')) &&
                  (keyLower.includes(varLower) || varLower.includes(keyLower)) &&
                  typeof data[key] === 'string' && data[key].startsWith('data:image');
         });
@@ -170,7 +196,7 @@ export class PDFGenerator {
         }
       }
       
-      // 4. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
+      // 5. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
       // Retourner vide si aucune signature correspondante trouvée
       console.log('❌ Aucune signature trouvée pour variable:', variableName, 'dans les données:', Object.keys(data).filter(k => typeof data[k] === 'string' && data[k].startsWith('data:image')));
       return '';
