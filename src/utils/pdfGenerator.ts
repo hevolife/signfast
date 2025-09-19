@@ -336,11 +336,13 @@ export class PDFGenerator {
     // Appliquer le masque de saisie si c'est un champ texte et qu'il a un masque
     let finalValue = value || '';
     
-    if (field.type === 'text' && finalValue && typeof finalValue === 'string') {
+    if ((field.type === 'text' || field.type === 'number') && finalValue && typeof finalValue === 'string') {
       // Chercher le masque dans les données du formulaire
       const maskInfo = this.findFieldMask(variableName, data);
       if (maskInfo) {
+        console.log('🎭 Application masque pour champ:', variableName, 'masque:', maskInfo, 'valeur avant:', finalValue);
         finalValue = this.applyTextMask(finalValue, maskInfo);
+        console.log('🎭 Valeur après masque:', finalValue);
       }
     }
     
@@ -366,6 +368,7 @@ export class PDFGenerator {
             .replace(/^_|_$/g, '');
           
           if (fieldVariableName === variableName) {
+            console.log('🎭 Masque trouvé pour variable:', variableName, 'masque:', f.validation?.mask);
             return f;
           }
           
@@ -396,6 +399,7 @@ export class PDFGenerator {
           const fieldLabel = f.label.toLowerCase();
           const varName = variableName.toLowerCase();
           if (fieldLabel.includes(varName) || varName.includes(fieldLabel)) {
+            console.log('🎭 Masque trouvé par correspondance partielle:', variableName, 'masque:', f.validation?.mask);
             return f;
           }
           
@@ -419,6 +423,7 @@ export class PDFGenerator {
       }
     }
     
+    console.log('🎭 Aucun masque trouvé pour variable:', variableName);
     return null;
   }
 
