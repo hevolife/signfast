@@ -540,6 +540,125 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
           />
         </div>
       )}
+
+      {field.type === 'file' && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Types de fichiers acceptés
+            </label>
+            <div className="space-y-2">
+              {[
+                { value: 'image/*', label: 'Toutes les images (PNG, JPG, GIF, etc.)' },
+                { value: 'image/png', label: 'PNG uniquement' },
+                { value: 'image/jpeg', label: 'JPEG/JPG uniquement' },
+                { value: 'image/gif', label: 'GIF uniquement' },
+                { value: 'image/webp', label: 'WebP uniquement' },
+                { value: 'application/pdf', label: 'PDF uniquement' },
+                { value: '.doc,.docx', label: 'Documents Word' },
+                { value: '.xls,.xlsx', label: 'Fichiers Excel' },
+                { value: '.txt', label: 'Fichiers texte' },
+                { value: '.zip,.rar', label: 'Archives (ZIP, RAR)' },
+              ].map((fileType) => (
+                <label key={fileType.value} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={(field.validation?.acceptedFileTypes || []).includes(fileType.value)}
+                    onChange={(e) => {
+                      const currentTypes = field.validation?.acceptedFileTypes || [];
+                      const newTypes = e.target.checked
+                        ? [...currentTypes, fileType.value]
+                        : currentTypes.filter(type => type !== fileType.value);
+                      
+                      onUpdate({
+                        validation: {
+                          ...field.validation,
+                          acceptedFileTypes: newTypes.length > 0 ? newTypes : undefined
+                        }
+                      });
+                    }}
+                    className="text-blue-600"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {fileType.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+            
+            {/* Option personnalisée */}
+            <div className="mt-3">
+              <Input
+                label="Types personnalisés (séparés par des virgules)"
+                value={(field.validation?.acceptedFileTypes || []).filter(type => 
+                  ![
+                    'image/*', 'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+                    'application/pdf', '.doc,.docx', '.xls,.xlsx', '.txt', '.zip,.rar'
+                  ].includes(type)
+                ).join(', ')}
+                onChange={(e) => {
+                  const customTypes = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                  const predefinedTypes = (field.validation?.acceptedFileTypes || []).filter(type => 
+                    [
+                      'image/*', 'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+                      'application/pdf', '.doc,.docx', '.xls,.xlsx', '.txt', '.zip,.rar'
+                    ].includes(type)
+                  );
+                  
+                  const allTypes = [...predefinedTypes, ...customTypes];
+                  
+                  onUpdate({
+                    validation: {
+                      ...field.validation,
+                      acceptedFileTypes: allTypes.length > 0 ? allTypes : undefined
+                    }
+                  });
+                }}
+                placeholder="Ex: .svg, .ai, application/json"
+                className="text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Ajoutez des types MIME ou extensions personnalisés
+              </p>
+            </div>
+          </div>
+          
+          <Input
+            label="Taille maximale (MB)"
+            type="number"
+            min="1"
+            max="50"
+            step="1"
+            value={field.validation?.maxFileSize || ''}
+            onChange={(e) => onUpdate({
+              validation: {
+                ...field.validation,
+                maxFileSize: e.target.value ? parseInt(e.target.value) : undefined
+              }
+            })}
+            placeholder="Ex: 5 pour 5MB maximum"
+          />
+          
+          {/* Aperçu de la configuration */}
+          {(field.validation?.acceptedFileTypes?.length || 0) > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">
+                Configuration actuelle
+              </h4>
+              <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                <div>
+                  <strong>Types acceptés :</strong> {field.validation?.acceptedFileTypes?.join(', ')}
+                </div>
+                {field.validation?.maxFileSize && (
+                  <div>
+                    <strong>Taille max :</strong> {field.validation.maxFileSize} MB
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

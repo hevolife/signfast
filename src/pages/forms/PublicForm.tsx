@@ -405,16 +405,42 @@ export const PublicForm: React.FC = () => {
             </label>
             <input
               type="file"
-              accept="image/*,.pdf,.doc,.docx"
+              accept={field.validation?.acceptedFileTypes?.join(',') || "image/*,.pdf,.doc,.docx"}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
+                  // Vérifier la taille du fichier si configurée
+                  if (field.validation?.maxFileSize && file.size > field.validation.maxFileSize * 1024 * 1024) {
+                    toast.error(`Le fichier ne doit pas dépasser ${field.validation.maxFileSize} MB`);
+                    e.target.value = ''; // Reset input
+                    return;
+                  }
+                  
                   handleInputChange(field.id, file, field);
                 }
               }}
               required={field.required}
               className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-400"
             />
+            
+            {/* Informations sur les restrictions */}
+            {(field.validation?.acceptedFileTypes || field.validation?.maxFileSize) && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                  {field.validation?.acceptedFileTypes && (
+                    <div>
+                      <strong>Types acceptés :</strong> {field.validation.acceptedFileTypes.join(', ')}
+                    </div>
+                  )}
+                  {field.validation?.maxFileSize && (
+                    <div>
+                      <strong>Taille maximale :</strong> {field.validation.maxFileSize} MB
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {formData[field.label] && typeof formData[field.label] === 'string' && formData[field.label].startsWith('data:image') && (
               <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">

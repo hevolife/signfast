@@ -191,10 +191,16 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
               placeholder={field.placeholder}
               type="file"
               label={field.label}
-              accept="image/*,.pdf,.doc,.docx"
+              accept={field.validation?.acceptedFileTypes?.join(',') || "image/*,.pdf,.doc,.docx"}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
+                  // Vérifier la taille du fichier si configurée
+                  if (field.validation?.maxFileSize && file.size > field.validation.maxFileSize * 1024 * 1024) {
+                    toast.error(`Le fichier ne doit pas dépasser ${field.validation.maxFileSize} MB`);
+                    return;
+                  }
+                  
                   // Pour les images, traitement optimisé
                   if (file.type.startsWith('image/')) {
                     // Utiliser le traitement optimisé pour formulaires publics
@@ -221,6 +227,19 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                 }
               }}
             />
+            
+            {/* Informations sur les types acceptés */}
+            {field.validation?.acceptedFileTypes && field.validation.acceptedFileTypes.length > 0 && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  <strong>Types acceptés :</strong> {field.validation.acceptedFileTypes.join(', ')}
+                  {field.validation.maxFileSize && (
+                    <span className="ml-2">• <strong>Taille max :</strong> {field.validation.maxFileSize} MB</span>
+                  )}
+                </p>
+              </div>
+            )}
+            
             {/* Aperçu de l'image */}
             {formData[field.id] && typeof formData[field.id] === 'string' && formData[field.id].startsWith('data:image') && (
               <div className="mt-2">
@@ -230,7 +249,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                   className="max-w-xs max-h-32 object-contain border border-gray-300 rounded shadow-lg"
                 />
                 <p className="text-xs text-green-600 mt-1">
-                  ✅ Image optimisée (1920x1080 JPEG) • {Math.round(formData[field.id].length / 1024)} KB
+                  ✅ Image optimisée • {Math.round(formData[field.id].length / 1024)} KB
                 </p>
               </div>
             )}

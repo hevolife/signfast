@@ -152,6 +152,21 @@ export const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
         return <Input type="date" disabled />;
       case 'file':
         return <Input type="file" disabled />;
+        return (
+          <div className="space-y-2">
+            <Input 
+              type="file" 
+              accept={field.validation?.acceptedFileTypes?.join(',') || "image/*,.pdf,.doc,.docx"}
+              disabled 
+            />
+            {field.validation?.acceptedFileTypes && (
+              <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                Types: {field.validation.acceptedFileTypes.join(', ')}
+                {field.validation.maxFileSize && ` • Max: ${field.validation.maxFileSize}MB`}
+              </div>
+            )}
+          </div>
+        );
       case 'signature':
         return (
           <div className="w-full">
