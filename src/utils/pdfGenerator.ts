@@ -351,6 +351,19 @@ export class PDFGenerator {
       }
     }
     
+    // Chercher aussi par correspondance partielle du nom de champ
+    if (data._form_metadata && data._form_metadata.fields) {
+      const field = data._form_metadata.fields.find((f: any) => {
+        const fieldLabel = f.label.toLowerCase();
+        const varName = variableName.toLowerCase();
+        return fieldLabel.includes(varName) || varName.includes(fieldLabel);
+      });
+      
+      if (field && field.validation && field.validation.mask) {
+        return field.validation.mask;
+      }
+    }
+    
     return null;
   }
 
