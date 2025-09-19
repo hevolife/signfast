@@ -72,34 +72,55 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const startCamera = async () => {
     try {
       setCameraError(null);
+      console.log('📷 Démarrage caméra...');
       
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Caméra non disponible sur cet appareil');
       }
 
-      const constraints = {
+      // Contraintes simplifiées pour une meilleure compatibilité
+      const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: facingMode,
-          width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 }
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 30 }
         }
       };
 
       console.log('📷 Demande d\'accès caméra avec contraintes:', constraints);
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('📷 Flux caméra obtenu:', mediaStream.getVideoTracks().length, 'pistes vidéo');
+      
       setStream(mediaStream);
       
       if (videoRef.current) {
+        console.log('📷 Configuration élément vidéo...');
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
+        
+        // Forcer le démarrage de la vidéo
+        videoRef.current.onloadedmetadata = async () => {
           console.log('📷 Métadonnées vidéo chargées');
-          videoRef.current?.play();
+          try {
+            await videoRef.current?.play();
+            console.log('📷 Lecture vidéo démarrée');
+          } catch (playError) {
+            console.error('❌ Erreur lecture vidéo:', playError);
+          }
         };
+        
+        // Fallback pour démarrer la vidéo immédiatement
+        try {
+          await videoRef.current.play();
+          console.log('📷 Lecture vidéo démarrée (fallback)');
+        } catch (playError) {
+          console.log('⚠️ Lecture vidéo en attente des métadonnées');
+        }
       }
       
       setIsScanning(true);
-      toast.success('Caméra activée - Mode plein écran');
+      toast.success('📷 Caméra activée - Mode plein écran');
     } catch (error: any) {
       console.error('Erreur accès caméra:', error);
       setCameraError(error.message);
@@ -126,9 +147,10 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const switchCamera = async () => {
     stopCamera();
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    toast.loading('🔄 Changement de caméra...', { duration: 2000 });
     setTimeout(() => {
       startCamera();
-    }, 500);
+    }, 1000);
   };
 
   const capturePhoto = () => {
@@ -418,16 +440,56 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
         {/* Vidéo plein écran */}
         <div className="flex-1 relative">
+          {cameraError && (
+            <div className="absolute inset-0 bg-red-900/80 flex items-center justify-center z-20">
+              <div className="text-center text-white p-6">
+                <div className="text-4xl mb-4">❌</div>
+                <h3 className="text-lg font-bold mb-2">Erreur caméra</h3>
+                <p className="text-sm mb-4">{cameraError}</p>
+                <Button
+                  onClick={() => {
+                    setCameraError(null);
+                    startCamera();
+                  }}
+                  className="bg-white text-red-600 hover:bg-gray-100"
+                >
+                  Réessayer
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover bg-black"
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+            onLoadedData={() => {
+              console.log('📷 Données vidéo chargées');
+            }}
+            onCanPlay={() => {
+              console.log('📷 Vidéo prête à être lue');
+            }}
+            onError={(e) => {
+              console.error('❌ Erreur élément vidéo:', e);
+              setCameraError('Erreur de lecture vidéo');
+            }}
           />
           
           {renderVideoGuides()}
+          
+          {/* Indicateur de chargement si pas de flux */}
+          {!stream && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-lg font-medium">Initialisation de la caméra...</p>
+                <p className="text-sm text-white/70 mt-2">Veuillez autoriser l'accès à la caméra</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Contrôles en bas */}
@@ -463,6 +525,9 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
           <div className="text-center mt-4 text-white/70 text-xs space-y-1">
             <div>📷 Caméra: {facingMode === 'user' ? 'Avant' : 'Arrière'}</div>
             <div>📐 Format: {settings.outputFormat.toUpperCase()} • Qualité: {Math.round(settings.quality * 100)}%</div>
+            {stream && (
+              <div className="text-green-400">🟢 Caméra active</div>
+            )}
           </div>
         </div>
 
@@ -632,6 +697,16 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
                 <p className="text-xs text-red-600 dark:text-red-300 mt-2">
                   Vérifiez que votre navigateur a accès à la caméra et réessayez
                 </p>
+                <Button
+                  onClick={() => {
+                    setCameraError(null);
+                    startCamera();
+                  }}
+                  size="sm"
+                  className="mt-2 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Réessayer
+                </Button>
               </div>
             )}
             
@@ -642,7 +717,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
                 className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Camera className="h-5 w-5 mr-2" />
-                Activer la caméra (Plein écran)
+                📷 Activer la caméra (Plein écran)
               </Button>
               
               <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 text-left">
