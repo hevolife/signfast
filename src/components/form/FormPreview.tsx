@@ -40,7 +40,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
     });
 
     return fieldsToShow.map(field => (
-      <div key={field.id} className="ml-6 border-l-2 border-blue-200 pl-4">
+      <div key={field.id} className="ml-6 border-l-2 border-blue-200 dark:border-blue-700 pl-4 mt-4">
         {renderField(field)}
       </div>
     ));

@@ -216,6 +216,25 @@ export const PublicForm: React.FC = () => {
     }
   };
 
+  const renderConditionalFields = (parentField: FormField, selectedValues: string | string[]) => {
+    if (!parentField.conditionalFields) return null;
+
+    const valuesToCheck = Array.isArray(selectedValues) ? selectedValues : [selectedValues];
+    const fieldsToShow: FormField[] = [];
+
+    valuesToCheck.forEach(value => {
+      if (parentField.conditionalFields?.[value]) {
+        fieldsToShow.push(...parentField.conditionalFields[value]);
+      }
+    });
+
+    return fieldsToShow.map(field => (
+      <div key={field.id} className="ml-6 border-l-2 border-blue-200 dark:border-blue-700 pl-4 mt-4">
+        {renderField(field)}
+      </div>
+    ));
+  };
+
   const renderField = (field: FormField) => {
     const baseProps = {
       id: field.id,
@@ -294,6 +313,7 @@ export const PublicForm: React.FC = () => {
                 </label>
               ))}
             </div>
+            {formData[field.label] && renderConditionalFields(field, formData[field.label])}
           </div>
         );
 
@@ -324,6 +344,7 @@ export const PublicForm: React.FC = () => {
                 </label>
               ))}
             </div>
+            {formData[field.label] && formData[field.label].length > 0 && renderConditionalFields(field, formData[field.label])}
           </div>
         );
 
