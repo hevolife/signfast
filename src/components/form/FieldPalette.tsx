@@ -14,6 +14,7 @@ import {
   Phone,
   Cake,
   PenTool,
+  Scan,
 } from 'lucide-react';
 
 interface FieldPaletteProps {
@@ -83,6 +84,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
     { type: 'date' as const, icon: <Calendar className="h-5 w-5" />, label: 'Date', color: 'pink' },
     { type: 'birthdate' as const, icon: <Cake className="h-5 w-5" />, label: 'Date de naissance', color: 'rose' },
     { type: 'file' as const, icon: <Upload className="h-5 w-5" />, label: 'Fichier', color: 'yellow' },
+    { type: 'scan' as const, icon: <Scan className="h-5 w-5" />, label: 'Scanner document', color: 'emerald' },
     { type: 'textarea' as const, icon: <FileText className="h-5 w-5" />, label: 'Zone de texte', color: 'cyan' },
     { type: 'signature' as const, icon: <PenTool className="h-5 w-5" />, label: 'Signature', color: 'emerald' },
   ];

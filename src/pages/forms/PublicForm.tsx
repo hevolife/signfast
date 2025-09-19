@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { SignatureCanvas } from '../../components/form/SignatureCanvas';
 import { MaskedInput } from '../../components/form/MaskedInput';
+import { DocumentScanner } from '../../components/form/DocumentScanner';
 import { FormInput, Send, Download, CheckCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -482,6 +483,29 @@ export const PublicForm: React.FC = () => {
           </div>
         );
 
+      case 'scan':
+        return (
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 mb-3">
+                📷 Scanner de document
+              </p>
+              <DocumentScanner
+                onImageCapture={(imageData) => handleInputChange(field.id, imageData, field)}
+                value={formData[field.label]}
+                required={field.required}
+                scanSettings={field.validation?.scanSettings}
+              />
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
+                📱 Utilisez votre caméra pour numériser des documents avec recadrage automatique
+              </p>
+            </div>
+          </div>
+        );
       default:
         return null;
     }

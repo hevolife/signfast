@@ -1,6 +1,6 @@
 export interface FormField {
   id: string;
-  type: 'text' | 'email' | 'number' | 'radio' | 'checkbox' | 'date' | 'file' | 'textarea' | 'phone' | 'birthdate' | 'signature';
+  type: 'text' | 'email' | 'number' | 'radio' | 'checkbox' | 'date' | 'file' | 'textarea' | 'phone' | 'birthdate' | 'signature' | 'scan';
   label: string;
   placeholder?: string;
   required: boolean;
@@ -15,6 +15,14 @@ export interface FormField {
     mask?: string;
     acceptedFileTypes?: string[];
     maxFileSize?: number; // en MB
+    scanSettings?: {
+      outputFormat?: 'jpeg' | 'png';
+      quality?: number;
+      maxWidth?: number;
+      maxHeight?: number;
+      showGuides?: boolean;
+      autoCapture?: boolean;
+    };
   };
 }
 

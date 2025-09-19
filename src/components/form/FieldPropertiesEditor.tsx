@@ -660,5 +660,150 @@ export const FieldPropertiesEditor: React.FC<FieldPropertiesEditorProps> = ({
         </div>
       )}
     </div>
+      {field.type === 'scan' && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Paramètres de scan
+            </label>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Format de sortie
+                </label>
+                <select
+                  value={field.validation?.scanSettings?.outputFormat || 'jpeg'}
+                  onChange={(e) => onUpdate({
+                    validation: {
+                      ...field.validation,
+                      scanSettings: {
+                        ...field.validation?.scanSettings,
+                        outputFormat: e.target.value as 'jpeg' | 'png'
+                      }
+                    }
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="jpeg">JPEG (plus petit, sans transparence)</option>
+                  <option value="png">PNG (plus gros, avec transparence)</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Largeur max (px)"
+                  type="number"
+                  min="400"
+                  max="4000"
+                  step="100"
+                  value={field.validation?.scanSettings?.maxWidth || 1600}
+                  onChange={(e) => onUpdate({
+                    validation: {
+                      ...field.validation,
+                      scanSettings: {
+                        ...field.validation?.scanSettings,
+                        maxWidth: parseInt(e.target.value) || 1600
+                      }
+                    }
+                  })}
+                />
+                <Input
+                  label="Hauteur max (px)"
+                  type="number"
+                  min="400"
+                  max="4000"
+                  step="100"
+                  value={field.validation?.scanSettings?.maxHeight || 1200}
+                  onChange={(e) => onUpdate({
+                    validation: {
+                      ...field.validation,
+                      scanSettings: {
+                        ...field.validation?.scanSettings,
+                        maxHeight: parseInt(e.target.value) || 1200
+                      }
+                    }
+                  })}
+                />
+              </div>
+              
+              <Input
+                label="Qualité (0.1 - 1.0)"
+                type="number"
+                min="0.1"
+                max="1.0"
+                step="0.1"
+                value={field.validation?.scanSettings?.quality || 0.9}
+                onChange={(e) => onUpdate({
+                  validation: {
+                    ...field.validation,
+                    scanSettings: {
+                      ...field.validation?.scanSettings,
+                      quality: parseFloat(e.target.value) || 0.9
+                    }
+                  }
+                })}
+              />
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`showGuides_${field.id}`}
+                    checked={field.validation?.scanSettings?.showGuides !== false}
+                    onChange={(e) => onUpdate({
+                      validation: {
+                        ...field.validation,
+                        scanSettings: {
+                          ...field.validation?.scanSettings,
+                          showGuides: e.target.checked
+                        }
+                      }
+                    })}
+                    className="text-blue-600"
+                  />
+                  <label htmlFor={`showGuides_${field.id}`} className="text-sm text-gray-700 dark:text-gray-300">
+                    Afficher les guides de centrage
+                  </label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`autoCapture_${field.id}`}
+                    checked={field.validation?.scanSettings?.autoCapture || false}
+                    onChange={(e) => onUpdate({
+                      validation: {
+                        ...field.validation,
+                        scanSettings: {
+                          ...field.validation?.scanSettings,
+                          autoCapture: e.target.checked
+                        }
+                      }
+                    })}
+                    className="text-blue-600"
+                  />
+                  <label htmlFor={`autoCapture_${field.id}`} className="text-sm text-gray-700 dark:text-gray-300">
+                    Capture automatique (expérimental)
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Aperçu de la configuration */}
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800">
+            <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300 mb-2">
+              Configuration du scanner
+            </h4>
+            <div className="text-xs text-emerald-700 dark:text-emerald-400 space-y-1">
+              <div>📐 Résolution max: {field.validation?.scanSettings?.maxWidth || 1600}x{field.validation?.scanSettings?.maxHeight || 1200}px</div>
+              <div>🎚️ Qualité: {Math.round((field.validation?.scanSettings?.quality || 0.9) * 100)}%</div>
+              <div>📄 Format: {(field.validation?.scanSettings?.outputFormat || 'jpeg').toUpperCase()}</div>
+              <div>🎯 Guides: {field.validation?.scanSettings?.showGuides !== false ? 'Activés' : 'Désactivés'}</div>
+            </div>
+          </div>
+        </div>
+      )}
   );
 };

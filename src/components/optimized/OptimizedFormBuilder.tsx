@@ -254,6 +254,7 @@ function getDefaultLabel(type: FormField['type']): string {
     file: 'Fichier',
     textarea: 'Zone de texte',
     signature: 'Signature',
+    scan: 'Scanner de document',
   };
   
   return labels[type];

@@ -175,6 +175,19 @@ export const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
             </div>
           </div>
         );
+      case 'scan':
+        return (
+          <div className="w-full">
+            <div className="w-full h-32 border-2 border-dashed border-emerald-300 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-600">
+              <div className="text-center">
+                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-white text-sm">📷</span>
+                </div>
+                <span className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">Scanner de document</span>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return null;
     }

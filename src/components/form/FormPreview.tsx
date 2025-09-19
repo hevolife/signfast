@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { SignatureCanvas } from './SignatureCanvas';
 import { MaskedInput } from './MaskedInput';
+import { DocumentScanner } from './DocumentScanner';
 
 interface FormPreviewProps {
   fields: FormField[];
@@ -268,6 +269,24 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
                 onSignatureChange={(signature) => handleInputChange(field.id, signature)}
                 value={formData[field.id]}
                 required={field.required}
+              />
+            </div>
+          </div>
+        );
+      
+      case 'scan':
+        return (
+          <div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <DocumentScanner
+                onImageCapture={(imageData) => handleInputChange(field.id, imageData)}
+                value={formData[field.id]}
+                required={field.required}
+                scanSettings={field.validation?.scanSettings}
               />
             </div>
           </div>
