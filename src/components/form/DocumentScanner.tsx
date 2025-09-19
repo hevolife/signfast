@@ -1,20 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
-import { Card, CardContent } from '../ui/Card';
 import { 
   Camera, 
   RotateCcw, 
   Check, 
   X, 
   Crop,
-  ZoomIn,
-  ZoomOut,
-  Move,
-  Square,
-  Download,
   RefreshCw,
-  Maximize,
-  Minimize
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -57,7 +50,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const settings = {
     outputFormat: 'jpeg',
@@ -81,7 +73,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     try {
       setCameraError(null);
       
-      // Vérifier si la caméra est disponible
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Caméra non disponible sur cet appareil');
       }
@@ -101,19 +92,13 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        
-        // Attendre que les métadonnées soient chargées
         videoRef.current.onloadedmetadata = () => {
-          console.log('📷 Métadonnées vidéo chargées:', {
-            videoWidth: videoRef.current?.videoWidth,
-            videoHeight: videoRef.current?.videoHeight
-          });
+          console.log('📷 Métadonnées vidéo chargées');
           videoRef.current?.play();
         };
       }
       
       setIsScanning(true);
-      setIsFullscreen(true);
       toast.success('Caméra activée - Mode plein écran');
     } catch (error: any) {
       console.error('Erreur accès caméra:', error);
@@ -135,7 +120,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       setStream(null);
     }
     setIsScanning(false);
-    setIsFullscreen(false);
     setCameraError(null);
   };
 
@@ -156,25 +140,14 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     
     if (!ctx) return;
 
-    // Définir les dimensions du canvas selon la vidéo
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    console.log('📷 Capture photo:', {
-      videoWidth: video.videoWidth,
-      videoHeight: video.videoHeight,
-      canvasWidth: canvas.width,
-      canvasHeight: canvas.height
-    });
-
-    // Dessiner l'image de la vidéo
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convertir en data URL
     const imageData = canvas.toDataURL(`image/${settings.outputFormat}`, settings.quality);
     setCapturedImage(imageData);
     
-    // Initialiser la zone de recadrage (80% de l'image centrée)
     const margin = 0.1;
     setCropArea({
       x: canvas.width * margin,
@@ -184,7 +157,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     });
     
     setIsCropping(true);
-    setIsFullscreen(false);
     stopCamera();
     toast.success('Photo capturée ! Ajustez le recadrage si nécessaire.');
   };
@@ -202,7 +174,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     setIsDragging(true);
     setDragStart({ x, y });
     
-    // Vérifier si on clique dans la zone de recadrage pour la déplacer
     if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
         y >= cropArea.y && y <= cropArea.y + cropArea.height) {
       setDragStart({ 
@@ -210,7 +181,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         y: y - cropArea.y 
       });
     } else {
-      // Nouveau recadrage
       setCropArea({ x, y, width: 0, height: 0 });
     }
   };
@@ -225,7 +195,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
     
-    // Si on déplace la zone existante
     if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
         y >= cropArea.y && y <= cropArea.y + cropArea.height) {
       setCropArea(prev => ({
@@ -234,7 +203,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         y: Math.max(0, Math.min(canvasRef.current!.height - prev.height, y - dragStart.y))
       }));
     } else {
-      // Redimensionner la zone
       setCropArea(prev => ({
         x: Math.min(dragStart.x, x),
         y: Math.min(dragStart.y, y),
@@ -255,21 +223,17 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     const ctx = cropCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Créer une image temporaire pour le recadrage
     const img = new Image();
     img.onload = () => {
-      // Définir les dimensions du canvas de recadrage
       cropCanvas.width = cropArea.width;
       cropCanvas.height = cropArea.height;
 
-      // Dessiner la partie recadrée
       ctx.drawImage(
         img,
         cropArea.x, cropArea.y, cropArea.width, cropArea.height,
         0, 0, cropArea.width, cropArea.height
       );
 
-      // Redimensionner si nécessaire
       const finalCanvas = document.createElement('canvas');
       const finalCtx = finalCanvas.getContext('2d')!;
       
@@ -283,11 +247,9 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       finalCanvas.width = finalWidth;
       finalCanvas.height = finalHeight;
       
-      // Configuration pour qualité maximale
       finalCtx.imageSmoothingEnabled = true;
       finalCtx.imageSmoothingQuality = 'high';
       
-      // Fond blanc pour JPEG
       if (settings.outputFormat === 'jpeg') {
         finalCtx.fillStyle = '#FFFFFF';
         finalCtx.fillRect(0, 0, finalWidth, finalHeight);
@@ -350,15 +312,12 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
     return (
       <div className="absolute inset-0 pointer-events-none">
-        {/* Grille de guidage */}
         <svg className="w-full h-full">
-          {/* Lignes de tiers */}
           <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="rgba(255,255,255,0.5)" strokeWidth="1" strokeDasharray="5,5" />
           <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="rgba(255,255,255,0.5)" strokeWidth="1" strokeDasharray="5,5" />
           <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="rgba(255,255,255,0.5)" strokeWidth="1" strokeDasharray="5,5" />
           <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="rgba(255,255,255,0.5)" strokeWidth="1" strokeDasharray="5,5" />
           
-          {/* Cadre central pour document */}
           <rect 
             x="10%" 
             y="15%" 
@@ -371,7 +330,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             rx="8"
           />
           
-          {/* Coins de guidage */}
           <g stroke="rgba(0,255,0,1)" strokeWidth="4" fill="none">
             <path d="M 12% 17% L 15% 17% L 15% 20%" />
             <path d="M 88% 17% L 85% 17% L 85% 20%" />
@@ -380,7 +338,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
           </g>
         </svg>
         
-        {/* Instructions flottantes */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium">
           📄 Centrez votre document dans le cadre vert
         </div>
@@ -402,10 +359,8 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
     return (
       <div className="absolute inset-0">
-        {/* Overlay sombre */}
         <div className="absolute inset-0 bg-black/50"></div>
         
-        {/* Zone de recadrage */}
         <div
           className="absolute border-2 border-blue-500 bg-transparent cursor-move"
           style={{
@@ -415,13 +370,11 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             height: `${cropArea.height * scaleY}px`,
           }}
         >
-          {/* Poignées de redimensionnement */}
           <div className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize"></div>
           <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize"></div>
           <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize"></div>
           <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-se-resize"></div>
           
-          {/* Grille de recadrage */}
           <svg className="w-full h-full pointer-events-none">
             <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="rgba(59,130,246,0.8)" strokeWidth="1" />
             <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="rgba(59,130,246,0.8)" strokeWidth="1" />
@@ -430,7 +383,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
           </svg>
         </div>
         
-        {/* Instructions de recadrage */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg">
           ✂️ Ajustez la zone de recadrage • Cliquez et glissez
         </div>
@@ -439,7 +391,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   };
 
   // Mode plein écran pour la caméra
-  if (isFullscreen && isScanning) {
+  if (isScanning) {
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col">
         {/* Header plein écran */}
@@ -508,14 +460,12 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             </Button>
           </div>
           
-          {/* Informations techniques */}
           <div className="text-center mt-4 text-white/70 text-xs space-y-1">
             <div>📷 Caméra: {facingMode === 'user' ? 'Avant' : 'Arrière'}</div>
             <div>📐 Format: {settings.outputFormat.toUpperCase()} • Qualité: {Math.round(settings.quality * 100)}%</div>
           </div>
         </div>
 
-        {/* Canvas caché pour la capture */}
         <canvas ref={canvasRef} className="hidden" />
       </div>
     );
@@ -523,72 +473,69 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
   if (capturedImage && !isCropping) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-4">
-          <div className="text-center">
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 mb-4">
-              <div className="flex items-center justify-center space-x-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
-                  <Check className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-sm font-bold text-green-900 dark:text-green-300">
-                  Document scanné avec succès
-                </span>
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-center space-x-2 mb-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                <Check className="h-4 w-4 text-white" />
               </div>
-              <img
-                src={capturedImage}
-                alt="Document scanné"
-                className="max-w-full max-h-64 object-contain mx-auto border border-green-200 dark:border-green-700 rounded-lg shadow-lg"
-              />
-              <div className="flex items-center justify-center mt-3 text-xs text-green-700 dark:text-green-400">
-                <span>📄 Taille: {Math.round(capturedImage.length / 1024)} KB</span>
-                <span className="mx-2">•</span>
-                <span>✅ Optimisé pour PDF</span>
-              </div>
+              <span className="text-sm font-bold text-green-900 dark:text-green-300">
+                Document scanné avec succès
+              </span>
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={retakePhoto}
-                className="flex items-center justify-center space-x-2 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
-              >
-                <Camera className="h-4 w-4" />
-                <span>Reprendre</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setIsCropping(true);
-                  // Réinitialiser la zone de recadrage
-                  const canvas = canvasRef.current;
-                  if (canvas) {
-                    const margin = 0.1;
-                    setCropArea({
-                      x: canvas.width * margin,
-                      y: canvas.height * margin,
-                      width: canvas.width * (1 - 2 * margin),
-                      height: canvas.height * (1 - 2 * margin)
-                    });
-                  }
-                }}
-                className="flex items-center justify-center space-x-2 bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300"
-              >
-                <Crop className="h-4 w-4" />
-                <span>Recadrer</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={resetScan}
-                className="flex items-center justify-center space-x-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span>Recommencer</span>
-              </Button>
+            <img
+              src={capturedImage}
+              alt="Document scanné"
+              className="max-w-full max-h-64 object-contain mx-auto border border-green-200 dark:border-green-700 rounded-lg shadow-lg"
+            />
+            <div className="flex items-center justify-center mt-3 text-xs text-green-700 dark:text-green-400">
+              <span>📄 Taille: {Math.round(capturedImage.length / 1024)} KB</span>
+              <span className="mx-2">•</span>
+              <span>✅ Optimisé pour PDF</span>
             </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={retakePhoto}
+              className="flex items-center justify-center space-x-2 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Reprendre</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setIsCropping(true);
+                const canvas = canvasRef.current;
+                if (canvas) {
+                  const margin = 0.1;
+                  setCropArea({
+                    x: canvas.width * margin,
+                    y: canvas.height * margin,
+                    width: canvas.width * (1 - 2 * margin),
+                    height: canvas.height * (1 - 2 * margin)
+                  });
+                }
+              }}
+              className="flex items-center justify-center space-x-2 bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300"
+            >
+              <Crop className="h-4 w-4" />
+              <span>Recadrer</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={resetScan}
+              className="flex items-center justify-center space-x-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>Recommencer</span>
+            </Button>
           </div>
         </div>
         
@@ -663,7 +610,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-4">
         {!isScanning ? (
           <div className="text-center">
@@ -698,7 +645,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
                 Activer la caméra (Plein écran)
               </Button>
               
-              {/* Conseils d'utilisation */}
               <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 text-left">
                 <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300 mb-2">
                   💡 Conseils pour un scan parfait
