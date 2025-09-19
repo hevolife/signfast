@@ -131,6 +131,7 @@ export class PDFGenerator {
       let signatureValue = data[variableName];
       
       if (signatureValue && typeof signatureValue === 'string' && signatureValue.startsWith('data:image')) {
+        console.log('✅ Signature trouvée par variable exacte:', variableName, '→', signatureValue.substring(0, 50) + '...');
         return signatureValue;
       }
       
@@ -143,6 +144,7 @@ export class PDFGenerator {
         
         if (matchingKey && typeof data[matchingKey] === 'string' && data[matchingKey].startsWith('data:image')) {
           signatureValue = data[matchingKey];
+          console.log('✅ Signature trouvée par casse insensible:', matchingKey, '→', signatureValue.substring(0, 50) + '...');
           return signatureValue;
         }
       }
@@ -152,35 +154,25 @@ export class PDFGenerator {
         const partialMatchKey = Object.keys(data).find(key => {
           const keyLower = key.toLowerCase();
           const varLower = variableName.toLowerCase();
-          return (keyLower.includes(varLower) || varLower.includes(keyLower)) &&
+          // SEULEMENT si la variable ET la clé contiennent des mots-clés de signature
+          const isSignatureKey = keyLower.includes('signature') || keyLower.includes('sign');
+          const isSignatureVar = varLower.includes('signature') || varLower.includes('sign');
+          
+          return isSignatureKey && isSignatureVar && 
+                 (keyLower.includes(varLower) || varLower.includes(keyLower)) &&
                  typeof data[key] === 'string' && data[key].startsWith('data:image');
         });
         
         if (partialMatchKey) {
           signatureValue = data[partialMatchKey];
+          console.log('✅ Signature trouvée par correspondance partielle:', partialMatchKey, '→', signatureValue.substring(0, 50) + '...');
           return signatureValue;
         }
       }
       
-      // 4. Recherche générique pour les signatures si la variable contient "signature"
-      if (!signatureValue && variableName.toLowerCase().includes('signature')) {
-        const signatureKeys = Object.keys(data).filter(key => {
-          const keyLower = key.toLowerCase();
-          return (keyLower.includes('signature') || 
-                  keyLower.includes('sign') ||
-                  keyLower.includes('signer')) &&
-                 typeof data[key] === 'string' && 
-                 data[key].startsWith('data:image');
-        });
-        
-        if (signatureKeys.length > 0) {
-          signatureValue = data[signatureKeys[0]];
-          return signatureValue;
-        }
-      }
-      
-      // 3. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
+      // 4. ARRÊTER ICI - Pas de recherche générique pour éviter les doublons
       // Retourner vide si aucune signature correspondante trouvée
+      console.log('❌ Aucune signature trouvée pour variable:', variableName, 'dans les données:', Object.keys(data).filter(k => typeof data[k] === 'string' && data[k].startsWith('data:image')));
       return '';
     }
     
