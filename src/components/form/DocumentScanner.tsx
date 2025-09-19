@@ -12,7 +12,9 @@ import {
   Move,
   Square,
   Download,
-  RefreshCw
+  RefreshCw,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -55,6 +57,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const settings = {
     outputFormat: 'jpeg',
@@ -72,7 +75,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [stream]);
+  }, []);
 
   const startCamera = async () => {
     try {
@@ -91,16 +94,27 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         }
       };
 
+      console.log('📷 Demande d\'accès caméra avec contraintes:', constraints);
+
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
+        
+        // Attendre que les métadonnées soient chargées
+        videoRef.current.onloadedmetadata = () => {
+          console.log('📷 Métadonnées vidéo chargées:', {
+            videoWidth: videoRef.current?.videoWidth,
+            videoHeight: videoRef.current?.videoHeight
+          });
+          videoRef.current?.play();
+        };
       }
       
       setIsScanning(true);
-      toast.success('Caméra activée');
+      setIsFullscreen(true);
+      toast.success('Caméra activée - Mode plein écran');
     } catch (error: any) {
       console.error('Erreur accès caméra:', error);
       setCameraError(error.message);
@@ -121,6 +135,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       setStream(null);
     }
     setIsScanning(false);
+    setIsFullscreen(false);
     setCameraError(null);
   };
 
@@ -141,9 +156,16 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     
     if (!ctx) return;
 
-    // Définir les dimensions du canvas
+    // Définir les dimensions du canvas selon la vidéo
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
+    console.log('📷 Capture photo:', {
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height
+    });
 
     // Dessiner l'image de la vidéo
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -162,6 +184,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     });
     
     setIsCropping(true);
+    setIsFullscreen(false);
     stopCamera();
     toast.success('Photo capturée ! Ajustez le recadrage si nécessaire.');
   };
@@ -362,7 +385,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
           📄 Centrez votre document dans le cadre vert
         </div>
         
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium">
           💡 Assurez-vous que le document est bien éclairé et net
         </div>
       </div>
@@ -414,6 +437,89 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       </div>
     );
   };
+
+  // Mode plein écran pour la caméra
+  if (isFullscreen && isScanning) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        {/* Header plein écran */}
+        <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                <Camera className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold">Scanner de Document</h3>
+                <p className="text-sm text-white/80">Mode plein écran</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={stopCamera}
+              className="text-white hover:bg-white/20 rounded-full w-10 h-10 p-0"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Vidéo plein écran */}
+        <div className="flex-1 relative">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+          />
+          
+          {renderVideoGuides()}
+        </div>
+
+        {/* Contrôles en bas */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-6">
+          <div className="flex items-center justify-center space-x-6">
+            <Button
+              variant="ghost"
+              onClick={switchCamera}
+              className="text-white hover:bg-white/20 rounded-full w-12 h-12 p-0"
+              title={facingMode === 'user' ? 'Caméra arrière' : 'Caméra avant'}
+            >
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+            
+            <Button
+              onClick={capturePhoto}
+              className="bg-white text-black hover:bg-gray-100 rounded-full w-16 h-16 p-0 shadow-xl"
+              title="Capturer la photo"
+            >
+              <Camera className="h-6 w-6" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              onClick={stopCamera}
+              className="text-white hover:bg-white/20 rounded-full w-12 h-12 p-0"
+              title="Annuler"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {/* Informations techniques */}
+          <div className="text-center mt-4 text-white/70 text-xs space-y-1">
+            <div>📷 Caméra: {facingMode === 'user' ? 'Avant' : 'Arrière'}</div>
+            <div>📐 Format: {settings.outputFormat.toUpperCase()} • Qualité: {Math.round(settings.quality * 100)}%</div>
+          </div>
+        </div>
+
+        {/* Canvas caché pour la capture */}
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
+    );
+  }
 
   if (capturedImage && !isCropping) {
     return (
@@ -508,7 +614,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             </p>
           </div>
           
-          <div className="relative inline-block">
+          <div className="relative inline-block max-w-full">
             <canvas
               ref={canvasRef}
               className="max-w-full max-h-96 border border-gray-300 rounded cursor-crosshair"
@@ -561,20 +667,23 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-4">
         {!isScanning ? (
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Camera className="h-10 w-10 text-blue-600" />
+            <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <Camera className="h-10 w-10 text-emerald-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Scanner un document
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Utilisez votre caméra pour scanner et numériser un document
+              Utilisez votre caméra pour scanner et numériser un document en plein écran
             </p>
             
             {cameraError && (
               <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 mb-4">
                 <p className="text-sm text-red-800 dark:text-red-200">
                   ❌ {cameraError}
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-300 mt-2">
+                  Vérifiez que votre navigateur a accès à la caméra et réessayez
                 </p>
               </div>
             )}
@@ -583,82 +692,29 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
               <Button
                 type="button"
                 onClick={startCamera}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Camera className="h-5 w-5 mr-2" />
-                Activer la caméra
+                Activer la caméra (Plein écran)
               </Button>
               
               {/* Conseils d'utilisation */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 text-left">
-                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">
-                  💡 Conseils pour un bon scan
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 text-left">
+                <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300 mb-2">
+                  💡 Conseils pour un scan parfait
                 </h4>
-                <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                  <div>📱 Tenez votre appareil stable et droit</div>
-                  <div>💡 Assurez-vous d'avoir un bon éclairage</div>
-                  <div>📄 Placez le document sur une surface plane</div>
+                <div className="text-xs text-emerald-700 dark:text-emerald-400 space-y-1">
+                  <div>📱 Mode plein écran pour une meilleure précision</div>
+                  <div>💡 Éclairage uniforme et suffisant</div>
+                  <div>📄 Document posé à plat sur une surface</div>
                   <div>🎯 Utilisez les guides verts pour centrer</div>
-                  <div>✂️ Vous pourrez recadrer après la capture</div>
+                  <div>✂️ Recadrage automatique après capture</div>
+                  <div>🔄 Possibilité de changer de caméra</div>
                 </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="text-center">
-            <div className="relative inline-block mb-4">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="max-w-full max-h-96 border border-gray-300 rounded-lg shadow-lg"
-              />
-              
-              {renderVideoGuides()}
-            </div>
-            
-            <canvas ref={canvasRef} className="hidden" />
-            
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button
-                type="button"
-                onClick={capturePhoto}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Camera className="h-5 w-5" />
-                <span>Capturer</span>
-              </Button>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={switchCamera}
-                className="flex items-center justify-center space-x-2 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span>{facingMode === 'user' ? 'Caméra arrière' : 'Caméra avant'}</span>
-              </Button>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={stopCamera}
-                className="flex items-center justify-center space-x-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
-              >
-                <X className="h-4 w-4" />
-                <span>Annuler</span>
-              </Button>
-            </div>
-            
-            {/* Informations techniques */}
-            <div className="mt-4 text-xs text-gray-500 space-y-1">
-              <div>📷 Caméra: {facingMode === 'user' ? 'Avant' : 'Arrière'}</div>
-              <div>📐 Format de sortie: {settings.outputFormat.toUpperCase()}</div>
-              <div>🎚️ Qualité: {Math.round(settings.quality * 100)}%</div>
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
       
       {required && !capturedImage && (
