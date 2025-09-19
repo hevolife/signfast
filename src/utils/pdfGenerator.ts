@@ -403,36 +403,6 @@ export class PDFGenerator {
     
     return null;
   }
-        const fieldVariableName = f.label
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '');
-        return fieldVariableName === variableName;
-      });
-      
-      if (field && field.validation && field.validation.mask) {
-        return field.validation.mask;
-      }
-    }
-    
-    // Chercher aussi par correspondance partielle du nom de champ
-    if (data._form_metadata && data._form_metadata.fields) {
-      const field = data._form_metadata.fields.find((f: any) => {
-        const fieldLabel = f.label.toLowerCase();
-        const varName = variableName.toLowerCase();
-        return fieldLabel.includes(varName) || varName.includes(fieldLabel);
-      });
-      
-      if (field && field.validation && field.validation.mask) {
-        return field.validation.mask;
-      }
-    }
-    
-    return null;
-  }
 
   /**
    * Applique un masque de saisie à une valeur texte
@@ -524,6 +494,7 @@ export class PDFGenerator {
     
     return true;
   }
+  
   private static async drawText(
     page: any,
     text: string,
