@@ -9,9 +9,15 @@ export const Support: React.FC = () => {
   const { user } = useAuth();
   const { markSupportAsRead } = useNotifications();
 
-  // Marquer les messages comme lus quand on arrive sur la page
+  // Marquer les messages comme lus quand on arrive sur la page avec un délai
   React.useEffect(() => {
-    markSupportAsRead();
+    // Délai pour s'assurer que les données sont chargées
+    const timer = setTimeout(() => {
+      markSupportAsRead();
+      console.log('📖 Support marqué comme lu depuis la page Support');
+    }, 1000);
+    
+    return () => clearTimeout(timer);
   }, [markSupportAsRead]);
 
   if (!user) {

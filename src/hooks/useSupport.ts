@@ -190,22 +190,27 @@ export const useSupport = () => {
         return;
       }
 
-      // Marquer le ticket comme lu en mettant à jour updated_at avec un timestamp futur
+      // Sauvegarder localement que ce ticket a été lu avec un timestamp futur
       // pour s'assurer que tous les messages admin existants sont considérés comme lus
-      const { error } = await supabase
-        .from('support_tickets')
-        .update({ updated_at: new Date(Date.now() + 1000).toISOString() }) // +1 seconde dans le futur
-        .eq('id', ticketId)
-        .eq('user_id', user?.id);
+      const readTickets = JSON.parse(localStorage.getItem('read_support_tickets') || '{}');
+      readTickets[ticketId] = new Date(Date.now() + 2000).toISOString(); // +2 secondes dans le futur
+      localStorage.setItem('read_support_tickets', JSON.stringify(readTickets));
       
-      if (error) {
-      } else {
-        // Sauvegarder localement que ce ticket a été lu
-        const readTickets = JSON.parse(localStorage.getItem('read_support_tickets') || '{}');
-        readTickets[ticketId] = new Date().toISOString();
-        localStorage.setItem('read_support_tickets', JSON.stringify(readTickets));
+      console.log('📖 Ticket marqué comme lu localement:', ticketId, readTickets[ticketId]);
+      
+      // Optionnel: Mettre à jour en base de données aussi
+      try {
+        await supabase
+          .from('support_tickets')
+          .update({ updated_at: new Date(Date.now() + 1000).toISOString() })
+          .eq('id', ticketId)
+          .eq('user_id', user?.id);
+      } catch (dbError) {
+        // Ignorer les erreurs DB, le localStorage suffit
+        console.log('⚠️ Erreur mise à jour DB (ignorée):', dbError);
       }
     } catch (error) {
+      console.error('❌ Erreur markTicketAsRead:', error);
     }
   };
 

@@ -74,20 +74,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       (tickets || []).forEach(ticket => {
         console.log('🔔 Analyse ticket:', ticket.id, 'updated_at:', ticket.updated_at);
         
-        // Vérifier si le ticket a été lu localement
+        // Récupérer le temps de lecture local avec une marge de sécurité
         const localReadTime = readTickets[ticket.id];
-        const effectiveReadTime = localReadTime && new Date(localReadTime) > new Date(ticket.updated_at) 
-          ? localReadTime 
-          : ticket.updated_at;
+        
+        // Si on a un temps de lecture local, l'utiliser en priorité
+        // Sinon, utiliser le updated_at du ticket
+        const effectiveReadTime = localReadTime || ticket.updated_at;
         
         console.log('🔔 Temps de lecture effectif:', effectiveReadTime, '(local:', localReadTime, ', DB:', ticket.updated_at, ')');
         
+        // Compter les messages admin postérieurs au temps de lecture effectif
         const adminMessages = ticket.support_messages?.filter(msg => 
           msg.is_admin_reply && 
           new Date(msg.created_at) > new Date(effectiveReadTime)
         ) || [];
         
         console.log('🔔 Messages admin non lus pour ce ticket:', adminMessages.length);
+        
+        // Debug: afficher les messages pour comprendre
+        if (adminMessages.length > 0) {
+          console.log('🔔 Messages non lus détails:', adminMessages.map(m => ({
+            created_at: m.created_at,
+            vs_effective_time: effectiveReadTime,
+            is_newer: new Date(m.created_at) > new Date(effectiveReadTime)
+          })));
+        }
+        
         totalUnread += adminMessages.length;
       });
 
