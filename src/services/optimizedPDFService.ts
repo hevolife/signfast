@@ -70,7 +70,33 @@ export class OptimizedPDFService {
             .single();
           
           if (!formError && linkedForm) {
-            formMetadata = { fields: linkedForm.fields };
+            // Extraire tous les champs (principaux + conditionnels) pour les métadonnées
+            const allFields: any[] = [];
+            
+            const extractAllFields = (fields: any[]) => {
+              fields.forEach((field: any) => {
+                // Ajouter le champ principal
+                allFields.push(field);
+                
+                // Ajouter les champs conditionnels
+                if (field.conditionalFields) {
+                  Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+                    if (Array.isArray(conditionalFieldsArray)) {
+                      extractAllFields(conditionalFieldsArray);
+                    }
+                  });
+                }
+              });
+            };
+            
+            extractAllFields(linkedForm.fields || []);
+            formMetadata = { fields: allFields };
+            
+            console.log('📋 Métadonnées formulaire enrichies:', {
+              totalFields: allFields.length,
+              principalFields: linkedForm.fields?.length || 0,
+              conditionalFields: allFields.length - (linkedForm.fields?.length || 0)
+            });
           }
         } catch (formError) {
           console.warn('Impossible de récupérer les métadonnées du formulaire:', formError);

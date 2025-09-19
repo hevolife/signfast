@@ -335,7 +335,74 @@ export class PDFGenerator {
   private static findFieldMask(variableName: string, data: Record<string, any>): string | null {
     // Chercher dans les métadonnées du formulaire si elles existent
     if (data._form_metadata && data._form_metadata.fields) {
-      const field = data._form_metadata.fields.find((f: any) => {
+      // Fonction récursive pour chercher dans tous les champs (principaux + conditionnels)
+      const findFieldInFields = (fields: any[]): any => {
+        for (const f of fields) {
+          // Vérifier le champ principal
+          const fieldVariableName = f.label
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          
+          if (fieldVariableName === variableName) {
+            return f;
+          }
+          
+          // Chercher dans les champs conditionnels
+          if (f.conditionalFields) {
+            for (const conditionalFieldsArray of Object.values(f.conditionalFields)) {
+              if (Array.isArray(conditionalFieldsArray)) {
+                const found = findFieldInFields(conditionalFieldsArray);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
+      
+      const field = findFieldInFields(data._form_metadata.fields);
+      
+      if (field && field.validation && field.validation.mask) {
+        return field.validation.mask;
+      }
+    }
+    
+    // Chercher aussi par correspondance partielle du nom de champ
+    if (data._form_metadata && data._form_metadata.fields) {
+      const findFieldByPartialMatch = (fields: any[]): any => {
+        for (const f of fields) {
+          const fieldLabel = f.label.toLowerCase();
+          const varName = variableName.toLowerCase();
+          if (fieldLabel.includes(varName) || varName.includes(fieldLabel)) {
+            return f;
+          }
+          
+          // Chercher dans les champs conditionnels
+          if (f.conditionalFields) {
+            for (const conditionalFieldsArray of Object.values(f.conditionalFields)) {
+              if (Array.isArray(conditionalFieldsArray)) {
+                const found = findFieldByPartialMatch(conditionalFieldsArray);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
+      
+      const field = findFieldByPartialMatch(data._form_metadata.fields);
+      
+      if (field && field.validation && field.validation.mask) {
+        return field.validation.mask;
+      }
+    }
+    
+    return null;
+  }
         const fieldVariableName = f.label
           .toLowerCase()
           .normalize('NFD')
