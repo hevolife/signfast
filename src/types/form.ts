@@ -13,6 +13,8 @@ export interface FormField {
     max?: number;
     pattern?: string;
     mask?: string;
+    acceptedFileTypes?: string[];
+    maxFileSize?: number; // en MB
   };
 }
 
