@@ -229,15 +229,8 @@ export const PublicForm: React.FC = () => {
     });
 
     return fieldsToShow.map(field => (
-      <div key={field.id} className="ml-8 border-l-4 border-gradient-to-b from-blue-400 to-indigo-500 pl-6 mt-6 animate-in slide-in-from-left duration-500 relative">
-        {/* Indicateur de champ conditionnel */}
-        <div className="absolute -left-2 top-4 w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg animate-pulse"></div>
-        <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 rounded-xl border border-blue-200/50 dark:border-blue-700/50 shadow-lg backdrop-blur-sm">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full font-bold shadow-sm">
-              Champ conditionnel
-            </span>
-          </div>
+      <div key={field.id} className="ml-6 border-l-2 border-blue-300 dark:border-blue-600 pl-4 mt-4">
+        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
         {renderField(field)}
         </div>
       </div>
@@ -255,30 +248,29 @@ export const PublicForm: React.FC = () => {
     switch (field.type) {
       case 'text':
         return field.validation?.mask ? (
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <MaskedInput
               mask={field.validation.mask}
               value={formData[field.label] || ''}
               onChange={(value) => handleInputChange(field.id, value, field)}
               placeholder={field.placeholder}
-              className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
             />
             {field.validation.mask && (
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center space-x-1">
-                <span>📝</span>
+              <p className="text-xs text-blue-600 dark:text-blue-400">
                 <span>Format: {field.validation.mask}</span>
               </p>
             )}
           </div>
         ) : (
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <input
               type="text"
@@ -286,7 +278,7 @@ export const PublicForm: React.FC = () => {
               onChange={(e) => handleInputChange(field.id, e.target.value, field)}
               placeholder={field.placeholder}
               required={field.required}
-              className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
             />
           </div>
         );
@@ -295,43 +287,35 @@ export const PublicForm: React.FC = () => {
       case 'phone':
       case 'number':
         return (
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div className="relative">
-              <input
-                type={field.type === 'phone' ? 'tel' : field.type}
-                value={formData[field.label] || ''}
-                onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-                placeholder={field.placeholder}
-                required={field.required}
-                className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm"
-              />
-              {/* Icône de type de champ */}
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                {field.type === 'email' && <span className="text-lg">📧</span>}
-                {field.type === 'phone' && <span className="text-lg">📞</span>}
-                {field.type === 'number' && <span className="text-lg">🔢</span>}
-              </div>
-            </div>
+            <input
+              type={field.type === 'phone' ? 'tel' : field.type}
+              value={formData[field.label] || ''}
+              onChange={(e) => handleInputChange(field.id, e.target.value, field)}
+              placeholder={field.placeholder}
+              required={field.required}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
+            />
           </div>
         );
 
       case 'textarea':
         return (
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <textarea
               value={formData[field.label] || ''}
               onChange={(e) => handleInputChange(field.id, e.target.value, field)}
               placeholder={field.placeholder}
               required={field.required}
-              className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200 resize-none"
               rows={4}
             />
           </div>
@@ -339,23 +323,23 @@ export const PublicForm: React.FC = () => {
 
       case 'radio':
         return (
-          <div className="space-y-4">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <div className="space-y-3">
               {field.options?.map((option, idx) => (
-                <label key={idx} className="flex items-center space-x-4 p-4 bg-white/60 dark:bg-gray-800/60 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 cursor-pointer transition-all duration-300 hover:shadow-lg backdrop-blur-sm group">
+                <label key={idx} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer transition-all duration-200 hover:shadow-md">
                   <input
                     type="radio"
                     name={field.id}
                     value={option}
                     checked={formData[field.label] === option}
                     onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-                    className="text-blue-600 w-5 h-5 focus:ring-4 focus:ring-blue-500/20"
+                    className="text-blue-600 w-4 h-4 focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-gray-800 dark:text-gray-200 font-medium text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{option}</span>
+                  <span className="text-gray-800 dark:text-gray-200 font-medium">{option}</span>
                 </label>
               ))}
             </div>
@@ -365,14 +349,14 @@ export const PublicForm: React.FC = () => {
 
       case 'checkbox':
         return (
-          <div className="space-y-4">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <div className="space-y-3">
               {field.options?.map((option, idx) => (
-                <label key={idx} className="flex items-center space-x-4 p-4 bg-white/60 dark:bg-gray-800/60 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 cursor-pointer transition-all duration-300 hover:shadow-lg backdrop-blur-sm group">
+                <label key={idx} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500 cursor-pointer transition-all duration-200 hover:shadow-md">
                   <input
                     type="checkbox"
                     value={option}
@@ -384,9 +368,9 @@ export const PublicForm: React.FC = () => {
                         : currentValues.filter((v: string) => v !== option);
                       handleInputChange(field.id, newValues, field);
                     }}
-                    className="text-green-600 w-5 h-5 focus:ring-4 focus:ring-green-500/20 rounded"
+                    className="text-green-600 w-4 h-4 focus:ring-2 focus:ring-green-500 rounded"
                   />
-                  <span className="text-gray-800 dark:text-gray-200 font-medium text-lg group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">{option}</span>
+                  <span className="text-gray-800 dark:text-gray-200 font-medium">{option}</span>
                 </label>
               ))}
             </div>
@@ -397,67 +381,52 @@ export const PublicForm: React.FC = () => {
       case 'date':
       case 'birthdate':
         return (
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={formData[field.label] || ''}
-                onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-                required={field.required}
-                className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm"
-              />
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <span className="text-lg">📅</span>
-              </div>
-            </div>
+            <input
+              type="date"
+              value={formData[field.label] || ''}
+              onChange={(e) => handleInputChange(field.id, e.target.value, field)}
+              required={field.required}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
+            />
           </div>
         );
 
       case 'file':
         return (
-          <div className="space-y-4">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*,.pdf,.doc,.docx"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleInputChange(field.id, file, field);
-                  }
-                }}
-                required={field.required}
-                className="w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-gray-800 dark:text-white font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm cursor-pointer hover:border-blue-400"
-              />
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <span className="text-lg">📎</span>
-              </div>
-            </div>
+            <input
+              type="file"
+              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleInputChange(field.id, file, field);
+                }
+              }}
+              required={field.required}
+              className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-400"
+            />
             {formData[field.label] && typeof formData[field.label] === 'string' && formData[field.label].startsWith('data:image') && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800 shadow-lg">
-                <div className="flex items-center space-x-2 mb-3">
-                  <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
-                    <span className="text-white text-xs">✅</span>
-                  </div>
-                  <span className="text-sm font-bold text-green-900 dark:text-green-300">
-                    Image uploadée avec succès
-                  </span>
-                </div>
+              <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
+                  ✅ Image uploadée avec succès
+                </p>
                 <img
                   src={formData[field.label]}
                   alt="Aperçu"
-                  className="max-w-full max-h-48 object-contain mx-auto border border-green-200 dark:border-green-700 rounded-lg shadow-lg"
+                  className="max-w-full max-h-32 object-contain mx-auto border border-green-200 dark:border-green-700 rounded shadow-md"
                 />
-                <p className="text-xs text-green-700 dark:text-green-400 mt-3 text-center font-medium">
-                  📁 Fichier optimisé • {Math.round(formData[field.label].length / 1024)} KB
+                <p className="text-xs text-green-700 dark:text-green-400 mt-2 text-center">
+                  {Math.round(formData[field.label].length / 1024)} KB
                 </p>
               </div>
             )}
@@ -466,26 +435,21 @@ export const PublicForm: React.FC = () => {
 
       case 'signature':
         return (
-          <div className="space-y-4">
-            <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               {field.label}
-              {field.required && <span className="text-red-500 ml-2 text-lg">*</span>}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 shadow-lg">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
-                  <span className="text-white text-xs">✍️</span>
-                </div>
-                <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
-                  Signature électronique légale
-                </span>
-              </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-3">
+                ✍️ Signature électronique
+              </p>
               <SignatureCanvas
                 onSignatureChange={(signature) => handleInputChange(field.id, signature, field)}
                 value={formData[field.label]}
                 required={field.required}
               />
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-3 font-medium">
+              <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
                 🔒 Votre signature a une valeur légale équivalente à une signature manuscrite
               </p>
             </div>
@@ -760,167 +724,92 @@ export const PublicForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 py-12 px-4 relative overflow-hidden">
-      {/* Background décoratif animé */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-gradient-to-br from-green-200/20 to-emerald-200/20 rounded-full blur-2xl animate-bounce delay-500"></div>
-        <div className="absolute bottom-1/3 right-1/3 w-24 h-24 bg-gradient-to-br from-yellow-200/20 to-orange-200/20 rounded-full blur-xl animate-pulse delay-1500"></div>
-      </div>
-      
-      {/* Particules flottantes */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-10 w-2 h-2 bg-blue-400 rounded-full animate-ping"></div>
-        <div className="absolute top-32 right-16 w-3 h-3 bg-purple-400 rounded-full animate-ping delay-1000"></div>
-        <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-green-400 rounded-full animate-ping delay-500"></div>
-        <div className="absolute bottom-16 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-ping delay-1500"></div>
-        <div className="absolute top-1/3 right-12 w-2 h-2 bg-yellow-400 rounded-full animate-ping delay-2000"></div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20 py-8 px-4">
       
       <div className="max-w-2xl mx-auto">
-        {/* Header du formulaire avec animations */}
-        <div className="text-center mb-8 relative animate-in slide-in-from-top duration-1000">
+        {/* Header du formulaire simplifié */}
+        <div className="text-center mb-8">
           {/* Logo de l'entreprise si disponible */}
           {userProfile?.logo_url ? (
-            <div className="mb-6 animate-in zoom-in duration-700 delay-300">
+            <div className="mb-6">
               <img
                 src={userProfile.logo_url}
                 alt={userProfile.company_name || 'Logo entreprise'}
-                className="max-w-32 max-h-32 object-contain mx-auto mb-4 shadow-2xl rounded-2xl hover:scale-105 transition-transform duration-300"
+                className="max-w-24 max-h-24 object-contain mx-auto mb-4 rounded-xl shadow-lg"
               />
               {userProfile.company_name && (
-                <p className="text-lg font-bold text-gray-800 dark:text-gray-200 animate-in slide-in-from-bottom duration-700 delay-500">
+                <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                   {userProfile.company_name}
                 </p>
               )}
             </div>
           ) : (
-            <div className="inline-flex items-center space-x-3 mb-6 animate-in zoom-in duration-700 delay-300">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300">
-                <FormInput className="h-6 w-6 text-white" />
+            <div className="inline-flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <FormInput className="h-5 w-5 text-white" />
               </div>
-              <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 SignFast
               </span>
             </div>
           )}
           
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 animate-in slide-in-from-bottom duration-1000 delay-500">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             {form.title}
           </h1>
           {form.description && (
-            <p className="text-gray-600 dark:text-gray-400 text-xl leading-relaxed animate-in fade-in duration-1000 delay-700">
+            <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed mb-6">
               {form.description}
             </p>
           )}
           
-          {/* Badge de sécurité */}
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 px-4 py-2 rounded-full text-green-800 dark:text-green-300 text-sm font-medium mt-6 shadow-lg animate-in zoom-in duration-700 delay-1000">
+          {/* Badge de sécurité simplifié */}
+          <div className="inline-flex items-center space-x-2 bg-green-100 dark:bg-green-900/30 px-3 py-2 rounded-full text-green-800 dark:text-green-300 text-sm font-medium shadow-sm">
             <span className="text-lg">🔒</span>
-            <span>Formulaire sécurisé • Conforme RGPD</span>
+            <span>Sécurisé et conforme</span>
           </div>
         </div>
 
-        {/* Formulaire avec design moderne */}
-        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 animate-in slide-in-from-bottom duration-1000 delay-300 relative overflow-hidden">
-          {/* Background gradient subtil */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-900/10 dark:to-indigo-900/10"></div>
+        {/* Formulaire simplifié */}
+        <Card className="bg-white dark:bg-gray-800 shadow-xl border-0">
           
-          <CardContent className="p-8 sm:p-12 relative">
-            {/* Indicateur de progression */}
-            <div className="mb-8 animate-in slide-in-from-top duration-700 delay-500">
-              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <span className="font-medium">Progression du formulaire</span>
-                <span className="font-bold">0/{form.fields?.length || 0} champs</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 shadow-inner">
-                <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 shadow-lg" style={{ width: '0%' }}></div>
-              </div>
-            </div>
+          <CardContent className="p-6 sm:p-8">
             
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {form.fields?.map((field) => (
-                <div key={field.id} className="animate-in slide-in-from-left duration-700" style={{ animationDelay: `${form.fields?.indexOf(field) * 100}ms` }}>
-                  <div className="group p-6 bg-gradient-to-r from-white/70 to-blue-50/70 dark:from-gray-800/70 dark:to-blue-900/30 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm">
+                <div key={field.id}>
                   {renderField(field)}
-                  </div>
                 </div>
               ))}
               
-              {/* Section de soumission avec design premium */}
-              <div className="pt-8 border-t border-gray-200/50 animate-in slide-in-from-bottom duration-1000 delay-1000">
-                {/* Informations de sécurité */}
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800 mb-6 shadow-lg">
-                  <div className="flex items-center justify-center space-x-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                      <CheckCircle className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="text-lg font-bold text-green-900 dark:text-green-300">
-                      Vos données sont protégées
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">🔒</span>
-                      <span className="text-green-800 dark:text-green-200 font-medium">SSL/TLS</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">🇫🇷</span>
-                      <span className="text-green-800 dark:text-green-200 font-medium">RGPD</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">⚡</span>
-                      <span className="text-green-800 dark:text-green-200 font-medium">Instantané</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">📄</span>
-                      <span className="text-green-800 dark:text-green-200 font-medium">PDF Auto</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Section de soumission simplifiée */}
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                 
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="group w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold py-4 sm:py-5 text-lg shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 rounded-2xl relative overflow-hidden"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 rounded-xl"
                 >
-                  {/* Background animé du bouton */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  
                   {submitting ? (
-                    <div className="flex items-center justify-center space-x-3 relative">
+                    <div className="flex items-center justify-center space-x-3">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      <span className="text-lg">Envoi en cours...</span>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce delay-200"></div>
-                      </div>
+                      <span>Envoi en cours...</span>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center space-x-3 relative">
-                      <Send className="h-6 w-6 group-hover:animate-pulse" />
-                      <span className="text-lg">Envoyer le formulaire</span>
-                      <div className="ml-3 opacity-75 group-hover:opacity-100 transition-opacity text-xl">✨</div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <Send className="h-5 w-5" />
+                      <span>Envoyer le formulaire</span>
                     </div>
                   )}
                 </Button>
                 
-                {/* Message de confiance */}
-                <div className="text-center mt-6 animate-in fade-in duration-1000 delay-1200">
+                {/* Message de confiance simplifié */}
+                <div className="text-center mt-4">
                   <div className="flex items-center justify-center space-x-3 text-gray-500 dark:text-gray-400">
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                      <FormInput className="h-3 w-3 text-white" />
-                    </div>
                     <span className="text-sm font-medium">
                       Propulsé par <span className="font-bold text-blue-600">SignFast</span>
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Signature électronique française • Sécurisé et conforme
-                  </p>
                 </div>
               </div>
             </form>
