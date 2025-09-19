@@ -14,10 +14,10 @@ export interface ImageProcessingOptions {
 
 export class OptimizedImageProcessor {
   private static readonly DEFAULT_OPTIONS: Required<ImageProcessingOptions> = {
-    maxWidth: 1200,
-    maxHeight: 900,
-    quality: 0.85,
-    maxSizeKB: 150,
+    maxWidth: 1600,
+    maxHeight: 1200,
+    quality: 0.9,
+    maxSizeKB: 250,
     format: 'auto',
     preserveTransparency: false
   };
@@ -105,10 +105,10 @@ export class OptimizedImageProcessor {
    */
   static async processPublicFormImage(file: File): Promise<string> {
     return this.processImage(file, {
-      maxWidth: 1200,
-      maxHeight: 800,
-      quality: 0.85,
-      maxSizeKB: 200,
+      maxWidth: 1600,
+      maxHeight: 1200,
+      quality: 0.92,
+      maxSizeKB: 350,
       format: 'jpeg',
       preserveTransparency: false
     });
@@ -211,17 +211,17 @@ export class OptimizedImageProcessor {
     let quality = initialQuality;
     let dataUrl = '';
     let attempts = 0;
-    const maxAttempts = 8;
+    const maxAttempts = 6;
 
     while (attempts < maxAttempts) {
       dataUrl = canvas.toDataURL(`image/${format}`, quality);
       const sizeKB = dataUrl.length / 1024;
       
-      if (sizeKB <= maxSizeKB || quality <= 0.3) {
+      if (sizeKB <= maxSizeKB || quality <= 0.5) {
         break;
       }
       
-      quality = Math.max(0.3, quality - 0.1);
+      quality = Math.max(0.5, quality - 0.08);
       attempts++;
     }
 
