@@ -739,34 +739,34 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
           
           {/* Indicateur de chargement */}
           {!videoReady && !cameraError && (
-            <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20">
-              <div className="text-center text-white">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
-                <h3 className="text-xl font-bold mb-2">Initialisation caméra...</h3>
-                <p className="text-sm text-white/70 mb-4">Veuillez autoriser l'accès à la caméra</p>
-                    <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded border text-xs text-red-800 dark:text-red-200 space-y-1">
-                      <p><strong>Solutions :</strong></p>
-                      <p>• Cliquez sur l'icône 🔒 dans la barre d'adresse</p>
-                      <p>• Sélectionnez "Autoriser" pour la caméra</p>
-                      <p>• Fermez les autres onglets utilisant la caméra</p>
-                      <p>• Essayez avec Chrome ou Firefox</p>
-                      <p>• Rechargez la page si nécessaire</p>
-                    </div>
+            <>
+              <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20">
+                <div className="text-center text-white">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
+                  <h3 className="text-xl font-bold mb-2">Initialisation caméra...</h3>
+                  <p className="text-sm text-white/70 mb-4">Veuillez autoriser l'accès à la caméra</p>
+                  <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded border text-xs text-red-800 dark:text-red-200 space-y-1">
+                    <p><strong>Solutions :</strong></p>
+                    <p>• Cliquez sur l'icône 🔒 dans la barre d'adresse</p>
+                    <p>• Sélectionnez "Autoriser" pour la caméra</p>
+                    <p>• Fermez les autres onglets utilisant la caméra</p>
+                    <p>• Essayez avec Chrome ou Firefox</p>
+                    <p>• Rechargez la page si nécessaire</p>
+                  </div>
+                  <div className="mt-4">
+                    <Button
+                      onClick={() => {
+                        stopCamera();
+                        setTimeout(() => startCamera(), 1000);
+                      }}
+                      className="bg-white/20 text-white border border-white/30 hover:bg-white/30 font-bold py-2 px-4"
+                    >
+                      🔄 Réessayer
+                    </Button>
                   </div>
                 </div>
-                <div className="mt-4">
-                  <Button
-                    onClick={() => {
-                      stopCamera();
-                      setTimeout(() => startCamera(), 1000);
-                    }}
-                    className="bg-white/20 text-white border border-white/30 hover:bg-white/30 font-bold py-2 px-4"
-                  >
-                    🔄 Réessayer
-                  </Button>
-                </div>
               </div>
-            </div>
+            </>
           )}
           
           {/* Élément vidéo avec gestion d'erreurs améliorée */}
