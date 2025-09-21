@@ -204,7 +204,7 @@ export const SubAccountDashboard: React.FC = () => {
       // Récupérer le formulaire pour obtenir le template ID
       const { data: form, error: formError } = await supabase
         .from('forms')
-        .select('settings, title')
+        .select('settings, title, fields')
         .eq('id', response.form_id)
         .single();
 
@@ -214,12 +214,25 @@ export const SubAccountDashboard: React.FC = () => {
         return;
       }
 
+      // Enrichir les données avec les informations du formulaire pour les masques
+      const enrichedFormData = {
+        ...response.data,
+        _form_metadata: { fields: form.fields },
+        _original_form_fields: form.fields
+      };
+      
+      console.log('📋 Génération PDF sous-compte avec métadonnées:', {
+        fieldsCount: form.fields?.length || 0,
+        hasMetadata: true,
+        dataKeys: Object.keys(enrichedFormData)
+      });
+      
       // Générer le PDF avec le service
       const pdfBytes = await OptimizedPDFService.generatePDF({
         templateId: form.settings.pdfTemplateId,
         formTitle: response.form_title,
         responseId: response.id,
-        formData: response.data,
+        formData: enrichedFormData,
         saveToServer: false,
       });
 

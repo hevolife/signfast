@@ -115,6 +115,13 @@ export class OptimizedPDFService {
       const enrichedFormData = formMetadata 
         ? { ...formData, _form_metadata: formMetadata }
         : formData;
+      
+      console.log('📋 Données enrichies pour PDF:', {
+        hasMetadata: !!formMetadata,
+        fieldsCount: formMetadata?.fields?.length || 0,
+        dataKeys: Object.keys(enrichedFormData)
+      });
+      
       // Convertir le PDF en bytes
       const base64Data = template.pdf_content.split(',')[1];
       const binaryString = atob(base64Data);

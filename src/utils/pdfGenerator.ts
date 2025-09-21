@@ -353,6 +353,8 @@ export class PDFGenerator {
    * Cherche le masque de saisie pour un champ donné
    */
   private static findFieldMask(variableName: string, data: Record<string, any>): string | null {
+    console.log('🎭 Recherche masque pour variable:', variableName, 'dans les données:', Object.keys(data));
+    
     // Chercher dans les métadonnées du formulaire si elles existent
     if (data._form_metadata && data._form_metadata.fields) {
       // Fonction récursive pour chercher dans tous les champs (principaux + conditionnels)
@@ -366,6 +368,8 @@ export class PDFGenerator {
             .replace(/[^a-z0-9]/g, '_')
             .replace(/_+/g, '_')
             .replace(/^_|_$/g, '');
+          
+          console.log('🎭 Comparaison:', fieldVariableName, 'vs', variableName, 'masque:', f.validation?.mask);
           
           if (fieldVariableName === variableName) {
             console.log('🎭 Masque trouvé pour variable:', variableName, 'masque:', f.validation?.mask);
@@ -388,8 +392,44 @@ export class PDFGenerator {
       const field = findFieldInFields(data._form_metadata.fields);
       
       if (field && field.validation && field.validation.mask) {
+        console.log('🎭 ✅ Masque trouvé via métadonnées:', field.validation.mask);
         return field.validation.mask;
       }
+    }
+    
+    // Chercher aussi dans les données brutes du formulaire si disponibles
+    if (data._original_form_fields) {
+      console.log('🎭 Recherche dans _original_form_fields...');
+      const findMaskInOriginalFields = (fields: any[]): string | null => {
+        for (const field of fields) {
+          const fieldVariableName = field.label
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          
+          if (fieldVariableName === variableName && field.validation?.mask) {
+            console.log('🎭 ✅ Masque trouvé dans original fields:', field.validation.mask);
+            return field.validation.mask;
+          }
+          
+          // Chercher dans les champs conditionnels
+          if (field.conditionalFields) {
+            for (const conditionalFieldsArray of Object.values(field.conditionalFields)) {
+              if (Array.isArray(conditionalFieldsArray)) {
+                const found = findMaskInOriginalFields(conditionalFieldsArray);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
+      
+      const mask = findMaskInOriginalFields(data._original_form_fields);
+      if (mask) return mask;
     }
     
     // Chercher aussi par correspondance partielle du nom de champ
@@ -419,6 +459,7 @@ export class PDFGenerator {
       const field = findFieldByPartialMatch(data._form_metadata.fields);
       
       if (field && field.validation && field.validation.mask) {
+        console.log('🎭 ✅ Masque trouvé par correspondance partielle:', field.validation.mask);
         return field.validation.mask;
       }
     }

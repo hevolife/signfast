@@ -176,11 +176,24 @@ export const PublicForm: React.FC = () => {
       // Générer le PDF si configuré
       if (form.settings?.generatePdf) {
         try {
+          // Enrichir les données avec les informations du formulaire pour les masques
+          const enrichedFormData = {
+            ...formData,
+            _form_metadata: { fields: form.fields },
+            _original_form_fields: form.fields
+          };
+          
+          console.log('📋 Génération PDF avec métadonnées:', {
+            fieldsCount: form.fields?.length || 0,
+            hasMetadata: true,
+            dataKeys: Object.keys(enrichedFormData)
+          });
+          
           const pdfBytes = await OptimizedPDFService.generatePDF({
             templateId: form.settings.pdfTemplateId,
             formTitle: form.title,
             responseId: response.id,
-            formData,
+            formData: enrichedFormData,
             saveToServer: form.settings.savePdfToServer,
           });
 
