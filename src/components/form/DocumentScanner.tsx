@@ -38,111 +38,12 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(value || null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
-  const [videoReady, setVideoReady] = useState(false);
-
-  const settings = {
-    outputFormat: 'jpeg',
-    quality: 0.9,
-    maxWidth: 1600,
-    maxHeight: 1200,
-    showGuides: true,
-    autoCapture: false,
-    ...scanSettings
-  };
-
-  useEffect(() => {
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => {
-          track.stop();
-          console.log('📷 Track arrêté:', track.kind);
-        });
-      }
-    };
-  }, [stream]);
-
-  const startCamera = async () => {
-    try {
-      setCameraError(null);
-      setVideoReady(false);
-      console.log('📷 === DÉMARRAGE CAMÉRA SCANNER ===');
-      
-      // Vérifier la disponibilité de l'API
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError('API caméra non disponible sur cet appareil');
-        return;
-      }
-
-      // Arrêter le flux existant
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        setStream(null);
-      }
-
-      console.log('📷 Demande d\'accès caméra optimisée...');
-      
-      // Contraintes optimisées pour un démarrage rapide
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      };
-
-      console.log('📷 Contraintes:', constraints);
-
-      let mediaStream: MediaStream;
-      
-      try {
-        // Essai direct avec contraintes optimisées
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('📷 ✅ Flux obtenu:', mediaStream.getVideoTracks().length, 'pistes');
-      } catch (constraintError) {
-        console.warn('📷 ⚠️ Contraintes optimisées échouées, fallback:', constraintError);
-        
-        try {
-          // Fallback simple et rapide
-          mediaStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: facingMode }, 
-            audio: false 
-          });
-          console.log('📷 ✅ Flux obtenu avec fallback');
-        } catch (fallbackError) {
-          console.error('📷 ❌ Échec total accès caméra:', fallbackError);
-          throw fallbackError;
-        }
-      }
-      
-      // Vérifier que le flux a des pistes actives
-      const videoTracks = mediaStream.getVideoTracks();
-      if (videoTracks.length === 0) {
-        setCameraError('Aucune piste vidéo disponible');
-        return;
-      }
-
-      console.log('📷 Piste vidéo active:', {
-        label: videoTracks[0].label,
-        settings: videoTracks[0].getSettings(),
-        readyState: videoTracks[0].readyState,
-        enabled: videoTracks[0].enabled
-      });
-      
-      setStream(mediaStream);
-      
-      if (videoRef.current) {
-        console.log('📷 Configuration élément vidéo optimisée...');
-        const video = videoRef.current;
-        
         // Configuration rapide et directe
         video.srcObject = mediaStream;
         video.autoplay = true;
         video.playsInline = true;
         video.muted = true;
-        
+        video: {
         // Démarrage immédiat avec timeout de sécurité
         setTimeout(() => {
           if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -209,17 +110,9 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
-    }
+        console.log('📷 Configuration élément vidéo optimisée...');
     setIsScanning(false);
     setVideoReady(false);
-    setCameraError(null);
-  };
-
-  const switchCamera = async () => {
-    console.log('📷 Changement de caméra...');
-    stopCamera();
-    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-    
     // Délai pour laisser le temps à la caméra de se libérer
     setTimeout(() => {
       startCamera();
