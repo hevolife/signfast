@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useMaintenanceMode = () => {
@@ -12,11 +13,8 @@ export const useMaintenanceMode = () => {
 
   const checkMaintenanceMode = async () => {
     try {
-      // Vérifier si Supabase est configuré
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
+      // Vérifier si Supabase est configuré avant de faire des requêtes
+      if (!isSupabaseConfigured()) {
         console.warn('Supabase non configuré, mode maintenance désactivé par défaut');
         setIsMaintenanceMode(false);
         setLoading(false);
@@ -36,6 +34,7 @@ export const useMaintenanceMode = () => {
         setIsMaintenanceMode(data.value === 'true');
       }
     } catch (error) {
+      console.warn('Erreur réseau lors de la vérification du mode maintenance:', error);
       setIsMaintenanceMode(false);
     } finally {
       setLoading(false);
@@ -43,6 +42,11 @@ export const useMaintenanceMode = () => {
   };
 
   const toggleMaintenanceMode = async () => {
+    // Vérifier si Supabase est configuré avant de permettre le toggle
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase n\'est pas configuré');
+    }
+
     if (!isSuperAdmin) {
       throw new Error('Seuls les super admins peuvent modifier le mode maintenance');
     }
