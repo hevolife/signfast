@@ -30,35 +30,116 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   onImageCapture,
   value,
   required = false,
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+  scanSettings = {}
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(value || null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+
+  const settings = {
+    outputFormat: scanSettings.outputFormat || 'jpeg',
+    quality: scanSettings.quality || 0.9,
+    maxWidth: scanSettings.maxWidth || 1920,
+    maxHeight: scanSettings.maxHeight || 1080,
+    showGuides: scanSettings.showGuides !== false,
+    autoCapture: scanSettings.autoCapture || false
+  };
+
+  const switchCamera = () => {
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newFacingMode);
+    if (isScanning) {
+      stopCamera();
+      setTimeout(() => startCamera(), 500);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      setVideoReady(false);
+      
+      const video = videoRef.current;
+      if (!video) {
+        throw new Error('Élément vidéo non disponible');
+      }
+
+      let mediaStream: MediaStream;
+      
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
+
+      try {
         // Configuration rapide et directe
-      console.log('📷 Demande d\'accès caméra optimisée...');
+        console.log('📷 Demande d\'accès caméra optimisée...');
         video.autoplay = true;
-      // Contraintes optimisées pour un démarrage rapide
+        // Contraintes optimisées pour un démarrage rapide
         video.muted = true;
         // Essai direct avec contraintes optimisées
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         console.log('📷 ✅ Flux obtenu:', mediaStream.getVideoTracks().length, 'pistes');
+        
+        video.srcObject = mediaStream;
+        setStream(mediaStream);
+        
+        // Démarrage immédiat avec timeout de sécurité
         setTimeout(() => {
-        console.warn('📷 ⚠️ Contraintes optimisées échouées, fallback:', constraintError);
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
             console.log('📷 ✅ Vidéo prête immédiatement');
+            setVideoReady(true);
+            setCameraError(null);
+          } else {
+            // Vérification périodique rapide
+            let attempts = 0;
+            const maxAttempts = 10; // 5 secondes max
+            
+            const checkInterval = setInterval(() => {
               attempts++;
+              
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                console.log('📷 ✅ Vidéo prête après', attempts * 500, 'ms');
+                setVideoReady(true);
+                setCameraError(null);
+                clearInterval(checkInterval);
+              } else if (attempts >= maxAttempts) {
+                console.warn('📷 ⚠️ Timeout détection vidéo');
+                setCameraError('Caméra lente à démarrer. Réessayez ou changez de caméra.');
+                clearInterval(checkInterval);
+              }
+            }, 500);
+          }
+        }, 100); // Délai initial très court
+        
+      } catch (constraintError) {
+        console.warn('📷 ⚠️ Contraintes optimisées échouées, fallback:', constraintError);
+        
+        try {
           // Fallback simple et rapide
           mediaStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: facingMode }, 
             audio: false 
           });
           console.log('📷 ✅ Flux obtenu avec fallback');
+          
+          video.srcObject = mediaStream;
+          setStream(mediaStream);
+          
         } catch (fallbackError) {
           console.error('📷 ❌ Échec total accès caméra:', fallbackError);
           throw fallbackError;
-        }, 100); // Délai initial très court
+        }
       }
       
       setIsScanning(true);
@@ -98,9 +179,14 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
-        console.log('📷 Configuration élément vidéo optimisée...');
+      console.log('📷 Configuration élément vidéo optimisée...');
+    }
     setIsScanning(false);
     setVideoReady(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoReady || !videoRef.current || !canvasRef.current) {
       toast.error('❌ Caméra non prête');
       return;
     }
@@ -517,73 +603,119 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   // Affichage du résultat final
   if (capturedImage) {
     return (
-        // Démarrage immédiat avec timeout de sécurité
       <div className="space-y-4">
-        setTimeout(() => {
-                ref={fileInputRef}
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-                type="file"
-            console.log('📷 ✅ Vidéo prête immédiatement');
-                accept="image/*"
-            setVideoReady(true);
-                onChange={handleFileUpload}
-            setCameraError(null);
-                className="hidden"
-          } else {
-              />
-            // Vérification périodique rapide
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg">
+          <img 
+            src={capturedImage} 
+            alt="Document scanné" 
+            className="w-full h-auto max-h-96 object-contain"
+          />
+          
+          <div className="absolute top-3 right-3 flex space-x-2">
+            <Button
+              onClick={retakePhoto}
+              size="sm"
+              variant="secondary"
+              className="bg-white/90 hover:bg-white text-gray-700 shadow-lg"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Reprendre
+            </Button>
+            <Button
+              onClick={resetScan}
+              size="sm"
+              variant="ghost"
+              className="bg-white/90 hover:bg-white text-red-600 shadow-lg"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg flex items-center">
+            <Check className="h-4 w-4 mr-1" />
+            Document scanné
+          </div>
+        </div>
+        
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+          📄 Document prêt • {settings.outputFormat.toUpperCase()} • {Math.round(settings.quality * 100)}% qualité
+        </div>
+      </div>
+    );
+  }
+
+  // Interface principale
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Scanner avec caméra */}
+          <Button
+            onClick={startCamera}
+            className="h-32 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 group"
+          >
+            <div className="text-center">
+              <Camera className="h-12 w-12 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+              <div className="font-bold text-lg">Scanner Document</div>
+              <div className="text-sm opacity-90">Mode plein écran</div>
             </div>
-            let attempts = 0;
-            
-            const maxAttempts = 10; // 5 secondes max
-            {/* Conseils d'utilisation */}
-            
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 text-left">
-            const checkInterval = setInterval(() => {
-              <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-300 mb-3 text-center">
-              attempts++;
-                💡 Conseils pour un scan parfait
-              
-              </h4>
-              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-emerald-700 dark:text-emerald-400">
-                console.log('📷 ✅ Vidéo prête après', attempts * 500, 'ms');
-                <div className="flex items-center space-x-2">
-                setVideoReady(true);
-                  <span>📱</span>
-                setCameraError(null);
-                  <span>Mode plein écran automatique</span>
-                clearInterval(checkInterval);
-                </div>
-              } else if (attempts >= maxAttempts) {
-                <div className="flex items-center space-x-2">
-                console.warn('📷 ⚠️ Timeout détection vidéo');
-                  <span>💡</span>
-                setCameraError('Caméra lente à démarrer. Réessayez ou changez de caméra.');
-                  <span>Éclairage uniforme</span>
-                clearInterval(checkInterval);
-                </div>
-              }
-                <div className="flex items-center space-x-2">
-            }, 500);
-                  <span>📄</span>
-          }
-                  <span>Document posé à plat</span>
-        }, 100); // Délai initial très court
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>🎯</span>
-                  <span>Guides verts pour centrer</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>✂️</span>
-                  <span>Recadrage après capture</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>🔄</span>
-                  <span>Changement de caméra</span>
-                </div>
+          </Button>
+          
+          {/* Upload depuis fichier */}
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            className="h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 group"
+          >
+            <div className="text-center">
+              <Upload className="h-12 w-12 mx-auto mb-3 text-gray-500 group-hover:text-blue-500 group-hover:scale-110 transition-all" />
+              <div className="font-bold text-lg text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                Importer Image
               </div>
+              <div className="text-sm text-gray-500 group-hover:text-blue-500">
+                Depuis vos fichiers
+              </div>
+            </div>
+          </Button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+        </div>
+        
+        {/* Conseils d'utilisation */}
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 text-left">
+          <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-300 mb-3 text-center">
+            💡 Conseils pour un scan parfait
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-emerald-700 dark:text-emerald-400">
+            <div className="flex items-center space-x-2">
+              <span>📱</span>
+              <span>Mode plein écran automatique</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>💡</span>
+              <span>Éclairage uniforme</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>📄</span>
+              <span>Document posé à plat</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>🎯</span>
+              <span>Guides verts pour centrer</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>✂️</span>
+              <span>Recadrage après capture</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>🔄</span>
+              <span>Changement de caméra</span>
             </div>
           </div>
         </div>
