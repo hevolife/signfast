@@ -79,11 +79,12 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     try {
       setCameraError(null);
       setVideoReady(false);
-      console.log('📷 === DÉMARRAGE CAMÉRA ===');
+      console.log('📷 === DÉMARRAGE CAMÉRA SCANNER ===');
       
       // Vérifier la disponibilité de l'API
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('API caméra non disponible sur cet appareil');
+        setCameraError('API caméra non disponible sur cet appareil');
+        return;
       }
 
       // Arrêter le flux existant
@@ -92,98 +93,199 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         setStream(null);
       }
 
-      console.log('📷 Demande d\'accès caméra...');
+      console.log('📷 Demande d\'accès caméra avec contraintes basiques...');
       
-      // Contraintes très basiques pour maximiser la compatibilité
+      // Contraintes progressives pour maximiser la compatibilité
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          frameRate: { ideal: 30, min: 15 }
         },
         audio: false
       };
 
       console.log('📷 Contraintes:', constraints);
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('📷 ✅ Flux obtenu:', mediaStream.getVideoTracks().length, 'pistes');
+      let mediaStream: MediaStream;
+      
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('📷 ✅ Flux obtenu avec contraintes complètes:', mediaStream.getVideoTracks().length, 'pistes');
+      } catch (constraintError) {
+        console.warn('📷 ⚠️ Contraintes complètes échouées, essai avec contraintes basiques:', constraintError);
+        
+        // Fallback avec contraintes minimales
+        const basicConstraints: MediaStreamConstraints = {
+          video: {
+            facingMode: facingMode
+          },
+          audio: false
+        };
+        
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(basicConstraints);
+          console.log('📷 ✅ Flux obtenu avec contraintes basiques:', mediaStream.getVideoTracks().length, 'pistes');
+        } catch (basicError) {
+          console.error('📷 ❌ Échec contraintes basiques:', basicError);
+          
+          // Dernier essai avec contraintes ultra-minimales
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            console.log('📷 ✅ Flux obtenu avec contraintes minimales');
+          } catch (minimalError) {
+            console.error('📷 ❌ Échec total accès caméra:', minimalError);
+            throw minimalError;
+          }
+        }
+      }
       
       // Vérifier que le flux a des pistes actives
       const videoTracks = mediaStream.getVideoTracks();
       if (videoTracks.length === 0) {
-        throw new Error('Aucune piste vidéo disponible');
+        setCameraError('Aucune piste vidéo disponible');
+        return;
       }
 
-      console.log('📷 Piste vidéo:', videoTracks[0].getSettings());
+      console.log('📷 Piste vidéo active:', {
+        label: videoTracks[0].label,
+        settings: videoTracks[0].getSettings(),
+        readyState: videoTracks[0].readyState,
+        enabled: videoTracks[0].enabled
+      });
       
       setStream(mediaStream);
       
       if (videoRef.current) {
-        console.log('📷 Configuration élément vidéo...');
+        console.log('📷 Configuration élément vidéo avec gestion d\'erreurs...');
         const video = videoRef.current;
         
-        // Réinitialiser l'élément vidéo
+        // Nettoyer l'élément vidéo existant
         video.srcObject = null;
-        video.load();
+        video.pause();
+        video.currentTime = 0;
         
-        // Configurer les événements AVANT de définir srcObject
+        // Supprimer les anciens event listeners
+        video.onloadedmetadata = null;
+        video.oncanplay = null;
+        video.onplay = null;
+        video.onerror = null;
+        video.onloadstart = null;
+        video.onloadeddata = null;
+        
+        // Configurer les nouveaux événements
         video.onloadedmetadata = () => {
           console.log('📷 ✅ Métadonnées chargées:', {
             videoWidth: video.videoWidth,
             videoHeight: video.videoHeight,
-            readyState: video.readyState
+            readyState: video.readyState,
+            networkState: video.networkState
           });
-          setVideoReady(true);
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            setVideoReady(true);
+          }
         };
         
         video.oncanplay = () => {
           console.log('📷 ✅ Vidéo prête à jouer');
-          setVideoReady(true);
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            setVideoReady(true);
+          }
         };
         
         video.onplay = () => {
           console.log('📷 ✅ Lecture démarrée');
-          setVideoReady(true);
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            setVideoReady(true);
+          }
+        };
+        
+        video.onloadeddata = () => {
+          console.log('📷 ✅ Données vidéo chargées');
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            setVideoReady(true);
+          }
+        };
+        
+        video.onloadstart = () => {
+          console.log('📷 🔄 Début chargement vidéo...');
         };
         
         video.onerror = (e) => {
-          console.error('❌ Erreur élément vidéo:', e);
-          setCameraError('Erreur de lecture vidéo');
+          console.error('❌ Erreur élément vidéo:', e, video.error);
+          setCameraError(`Erreur de lecture vidéo: ${video.error?.message || 'Erreur inconnue'}`);
         };
         
-        // Définir le flux
+        // Définir le flux vidéo
+        console.log('📷 Attribution du flux à l\'élément vidéo...');
         video.srcObject = mediaStream;
         
-        // Forcer la lecture après un délai
-        setTimeout(async () => {
+        // Configurer les propriétés vidéo
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
+        
+        // Forcer le chargement et la lecture
+        video.load();
+        
+        // Essayer de démarrer la lecture avec plusieurs tentatives
+        const attemptPlay = async (attempt = 1, maxAttempts = 5) => {
           try {
-            console.log('📷 Tentative de lecture...');
+            console.log(`📷 Tentative de lecture ${attempt}/${maxAttempts}...`);
             await video.play();
-            console.log('📷 ✅ Lecture réussie');
-            setVideoReady(true);
+            console.log('📷 ✅ Lecture vidéo réussie');
+            
+            // Vérifier que la vidéo a des dimensions valides
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+              setVideoReady(true);
+            } else {
+              console.warn('📷 ⚠️ Vidéo sans dimensions, attente...');
+              setTimeout(() => {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                  setVideoReady(true);
+                }
+              }, 1000);
+            }
           } catch (playError) {
-            console.error('❌ Erreur lecture:', playError);
-            setCameraError('Impossible de démarrer la vidéo');
+            console.error(`❌ Erreur lecture tentative ${attempt}:`, playError);
+            
+            if (attempt < maxAttempts) {
+              console.log(`📷 Nouvelle tentative dans 500ms...`);
+              setTimeout(() => attemptPlay(attempt + 1, maxAttempts), 500);
+            } else {
+              setCameraError(`Impossible de démarrer la vidéo après ${maxAttempts} tentatives`);
+            }
           }
-        }, 500);
+        };
+        
+        // Démarrer les tentatives de lecture après un court délai
+        setTimeout(() => attemptPlay(), 100);
       }
       
       setIsScanning(true);
       toast.success('📷 Caméra activée');
     } catch (error: any) {
       console.error('❌ Erreur accès caméra:', error);
-      setCameraError(error.message);
+      
+      let errorMessage = 'Erreur d\'accès à la caméra';
       
       if (error.name === 'NotAllowedError') {
-        toast.error('❌ Accès caméra refusé. Autorisez l\'accès dans votre navigateur.');
+        errorMessage = 'Accès caméra refusé. Autorisez l\'accès dans votre navigateur.';
       } else if (error.name === 'NotFoundError') {
-        toast.error('❌ Aucune caméra trouvée');
+        errorMessage = 'Aucune caméra trouvée sur cet appareil';
       } else if (error.name === 'NotReadableError') {
-        toast.error('❌ Caméra occupée par une autre application');
+        errorMessage = 'Caméra occupée par une autre application';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = 'Contraintes caméra non supportées par cet appareil';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = 'Accès caméra bloqué pour des raisons de sécurité';
       } else {
-        toast.error(`❌ Erreur caméra: ${error.message}`);
+        errorMessage = `Erreur caméra: ${error.message}`;
       }
+      
+      setCameraError(errorMessage);
+      toast.error(`❌ ${errorMessage}`);
     }
   };
 
@@ -596,14 +698,32 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
                 <h3 className="text-xl font-bold mb-4">Erreur d'accès caméra</h3>
                 <p className="text-sm mb-6 leading-relaxed">{cameraError}</p>
                 <div className="space-y-3">
+                  <div className="bg-red-800/50 p-3 rounded-lg text-xs text-left space-y-2">
+                    <p><strong>Solutions possibles :</strong></p>
+                    <p>• Autorisez l'accès caméra dans votre navigateur</p>
+                    <p>• Fermez les autres applications utilisant la caméra</p>
+                    <p>• Rechargez la page et réessayez</p>
+                    <p>• Utilisez un autre navigateur (Chrome recommandé)</p>
+                  </div>
                   <Button
                     onClick={() => {
                       setCameraError(null);
+                      setVideoReady(false);
                       startCamera();
                     }}
                     className="w-full bg-white text-red-600 hover:bg-gray-100 font-bold py-3"
                   >
                     🔄 Réessayer l'accès caméra
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setCameraError(null);
+                      setFacingMode(facingMode === 'user' ? 'environment' : 'user');
+                      setTimeout(() => startCamera(), 500);
+                    }}
+                    className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold py-3"
+                  >
+                    🔄 Essayer l'autre caméra
                   </Button>
                   <Button
                     onClick={stopCamera}
@@ -623,57 +743,122 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
               <div className="text-center text-white">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
                 <h3 className="text-xl font-bold mb-2">Initialisation caméra...</h3>
-                <p className="text-sm text-white/70">Veuillez autoriser l'accès à la caméra</p>
-                <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                  <p className="text-xs text-white/80">
-                    Si l'écran reste noir, vérifiez les permissions de votre navigateur
-                  </p>
+                <p className="text-sm text-white/70 mb-4">Veuillez autoriser l'accès à la caméra</p>
+                    <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded border text-xs text-red-800 dark:text-red-200 space-y-1">
+                      <p><strong>Solutions :</strong></p>
+                      <p>• Cliquez sur l'icône 🔒 dans la barre d'adresse</p>
+                      <p>• Sélectionnez "Autoriser" pour la caméra</p>
+                      <p>• Fermez les autres onglets utilisant la caméra</p>
+                      <p>• Essayez avec Chrome ou Firefox</p>
+                      <p>• Rechargez la page si nécessaire</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button
+                    onClick={() => {
+                      stopCamera();
+                      setTimeout(() => startCamera(), 1000);
+                    }}
+                    className="bg-white/20 text-white border border-white/30 hover:bg-white/30 font-bold py-2 px-4"
+                  >
+                    🔄 Réessayer
+                  </Button>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Élément vidéo */}
+          {/* Élément vidéo avec gestion d'erreurs améliorée */}
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
+            controls={false}
             className="w-full h-full object-cover"
             style={{ 
               transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
               backgroundColor: '#000000'
             }}
-            onLoadedMetadata={() => {
-              console.log('📷 ✅ Métadonnées vidéo chargées');
-              setVideoReady(true);
+            onLoadedMetadata={(e) => {
+              console.log('📷 ✅ Event: Métadonnées vidéo chargées');
+              const video = e.currentTarget;
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                setVideoReady(true);
+              }
             }}
-            onCanPlay={() => {
-              console.log('📷 ✅ Vidéo prête');
-              setVideoReady(true);
+            onCanPlay={(e) => {
+              console.log('📷 ✅ Event: Vidéo peut être lue');
+              const video = e.currentTarget;
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                setVideoReady(true);
+              }
             }}
-            onPlay={() => {
-              console.log('📷 ✅ Lecture démarrée');
-              setVideoReady(true);
+            onPlay={(e) => {
+              console.log('📷 ✅ Event: Lecture démarrée');
+              const video = e.currentTarget;
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                setVideoReady(true);
+              }
+            }}
+            onLoadedData={(e) => {
+              console.log('📷 ✅ Event: Données vidéo chargées');
+              const video = e.currentTarget;
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                setVideoReady(true);
+              }
             }}
             onError={(e) => {
-              console.error('❌ Erreur vidéo:', e);
-              setCameraError('Erreur de lecture vidéo');
+              console.error('❌ Event: Erreur vidéo:', e);
+              const video = e.currentTarget;
+              setCameraError(`Erreur lecture vidéo: ${video.error?.message || 'Erreur inconnue'}`);
+            }}
+            onSuspend={() => {
+              console.warn('📷 ⚠️ Event: Vidéo suspendue');
+            }}
+            onStalled={() => {
+              console.warn('📷 ⚠️ Event: Vidéo bloquée');
+            }}
+            onWaiting={() => {
+              console.log('📷 ⏳ Event: Vidéo en attente de données');
             }}
           />
+          
+          {/* Debug overlay pour développement */}
+          {!videoReady && !cameraError && (
+            <div className="absolute bottom-4 left-4 bg-black/70 text-white p-2 rounded text-xs">
+              <div>Stream: {stream ? '✅' : '❌'}</div>
+              <div>Video Ready: {videoReady ? '✅' : '❌'}</div>
+              <div>Facing: {facingMode}</div>
+              {videoRef.current && (
+                <div>
+                  <div>Video W×H: {videoRef.current.videoWidth}×{videoRef.current.videoHeight}</div>
+                  <div>Ready State: {videoRef.current.readyState}</div>
+                  <div>Network State: {videoRef.current.networkState}</div>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Guides visuels */}
           {videoReady && renderVideoGuides()}
         </div>
 
-        {/* Contrôles en bas */}
+        {/* Contrôles en bas avec gestion d'état améliorée */}
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-6 sm:p-8">
           <div className="flex items-center justify-center space-x-8">
             {/* Changer de caméra */}
             <Button
               variant="ghost"
               onClick={switchCamera}
-              className="text-white hover:bg-white/20 rounded-full w-14 h-14 p-0 shadow-xl"
+              disabled={!videoReady}
+              className={`text-white rounded-full w-14 h-14 p-0 shadow-xl transition-all ${
+                videoReady 
+                  ? 'hover:bg-white/20' 
+                  : 'opacity-50 cursor-not-allowed'
+              }`}
               title={facingMode === 'user' ? 'Caméra arrière' : 'Caméra avant'}
             >
               <RefreshCw className="h-6 w-6" />
@@ -704,7 +889,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             </Button>
           </div>
           
-          {/* Informations techniques */}
+          {/* Informations techniques améliorées */}
           <div className="text-center mt-6 text-white/70 text-sm space-y-2">
             <div className="flex items-center justify-center space-x-4">
               <span>📷 {facingMode === 'user' ? 'Caméra avant' : 'Caméra arrière'}</span>
@@ -719,6 +904,11 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
                 {videoReady ? 'Caméra prête' : 'Initialisation...'}
               </span>
             </div>
+            {stream && videoRef.current && (
+              <div className="text-xs bg-black/50 rounded px-2 py-1">
+                Résolution: {videoRef.current.videoWidth || 0}×{videoRef.current.videoHeight || 0}
+              </div>
+            )}
           </div>
         </div>
 
@@ -926,7 +1116,12 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="secondary"
-                className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                disabled={!!cameraError}
+                className={`w-full font-bold py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ${
+                  cameraError 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white'
+                }`}
               >
                 <Upload className="h-5 w-5 mr-2" />
                 Ou choisir une image existante
