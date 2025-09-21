@@ -217,38 +217,66 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         // Forcer le chargement et la lecture
         video.load();
         
-        // Essayer de démarrer la lecture avec plusieurs tentatives
-        const attemptPlay = async (attempt = 1, maxAttempts = 5) => {
+        // Fonction pour vérifier si la vidéo est prête
+        const checkVideoReady = () => {
+          if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+            console.log('📷 ✅ Vidéo prête:', {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              readyState: video.readyState
+            });
+            setVideoReady(true);
+            setCameraError(null);
+            return true;
+          }
+          return false;
+        };
+        
+        // Vérifier immédiatement si la vidéo est déjà prête
+        if (checkVideoReady()) {
+          return;
+        }
+        
+        // Essayer de démarrer la lecture avec vérification continue
+        const attemptPlay = async (attempt = 1, maxAttempts = 3) => {
           try {
             console.log(`📷 Tentative de lecture ${attempt}/${maxAttempts}...`);
             await video.play();
             console.log('📷 ✅ Lecture vidéo réussie');
             
-            // Vérifier que la vidéo a des dimensions valides
-            if (video.videoWidth > 0 && video.videoHeight > 0) {
-              setVideoReady(true);
-            } else {
-              console.warn('📷 ⚠️ Vidéo sans dimensions, attente...');
-              setTimeout(() => {
-                if (video.videoWidth > 0 && video.videoHeight > 0) {
-                  setVideoReady(true);
-                }
-              }, 1000);
-            }
+            // Vérifier périodiquement si la vidéo devient prête
+            let checkCount = 0;
+            const maxChecks = 20; // 10 secondes max
+            
+            const intervalCheck = setInterval(() => {
+              checkCount++;
+              
+              if (checkVideoReady()) {
+                clearInterval(intervalCheck);
+              } else if (checkCount >= maxChecks) {
+                clearInterval(intervalCheck);
+                console.warn('📷 ⚠️ Timeout vérification vidéo prête');
+                setCameraError('La caméra ne répond pas. Essayez de recharger la page.');
+              }
+            }, 500);
+            
+            // Nettoyer l'interval si le composant est démonté
+            return () => clearInterval(intervalCheck);
+            
           } catch (playError) {
             console.error(`❌ Erreur lecture tentative ${attempt}:`, playError);
             
             if (attempt < maxAttempts) {
-              console.log(`📷 Nouvelle tentative dans 500ms...`);
-              setTimeout(() => attemptPlay(attempt + 1, maxAttempts), 500);
+              console.log(`📷 Nouvelle tentative dans 1000ms...`);
+              setTimeout(() => attemptPlay(attempt + 1, maxAttempts), 1000);
             } else {
-              setCameraError(`Impossible de démarrer la vidéo après ${maxAttempts} tentatives`);
+              setCameraError(`Impossible de démarrer la vidéo après ${maxAttempts} tentatives. Vérifiez les permissions de la caméra.`);
             }
           }
         };
         
-        // Démarrer les tentatives de lecture après un court délai
-        setTimeout(() => attemptPlay(), 100);
+        // Démarrer les tentatives de lecture immédiatement
+        attemptPlay();
       }
       
       setIsScanning(true);
@@ -598,29 +626,37 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             onLoadedMetadata={(e) => {
               console.log('📷 ✅ Event: Métadonnées vidéo chargées');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0) {
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                console.log('📷 ✅ Vidéo prête via onLoadedMetadata');
                 setVideoReady(true);
+                setCameraError(null);
               }
             }}
             onCanPlay={(e) => {
               console.log('📷 ✅ Event: Vidéo peut être lue');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0) {
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                console.log('📷 ✅ Vidéo prête via onCanPlay');
                 setVideoReady(true);
+                setCameraError(null);
               }
             }}
             onPlay={(e) => {
               console.log('📷 ✅ Event: Lecture démarrée');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0) {
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                console.log('📷 ✅ Vidéo prête via onPlay');
                 setVideoReady(true);
+                setCameraError(null);
               }
             }}
             onLoadedData={(e) => {
               console.log('📷 ✅ Event: Données vidéo chargées');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0) {
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                console.log('📷 ✅ Vidéo prête via onLoadedData');
                 setVideoReady(true);
+                setCameraError(null);
               }
             }}
             onError={(e) => {
