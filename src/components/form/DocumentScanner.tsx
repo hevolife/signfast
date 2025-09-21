@@ -38,12 +38,50 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(value || null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+
+  const settings = {
+    outputFormat: 'jpeg' as const,
+    quality: 0.9,
+    maxWidth: 1920,
+    maxHeight: 1080,
+    showGuides: true,
+    autoCapture: false,
+    ...scanSettings
+  };
+
+  const startCamera = async () => {
+    try {
+      console.log('📷 Démarrage caméra...', { facingMode });
+      setCameraError(null);
+      setVideoReady(false);
+      
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1920, min: 640 },
+          height: { ideal: 1080, min: 480 },
+          aspectRatio: { ideal: 16/9 }
+        },
+        audio: false
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('📷 ✅ Stream obtenu:', mediaStream.getVideoTracks().map(t => t.label));
+      
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        const video = videoRef.current;
+        
         // Configuration rapide et directe
         video.srcObject = mediaStream;
         video.autoplay = true;
         video.playsInline = true;
         video.muted = true;
-        video: {
+        
         // Démarrage immédiat avec timeout de sécurité
         setTimeout(() => {
           if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -110,9 +148,16 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
-        console.log('📷 Configuration élément vidéo optimisée...');
+      console.log('📷 Configuration élément vidéo optimisée...');
+    }
     setIsScanning(false);
     setVideoReady(false);
+  };
+
+  const switchCamera = () => {
+    console.log('📷 Changement de caméra...');
+    setFacingMode(facingMode === 'user' ? 'environment' : 'user');
+    stopCamera();
     // Délai pour laisser le temps à la caméra de se libérer
     setTimeout(() => {
       startCamera();
