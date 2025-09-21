@@ -353,74 +353,118 @@ export class PDFGenerator {
    * Cherche le masque de saisie pour un champ donné
    */
   private static findFieldMask(variableName: string, data: Record<string, any>): string | null {
-    console.log('🎭 === RECHERCHE MASQUE ===');
-    console.log('🎭 Variable recherchée:', variableName);
-    console.log('🎭 Clés disponibles:', Object.keys(data));
+    console.log('🎭 Recherche masque pour variable:', variableName, 'dans les données:', Object.keys(data));
     
     // Chercher dans les métadonnées du formulaire si elles existent
     if (data._form_metadata && data._form_metadata.fields) {
-      console.log('🎭 Recherche dans _form_metadata avec', data._form_metadata.fields.length, 'champs');
+      // Fonction récursive pour chercher dans tous les champs (principaux + conditionnels)
+      const findFieldInFields = (fields: any[]): any => {
+        for (const f of fields) {
+          // Vérifier le champ principal
+          const fieldVariableName = f.label
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          
+          console.log('🎭 Comparaison:', fieldVariableName, 'vs', variableName, 'masque:', f.validation?.mask);
+          
+          if (fieldVariableName === variableName) {
+            console.log('🎭 Masque trouvé pour variable:', variableName, 'masque:', f.validation?.mask);
+            return f;
+          }
+          
+          // Chercher dans les champs conditionnels
+          if (f.conditionalFields) {
+            for (const conditionalFieldsArray of Object.values(f.conditionalFields)) {
+              if (Array.isArray(conditionalFieldsArray)) {
+                const found = findFieldInFields(conditionalFieldsArray);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
       
-      // Recherche directe dans tous les champs (déjà extraits avec conditionnels)
-      const field = data._form_metadata.fields.find((f: any) => {
-        const fieldVariableName = f.label
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '');
-        
-        console.log('🎭 Comparaison champ:', {
-          label: f.label,
-          fieldVariableName,
-          variableName,
-          match: fieldVariableName === variableName,
-          mask: f.validation?.mask
-        });
-        
-        return fieldVariableName === variableName;
-      });
+      const field = findFieldInFields(data._form_metadata.fields);
       
       if (field && field.validation && field.validation.mask) {
-        console.log('🎭 ✅ MASQUE TROUVÉ via métadonnées:', field.validation.mask, 'pour champ:', field.label);
+        console.log('🎭 ✅ Masque trouvé via métadonnées:', field.validation.mask);
         return field.validation.mask;
-      } else {
-        console.log('🎭 ❌ Aucun masque trouvé dans _form_metadata pour variable:', variableName);
       }
-    } else {
-      console.log('🎭 ❌ Pas de _form_metadata disponible');
     }
     
     // Chercher aussi dans les données brutes du formulaire si disponibles
     if (data._original_form_fields) {
-      console.log('🎭 Recherche dans _original_form_fields avec', data._original_form_fields.length, 'champs');
+      console.log('🎭 Recherche dans _original_form_fields...');
+      const findMaskInOriginalFields = (fields: any[]): string | null => {
+        for (const field of fields) {
+          const fieldVariableName = field.label
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          
+          if (fieldVariableName === variableName && field.validation?.mask) {
+            console.log('🎭 ✅ Masque trouvé dans original fields:', field.validation.mask);
+            return field.validation.mask;
+          }
+          
+          // Chercher dans les champs conditionnels
+          if (field.conditionalFields) {
+            for (const conditionalFieldsArray of Object.values(field.conditionalFields)) {
+              if (Array.isArray(conditionalFieldsArray)) {
+                const found = findMaskInOriginalFields(conditionalFieldsArray);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
       
-      // Recherche directe dans les champs originaux (déjà extraits avec conditionnels)
-      const field = data._original_form_fields.find((f: any) => {
-        const fieldVariableName = f.label
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '');
-        
-        return fieldVariableName === variableName && f.validation?.mask;
-      });
-      
-      if (field && field.validation?.mask) {
-        console.log('🎭 ✅ MASQUE TROUVÉ dans original fields:', field.validation.mask, 'pour champ:', field.label);
-        return field.validation.mask;
-      } else {
-        console.log('🎭 ❌ Aucun masque trouvé dans _original_form_fields pour variable:', variableName);
-      }
-    } else {
-      console.log('🎭 ❌ Pas de _original_form_fields disponible');
+      const mask = findMaskInOriginalFields(data._original_form_fields);
+      if (mask) return mask;
     }
     
-    console.log('🎭 ❌ AUCUN MASQUE TROUVÉ pour variable:', variableName);
-    console.log('🎭 === FIN RECHERCHE MASQUE ===');
+    // Chercher aussi par correspondance partielle du nom de champ
+    if (data._form_metadata && data._form_metadata.fields) {
+      const findFieldByPartialMatch = (fields: any[]): any => {
+        for (const f of fields) {
+          const fieldLabel = f.label.toLowerCase();
+          const varName = variableName.toLowerCase();
+          if (fieldLabel.includes(varName) || varName.includes(fieldLabel)) {
+            console.log('🎭 Masque trouvé par correspondance partielle:', variableName, 'masque:', f.validation?.mask);
+            return f;
+          }
+          
+          // Chercher dans les champs conditionnels
+          if (f.conditionalFields) {
+            for (const conditionalFieldsArray of Object.values(f.conditionalFields)) {
+              if (Array.isArray(conditionalFieldsArray)) {
+                const found = findFieldByPartialMatch(conditionalFieldsArray);
+                if (found) return found;
+              }
+            }
+          }
+        }
+        return null;
+      };
+      
+      const field = findFieldByPartialMatch(data._form_metadata.fields);
+      
+      if (field && field.validation && field.validation.mask) {
+        console.log('🎭 ✅ Masque trouvé par correspondance partielle:', field.validation.mask);
+        return field.validation.mask;
+      }
+    }
+    
+    console.log('🎭 Aucun masque trouvé pour variable:', variableName);
     return null;
   }
 
@@ -430,92 +474,82 @@ export class PDFGenerator {
   private static applyTextMask(value: string, mask: string): string {
     if (!value || !mask) return value;
     
-    console.log('🎭 === APPLICATION MASQUE ===');
-    console.log('🎭 Valeur originale:', value);
-    console.log('🎭 Masque à appliquer:', mask);
-    
     // Si la valeur semble déjà formatée avec le masque, la retourner telle quelle
     if (this.valueMatchesMask(value, mask)) {
-      console.log('🎭 ✅ Valeur déjà formatée, retour direct');
       return value;
     }
     
-    // Traitement spécial pour les dates avec masque 99/99/9999
+    // Traitement spécial pour les masques de date
     if (mask === '99/99/9999' || mask === '99-99-9999' || mask === '99.99.9999') {
-      console.log('🎭 Traitement spécial date détecté pour masque:', mask);
-      
-      // Si la valeur est déjà au bon format, la retourner
-      const separator = mask.includes('/') ? '/' : mask.includes('-') ? '-' : '.';
-      const expectedPattern = new RegExp(`^\\d{2}\\${separator}\\d{2}\\${separator}\\d{4}$`);
-      
-      if (expectedPattern.test(value)) {
-        console.log('🎭 ✅ Date déjà au bon format:', value);
-        return value;
+      // Si la valeur est au format YYYYMMDD ou similaire (8 chiffres)
+      if (/^\d{8}$/.test(value)) {
+        const year = value.substring(0, 4);
+        const month = value.substring(4, 6);
+        const day = value.substring(6, 8);
+        
+        if (mask === '99/99/9999') {
+          return `${day}/${month}/${year}`;
+        } else if (mask === '99-99-9999') {
+          return `${day}-${month}-${year}`;
+        } else if (mask === '99.99.9999') {
+          return `${day}.${month}.${year}`;
+        }
       }
       
-      // Nettoyer la valeur (garder seulement les chiffres)
+      // Si la valeur est au format DDMMYYYY (8 chiffres dans l'ordre français)
+      if (/^\d{8}$/.test(value)) {
+        const day = value.substring(0, 2);
+        const month = value.substring(2, 4);
+        const year = value.substring(4, 8);
+        
+        if (mask === '99/99/9999') {
+          return `${day}/${month}/${year}`;
+        } else if (mask === '99-99-9999') {
+          return `${day}-${month}-${year}`;
+        } else if (mask === '99.99.9999') {
+          return `${day}.${month}.${year}`;
+        }
+      }
+      
+      // Si la valeur contient déjà des séparateurs, essayer de la reformater
       const cleanValue = value.replace(/[^0-9]/g, '');
-      console.log('🎭 Valeur nettoyée:', cleanValue);
-      
-      // Si on a exactement 8 chiffres, c'est probablement une date
       if (cleanValue.length === 8) {
-        // Essayer différents formats d'entrée
-        let day, month, year;
-        
-        // Format DDMMYYYY (25122024)
-        if (cleanValue.substring(0, 2) <= '31' && cleanValue.substring(2, 4) <= '12') {
-          day = cleanValue.substring(0, 2);
-          month = cleanValue.substring(2, 4);
-          year = cleanValue.substring(4, 8);
-          console.log('🎭 Format DDMMYYYY détecté:', { day, month, year });
-        }
-        // Format YYYYMMDD (20241225)
-        else if (cleanValue.substring(0, 4) >= '1900' && cleanValue.substring(4, 6) <= '12' && cleanValue.substring(6, 8) <= '31') {
-          year = cleanValue.substring(0, 4);
-          month = cleanValue.substring(4, 6);
-          day = cleanValue.substring(6, 8);
-          console.log('🎭 Format YYYYMMDD détecté:', { day, month, year });
-        }
-        // Format MMDDYYYY (12252024)
-        else if (cleanValue.substring(0, 2) <= '12' && cleanValue.substring(2, 4) <= '31') {
-          month = cleanValue.substring(0, 2);
-          day = cleanValue.substring(2, 4);
-          year = cleanValue.substring(4, 8);
-          console.log('🎭 Format MMDDYYYY détecté:', { day, month, year });
-        }
-        
-        if (day && month && year) {
-          const formattedDate = `${day}${separator}${month}${separator}${year}`;
-          console.log('🎭 ✅ Date formatée:', formattedDate);
-          return formattedDate;
+        // Essayer format YYYYMMDD
+        if (parseInt(cleanValue.substring(0, 4)) > 1900) {
+          const year = cleanValue.substring(0, 4);
+          const month = cleanValue.substring(4, 6);
+          const day = cleanValue.substring(6, 8);
+          
+          if (mask === '99/99/9999') {
+            return `${day}/${month}/${year}`;
+          } else if (mask === '99-99-9999') {
+            return `${day}-${month}-${year}`;
+          } else if (mask === '99.99.9999') {
+            return `${day}.${month}.${year}`;
+          }
+        } else {
+          // Format DDMMYYYY
+          const day = cleanValue.substring(0, 2);
+          const month = cleanValue.substring(2, 4);
+          const year = cleanValue.substring(4, 8);
+          
+          if (mask === '99/99/9999') {
+            return `${day}/${month}/${year}`;
+          } else if (mask === '99-99-9999') {
+            return `${day}-${month}-${year}`;
+          } else if (mask === '99.99.9999') {
+            return `${day}.${month}.${year}`;
+          }
         }
       }
-      
-      // Si on a 6 chiffres, c'est peut-être DDMMYY
-      if (cleanValue.length === 6) {
-        const day = cleanValue.substring(0, 2);
-        const month = cleanValue.substring(2, 4);
-        const year = '20' + cleanValue.substring(4, 6); // Assumer 20XX
-        
-        if (day <= '31' && month <= '12') {
-          const formattedDate = `${day}${separator}${month}${separator}${year}`;
-          console.log('🎭 ✅ Date formatée (DDMMYY):', formattedDate);
-          return formattedDate;
-        }
-      }
-      
-      console.log('🎭 ⚠️ Impossible de formater la date, retour valeur originale');
-      return value;
     }
     
-    // Application du masque standard pour les autres types
     let masked = '';
     let maskIndex = 0;
     let valueIndex = 0;
     
     // Nettoyer la valeur (garder seulement les caractères alphanumériques)
     const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '');
-    console.log('🎭 Valeur nettoyée pour masque standard:', cleanValue);
     
     while (maskIndex < mask.length && valueIndex < cleanValue.length) {
       const maskChar = mask[maskIndex];
@@ -561,10 +595,7 @@ export class PDFGenerator {
       maskIndex++;
     }
     
-    const result = masked || value;
-    console.log('🎭 ✅ Résultat masquage:', result);
-    console.log('🎭 === FIN APPLICATION MASQUE ===');
-    return result;
+    return masked || value; // Fallback vers la valeur originale si le masquage échoue
   }
 
   /**
