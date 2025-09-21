@@ -26,13 +26,6 @@ interface DocumentScannerProps {
   };
 }
 
-interface CropArea {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   onImageCapture,
   value,
@@ -41,15 +34,10 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cropCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(value || null);
-  const [isCropping, setIsCropping] = useState(false);
-  const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [videoReady, setVideoReady] = useState(false);
@@ -348,20 +336,37 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     const imageData = canvas.toDataURL(`image/${settings.outputFormat}`, settings.quality);
     console.log('📷 ✅ Image capturée:', Math.round(imageData.length / 1024), 'KB');
     
-    setCapturedImage(imageData);
+    // Redimensionner si nécessaire
+    const finalCanvas = document.createElement('canvas');
+    const finalCtx = finalCanvas.getContext('2d')!;
     
-    // Définir une zone de recadrage par défaut (80% de l'image)
-    const margin = 0.1;
-    setCropArea({
-      x: canvas.width * margin,
-      y: canvas.height * margin,
-      width: canvas.width * (1 - 2 * margin),
-      height: canvas.height * (1 - 2 * margin)
-    });
+    const { width: finalWidth, height: finalHeight } = calculateOptimalDimensions(
+      canvas.width,
+      canvas.height,
+      settings.maxWidth,
+      settings.maxHeight
+    );
     
-    setIsCropping(true);
+    finalCanvas.width = finalWidth;
+    finalCanvas.height = finalHeight;
+    
+    finalCtx.imageSmoothingEnabled = true;
+    finalCtx.imageSmoothingQuality = 'high';
+    
+    // Fond blanc pour JPEG
+    if (settings.outputFormat === 'jpeg') {
+      finalCtx.fillStyle = '#FFFFFF';
+      finalCtx.fillRect(0, 0, finalWidth, finalHeight);
+    }
+    
+    finalCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
+    
+    const finalImageData = finalCanvas.toDataURL(`image/${settings.outputFormat}`, settings.quality);
+    
+    onImageCapture(finalImageData);
+    setCapturedImage(finalImageData);
     stopCamera();
-    toast.success('📷 Photo capturée ! Ajustez le recadrage.');
+    toast.success('📷 Document scanné avec succès !');
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,156 +383,13 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       const result = e.target?.result as string;
       setCapturedImage(result);
       
-      // Créer un canvas pour obtenir les dimensions
-      const img = new Image();
-      img.onload = () => {
-        if (canvasRef.current) {
-          const canvas = canvasRef.current;
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-          }
-        }
-        
-        // Zone de recadrage par défaut
-        const margin = 0.05;
-        setCropArea({
-          x: img.width * margin,
-          y: img.height * margin,
-          width: img.width * (1 - 2 * margin),
-          height: img.height * (1 - 2 * margin)
-        });
-        setIsCropping(true);
-      };
-      img.src = result;
+      onImageCapture(result);
+      toast.success('📷 Image chargée avec succès !');
     };
     reader.readAsDataURL(file);
     
     // Reset input
     event.target.value = '';
-  };
-
-  const handleCropStart = (e: React.MouseEvent) => {
-    if (!canvasRef.current) return;
-    
-    const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = canvasRef.current.width / rect.width;
-    const scaleY = canvasRef.current.height / rect.height;
-    
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    setIsDragging(true);
-    setDragStart({ x, y });
-    
-    // Si on clique dans la zone existante, on la déplace
-    if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
-        y >= cropArea.y && y <= cropArea.y + cropArea.height) {
-      setDragStart({ 
-        x: x - cropArea.x, 
-        y: y - cropArea.y 
-      });
-    } else {
-      // Sinon on crée une nouvelle zone
-      setCropArea({ x, y, width: 0, height: 0 });
-    }
-  };
-
-  const handleCropMove = (e: React.MouseEvent) => {
-    if (!isDragging || !canvasRef.current) return;
-    
-    const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = canvasRef.current.width / rect.width;
-    const scaleY = canvasRef.current.height / rect.height;
-    
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    // Si on déplace une zone existante
-    if (cropArea.width > 0 && cropArea.height > 0) {
-      setCropArea(prev => ({
-        ...prev,
-        x: Math.max(0, Math.min(canvasRef.current!.width - prev.width, x - dragStart.x)),
-        y: Math.max(0, Math.min(canvasRef.current!.height - prev.height, y - dragStart.y))
-      }));
-    } else {
-      // Sinon on redimensionne
-      setCropArea({
-        x: Math.min(dragStart.x, x),
-        y: Math.min(dragStart.y, y),
-        width: Math.abs(x - dragStart.x),
-        height: Math.abs(y - dragStart.y)
-      });
-    }
-  };
-
-  const handleCropEnd = () => {
-    setIsDragging(false);
-  };
-
-  const applyCrop = () => {
-    if (!canvasRef.current || !cropCanvasRef.current || !capturedImage) return;
-
-    const cropCanvas = cropCanvasRef.current;
-    const ctx = cropCanvas.getContext('2d');
-    if (!ctx) return;
-
-    const img = new Image();
-    img.onload = () => {
-      // Dessiner l'image originale sur le canvas principal
-      const mainCanvas = canvasRef.current!;
-      const mainCtx = mainCanvas.getContext('2d')!;
-      mainCanvas.width = img.width;
-      mainCanvas.height = img.height;
-      mainCtx.drawImage(img, 0, 0);
-
-      // Extraire la zone recadrée
-      cropCanvas.width = cropArea.width;
-      cropCanvas.height = cropArea.height;
-
-      ctx.drawImage(
-        mainCanvas,
-        cropArea.x, cropArea.y, cropArea.width, cropArea.height,
-        0, 0, cropArea.width, cropArea.height
-      );
-
-      // Redimensionner si nécessaire
-      const finalCanvas = document.createElement('canvas');
-      const finalCtx = finalCanvas.getContext('2d')!;
-      
-      const { width: finalWidth, height: finalHeight } = calculateOptimalDimensions(
-        cropArea.width,
-        cropArea.height,
-        settings.maxWidth,
-        settings.maxHeight
-      );
-      
-      finalCanvas.width = finalWidth;
-      finalCanvas.height = finalHeight;
-      
-      finalCtx.imageSmoothingEnabled = true;
-      finalCtx.imageSmoothingQuality = 'high';
-      
-      // Fond blanc pour JPEG
-      if (settings.outputFormat === 'jpeg') {
-        finalCtx.fillStyle = '#FFFFFF';
-        finalCtx.fillRect(0, 0, finalWidth, finalHeight);
-      }
-      
-      finalCtx.drawImage(cropCanvas, 0, 0, finalWidth, finalHeight);
-      
-      const finalImageData = finalCanvas.toDataURL(`image/${settings.outputFormat}`, settings.quality);
-      
-      onImageCapture(finalImageData);
-      setCapturedImage(finalImageData);
-      setIsCropping(false);
-      
-      toast.success('✅ Document scanné et optimisé !');
-    };
-    
-    img.src = capturedImage;
   };
 
   const calculateOptimalDimensions = (
@@ -558,8 +420,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
   const resetScan = () => {
     setCapturedImage(null);
-    setIsCropping(false);
-    setCropArea({ x: 0, y: 0, width: 0, height: 0 });
     onImageCapture('');
   };
 
@@ -611,52 +471,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         
         <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-medium shadow-xl">
           💡 Éclairage uniforme • Document à plat • Caméra stable
-        </div>
-      </div>
-    );
-  };
-
-  const renderCropOverlay = () => {
-    if (!isCropping || !canvasRef.current) return null;
-
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = rect.width / canvas.width;
-    const scaleY = rect.height / canvas.height;
-
-    return (
-      <div className="absolute inset-0 z-10">
-        {/* Overlay sombre */}
-        <div className="absolute inset-0 bg-black/50"></div>
-        
-        {/* Zone de recadrage */}
-        <div
-          className="absolute border-2 border-blue-500 bg-transparent cursor-move shadow-lg"
-          style={{
-            left: `${cropArea.x * scaleX}px`,
-            top: `${cropArea.y * scaleY}px`,
-            width: `${cropArea.width * scaleX}px`,
-            height: `${cropArea.height * scaleY}px`,
-          }}
-        >
-          {/* Poignées de redimensionnement */}
-          <div className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize shadow-lg"></div>
-          <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize shadow-lg"></div>
-          <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize shadow-lg"></div>
-          <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-se-resize shadow-lg"></div>
-          
-          {/* Grille de recadrage */}
-          <svg className="w-full h-full pointer-events-none">
-            <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="rgba(59,130,246,0.8)" strokeWidth="1" />
-            <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="rgba(59,130,246,0.8)" strokeWidth="1" />
-            <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="rgba(59,130,246,0.8)" strokeWidth="1" />
-            <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="rgba(59,130,246,0.8)" strokeWidth="1" />
-          </svg>
-        </div>
-        
-        {/* Instructions de recadrage */}
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-medium shadow-xl">
-          ✂️ Ajustez la zone de recadrage • Cliquez et glissez
         </div>
       </div>
     );
@@ -913,75 +727,12 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
         {/* Canvas cachés */}
         <canvas ref={canvasRef} className="hidden" />
-        <canvas ref={cropCanvasRef} className="hidden" />
-      </div>
-    );
-  }
-
-  // Mode recadrage
-  if (capturedImage && isCropping) {
-    return (
-      <div className="space-y-4">
-        <div className="border-2 border-blue-500 rounded-lg bg-white dark:bg-gray-800 p-6">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Crop className="h-6 w-6 text-white" />
-            </div>
-            <h4 className="text-xl font-bold text-blue-900 dark:text-blue-300 mb-2">
-              ✂️ Recadrage du document
-            </h4>
-            <p className="text-sm text-blue-700 dark:text-blue-400">
-              Ajustez la zone de sélection pour ne garder que le document
-            </p>
-          </div>
-          
-          <div className="relative inline-block max-w-full mx-auto">
-            <canvas
-              ref={canvasRef}
-              className="max-w-full max-h-[500px] border-2 border-gray-300 rounded-lg cursor-crosshair shadow-lg"
-              onMouseDown={handleCropStart}
-              onMouseMove={handleCropMove}
-              onMouseUp={handleCropEnd}
-              onMouseLeave={handleCropEnd}
-            />
-            <canvas ref={cropCanvasRef} className="hidden" />
-            
-            {renderCropOverlay()}
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 mt-6">
-            <Button
-              onClick={applyCrop}
-              disabled={cropArea.width === 0 || cropArea.height === 0}
-              className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <Check className="h-5 w-5" />
-              <span>Valider le recadrage</span>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setIsCropping(false)}
-              className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 font-bold py-3"
-            >
-              <X className="h-5 w-5" />
-              <span>Annuler</span>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={retakePhoto}
-              className="flex items-center justify-center space-x-2 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 font-bold py-3"
-            >
-              <Camera className="h-5 w-5" />
-              <span>Reprendre photo</span>
-            </Button>
-          </div>
-        </div>
       </div>
     );
   }
 
   // Affichage du résultat final
-  if (capturedImage && !isCropping) {
+  if (capturedImage) {
     return (
       <div className="space-y-4">
         <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-6">
@@ -1018,38 +769,8 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
               <span>Reprendre</span>
             </Button>
             <Button
-              onClick={() => {
-                setIsCropping(true);
-                // Redessiner l'image sur le canvas pour le recadrage
-                if (canvasRef.current) {
-                  const img = new Image();
-                  img.onload = () => {
-                    const canvas = canvasRef.current!;
-                    const ctx = canvas.getContext('2d')!;
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // Zone de recadrage par défaut
-                    const margin = 0.05;
-                    setCropArea({
-                      x: img.width * margin,
-                      y: img.height * margin,
-                      width: img.width * (1 - 2 * margin),
-                      height: img.height * (1 - 2 * margin)
-                    });
-                  };
-                  img.src = capturedImage;
-                }
-              }}
-              className="flex items-center justify-center space-x-2 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <Crop className="h-5 w-5" />
-              <span>Recadrer</span>
-            </Button>
-            <Button
               onClick={resetScan}
-              className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all duration-300 w-full"
             >
               <RotateCcw className="h-5 w-5" />
               <span>Recommencer</span>
