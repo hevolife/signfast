@@ -682,12 +682,50 @@ export const PDFManager: React.FC = () => {
       const { PDFGenerator } = await import('../utils/pdfGenerator');
       
       // Convertir le template au format attendu
-      const pdfTemplate = {
-        id: template.id,
-        name: template.name,
-        fields: template.fields || [],
-        originalPdfUrl: template.pdf_content,
+      // Fonction récursive pour extraire tous les champs (principaux + conditionnels)
+      const extractAllFields = (fields: any[]): any[] => {
+        const allFields: any[] = [];
+        
+        fields.forEach((field: any) => {
+          // Ajouter le champ principal
+          allFields.push(field);
+          
+          // Ajouter les champs conditionnels s'ils existent
+          if (field.conditionalFields) {
+            Object.values(field.conditionalFields).forEach((conditionalFieldsArray: any) => {
+              if (Array.isArray(conditionalFieldsArray)) {
+                allFields.push(...extractAllFields(conditionalFieldsArray));
+              }
+            });
+          }
+        });
+        
+        return allFields;
       };
+      
+      // Extraire tous les champs (principaux + conditionnels)
+      const allFormFields = extractAllFields(originalForm.fields || []);
+      
+      console.log('📋 Champs extraits pour masques:', {
+        totalFields: allFormFields.length,
+        principalFields: originalForm.fields?.length || 0,
+        conditionalFields: allFormFields.length - (originalForm.fields?.length || 0),
+        fieldsWithMasks: allFormFields.filter(f => f.validation?.mask).length
+      });
+      
+      // Enrichir les données avec les métadonnées complètes du formulaire
+      const enrichedFormData = {
+        ...pdf.form_data,
+        _form_metadata: { fields: allFormFields },
+        _original_form_fields: allFormFields
+      };
+      
+      console.log('📋 Données enrichies pour régénération:', {
+        originalDataKeys: Object.keys(pdf.form_data),
+        enrichedDataKeys: Object.keys(enrichedFormData),
+        hasMetadata: true,
+        metadataFieldsCount: allFormFields.length
+      });
 
       // Convertir le PDF template en bytes
       let originalPdfBytes: Uint8Array;
