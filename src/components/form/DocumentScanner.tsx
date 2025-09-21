@@ -836,7 +836,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
                   <div>Video W×H: {videoRef.current.videoWidth}×{videoRef.current.videoHeight}</div>
                   <div>Ready State: {videoRef.current.readyState}</div>
                   <div>Network State: {videoRef.current.networkState}</div>
-                  </p>
                 </div>
               )}
             </div>
