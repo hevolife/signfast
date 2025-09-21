@@ -98,6 +98,7 @@ export const FormFieldEditor: React.FC<FormFieldEditorProps> = ({
             value=""
             onChange={() => {}}
             placeholder={field.placeholder || field.label}
+            label=""
           />
         ) : (
           <Input

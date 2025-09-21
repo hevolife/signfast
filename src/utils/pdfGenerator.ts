@@ -474,6 +474,11 @@ export class PDFGenerator {
   private static applyTextMask(value: string, mask: string): string {
     if (!value || !mask) return value;
     
+    // Pour les dates, traitement spécial
+    if (mask === '99/99/9999' || mask === '99-99-9999' || mask === '99.99.9999') {
+      return this.formatDateWithMask(value, mask);
+    }
+    
     // Si la valeur semble déjà formatée avec le masque, la retourner telle quelle
     if (this.valueMatchesMask(value, mask)) {
       return value;
@@ -531,6 +536,75 @@ export class PDFGenerator {
     }
     
     return masked || value; // Fallback vers la valeur originale si le masquage échoue
+  }
+
+  /**
+   * Formate une date selon le masque spécifié
+   */
+  private static formatDateWithMask(value: string, mask: string): string {
+    if (!value || !mask) return value;
+    
+    // Si la valeur est déjà au bon format, la retourner
+    if (this.valueMatchesMask(value, mask)) {
+      return value;
+    }
+    
+    // Nettoyer la valeur (garder seulement les chiffres)
+    const cleanValue = value.replace(/[^0-9]/g, '');
+    
+    // Déterminer le séparateur du masque
+    const separator = mask.includes('/') ? '/' : mask.includes('-') ? '-' : '.';
+    
+    // Traitement selon la longueur
+    if (cleanValue.length === 8) {
+      // Format DDMMYYYY ou YYYYMMDD
+      if (cleanValue.startsWith('20') || cleanValue.startsWith('19')) {
+        // Format YYYYMMDD -> DDMMYYYY
+        const year = cleanValue.substring(0, 4);
+        const month = cleanValue.substring(4, 6);
+        const day = cleanValue.substring(6, 8);
+        return `${day}${separator}${month}${separator}${year}`;
+      } else {
+        // Format DDMMYYYY
+        const day = cleanValue.substring(0, 2);
+        const month = cleanValue.substring(2, 4);
+        const year = cleanValue.substring(4, 8);
+        return `${day}${separator}${month}${separator}${year}`;
+      }
+    } else if (cleanValue.length === 6) {
+      // Format DDMMYY -> DDMMYYYY
+      const day = cleanValue.substring(0, 2);
+      const month = cleanValue.substring(2, 4);
+      let year = cleanValue.substring(4, 6);
+      
+      // Convertir YY en YYYY (assume 20XX pour 00-30, 19XX pour 31-99)
+      const yearNum = parseInt(year);
+      if (yearNum <= 30) {
+        year = '20' + year;
+      } else {
+        year = '19' + year;
+      }
+      
+      return `${day}${separator}${month}${separator}${year}`;
+    } else if (cleanValue.length >= 4) {
+      // Appliquer le masque caractère par caractère
+      let masked = '';
+      let valueIndex = 0;
+      
+      for (let i = 0; i < mask.length && valueIndex < cleanValue.length; i++) {
+        const maskChar = mask[i];
+        if (maskChar === '9') {
+          masked += cleanValue[valueIndex];
+          valueIndex++;
+        } else {
+          masked += maskChar;
+        }
+      }
+      
+      return masked;
+    }
+    
+    return value; // Retourner la valeur originale si pas assez de chiffres
   }
 
   /**

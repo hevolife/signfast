@@ -21,7 +21,6 @@ export const MaskedInput: React.FC<MaskedInputProps> = ({
   className,
 }) => {
   const [displayValue, setDisplayValue] = useState('');
-  const [cursorPosition, setCursorPosition] = useState(0);
 
   // Appliquer le masque à une valeur
   const applyMask = (inputValue: string, maskPattern: string): { masked: string; raw: string } => {
@@ -111,7 +110,7 @@ export const MaskedInput: React.FC<MaskedInputProps> = ({
     const { masked, raw } = applyMask(inputValue, mask);
     
     setDisplayValue(masked);
-    onChange(raw); // Envoyer la valeur brute (sans les caractères du masque)
+    onChange(masked); // Envoyer la valeur masquée (formatée)
     
     // Ajuster la position du curseur
     setTimeout(() => {

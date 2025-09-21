@@ -270,7 +270,7 @@ export const PublicForm: React.FC = () => {
             <MaskedInput
               mask={field.validation.mask}
               value={formData[field.label] || ''}
-              onChange={(value) => handleInputChange(field.id, value, field)}
+              onChange={(maskedValue) => handleInputChange(field.id, maskedValue, field)}
               placeholder={field.placeholder}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
             />
