@@ -1103,6 +1103,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
           <div className="space-y-4">
             {/* Bouton principal caméra */}
             <Button
+              type="button"
               onClick={startCamera}
               className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
             >
@@ -1113,6 +1114,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             {/* Alternative : upload fichier */}
             <div className="relative">
               <Button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 variant="secondary"
                 disabled={!!cameraError}
