@@ -25,100 +25,148 @@ interface DocumentScannerProps {
     autoCapture?: boolean;
   };
 }
-      console.log('📷 Demande d\'accès caméra optimisée...');
+
 export const DocumentScanner: React.FC<DocumentScannerProps> = ({
-      // Contraintes optimisées pour un démarrage rapide
+  onImageCapture,
   value,
   required = false,
-        // Démarrage immédiat avec timeout de sécurité
+  scanSettings = {}
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string>(value || '');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [videoReady, setVideoReady] = useState(false);
+
+  const startCamera = async () => {
+    try {
+      console.log('📷 Demande d\'accès caméra optimisée...');
+      
+      const constraints = {
+        video: {
           facingMode: facingMode,
-        setTimeout(() => {
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
+        },
+        audio: false
+      };
+
+      let mediaStream;
+      
+      try {
         // Essai direct avec contraintes optimisées
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-            const maxAttempts = 10; // 5 secondes max
-            console.log('📷 ✅ Vidéo prête immédiatement');
-            
-            setVideoReady(true);
-        console.log('📷 ✅ Flux obtenu:', mediaStream.getVideoTracks().length, 'pistes');
-            setCameraError(null);
-            const checkInterval = setInterval(() => {
-          } else {
-              
-            // Vérification périodique rapide
-              attempts++;
-            let attempts = 0;
-        // Essai direct avec contraintes optimisées
-            const maxAttempts = 10; // 5 secondes max
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-            
         console.log('📷 ✅ Flux obtenu:', mediaStream.getVideoTracks().length, 'pistes');
-            const checkInterval = setInterval(() => {
-              
-              attempts++;
+      } catch (constraintError) {
         console.warn('📷 ⚠️ Contraintes optimisées échouées, fallback:', constraintError);
+        
+        // Fallback simple et rapide
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: facingMode }, 
+          audio: false 
+        });
+        console.log('📷 ✅ Flux obtenu avec fallback');
+      }
+
+      const video = videoRef.current;
+      if (video) {
+        console.log('📷 Configuration élément vidéo optimisée...');
+        video.srcObject = mediaStream;
+        
+        // Démarrage immédiat avec timeout de sécurité
+        setTimeout(() => {
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            console.log('📷 ✅ Vidéo prête immédiatement');
+            setVideoReady(true);
+            setCameraError(null);
+          } else {
+            // Vérification périodique rapide
+            let attempts = 0;
+            const maxAttempts = 10; // 5 secondes max
+            const checkInterval = setInterval(() => {
+              attempts++;
               
               if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-            audio: false 
                 console.log('📷 ✅ Vidéo prête après', attempts * 500, 'ms');
-          // Fallback simple et rapide
                 setVideoReady(true);
-          mediaStream = await navigator.mediaDevices.getUserMedia({ 
                 setCameraError(null);
-            video: { facingMode: facingMode }, 
                 clearInterval(checkInterval);
-            audio: false 
               } else if (attempts >= maxAttempts) {
-          });
                 console.warn('📷 ⚠️ Timeout détection vidéo');
-          console.log('📷 ✅ Flux obtenu avec fallback');
                 setCameraError('Caméra lente à démarrer. Réessayez ou changez de caméra.');
-        } catch (fallbackError) {
                 clearInterval(checkInterval);
-          console.error('📷 ❌ Échec total accès caméra:', fallbackError);
               }
-          throw fallbackError;
             }, 500);
-        }, 100); // Délai initial très court
           }
         }, 100); // Délai initial très court
-        }, 100); // Délai initial très court
-                  <span>Document posé à plat</span>
-        }, 100); // Délai initial très court
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>🎯</span>
-                  <span>Guides verts pour centrer</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>✂️</span>
-                  <span>Recadrage après capture</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>🔄</span>
-                  <span>Changement de caméra</span>
+      }
+    } catch (fallbackError) {
+      console.error('📷 ❌ Échec total accès caméra:', fallbackError);
+      throw fallbackError;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+        {isScanning ? (
+          <div className="relative">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-64 object-cover"
+            />
+            {scanSettings.showGuides && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-4 border-2 border-green-400 border-dashed rounded-lg"></div>
+              </div>
+            )}
+          </div>
+        ) : capturedImage ? (
+          <img
+            src={capturedImage}
+            alt="Document scanné"
+            className="w-full h-64 object-cover"
+          />
+        ) : (
+          <div className="h-64 flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <Camera className="w-12 h-12 text-gray-400 mx-auto" />
+              <div className="space-y-2">
+                <p className="text-gray-600 font-medium">Scanner un document</p>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span>📄</span>
+                    <span>Document posé à plat</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span>🎯</span>
+                    <span>Guides verts pour centrer</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span>✂️</span>
+                    <span>Recadrage après capture</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span>🔄</span>
+                    <span>Changement de caméra</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-                   <div className="mt-4">
-                     <Button
-                      type="button"
-                       onClick={() => {
-                         stopCamera();
-                         setTimeout(() => startCamera(), 500);
-                       }}
-                       className="bg-white/20 text-white border border-white/30 hover:bg-white/30 font-bold py-2 px-4"
-                     >
-                       🔄 Réessayer
-                     </Button>
-                   </div>
-        </div>
+        )}
       </div>
       
       {required && !capturedImage && (
         <p className="text-sm text-red-600 font-medium">
           ⚠️ Le scan de document est obligatoire
-        console.log('📷 Configuration élément vidéo optimisée...');
+        </p>
       )}
     </div>
+  );
+};
