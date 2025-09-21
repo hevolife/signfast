@@ -81,15 +81,14 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
         setStream(null);
       }
 
-      console.log('📷 Demande d\'accès caméra avec contraintes basiques...');
+      console.log('📷 Demande d\'accès caméra optimisée...');
       
-      // Contraintes progressives pour maximiser la compatibilité
+      // Contraintes optimisées pour un démarrage rapide
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
-          frameRate: { ideal: 30, min: 15 }
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
         audio: false
       };
@@ -99,33 +98,22 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       let mediaStream: MediaStream;
       
       try {
+        // Essai direct avec contraintes optimisées
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('📷 ✅ Flux obtenu avec contraintes complètes:', mediaStream.getVideoTracks().length, 'pistes');
+        console.log('📷 ✅ Flux obtenu:', mediaStream.getVideoTracks().length, 'pistes');
       } catch (constraintError) {
-        console.warn('📷 ⚠️ Contraintes complètes échouées, essai avec contraintes basiques:', constraintError);
-        
-        // Fallback avec contraintes minimales
-        const basicConstraints: MediaStreamConstraints = {
-          video: {
-            facingMode: facingMode
-          },
-          audio: false
-        };
+        console.warn('📷 ⚠️ Contraintes optimisées échouées, fallback:', constraintError);
         
         try {
-          mediaStream = await navigator.mediaDevices.getUserMedia(basicConstraints);
-          console.log('📷 ✅ Flux obtenu avec contraintes basiques:', mediaStream.getVideoTracks().length, 'pistes');
-        } catch (basicError) {
-          console.error('📷 ❌ Échec contraintes basiques:', basicError);
-          
-          // Dernier essai avec contraintes ultra-minimales
-          try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            console.log('📷 ✅ Flux obtenu avec contraintes minimales');
-          } catch (minimalError) {
-            console.error('📷 ❌ Échec total accès caméra:', minimalError);
-            throw minimalError;
-          }
+          // Fallback simple et rapide
+          mediaStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: facingMode }, 
+            audio: false 
+          });
+          console.log('📷 ✅ Flux obtenu avec fallback');
+        } catch (fallbackError) {
+          console.error('📷 ❌ Échec total accès caméra:', fallbackError);
+          throw fallbackError;
         }
       }
       
@@ -146,137 +134,42 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       setStream(mediaStream);
       
       if (videoRef.current) {
-        console.log('📷 Configuration élément vidéo avec gestion d\'erreurs...');
+        console.log('📷 Configuration élément vidéo optimisée...');
         const video = videoRef.current;
         
-        // Nettoyer l'élément vidéo existant
-        video.srcObject = null;
-        video.pause();
-        video.currentTime = 0;
-        
-        // Supprimer les anciens event listeners
-        video.onloadedmetadata = null;
-        video.oncanplay = null;
-        video.onplay = null;
-        video.onerror = null;
-        video.onloadstart = null;
-        video.onloadeddata = null;
-        
-        // Configurer les nouveaux événements
-        video.onloadedmetadata = () => {
-          console.log('📷 ✅ Métadonnées chargées:', {
-            videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight,
-            readyState: video.readyState,
-            networkState: video.networkState
-          });
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-            setVideoReady(true);
-          }
-        };
-        
-        video.oncanplay = () => {
-          console.log('📷 ✅ Vidéo prête à jouer');
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-            setVideoReady(true);
-          }
-        };
-        
-        video.onplay = () => {
-          console.log('📷 ✅ Lecture démarrée');
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-            setVideoReady(true);
-          }
-        };
-        
-        video.onloadeddata = () => {
-          console.log('📷 ✅ Données vidéo chargées');
-          if (video.videoWidth > 0 && video.videoHeight > 0) {
-            setVideoReady(true);
-          }
-        };
-        
-        video.onloadstart = () => {
-          console.log('📷 🔄 Début chargement vidéo...');
-        };
-        
-        video.onerror = (e) => {
-          console.error('❌ Erreur élément vidéo:', e, video.error);
-          setCameraError(`Erreur de lecture vidéo: ${video.error?.message || 'Erreur inconnue'}`);
-        };
-        
-        // Définir le flux vidéo
-        console.log('📷 Attribution du flux à l\'élément vidéo...');
+        // Configuration rapide et directe
         video.srcObject = mediaStream;
-        
-        // Configurer les propriétés vidéo
         video.autoplay = true;
         video.playsInline = true;
         video.muted = true;
         
-        // Forcer le chargement et la lecture
-        video.load();
-        
-        // Fonction pour vérifier si la vidéo est prête
-        const checkVideoReady = () => {
-          if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-            console.log('📷 ✅ Vidéo prête:', {
-              width: video.videoWidth,
-              height: video.videoHeight,
-              readyState: video.readyState
-            });
+        // Démarrage immédiat avec timeout de sécurité
+        setTimeout(() => {
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            console.log('📷 ✅ Vidéo prête immédiatement');
             setVideoReady(true);
             setCameraError(null);
-            return true;
-          }
-          return false;
-        };
-        
-        // Vérifier immédiatement si la vidéo est déjà prête
-        if (checkVideoReady()) {
-          return;
-        }
-        
-        // Essayer de démarrer la lecture avec vérification continue
-        const attemptPlay = async (attempt = 1, maxAttempts = 3) => {
-          try {
-            console.log(`📷 Tentative de lecture ${attempt}/${maxAttempts}...`);
-            await video.play();
-            console.log('📷 ✅ Lecture vidéo réussie');
+          } else {
+            // Vérification périodique rapide
+            let attempts = 0;
+            const maxAttempts = 10; // 5 secondes max
             
-            // Vérifier périodiquement si la vidéo devient prête
-            let checkCount = 0;
-            const maxChecks = 20; // 10 secondes max
-            
-            const intervalCheck = setInterval(() => {
-              checkCount++;
+            const checkInterval = setInterval(() => {
+              attempts++;
               
-              if (checkVideoReady()) {
-                clearInterval(intervalCheck);
-              } else if (checkCount >= maxChecks) {
-                clearInterval(intervalCheck);
-                console.warn('📷 ⚠️ Timeout vérification vidéo prête');
-                setCameraError('La caméra ne répond pas. Essayez de recharger la page.');
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                console.log('📷 ✅ Vidéo prête après', attempts * 500, 'ms');
+                setVideoReady(true);
+                setCameraError(null);
+                clearInterval(checkInterval);
+              } else if (attempts >= maxAttempts) {
+                console.warn('📷 ⚠️ Timeout détection vidéo');
+                setCameraError('Caméra lente à démarrer. Réessayez ou changez de caméra.');
+                clearInterval(checkInterval);
               }
             }, 500);
-            
-            // Nettoyer l'interval si le composant est démonté
-            return () => clearInterval(intervalCheck);
-            
-          } catch (playError) {
-            console.error(`❌ Erreur lecture tentative ${attempt}:`, playError);
-            
-            if (attempt < maxAttempts) {
-              console.log(`📷 Nouvelle tentative dans 1000ms...`);
-              setTimeout(() => attemptPlay(attempt + 1, maxAttempts), 1000);
-            } else {
-              setCameraError(`Impossible de démarrer la vidéo après ${maxAttempts} tentatives. Vérifiez les permissions de la caméra.`);
-            }
           }
-        };
-        
-        // Démarrer les tentatives de lecture immédiatement
-        attemptPlay();
+        }, 100); // Délai initial très court
       }
       
       setIsScanning(true);
@@ -584,22 +477,28 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
             <>
               <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-20">
                 <div className="text-center text-white">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
-                  <h3 className="text-xl font-bold mb-2">Initialisation caméra...</h3>
-                  <p className="text-sm text-white/70 mb-4">Veuillez autoriser l'accès à la caméra</p>
+                  <div className="relative mb-6">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl animate-pulse">📷</span>
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Démarrage caméra...</h3>
+                  <p className="text-sm text-white/70 mb-4">
+                    {stream ? 'Configuration de l\'affichage...' : 'Demande d\'autorisation...'}
+                  </p>
                   <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded border text-xs text-red-800 dark:text-red-200 space-y-1">
-                    <p><strong>Solutions :</strong></p>
+                    <p><strong>Si la caméra ne démarre pas :</strong></p>
                     <p>• Cliquez sur l'icône 🔒 dans la barre d'adresse</p>
                     <p>• Sélectionnez "Autoriser" pour la caméra</p>
                     <p>• Fermez les autres onglets utilisant la caméra</p>
-                    <p>• Essayez avec Chrome ou Firefox</p>
-                    <p>• Rechargez la page si nécessaire</p>
+                    <p>• Utilisez Chrome ou Safari pour de meilleurs résultats</p>
                   </div>
                   <div className="mt-4">
                     <Button
                       onClick={() => {
                         stopCamera();
-                        setTimeout(() => startCamera(), 1000);
+                        setTimeout(() => startCamera(), 500);
                       }}
                       className="bg-white/20 text-white border border-white/30 hover:bg-white/30 font-bold py-2 px-4"
                     >
@@ -624,72 +523,47 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
               backgroundColor: '#000000'
             }}
             onLoadedMetadata={(e) => {
-              console.log('📷 ✅ Event: Métadonnées vidéo chargées');
+              console.log('📷 ✅ Métadonnées chargées');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-                console.log('📷 ✅ Vidéo prête via onLoadedMetadata');
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                console.log('📷 ✅ Vidéo prête (métadonnées)');
                 setVideoReady(true);
                 setCameraError(null);
               }
             }}
             onCanPlay={(e) => {
-              console.log('📷 ✅ Event: Vidéo peut être lue');
+              console.log('📷 ✅ Vidéo peut être lue');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-                console.log('📷 ✅ Vidéo prête via onCanPlay');
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                console.log('📷 ✅ Vidéo prête (canplay)');
                 setVideoReady(true);
                 setCameraError(null);
               }
             }}
             onPlay={(e) => {
-              console.log('📷 ✅ Event: Lecture démarrée');
+              console.log('📷 ✅ Lecture démarrée');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-                console.log('📷 ✅ Vidéo prête via onPlay');
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                console.log('📷 ✅ Vidéo prête (play)');
                 setVideoReady(true);
                 setCameraError(null);
               }
             }}
             onLoadedData={(e) => {
-              console.log('📷 ✅ Event: Données vidéo chargées');
+              console.log('📷 ✅ Données chargées');
               const video = e.currentTarget;
-              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-                console.log('📷 ✅ Vidéo prête via onLoadedData');
+              if (video.videoWidth > 0 && video.videoHeight > 0) {
+                console.log('📷 ✅ Vidéo prête (données)');
                 setVideoReady(true);
                 setCameraError(null);
               }
             }}
             onError={(e) => {
-              console.error('❌ Event: Erreur vidéo:', e);
+              console.error('❌ Erreur vidéo:', e);
               const video = e.currentTarget;
               setCameraError(`Erreur lecture vidéo: ${video.error?.message || 'Erreur inconnue'}`);
             }}
-            onSuspend={() => {
-              console.warn('📷 ⚠️ Event: Vidéo suspendue');
-            }}
-            onStalled={() => {
-              console.warn('📷 ⚠️ Event: Vidéo bloquée');
-            }}
-            onWaiting={() => {
-              console.log('📷 ⏳ Event: Vidéo en attente de données');
-            }}
           />
-          
-          {/* Debug overlay pour développement */}
-          {!videoReady && !cameraError && (
-            <div className="absolute bottom-4 left-4 bg-black/70 text-white p-2 rounded text-xs">
-              <div>Stream: {stream ? '✅' : '❌'}</div>
-              <div>Video Ready: {videoReady ? '✅' : '❌'}</div>
-              <div>Facing: {facingMode}</div>
-              {videoRef.current && (
-                <div>
-                  <div>Video W×H: {videoRef.current.videoWidth}×{videoRef.current.videoHeight}</div>
-                  <div>Ready State: {videoRef.current.readyState}</div>
-                  <div>Network State: {videoRef.current.networkState}</div>
-                </div>
-              )}
-            </div>
-          )}
           
           {/* Guides visuels */}
           {videoReady && renderVideoGuides()}
