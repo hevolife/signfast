@@ -101,6 +101,18 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
               </div>
             </div>
           </div>
+                   <div className="mt-4">
+                     <Button
+                      type="button"
+                       onClick={() => {
+                         stopCamera();
+                         setTimeout(() => startCamera(), 500);
+                       }}
+                       className="bg-white/20 text-white border border-white/30 hover:bg-white/30 font-bold py-2 px-4"
+                     >
+                       🔄 Réessayer
+                     </Button>
+                   </div>
         </div>
       </div>
       
