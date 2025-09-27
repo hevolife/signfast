@@ -1,898 +1,628 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
-import { Form, FormField } from '../../types/form';
-import { OptimizedPDFService } from '../../services/optimizedPDFService';
-import { OptimizedImageProcessor } from '../../utils/optimizedImageProcessor';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { SignatureCanvas } from '../../components/form/SignatureCanvas';
-import { MaskedInput } from '../../components/form/MaskedInput';
-import { DocumentScanner } from '../../components/form/DocumentScanner';
-import { FormInput, Send, Download, CheckCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import React, { useRef, useState, useCallback } from 'react';
+import { Button } from '../ui/Button';
+import { 
+  Camera, 
+  RotateCcw, 
+  Check, 
+  X, 
+  Upload,
+  RefreshCw,
+  Maximize2,
+  Download
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export const PublicForm: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const [form, setForm] = useState<Form | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [formData, setFormData] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [passwordVerified, setPasswordVerified] = useState(false);
-  const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
+interface DocumentScannerProps {
+  onImageCapture: (imageData: string) => void;
+  value?: string;
+  required?: boolean;
+  scanSettings?: {
+    outputFormat?: 'jpeg' | 'png';
+    quality?: number;
+    maxWidth?: number;
+    maxHeight?: number;
+    showGuides?: boolean;
+    autoCapture?: boolean;
+  };
+}
 
-  useEffect(() => {
-    if (id) {
-      fetchForm();
+export const DocumentScanner: React.FC<DocumentScannerProps> = ({
+  onImageCapture,
+  value,
+  required = false,
+  scanSettings = {}
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(value || null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  
+  const settings = {
+    outputFormat: scanSettings.outputFormat || 'jpeg',
+    quality: scanSettings.quality || 0.85,
+    maxWidth: scanSettings.maxWidth || 1600,
+    maxHeight: scanSettings.maxHeight || 1200,
+    showGuides: scanSettings.showGuides !== false,
+    ...scanSettings
+  };
+
+  // Nettoyage automatique
+  React.useEffect(() => {
+    return () => {
+      cleanupCamera();
+    };
+  }, []);
+
+  const cleanupCamera = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+      setStream(null);
     }
-  }, [id]);
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, [stream]);
 
-  const fetchForm = async () => {
-    if (!id) return;
-
+  const startCamera = useCallback(async () => {
     try {
-      // Première requête : récupérer le formulaire
-      const { data: formData, error: formError } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('id', id)
-        .eq('is_published', true)
-        .single();
-
-      if (formError || !formData) {
-        toast.error('Formulaire non trouvé ou non publié');
-        return;
-      }
-
-      setForm(formData);
-
-      // Deuxième requête : récupérer le profil utilisateur
-      if (formData.user_id) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('logo_url, company_name, first_name, last_name')
-          .eq('user_id', formData.user_id)
-          .single();
-
-        if (!profileError && profileData) {
-          setUserProfile(profileData);
-        }
-      }
-
-      setIsPasswordProtected(!!formData.password);
+      setIsLoading(true);
+      setCameraError(null);
       
-      if (!formData.password) {
-        setPasswordVerified(true);
+      // Vérifier la disponibilité
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('API caméra non disponible');
       }
-    } catch (error) {
-      console.error('Erreur récupération formulaire:', error);
-      toast.error('Erreur lors du chargement du formulaire');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const verifyPassword = () => {
-    if (!form?.password) return;
-    
-    if (password === form.password) {
-      setPasswordVerified(true);
-      toast.success('Accès autorisé');
-    } else {
-      toast.error('Mot de passe incorrect');
-    }
-  };
+      // Nettoyer l'ancien flux
+      cleanupCamera();
 
-  const handleInputChange = async (fieldId: string, value: any, field: FormField) => {
-    // Traitement spécial pour les images
-    if (field.type === 'file' && value instanceof File && value.type.startsWith('image/')) {
-      try {
-        toast.loading('Optimisation de l\'image...', { duration: 3000 });
-        const optimizedImage = await OptimizedImageProcessor.processPublicFormImage(value);
-        setFormData(prev => ({ ...prev, [field.label]: optimizedImage }));
-        toast.success('Image optimisée');
-      } catch (error) {
-        console.error('Erreur optimisation image:', error);
-        toast.error('Erreur lors de l\'optimisation de l\'image');
-      }
-      return;
-    }
+      // Contraintes simples et efficaces
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
 
-    // Traitement spécial pour les dates avec masque
-    if ((field.type === 'date' || field.type === 'birthdate') && field.validation?.mask && typeof value === 'string') {
-      // Appliquer le masque à la valeur de date
-      const maskedValue = applyDateMask(value, field.validation.mask);
-      setFormData(prev => ({ ...prev, [field.label]: maskedValue }));
-      return;
-    }
-
-    setFormData(prev => ({ ...prev, [field.label]: value }));
-  };
-
-  // Fonction pour appliquer un masque à une date
-  const applyDateMask = (dateValue: string, mask: string): string => {
-    if (!dateValue || !mask) return dateValue;
-    
-    // Si c'est une date au format ISO (YYYY-MM-DD), la convertir selon le masque
-    if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateValue.split('-');
+      // Obtenir le flux
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      // Appliquer le masque spécifié
-      if (mask === '99/99/9999') {
-        return `${day}/${month}/${year}`;
-      } else if (mask === '99-99-9999') {
-        return `${day}-${month}-${year}`;
-      } else if (mask === '99.99.9999') {
-        return `${day}.${month}.${year}`;
-      } else {
-        // Format par défaut français
-        return `${day}/${month}/${year}`;
+      // Vérifier que le flux est valide
+      const videoTracks = mediaStream.getVideoTracks();
+      if (videoTracks.length === 0) {
+        throw new Error('Aucune piste vidéo disponible');
       }
-    }
-    
-    return dateValue;
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!form) return;
-
-    // Validation des champs obligatoires
-    const missingFields = form.fields?.filter(field => 
-      field.required && (!formData[field.label] || formData[field.label] === '')
-    ) || [];
-
-    if (missingFields.length > 0) {
-      toast.error(`Veuillez remplir tous les champs obligatoires`);
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      console.log('📝 Début soumission formulaire...');
+      setStream(mediaStream);
+      setIsScanning(true);
       
-      // ÉTAPE 1: Sauvegarder la réponse (OBLIGATOIRE)
-      console.log('💾 Sauvegarde réponse en base...');
-      const { data: response, error: responseError } = await supabase
-        .from('responses')
-        .insert([{
-          form_id: form.id,
-          data: formData,
-          ip_address: null,
-          user_agent: navigator.userAgent,
-        }])
-        .select()
-        .single();
-
-      if (responseError) {
-        console.error('❌ Erreur sauvegarde réponse:', responseError);
-        throw new Error(`Erreur sauvegarde: ${responseError.message}`);
-      }
-
-      console.log('✅ Réponse sauvegardée avec ID:', response.id);
-
-      // ÉTAPE 2: Générer le PDF si configuré (OPTIONNEL mais bloquant si activé)
-      let pdfGenerated = false;
-      if (form.settings?.generatePdf && form.settings?.pdfTemplateId) {
-        try {
-          console.log('📄 Génération PDF obligatoire...');
+      // Attendre que le composant soit rendu
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Configurer la vidéo
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.srcObject = mediaStream;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
+        
+        // Attendre que la vidéo soit prête
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout: vidéo non prête'));
+          }, 5000);
           
-          // Enrichir les données avec les informations du formulaire pour les masques
-          const enrichedFormData = {
-            ...formData,
-            _form_metadata: { fields: form.fields },
-            _original_form_fields: form.fields
+          const checkReady = () => {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+              clearTimeout(timeout);
+              resolve();
+            } else {
+              setTimeout(checkReady, 100);
+            }
           };
           
-          console.log('📋 Génération PDF avec métadonnées:', {
-            templateId: form.settings.pdfTemplateId,
-            fieldsCount: form.fields?.length || 0,
-            hasMetadata: true,
-            dataKeys: Object.keys(enrichedFormData)
-          });
+          video.onloadedmetadata = checkReady;
+          video.oncanplay = checkReady;
           
-          const pdfBytes = await OptimizedPDFService.generatePDF({
-            templateId: form.settings.pdfTemplateId,
-            formTitle: form.title,
-            responseId: response.id,
-            formData: enrichedFormData,
-            saveToServer: form.settings.savePdfToServer,
-          });
-
-          // Créer l'URL de téléchargement
-          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          setGeneratedPdfUrl(url);
-          pdfGenerated = true;
-          
-          console.log('✅ PDF généré avec succès, taille:', Math.round(pdfBytes.length / 1024), 'KB');
-        } catch (pdfError) {
-          console.error('❌ Erreur génération PDF:', pdfError);
-          
-          // Si la génération PDF est configurée, c'est un échec critique
-          // Supprimer la réponse pour éviter les données incohérentes
-          try {
-            await supabase
-              .from('responses')
-              .delete()
-              .eq('id', response.id);
-            console.log('🗑️ Réponse supprimée suite à l\'échec PDF');
-          } catch (deleteError) {
-            console.error('❌ Erreur suppression réponse:', deleteError);
-          }
-          
-          throw new Error(`Erreur génération PDF: ${pdfError.message}`);
-        }
-      } else {
-        console.log('📄 Génération PDF non configurée, passage à la confirmation');
+          // Vérification immédiate
+          checkReady();
+        });
       }
-
-      // ÉTAPE 3: Confirmation finale (seulement si tout s'est bien passé)
-      console.log('✅ Toutes les étapes terminées avec succès');
-      console.log('📊 Résumé:', {
-        responseId: response.id,
-        pdfGenerated,
-        pdfConfigured: !!form.settings?.generatePdf,
-        templateConfigured: !!form.settings?.pdfTemplateId
-      });
       
-      // SEULEMENT maintenant, marquer comme soumis et afficher le succès
-      setSubmitted(true);
-      toast.success('✅ Formulaire envoyé et traité avec succès !');
+      toast.success('📷 Caméra prête !');
       
     } catch (error: any) {
-      console.error('❌ Erreur soumission complète:', error);
+      console.error('❌ Erreur caméra:', error);
       
-      // Messages d'erreur spécifiques selon le type d'erreur
-      if (error.message?.includes('sauvegarde')) {
-        toast.error('❌ Erreur lors de la sauvegarde de vos données. Veuillez réessayer.');
-      } else if (error.message?.includes('PDF')) {
-        toast.error('❌ Erreur lors de la génération du PDF. Veuillez réessayer.');
-      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        toast.error('❌ Problème de connexion. Vérifiez votre réseau et réessayez.');
+      let errorMessage = 'Erreur d\'accès à la caméra';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Accès caméra refusé. Cliquez sur "Autoriser" dans votre navigateur.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'Aucune caméra trouvée. Vérifiez qu\'une caméra est connectée.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Caméra occupée. Fermez les autres applications utilisant la caméra.';
+      } else if (error.message.includes('Timeout')) {
+        errorMessage = 'Caméra trop lente. Essayez de recharger la page.';
       } else {
-        toast.error('❌ Erreur lors de l\'envoi du formulaire. Veuillez réessayer.');
+        errorMessage = `Erreur: ${error.message}`;
       }
+      
+      setCameraError(errorMessage);
+      setIsScanning(false);
+      toast.error(errorMessage);
     } finally {
-      setSubmitting(false);
+      setIsLoading(false);
     }
-  };
+  }, [facingMode, cleanupCamera]);
 
-  const downloadPDF = () => {
-    if (generatedPdfUrl) {
-      const a = document.createElement('a');
-      a.href = generatedPdfUrl;
-      a.download = `${form?.title || 'document'}_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success('PDF téléchargé !');
+  const stopCamera = useCallback(() => {
+    cleanupCamera();
+    setIsScanning(false);
+    setIsLoading(false);
+    setCameraError(null);
+  }, [cleanupCamera]);
+
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) {
+      toast.error('Caméra non disponible');
+      return;
     }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      toast.error('Erreur de capture');
+      return;
+    }
+
+    // Vérifier que la vidéo a des dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast.error('Vidéo non prête, attendez quelques secondes');
+      return;
+    }
+
+    try {
+      // Configurer le canvas
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Capturer l'image
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Optimiser l'image
+      const optimizedImage = optimizeImage(canvas, settings);
+      
+      setCapturedImage(optimizedImage);
+      onImageCapture(optimizedImage);
+      stopCamera();
+      
+      toast.success('📷 Document scanné !');
+    } catch (error) {
+      console.error('Erreur capture:', error);
+      toast.error('Erreur lors de la capture');
+    }
+  }, [settings, onImageCapture, stopCamera]);
+
+  const optimizeImage = (canvas: HTMLCanvasElement, settings: any): string => {
+    const { maxWidth, maxHeight, outputFormat, quality } = settings;
+    
+    // Calculer les nouvelles dimensions
+    const { width: newWidth, height: newHeight } = calculateDimensions(
+      canvas.width, 
+      canvas.height, 
+      maxWidth, 
+      maxHeight
+    );
+    
+    // Créer un nouveau canvas optimisé
+    const optimizedCanvas = document.createElement('canvas');
+    const ctx = optimizedCanvas.getContext('2d')!;
+    
+    optimizedCanvas.width = newWidth;
+    optimizedCanvas.height = newHeight;
+    
+    // Configuration pour qualité maximale
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    // Fond blanc pour JPEG
+    if (outputFormat === 'jpeg') {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, newWidth, newHeight);
+    }
+    
+    // Redimensionner l'image
+    ctx.drawImage(canvas, 0, 0, newWidth, newHeight);
+    
+    return optimizedCanvas.toDataURL(`image/${outputFormat}`, quality);
   };
 
-  const renderConditionalFields = (parentField: FormField, selectedValues: string | string[]) => {
-    if (!parentField.conditionalFields) return null;
+  const calculateDimensions = (width: number, height: number, maxWidth: number, maxHeight: number) => {
+    if (width <= maxWidth && height <= maxHeight) {
+      return { width, height };
+    }
 
-    const valuesToCheck = Array.isArray(selectedValues) ? selectedValues : [selectedValues];
-    const fieldsToShow: FormField[] = [];
-
-    valuesToCheck.forEach(value => {
-      if (parentField.conditionalFields?.[value]) {
-        fieldsToShow.push(...parentField.conditionalFields[value]);
-      }
-    });
-
-    return fieldsToShow.map(field => (
-      <div key={field.id} className="ml-6 border-l-2 border-blue-300 dark:border-blue-600 pl-4 mt-4">
-        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
-        {renderField(field)}
-        </div>
-      </div>
-    ));
-  };
-
-  const renderField = (field: FormField) => {
-    const baseProps = {
-      id: field.id,
-      required: field.required,
-      placeholder: field.placeholder,
-      value: formData[field.label] || '',
+    const aspectRatio = width / height;
+    
+    let newWidth = maxWidth;
+    let newHeight = maxWidth / aspectRatio;
+    
+    if (newHeight > maxHeight) {
+      newHeight = maxHeight;
+      newWidth = maxHeight * aspectRatio;
+    }
+    
+    return {
+      width: Math.round(newWidth),
+      height: Math.round(newHeight)
     };
-
-    switch (field.type) {
-      case 'text':
-        return field.validation?.mask ? (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <MaskedInput
-              mask={field.validation.mask}
-              value={formData[field.label] || ''}
-              onChange={(maskedValue) => handleInputChange(field.id, maskedValue, field)}
-              placeholder={field.placeholder}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
-            />
-            {field.validation.mask && (
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                <span>Format: {field.validation.mask}</span>
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-              type="text"
-              value={formData[field.label] || ''}
-              onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-              placeholder={field.placeholder}
-              required={field.required}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
-            />
-          </div>
-        );
-
-      case 'email':
-      case 'phone':
-      case 'number':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-              type={field.type === 'phone' ? 'tel' : field.type}
-              value={formData[field.label] || ''}
-              onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-              placeholder={field.placeholder}
-              required={field.required}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
-            />
-          </div>
-        );
-
-      case 'textarea':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <textarea
-              value={formData[field.label] || ''}
-              onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-              placeholder={field.placeholder}
-              required={field.required}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200 resize-none"
-              rows={4}
-            />
-          </div>
-        );
-
-      case 'radio':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div className="space-y-3">
-              {field.options?.map((option, idx) => (
-                <label key={idx} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer transition-all duration-200 hover:shadow-md">
-                  <input
-                    type="radio"
-                    name={field.id}
-                    value={option}
-                    checked={formData[field.label] === option}
-                    onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-                    className="text-blue-600 w-4 h-4 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-gray-800 dark:text-gray-200 font-medium">{option}</span>
-                </label>
-              ))}
-            </div>
-            {formData[field.label] && renderConditionalFields(field, formData[field.label])}
-          </div>
-        );
-
-      case 'checkbox':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div className="space-y-3">
-              {field.options?.map((option, idx) => (
-                <label key={idx} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500 cursor-pointer transition-all duration-200 hover:shadow-md">
-                  <input
-                    type="checkbox"
-                    value={option}
-                    checked={(formData[field.label] || []).includes(option)}
-                    onChange={(e) => {
-                      const currentValues = formData[field.label] || [];
-                      const newValues = e.target.checked
-                        ? [...currentValues, option]
-                        : currentValues.filter((v: string) => v !== option);
-                      handleInputChange(field.id, newValues, field);
-                    }}
-                    className="text-green-600 w-4 h-4 focus:ring-2 focus:ring-green-500 rounded"
-                  />
-                  <span className="text-gray-800 dark:text-gray-200 font-medium">{option}</span>
-                </label>
-              ))}
-            </div>
-            {formData[field.label] && formData[field.label].length > 0 && renderConditionalFields(field, formData[field.label])}
-          </div>
-        );
-
-      case 'date':
-      case 'birthdate':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-              type="date"
-              value={formData[field.label] || ''}
-              onChange={(e) => handleInputChange(field.id, e.target.value, field)}
-              required={field.required}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200"
-            />
-          </div>
-        );
-
-      case 'file':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-              type="file"
-              accept={field.validation?.acceptedFileTypes?.join(',') || "image/*,.pdf,.doc,.docx"}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  // Vérifier la taille du fichier si configurée
-                  if (field.validation?.maxFileSize && file.size > field.validation.maxFileSize * 1024 * 1024) {
-                    toast.error(`Le fichier ne doit pas dépasser ${field.validation.maxFileSize} MB`);
-                    e.target.value = ''; // Reset input
-                    return;
-                  }
-                  
-                  handleInputChange(field.id, file, field);
-                }
-              }}
-              required={field.required}
-              className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-400"
-            />
-            
-            {/* Informations sur les restrictions */}
-            {(field.validation?.acceptedFileTypes || field.validation?.maxFileSize) && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                  {field.validation?.acceptedFileTypes && (
-                    <div>
-                      <strong>Types acceptés :</strong> {field.validation.acceptedFileTypes.join(', ')}
-                    </div>
-                  )}
-                  {field.validation?.maxFileSize && (
-                    <div>
-                      <strong>Taille maximale :</strong> {field.validation.maxFileSize} MB
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {formData[field.label] && typeof formData[field.label] === 'string' && formData[field.label].startsWith('data:image') && (
-              <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                  ✅ Image uploadée avec succès
-                </p>
-                <img
-                  src={formData[field.label]}
-                  alt="Aperçu"
-                  className="max-w-full max-h-32 object-contain mx-auto border border-green-200 dark:border-green-700 rounded shadow-md"
-                />
-                <p className="text-xs text-green-700 dark:text-green-400 mt-2 text-center">
-                  {Math.round(formData[field.label].length / 1024)} KB
-                </p>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'signature':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-3">
-                ✍️ Signature électronique
-              </p>
-              <SignatureCanvas
-                onSignatureChange={(signature) => handleInputChange(field.id, signature, field)}
-                value={formData[field.label]}
-                required={field.required}
-              />
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
-                🔒 Votre signature a une valeur légale équivalente à une signature manuscrite
-              </p>
-            </div>
-          </div>
-        );
-
-      case 'scan':
-        return (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
-              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 mb-3">
-                📷 Scanner de document
-              </p>
-              <DocumentScanner
-                onImageCapture={(imageData) => handleInputChange(field.id, imageData, field)}
-                value={formData[field.label]}
-                required={field.required}
-                scanSettings={field.validation?.scanSettings}
-              />
-              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
-                📱 Utilisez votre caméra pour numériser des documents avec recadrage automatique
-              </p>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Chargement du formulaire...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  if (!form) {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setCapturedImage(result);
+      onImageCapture(result);
+      toast.success('📷 Image chargée !');
+    };
+    reader.readAsDataURL(file);
+    
+    event.target.value = '';
+  }, [onImageCapture]);
+
+  const switchCamera = useCallback(() => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    if (isScanning) {
+      stopCamera();
+      setTimeout(() => startCamera(), 200);
+    }
+  }, [isScanning, stopCamera, startCamera]);
+
+  const resetScan = useCallback(() => {
+    setCapturedImage(null);
+    onImageCapture('');
+  }, [onImageCapture]);
+
+  const retakePhoto = useCallback(() => {
+    resetScan();
+    startCamera();
+  }, [resetScan, startCamera]);
+
+  // Interface plein écran pour la caméra
+  if (isScanning) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="text-center py-16">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">❌</span>
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 to-transparent p-4">
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                <Camera className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold">Scanner de Document</h3>
+                <p className="text-sm text-white/80">Centrez votre document</p>
+              </div>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Formulaire non trouvé
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Ce formulaire n'existe pas ou n'est pas publié.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-blue-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-blue-900/20 flex items-center justify-center py-12 px-4 relative overflow-hidden">
-        {/* Background décoratif animé */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-green-200/30 to-emerald-200/30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full blur-2xl animate-bounce delay-500"></div>
-          <div className="absolute bottom-1/3 right-1/3 w-24 h-24 bg-gradient-to-br from-pink-200/30 to-purple-200/30 rounded-full blur-xl animate-pulse delay-1500"></div>
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="text-white hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        
-        {/* Particules flottantes */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-10 left-10 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-          <div className="absolute top-32 right-16 w-3 h-3 bg-blue-400 rounded-full animate-ping delay-1000"></div>
-          <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-yellow-400 rounded-full animate-ping delay-500"></div>
-          <div className="absolute bottom-16 right-1/4 w-3 h-3 bg-purple-400 rounded-full animate-ping delay-1500"></div>
-          <div className="absolute top-1/3 right-12 w-2 h-2 bg-pink-400 rounded-full animate-ping delay-2000"></div>
-        </div>
-        
-        <div className="relative max-w-2xl w-full mx-auto">
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 animate-in slide-in-from-bottom-8 duration-1000">
-            <CardContent className="text-center py-12 px-8 relative overflow-hidden">
-              {/* Background gradient subtil */}
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-blue-50/50 dark:from-green-900/10 dark:to-blue-900/10"></div>
-              
-              <div className="relative">
-                {/* Animation de succès avec cercles concentriques */}
-                <div className="relative mb-8 animate-in zoom-in duration-1000 delay-300">
-                  <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-2xl relative">
-                    {/* Cercles d'animation */}
-                    <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-30"></div>
-                    <div className="absolute inset-2 rounded-full bg-green-300 animate-ping opacity-20 delay-300"></div>
-                    <div className="absolute inset-4 rounded-full bg-green-200 animate-ping opacity-10 delay-600"></div>
-                    
-                    {/* Icône principale */}
-                    <CheckCircle className="h-16 w-16 text-white animate-pulse" />
-                    
-                    {/* Étoiles scintillantes */}
-                    <div className="absolute -top-3 -right-3 text-yellow-400 animate-bounce">
-                      <span className="text-2xl">✨</span>
-                    </div>
-                    <div className="absolute -bottom-3 -left-3 text-yellow-400 animate-bounce delay-500">
-                      <span className="text-xl">⭐</span>
-                    </div>
-                    <div className="absolute -top-3 -left-3 text-yellow-400 animate-bounce delay-1000">
-                      <span className="text-lg">💫</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Titre principal avec animation */}
-                <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 animate-in slide-in-from-top duration-1000 delay-500">
-                  <span className="bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                    Parfait !
-                  </span>
-                </h1>
-                
-                {/* Message de confirmation */}
-                <div className="space-y-4 mb-8 animate-in slide-in-from-bottom duration-1000 delay-700">
-                  <p className="text-xl sm:text-2xl text-gray-800 dark:text-gray-200 font-semibold">
-                    🎉 Votre formulaire a été envoyé avec succès !
-                  </p>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Merci pour votre confiance. Vos informations ont été transmises en toute sécurité.
-                  </p>
-                </div>
-
-                {/* Informations de confirmation */}
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800 mb-8 shadow-lg animate-in fade-in duration-1000 delay-1000">
-                  <div className="flex items-center justify-center space-x-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
-                      <CheckCircle className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="text-lg font-bold text-green-900 dark:text-green-300">
-                      Confirmation de réception
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">📝</span>
-                      <span className="text-green-800 dark:text-green-200">Données sécurisées</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">🔒</span>
-                      <span className="text-green-800 dark:text-green-200">Chiffrement SSL</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">⚡</span>
-                      <span className="text-green-800 dark:text-green-200">Traitement instantané</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">🇫🇷</span>
-                      <span className="text-green-800 dark:text-green-200">Conforme RGPD</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bouton de téléchargement PDF avec animation */}
-                {generatedPdfUrl && (
-                  <div className="animate-in slide-in-from-bottom duration-1000 delay-1200">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800 mb-6 shadow-lg">
-                      <div className="flex items-center justify-center space-x-3 mb-4">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                          <Download className="h-4 w-4 text-white" />
-                        </div>
-                        <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
-                          Document PDF généré
-                        </h3>
-                      </div>
-                      <p className="text-sm text-blue-700 dark:text-blue-400 mb-4">
-                        Votre document personnalisé est prêt à être téléchargé
-                      </p>
-                      <Button
-                        onClick={downloadPDF}
-                        className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 rounded-2xl"
-                      >
-                        <Download className="h-6 w-6 mr-3 group-hover:animate-bounce" />
-                        <span>Télécharger votre PDF</span>
-                        <div className="ml-3 opacity-75 group-hover:opacity-100 transition-opacity">📄</div>
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Message de fin avec branding */}
-                <div className="animate-in fade-in duration-1000 delay-1500">
-                  <div className="flex items-center justify-center space-x-3 text-gray-500 dark:text-gray-400">
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                      <FormInput className="h-3 w-3 text-white" />
-                    </div>
-                    <span className="text-sm font-medium">
-                      Propulsé par <span className="font-bold text-blue-600">SignFast</span>
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Signature électronique française • Sécurisé et conforme
-                  </p>
-                </div>
-
-                {/* Confettis CSS */}
-                <style jsx>{`
-                  @keyframes confetti-fall {
-                    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-                    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-                  }
-                  
-                  .confetti {
-                    position: absolute;
-                    width: 10px;
-                    height: 10px;
-                    background: linear-gradient(45deg, #10b981, #3b82f6);
-                    animation: confetti-fall 3s linear infinite;
-                  }
-                  
-                  .confetti:nth-child(1) { left: 10%; animation-delay: 0s; background: #10b981; }
-                  .confetti:nth-child(2) { left: 20%; animation-delay: 0.5s; background: #3b82f6; }
-                  .confetti:nth-child(3) { left: 30%; animation-delay: 1s; background: #8b5cf6; }
-                  .confetti:nth-child(4) { left: 40%; animation-delay: 1.5s; background: #f59e0b; }
-                  .confetti:nth-child(5) { left: 50%; animation-delay: 2s; background: #ef4444; }
-                  .confetti:nth-child(6) { left: 60%; animation-delay: 0.3s; background: #06b6d4; }
-                  .confetti:nth-child(7) { left: 70%; animation-delay: 0.8s; background: #84cc16; }
-                  .confetti:nth-child(8) { left: 80%; animation-delay: 1.3s; background: #ec4899; }
-                  .confetti:nth-child(9) { left: 90%; animation-delay: 1.8s; background: #6366f1; }
-                `}</style>
-                
-                {/* Confettis animés */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="confetti"></div>
-                  ))}
+        {/* Zone vidéo */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Gestion des erreurs */}
+          {cameraError && (
+            <div className="absolute inset-0 bg-red-900/95 backdrop-blur-sm flex items-center justify-center z-30">
+              <div className="text-center text-white p-6 max-w-sm">
+                <div className="text-4xl mb-4">❌</div>
+                <h3 className="text-lg font-bold mb-3">Erreur Caméra</h3>
+                <p className="text-sm mb-4">{cameraError}</p>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCameraError(null);
+                      startCamera();
+                    }}
+                    className="w-full bg-white text-red-600 hover:bg-gray-100 font-bold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    🔄 Réessayer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="w-full text-white hover:bg-white/20 font-bold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Fermer
+                  </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (isPasswordProtected && !passwordVerified) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="h-8 w-8 text-yellow-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Formulaire protégé
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Ce formulaire nécessite un mot de passe
-              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="relative">
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  label="Mot de passe"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Entrez le mot de passe"
-                  required
+          )}
+
+          {/* Indicateur de chargement */}
+          {isLoading && (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-20">
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+                <p className="font-medium">Activation de la caméra...</p>
+                <p className="text-sm text-white/70 mt-1">Autorisez l'accès si demandé</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Vidéo */}
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            playsInline
+            muted
+            autoPlay
+          />
+          
+          {/* Canvas caché */}
+          <canvas ref={canvasRef} className="hidden" />
+          
+          {/* Guides de composition */}
+          {settings.showGuides && (
+            <div className="absolute inset-0 pointer-events-none z-10">
+              <svg className="w-full h-full">
+                {/* Grille */}
+                <defs>
+                  <pattern id="grid" width="33.33%" height="33.33%" patternUnits="userSpaceOnUse">
+                    <path d="M 33.33 0 L 0 0 0 33.33" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                
+                {/* Cadre principal */}
+                <rect 
+                  x="10%" 
+                  y="15%" 
+                  width="80%" 
+                  height="70%" 
+                  fill="none" 
+                  stroke="rgba(0,255,0,0.8)" 
+                  strokeWidth="3" 
+                  strokeDasharray="15,5"
+                  rx="8"
                 />
+                
+                {/* Coins */}
+                <g stroke="rgba(0,255,0,1)" strokeWidth="4" fill="none">
+                  <path d="M 12% 17% L 15% 17% L 15% 20%" />
+                  <path d="M 88% 17% L 85% 17% L 85% 20%" />
+                  <path d="M 12% 83% L 15% 83% L 15% 80%" />
+                  <path d="M 88% 83% L 85% 83% L 85% 80%" />
+                </g>
+              </svg>
+              
+              {/* Instructions */}
+              <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium">
+                📄 Centrez votre document dans le cadre vert
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Contrôles en bas */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 to-transparent p-6">
+          <div className="flex items-center justify-center space-x-6">
+            {/* Changer caméra */}
+            <button
+              type="button"
+              onClick={switchCamera}
+              className="text-white hover:bg-white/20 rounded-full w-12 h-12 flex items-center justify-center transition-colors"
+              disabled={isLoading}
+            >
+              <RotateCcw className="h-5 w-5" />
+            </button>
+
+            {/* Capture */}
+            <button
+              type="button"
+              onClick={capturePhoto}
+              disabled={isLoading}
+              className="bg-white text-black hover:bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center shadow-2xl transition-all disabled:opacity-50"
+            >
+              <Camera className="h-6 w-6" />
+            </button>
+
+            {/* Galerie */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-white hover:bg-white/20 rounded-full w-12 h-12 flex items-center justify-center transition-colors"
+            >
+              <Upload className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="mt-4 text-center text-white/80 text-sm">
+            Appuyez sur le bouton blanc pour capturer
+          </div>
+        </div>
+
+        {/* Input file caché */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+      </div>
+    );
+  }
+
+  // Interface normale
+  return (
+    <div className="space-y-4">
+      {/* Image capturée */}
+      {capturedImage ? (
+        <div className="relative group">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-200 dark:border-emerald-700 overflow-hidden shadow-lg">
+            <img
+              src={capturedImage}
+              alt="Document scanné"
+              className="w-full h-auto max-h-64 object-contain"
+            />
+            
+            {/* Actions au survol */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="flex space-x-2">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-8 text-gray-400 hover:text-gray-600"
+                  onClick={retakePhoto}
+                  className="bg-white/90 text-gray-900 hover:bg-white px-3 py-2 rounded-lg shadow-lg transition-colors flex items-center space-x-1"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <Camera className="h-4 w-4" />
+                  <span>Reprendre</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={resetScan}
+                  className="bg-white/90 text-gray-900 hover:bg-white px-3 py-2 rounded-lg shadow-lg transition-colors flex items-center space-x-1"
+                >
+                  <X className="h-4 w-4" />
+                  <span>Supprimer</span>
                 </button>
               </div>
-              
-              <Button
-                onClick={verifyPassword}
-                disabled={!password}
-                className="w-full"
-              >
-                Accéder au formulaire
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20 py-8 px-4">
-      
-      <div className="max-w-2xl mx-auto">
-        {/* Header du formulaire simplifié */}
-        <div className="text-center mb-8">
-          {/* Logo de l'entreprise si disponible */}
-          {userProfile?.logo_url ? (
-            <div className="mb-6">
-              <img
-                src={userProfile.logo_url}
-                alt={userProfile.company_name || 'Logo entreprise'}
-                className="max-w-24 max-h-24 object-contain mx-auto mb-4 rounded-xl shadow-lg"
-              />
-              {userProfile.company_name && (
-                <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  {userProfile.company_name}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="inline-flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <FormInput className="h-5 w-5 text-white" />
+          </div>
+          
+          {/* Informations */}
+          <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-emerald-700 dark:text-emerald-300">
+                <Check className="h-4 w-4" />
+                <span className="font-medium text-sm">Document scanné</span>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                SignFast
-              </span>
+              <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                {Math.round(capturedImage.length / 1024)} KB • {settings.outputFormat.toUpperCase()}
+              </div>
             </div>
-          )}
-          
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            {form.title}
-          </h1>
-          {form.description && (
-            <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed mb-6">
-              {form.description}
-            </p>
-          )}
-          
-          {/* Badge de sécurité simplifié */}
-          <div className="inline-flex items-center space-x-2 bg-green-100 dark:bg-green-900/30 px-3 py-2 rounded-full text-green-800 dark:text-green-300 text-sm font-medium shadow-sm">
-            <span className="text-lg">🔒</span>
-            <span>Sécurisé et conforme</span>
           </div>
         </div>
-
-        {/* Formulaire simplifié */}
-        <Card className="bg-white dark:bg-gray-800 shadow-xl border-0">
-          
-          <CardContent className="p-6 sm:p-8">
+      ) : (
+        /* Interface de démarrage */
+        <div className="border-2 border-dashed border-emerald-300 dark:border-emerald-600 rounded-xl p-6 text-center bg-emerald-50/50 dark:bg-emerald-900/10 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+          <div className="space-y-4">
+            {/* Icône */}
+            <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+              <Camera className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {form.fields?.map((field) => (
-                <div key={field.id}>
-                  {renderField(field)}
-                </div>
-              ))}
+            {/* Titre */}
+            <div>
+              <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">
+                Scanner un document
+              </h3>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                Utilisez votre caméra pour numériser un document en haute qualité
+              </p>
+            </div>
+            
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                type="button"
+                onClick={startCamera}
+                disabled={isLoading}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Démarrage...</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-4 w-4" />
+                    <span>Scanner un document</span>
+                  </>
+                )}
+              </button>
               
-              {/* Section de soumission simplifiée */}
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="border border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium px-6 py-3 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Ou choisir une image</span>
+              </button>
+            </div>
+            
+            {/* Fonctionnalités */}
+            <div className="grid grid-cols-3 gap-3 mt-6 text-xs text-emerald-600 dark:text-emerald-400">
+              <div className="text-center">
+                <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span className="text-emerald-600 dark:text-emerald-400">🎯</span>
+                </div>
+                <span>Guides auto</span>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span className="text-emerald-600 dark:text-emerald-400">✨</span>
+                </div>
+                <span>Haute qualité</span>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span className="text-emerald-600 dark:text-emerald-400">⚡</span>
+                </div>
+                <span>Rapide</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Input file caché */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      
+      {/* Message d'obligation */}
+      {required && !capturedImage && (
+        <p className="text-sm text-red-600 font-medium">
+          ⚠️ Le scan de document est obligatoire
+        </p>
+      )}
+    </div>
+  );
+};

@@ -37,6 +37,7 @@ export const PublicForm: React.FC = () => {
     if (!id) return;
 
     try {
+      // Première requête : récupérer le formulaire
       const { data: formData, error: formError } = await supabase
         .from('forms')
         .select('*')
@@ -51,6 +52,7 @@ export const PublicForm: React.FC = () => {
 
       setForm(formData);
 
+      // Deuxième requête : récupérer le profil utilisateur
       if (formData.user_id) {
         const { data: profileData, error: profileError } = await supabase
           .from('user_profiles')
@@ -69,6 +71,7 @@ export const PublicForm: React.FC = () => {
         setPasswordVerified(true);
       }
     } catch (error) {
+      console.error('Erreur récupération formulaire:', error);
       toast.error('Erreur lors du chargement du formulaire');
     } finally {
       setLoading(false);
@@ -87,6 +90,7 @@ export const PublicForm: React.FC = () => {
   };
 
   const handleInputChange = async (fieldId: string, value: any, field: FormField) => {
+    // Traitement spécial pour les images
     if (field.type === 'file' && value instanceof File && value.type.startsWith('image/')) {
       try {
         toast.loading('Optimisation de l\'image...', { duration: 3000 });
@@ -94,12 +98,15 @@ export const PublicForm: React.FC = () => {
         setFormData(prev => ({ ...prev, [field.label]: optimizedImage }));
         toast.success('Image optimisée');
       } catch (error) {
+        console.error('Erreur optimisation image:', error);
         toast.error('Erreur lors de l\'optimisation de l\'image');
       }
       return;
     }
 
+    // Traitement spécial pour les dates avec masque
     if ((field.type === 'date' || field.type === 'birthdate') && field.validation?.mask && typeof value === 'string') {
+      // Appliquer le masque à la valeur de date
       const maskedValue = applyDateMask(value, field.validation.mask);
       setFormData(prev => ({ ...prev, [field.label]: maskedValue }));
       return;
@@ -108,12 +115,15 @@ export const PublicForm: React.FC = () => {
     setFormData(prev => ({ ...prev, [field.label]: value }));
   };
 
+  // Fonction pour appliquer un masque à une date
   const applyDateMask = (dateValue: string, mask: string): string => {
     if (!dateValue || !mask) return dateValue;
     
+    // Si c'est une date au format ISO (YYYY-MM-DD), la convertir selon le masque
     if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = dateValue.split('-');
       
+      // Appliquer le masque spécifié
       if (mask === '99/99/9999') {
         return `${day}/${month}/${year}`;
       } else if (mask === '99-99-9999') {
@@ -121,6 +131,7 @@ export const PublicForm: React.FC = () => {
       } else if (mask === '99.99.9999') {
         return `${day}.${month}.${year}`;
       } else {
+        // Format par défaut français
         return `${day}/${month}/${year}`;
       }
     }
@@ -146,6 +157,10 @@ export const PublicForm: React.FC = () => {
     setSubmitting(true);
 
     try {
+      console.log('📝 Début soumission formulaire...');
+      
+      // ÉTAPE 1: Sauvegarder la réponse (OBLIGATOIRE)
+      console.log('💾 Sauvegarde réponse en base...');
       const { data: response, error: responseError } = await supabase
         .from('responses')
         .insert([{
@@ -158,17 +173,31 @@ export const PublicForm: React.FC = () => {
         .single();
 
       if (responseError) {
+        console.error('❌ Erreur sauvegarde réponse:', responseError);
         throw new Error(`Erreur sauvegarde: ${responseError.message}`);
       }
 
+      console.log('✅ Réponse sauvegardée avec ID:', response.id);
+
+      // ÉTAPE 2: Générer le PDF si configuré (OPTIONNEL mais bloquant si activé)
       let pdfGenerated = false;
       if (form.settings?.generatePdf && form.settings?.pdfTemplateId) {
         try {
+          console.log('📄 Génération PDF obligatoire...');
+          
+          // Enrichir les données avec les informations du formulaire pour les masques
           const enrichedFormData = {
             ...formData,
             _form_metadata: { fields: form.fields },
             _original_form_fields: form.fields
           };
+          
+          console.log('📋 Génération PDF avec métadonnées:', {
+            templateId: form.settings.pdfTemplateId,
+            fieldsCount: form.fields?.length || 0,
+            hasMetadata: true,
+            dataKeys: Object.keys(enrichedFormData)
+          });
           
           const pdfBytes = await OptimizedPDFService.generatePDF({
             templateId: form.settings.pdfTemplateId,
@@ -178,29 +207,51 @@ export const PublicForm: React.FC = () => {
             saveToServer: form.settings.savePdfToServer,
           });
 
+          // Créer l'URL de téléchargement
           const blob = new Blob([pdfBytes], { type: 'application/pdf' });
           const url = URL.createObjectURL(blob);
           setGeneratedPdfUrl(url);
           pdfGenerated = true;
           
+          console.log('✅ PDF généré avec succès, taille:', Math.round(pdfBytes.length / 1024), 'KB');
         } catch (pdfError) {
+          console.error('❌ Erreur génération PDF:', pdfError);
+          
+          // Si la génération PDF est configurée, c'est un échec critique
+          // Supprimer la réponse pour éviter les données incohérentes
           try {
             await supabase
               .from('responses')
               .delete()
               .eq('id', response.id);
+            console.log('🗑️ Réponse supprimée suite à l\'échec PDF');
           } catch (deleteError) {
+            console.error('❌ Erreur suppression réponse:', deleteError);
           }
           
           throw new Error(`Erreur génération PDF: ${pdfError.message}`);
         }
       } else {
+        console.log('📄 Génération PDF non configurée, passage à la confirmation');
       }
 
+      // ÉTAPE 3: Confirmation finale (seulement si tout s'est bien passé)
+      console.log('✅ Toutes les étapes terminées avec succès');
+      console.log('📊 Résumé:', {
+        responseId: response.id,
+        pdfGenerated,
+        pdfConfigured: !!form.settings?.generatePdf,
+        templateConfigured: !!form.settings?.pdfTemplateId
+      });
+      
+      // SEULEMENT maintenant, marquer comme soumis et afficher le succès
       setSubmitted(true);
       toast.success('✅ Formulaire envoyé et traité avec succès !');
       
     } catch (error: any) {
+      console.error('❌ Erreur soumission complète:', error);
+      
+      // Messages d'erreur spécifiques selon le type d'erreur
       if (error.message?.includes('sauvegarde')) {
         toast.error('❌ Erreur lors de la sauvegarde de vos données. Veuillez réessayer.');
       } else if (error.message?.includes('PDF')) {
