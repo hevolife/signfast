@@ -304,13 +304,13 @@ function App() {
     >
       <DemoProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <SubAccountProvider>
+          <SubAccountProvider>
+            <NotificationProvider>
               <Router>
                 <AppContent />
               </Router>
-            </SubAccountProvider>
-          </NotificationProvider>
+            </NotificationProvider>
+          </SubAccountProvider>
         </AuthProvider>
       </DemoProvider>
     </ErrorBoundary>
