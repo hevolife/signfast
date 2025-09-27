@@ -157,8 +157,11 @@ export const PublicForm: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Sauvegarder la réponse
-      const { data: response, error } = await supabase
+      console.log('📝 Début soumission formulaire...');
+      
+      // ÉTAPE 1: Sauvegarder la réponse (OBLIGATOIRE)
+      console.log('💾 Sauvegarde réponse en base...');
+      const { data: response, error: responseError } = await supabase
         .from('responses')
         .insert([{
           form_id: form.id,
@@ -169,13 +172,19 @@ export const PublicForm: React.FC = () => {
         .select()
         .single();
 
-      if (error) {
-        throw error;
+      if (responseError) {
+        console.error('❌ Erreur sauvegarde réponse:', responseError);
+        throw new Error(`Erreur sauvegarde: ${responseError.message}`);
       }
 
-      // Générer le PDF si configuré
-      if (form.settings?.generatePdf) {
+      console.log('✅ Réponse sauvegardée avec ID:', response.id);
+
+      // ÉTAPE 2: Générer le PDF si configuré (OPTIONNEL mais bloquant si activé)
+      let pdfGenerated = false;
+      if (form.settings?.generatePdf && form.settings?.pdfTemplateId) {
         try {
+          console.log('📄 Génération PDF obligatoire...');
+          
           // Enrichir les données avec les informations du formulaire pour les masques
           const enrichedFormData = {
             ...formData,
@@ -184,6 +193,7 @@ export const PublicForm: React.FC = () => {
           };
           
           console.log('📋 Génération PDF avec métadonnées:', {
+            templateId: form.settings.pdfTemplateId,
             fieldsCount: form.fields?.length || 0,
             hasMetadata: true,
             dataKeys: Object.keys(enrichedFormData)
@@ -201,18 +211,56 @@ export const PublicForm: React.FC = () => {
           const blob = new Blob([pdfBytes], { type: 'application/pdf' });
           const url = URL.createObjectURL(blob);
           setGeneratedPdfUrl(url);
+          pdfGenerated = true;
+          
+          console.log('✅ PDF généré avec succès, taille:', Math.round(pdfBytes.length / 1024), 'KB');
         } catch (pdfError) {
-          console.error('Erreur génération PDF:', pdfError);
-          toast.error('Formulaire soumis mais erreur génération PDF');
+          console.error('❌ Erreur génération PDF:', pdfError);
+          
+          // Si la génération PDF est configurée, c'est un échec critique
+          // Supprimer la réponse pour éviter les données incohérentes
+          try {
+            await supabase
+              .from('responses')
+              .delete()
+              .eq('id', response.id);
+            console.log('🗑️ Réponse supprimée suite à l\'échec PDF');
+          } catch (deleteError) {
+            console.error('❌ Erreur suppression réponse:', deleteError);
+          }
+          
+          throw new Error(`Erreur génération PDF: ${pdfError.message}`);
         }
+      } else {
+        console.log('📄 Génération PDF non configurée, passage à la confirmation');
       }
 
+      // ÉTAPE 3: Confirmation finale (seulement si tout s'est bien passé)
+      console.log('✅ Toutes les étapes terminées avec succès');
+      console.log('📊 Résumé:', {
+        responseId: response.id,
+        pdfGenerated,
+        pdfConfigured: !!form.settings?.generatePdf,
+        templateConfigured: !!form.settings?.pdfTemplateId
+      });
+      
+      // SEULEMENT maintenant, marquer comme soumis et afficher le succès
       setSubmitted(true);
-      toast.success('Formulaire soumis avec succès !');
+      toast.success('✅ Formulaire envoyé et traité avec succès !');
       
     } catch (error: any) {
-      console.error('Erreur soumission:', error);
-      toast.error('Erreur lors de la soumission');
+      console.error('❌ Erreur soumission complète:', error);
+      
+      // Messages d'erreur spécifiques selon le type d'erreur
+      if (error.message?.includes('sauvegarde')) {
+        toast.error('❌ Erreur lors de la sauvegarde de vos données. Veuillez réessayer.');
+      } else if (error.message?.includes('PDF')) {
+        toast.error('❌ Erreur lors de la génération du PDF. Veuillez réessayer.');
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        toast.error('❌ Problème de connexion. Vérifiez votre réseau et réessayez.');
+      } else {
+        toast.error('❌ Erreur lors de l\'envoi du formulaire. Veuillez réessayer.');
+      }
     } finally {
       setSubmitting(false);
     }
