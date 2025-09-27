@@ -18,7 +18,6 @@ export class OptimizedPDFService {
     const { templateId, formTitle, responseId, formData, saveToServer = false } = options;
     
     try {
-      console.log('📄 Génération PDF optimisée:', { templateId, formTitle, responseId });
 
       let pdfBytes: Uint8Array;
 
@@ -35,7 +34,6 @@ export class OptimizedPDFService {
 
       return pdfBytes;
     } catch (error) {
-      console.error('❌ Erreur génération PDF:', error);
       throw error;
     }
   }
@@ -92,14 +90,8 @@ export class OptimizedPDFService {
             extractAllFields(linkedForm.fields || []);
             formMetadata = { fields: allFields };
             
-            console.log('📋 Métadonnées formulaire enrichies:', {
-              totalFields: allFields.length,
-              principalFields: linkedForm.fields?.length || 0,
-              conditionalFields: allFields.length - (linkedForm.fields?.length || 0)
-            });
           }
         } catch (formError) {
-          console.warn('Impossible de récupérer les métadonnées du formulaire:', formError);
         }
       }
 
@@ -116,12 +108,6 @@ export class OptimizedPDFService {
         ? { ...formData, _form_metadata: formMetadata }
         : formData;
       
-      console.log('📋 Données enrichies pour PDF:', {
-        hasMetadata: !!formMetadata,
-        fieldsCount: formMetadata?.fields?.length || 0,
-        dataKeys: Object.keys(enrichedFormData)
-      });
-      
       // Convertir le PDF en bytes
       const base64Data = template.pdf_content.split(',')[1];
       const binaryString = atob(base64Data);
@@ -132,7 +118,6 @@ export class OptimizedPDFService {
 
       return await PDFGenerator.generatePDF(pdfTemplate, enrichedFormData, originalPdfBytes);
     } catch (error) {
-      console.error('❌ Erreur génération avec template:', error);
       throw error;
     }
   }
@@ -176,7 +161,6 @@ export class OptimizedPDFService {
       
       return new Uint8Array(doc.output('arraybuffer'));
     } catch (error) {
-      console.error('❌ Erreur génération PDF simple:', error);
       throw error;
     }
   }
@@ -209,9 +193,7 @@ export class OptimizedPDFService {
         user_name: formData.nom || formData.name || 'Utilisateur'
       });
 
-      console.log('✅ PDF sauvegardé sur serveur');
     } catch (error) {
-      console.error('❌ Erreur sauvegarde PDF:', error);
     }
   }
 
@@ -230,9 +212,7 @@ export class OptimizedPDFService {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      console.log('✅ PDF téléchargé:', fileName);
     } catch (error) {
-      console.error('❌ Erreur téléchargement PDF:', error);
       throw error;
     }
   }
@@ -260,7 +240,6 @@ export class OptimizedPDFService {
 
       return count || 0;
     } catch (error) {
-      console.error('❌ Erreur comptage PDFs:', error);
       return 0;
     }
   }

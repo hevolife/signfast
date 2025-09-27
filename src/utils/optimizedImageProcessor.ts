@@ -32,8 +32,6 @@ export class OptimizedImageProcessor {
     const opts = { ...this.DEFAULT_OPTIONS, ...options };
     
     try {
-      console.log('🖼️ Début traitement image:', typeof file === 'string' ? 'DataURL' : file.name);
-      
       // Validation
       if (file instanceof File) {
         this.validateFile(file);
@@ -72,16 +70,8 @@ export class OptimizedImageProcessor {
       // Compression progressive
       const result = await this.progressiveCompression(canvas, format, opts.quality, opts.maxSizeKB);
       
-      console.log('✅ Image traitée:', {
-        originalSize: file instanceof File ? Math.round(file.size / 1024) + 'KB' : 'DataURL',
-        finalSize: Math.round(result.length / 1024) + 'KB',
-        dimensions: `${width}x${height}`,
-        format: format.toUpperCase()
-      });
-      
       return result;
     } catch (error) {
-      console.error('❌ Erreur traitement image:', error);
       throw new Error(`Erreur traitement image: ${error.message}`);
     }
   }

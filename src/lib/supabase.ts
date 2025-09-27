@@ -4,7 +4,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supabaseKey === 'your-anon-key' || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-  console.warn('⚠️ Supabase non configuré - utilisation du mode local uniquement');
 }
 
 // Custom fetch function to handle session expiration
@@ -15,7 +14,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     
     // Handle 500 errors gracefully
     if (response.status === 500) {
-      console.warn('⚠️ Server error 500, retrying with fallback...');
       // Return a mock successful response to prevent crashes
       return new Response(JSON.stringify({ data: null, error: null }), {
         status: 200,
@@ -26,7 +24,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     
     // Handle other server errors (502, 503, 504)
     if (response.status >= 500) {
-      console.warn(`⚠️ Server error ${response.status}, using fallback response`);
       return new Response(JSON.stringify({ data: null, error: null }), {
         status: 200,
         statusText: 'OK (Fallback)',
@@ -40,17 +37,13 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
         const body = await response.clone().json();
         if (body.code === 'session_not_found') {
           // Session expired, try to refresh token instead of signing out
-          console.log('🔄 Session expirée, tentative de rafraîchissement...');
           try {
             const { data, error } = await supabase.auth.refreshSession();
             if (error) {
-              console.log('❌ Impossible de rafraîchir, déconnexion nécessaire');
               supabase.auth.signOut();
             } else {
-              console.log('✅ Token rafraîchi avec succès');
             }
           } catch (refreshError) {
-            console.log('❌ Erreur rafraîchissement, déconnexion');
             supabase.auth.signOut();
           }
         }
@@ -81,7 +74,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     
     return response;
   } catch (error) {
-    console.warn('Network error in customFetch:', error);
     // Re-throw the error to let the calling code handle it
     throw error;
   }
@@ -102,7 +94,6 @@ const isSupabaseConfigured = () => {
 // Safe fetch wrapper that handles configuration issues
 const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   if (!isSupabaseConfigured()) {
-    console.warn('⚠️ Supabase not configured, skipping request');
     // Return a mock response instead of throwing to prevent crashes
     return new Response(JSON.stringify({ data: null, error: null }), {
       status: 200,
@@ -124,7 +115,6 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       if (response.status === 404 || response.status === 406) {
         const body = await response.clone().text();
         if (body.includes('PGRST205') || body.includes('Could not find the table') || body.includes('sub_accounts')) {
-          console.log('📋 Table sub_accounts not found, returning structured error for fallback');
           return new Response(JSON.stringify({ 
             data: null,
             error: { 
@@ -142,7 +132,6 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
       
       return response;
     } catch (error) {
-      console.warn('⚠️ Network error accessing sub_accounts table, returning fallback response:', error);
       return new Response(JSON.stringify({ 
         data: null, 
         error: { 
@@ -161,7 +150,6 @@ const safeFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
     return await customFetch(url, options);
   } catch (error) {
-    console.warn('⚠️ Network error, returning empty response:', error);
     // Re-throw network errors to let Supabase handle them properly
     throw error;
   }

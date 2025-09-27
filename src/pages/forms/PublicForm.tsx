@@ -157,10 +157,7 @@ export const PublicForm: React.FC = () => {
     setSubmitting(true);
 
     try {
-      console.log('📝 Début soumission formulaire...');
-      
       // ÉTAPE 1: Sauvegarder la réponse (OBLIGATOIRE)
-      console.log('💾 Sauvegarde réponse en base...');
       const { data: response, error: responseError } = await supabase
         .from('responses')
         .insert([{
@@ -173,31 +170,19 @@ export const PublicForm: React.FC = () => {
         .single();
 
       if (responseError) {
-        console.error('❌ Erreur sauvegarde réponse:', responseError);
         throw new Error(`Erreur sauvegarde: ${responseError.message}`);
       }
-
-      console.log('✅ Réponse sauvegardée avec ID:', response.id);
 
       // ÉTAPE 2: Générer le PDF si configuré (OPTIONNEL mais bloquant si activé)
       let pdfGenerated = false;
       if (form.settings?.generatePdf && form.settings?.pdfTemplateId) {
         try {
-          console.log('📄 Génération PDF obligatoire...');
-          
           // Enrichir les données avec les informations du formulaire pour les masques
           const enrichedFormData = {
             ...formData,
             _form_metadata: { fields: form.fields },
             _original_form_fields: form.fields
           };
-          
-          console.log('📋 Génération PDF avec métadonnées:', {
-            templateId: form.settings.pdfTemplateId,
-            fieldsCount: form.fields?.length || 0,
-            hasMetadata: true,
-            dataKeys: Object.keys(enrichedFormData)
-          });
           
           const pdfBytes = await OptimizedPDFService.generatePDF({
             templateId: form.settings.pdfTemplateId,
@@ -213,10 +198,7 @@ export const PublicForm: React.FC = () => {
           setGeneratedPdfUrl(url);
           pdfGenerated = true;
           
-          console.log('✅ PDF généré avec succès, taille:', Math.round(pdfBytes.length / 1024), 'KB');
         } catch (pdfError) {
-          console.error('❌ Erreur génération PDF:', pdfError);
-          
           // Si la génération PDF est configurée, c'est un échec critique
           // Supprimer la réponse pour éviter les données incohérentes
           try {
@@ -224,33 +206,19 @@ export const PublicForm: React.FC = () => {
               .from('responses')
               .delete()
               .eq('id', response.id);
-            console.log('🗑️ Réponse supprimée suite à l\'échec PDF');
           } catch (deleteError) {
-            console.error('❌ Erreur suppression réponse:', deleteError);
           }
           
           throw new Error(`Erreur génération PDF: ${pdfError.message}`);
         }
-      } else {
-        console.log('📄 Génération PDF non configurée, passage à la confirmation');
       }
 
       // ÉTAPE 3: Confirmation finale (seulement si tout s'est bien passé)
-      console.log('✅ Toutes les étapes terminées avec succès');
-      console.log('📊 Résumé:', {
-        responseId: response.id,
-        pdfGenerated,
-        pdfConfigured: !!form.settings?.generatePdf,
-        templateConfigured: !!form.settings?.pdfTemplateId
-      });
-      
       // SEULEMENT maintenant, marquer comme soumis et afficher le succès
       setSubmitted(true);
       toast.success('✅ Formulaire envoyé et traité avec succès !');
       
     } catch (error: any) {
-      console.error('❌ Erreur soumission complète:', error);
-      
       // Messages d'erreur spécifiques selon le type d'erreur
       if (error.message?.includes('sauvegarde')) {
         toast.error('❌ Erreur lors de la sauvegarde de vos données. Veuillez réessayer.');

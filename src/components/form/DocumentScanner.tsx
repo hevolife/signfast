@@ -143,8 +143,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       toast.success('📷 Caméra prête !');
       
     } catch (error: any) {
-      console.error('❌ Erreur caméra:', error);
-      
       let errorMessage = 'Erreur d\'accès à la caméra';
       
       if (error.name === 'NotAllowedError') {
@@ -212,7 +210,6 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       
       toast.success('📷 Document scanné !');
     } catch (error) {
-      console.error('Erreur capture:', error);
       toast.error('Erreur lors de la capture');
     }
   }, [settings, onImageCapture, stopCamera]);

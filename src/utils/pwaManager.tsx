@@ -7,16 +7,13 @@ export class PWAManager {
 
   init(registration: ServiceWorkerRegistration) {
     this.registration = registration;
-    console.log('🔧 PWA Manager initialisé');
   }
 
   detectPWALaunch() {
     const isPWA = this.isPWAMode();
     if (isPWA) {
-      console.log('📱 Application lancée en mode PWA');
       this.handlePWALaunch();
     } else {
-      console.log('🌐 Application lancée en mode navigateur');
     }
   }
 
@@ -32,10 +29,8 @@ export class PWAManager {
   private handlePWALaunch() {
     const hasValidSession = this.checkValidSession();
     if (!hasValidSession) {
-      console.log('📱 PWA: Aucune session valide, redirection vers login');
       this.redirectToLogin();
     } else {
-      console.log('📱 PWA: Session valide détectée');
       this.handleValidSession();
     }
   }
@@ -49,13 +44,11 @@ export class PWAManager {
       if (tokenData.expires_at) {
         const expiresAt = new Date(tokenData.expires_at);
         if (new Date() >= expiresAt) {
-          console.log('📱 Token expiré');
           return false;
         }
       }
       return Boolean(tokenData.user?.id);
     } catch (error) {
-      console.warn('📱 Erreur vérification session:', error);
       return false;
     }
   }
@@ -89,7 +82,6 @@ export class PWAManager {
       sessionStorage.clear();
       this.clearAppCache();
     } catch (error) {
-      console.warn('⚠️ Erreur nettoyage session:', error);
     }
   }
 
@@ -106,7 +98,6 @@ export class PWAManager {
         );
       }
     } catch (error) {
-      console.warn('⚠️ Erreur nettoyage cache PWA:', error);
     }
   }
 
@@ -161,19 +152,16 @@ export class PWAManager {
   async applyUpdate() {
     try {
       if (this.registration?.waiting) {
-        console.log('🔄 Application de la mise à jour...');
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         setTimeout(() => window.location.reload(), 1000);
         toast.loading('🔄 Mise à jour en cours...', { duration: 2000 });
       }
     } catch (error) {
-      console.error('❌ Erreur application mise à jour:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   }
 
   handleServiceWorkerActivated(data: any) {
-    console.log('🚀 Service Worker activé:', data.version);
     if (this.isPWAMode() && !sessionStorage.getItem('offline_ready_shown')) {
       sessionStorage.setItem('offline_ready_shown', 'true');
       setTimeout(() => {
@@ -206,14 +194,11 @@ export class PWAManager {
       for (const url of urls) {
         fetch(url, { mode: 'no-cors' }).catch(() => {});
       }
-      console.log('🚀 Préchargement des ressources critiques lancé');
     } catch (error) {
-      console.warn('⚠️ Erreur préchargement:', error);
     }
   }
 
   handleLogout() {
-    console.log('📱 Gestion déconnexion PWA');
     this.clearSessionData();
     window.location.href = this.isPWAMode()
       ? '/login?pwa=true&logout=true'
