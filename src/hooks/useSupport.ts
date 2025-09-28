@@ -397,7 +397,6 @@ export const useSupportAdmin = () => {
   return {
     allTickets,
     setAllTickets,
-    allTickets,
     totalCount,
     loading,
     isSuperAdmin,
