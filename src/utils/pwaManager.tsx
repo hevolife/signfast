@@ -13,7 +13,6 @@ export class PWAManager {
     const isPWA = this.isPWAMode();
     if (isPWA) {
       this.handlePWALaunch();
-    } else {
     }
   }
 
@@ -82,6 +81,7 @@ export class PWAManager {
       sessionStorage.clear();
       this.clearAppCache();
     } catch (error) {
+      // Production: silent error handling
     }
   }
 
@@ -90,7 +90,7 @@ export class PWAManager {
       if ('serviceWorker' in navigator && this.registration) {
         const messageChannel = new MessageChannel();
         messageChannel.port1.onmessage = (event) => {
-          if (event.data.success) console.log('✅ Cache PWA nettoyé');
+          // Production: silent cache cleanup
         };
         this.registration.active?.postMessage(
           { type: 'CLEAR_CACHE' },
@@ -98,6 +98,7 @@ export class PWAManager {
         );
       }
     } catch (error) {
+      // Production: silent error handling
     }
   }
 

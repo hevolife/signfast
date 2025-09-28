@@ -9,7 +9,6 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-project-url' || supaba
 // Custom fetch function to handle session expiration
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   try {
-    const urlString = url.toString();
     const response = await fetch(url, options);
     
     // Handle 500 errors gracefully
@@ -41,7 +40,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
             const { data, error } = await supabase.auth.refreshSession();
             if (error) {
               supabase.auth.signOut();
-            } else {
             }
           } catch (refreshError) {
             supabase.auth.signOut();
@@ -51,7 +49,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
         // If we can't parse the response body, ignore
       }
     }
-    
     
     // Handle RPC function not found errors (404 with PGRST202)
     if (!response.ok && response.status === 404) {

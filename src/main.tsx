@@ -6,11 +6,11 @@ import { PWAManager } from './utils/pwaManager.tsx';
 
 // Gestion d'erreur globale pour éviter l'écran blanc
 window.addEventListener('error', (event) => {
-  // Silent error handling
+  // Production: silent error handling
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  // Silent promise rejection handling
+  // Production: silent promise rejection handling
 });
 
 // Initialiser le gestionnaire PWA

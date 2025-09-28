@@ -87,12 +87,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Vérifier que les données sont valides et récentes (max 24h)
           const maxAge = 24 * 60 * 60 * 1000; // 24 heures
           if (Date.now() - data.timestamp > maxAge) {
-            console.log('🎭 Impersonation expirée, nettoyage');
             localStorage.removeItem('admin_impersonation');
             return;
           }
           
-          console.log('🎭 Impersonation active détectée:', data.target_email);
           setImpersonationData(data);
           setIsImpersonating(true);
           
@@ -102,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch (error) {
-        console.error('Erreur parsing impersonation data:', error);
         localStorage.removeItem('admin_impersonation');
       }
     };
@@ -111,7 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const stopImpersonation = useCallback(() => {
-    console.log('🎭 Arrêt de l\'impersonation');
     localStorage.removeItem('admin_impersonation');
     setIsImpersonating(false);
     setImpersonationData(null);

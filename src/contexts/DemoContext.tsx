@@ -89,7 +89,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'demo_admin_settings' || e.key === 'demo_admin_forms' || e.key === 'demo_admin_templates') {
-        console.log('🎭 Changement détecté dans la configuration admin:', e.key);
         if (isDemoMode) {
           loadDemoSettings();
           loadDemoTemplatesAndForms();
@@ -110,7 +109,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedForms = localStorage.getItem('demo_admin_forms');
       if (savedForms) {
         const adminForms = JSON.parse(savedForms);
-        console.log('🎭 Chargement formulaires admin:', adminForms.length);
         
         // Mettre à jour les formulaires de démo existants
         const updatedForms = adminForms.map((adminForm: any) => ({
@@ -133,7 +131,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedTemplates = localStorage.getItem('demo_admin_templates');
       if (savedTemplates) {
         const adminTemplates = JSON.parse(savedTemplates);
-        console.log('🎭 Chargement templates admin:', adminTemplates.length);
         
         // Mettre à jour les templates de démo existants
         const updatedTemplates = adminTemplates.map((adminTemplate: any) => ({
@@ -151,7 +148,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('signfast_demo', JSON.stringify(demoData));
       }
     } catch (error) {
-      console.error('Erreur chargement templates/forms admin:', error);
+      // Production: silent error handling
     }
   };
 

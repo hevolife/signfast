@@ -20,25 +20,21 @@ const CACHE_DURATIONS = {
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 Installation du Service Worker v5...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
-      console.log('✅ Cache statique ouvert');
       return cache.addAll(STATIC_RESOURCES).catch(error => {
-        console.warn('⚠️ Certaines ressources statiques non disponibles:', error);
+        // Production: silent error handling
       });
     }).then(() => {
-      console.log('✅ Ressources statiques mises en cache');
       self.skipWaiting();
     }).catch((error) => {
-      console.error('❌ Erreur mise en cache:', error);
+      // Production: silent error handling
     })
   );
 });
 
 // Activation du service worker avec nettoyage
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Activation du Service Worker v5...');
   event.waitUntil(
     Promise.all([
       // Nettoyer les anciens caches
@@ -46,7 +42,6 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (!cacheName.includes('signfast-v5') && cacheName.includes('signfast')) {
-              console.log('🗑️ Suppression ancien cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -55,7 +50,7 @@ self.addEventListener('activate', (event) => {
       // Prendre le contrôle immédiatement
       self.clients.claim()
     ]).then(() => {
-      console.log('✅ Service Worker v5 activé - Cache uniquement pour les assets statiques');
+      // Production: Service Worker activated
     })
   );
 });
@@ -94,7 +89,6 @@ async function handleRequest(request) {
 
     // 3. TOUTES LES DONNÉES DYNAMIQUES - Network Only (pas de cache)
     if (isSupabaseAPI(url) || isDynamicData(url)) {
-      console.log('🌐 Données dynamiques - Network Only:', request.url);
       return await fetch(request);
     }
 
@@ -102,7 +96,6 @@ async function handleRequest(request) {
     return await fetch(request);
 
   } catch (error) {
-    console.error('❌ Erreur handling request:', error);
     return await fallbackResponse(request);
   }
 }
@@ -113,7 +106,6 @@ async function cacheFirstStrategy(request, cacheName) {
   const cachedResponse = await cache.match(request);
   
   if (cachedResponse) {
-    console.log('📦 Cache hit (asset statique):', request.url);
     // Mise à jour en arrière-plan pour les assets
     updateCacheInBackground(request, cache);
     return cachedResponse;
@@ -122,12 +114,10 @@ async function cacheFirstStrategy(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      console.log('🌐 Network hit, mise en cache asset:', request.url);
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
   } catch (error) {
-    console.warn('❌ Network failed pour asset:', request.url);
     return await fallbackResponse(request);
   }
 }
@@ -137,11 +127,10 @@ async function updateCacheInBackground(request, cache) {
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      console.log('🔄 Cache asset mis à jour en arrière-plan:', request.url);
       cache.put(request, networkResponse.clone());
     }
   } catch (error) {
-    console.warn('⚠️ Échec mise à jour arrière-plan asset:', request.url);
+    // Production: silent error handling
   }
 }
 
